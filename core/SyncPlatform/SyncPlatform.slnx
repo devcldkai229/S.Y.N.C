@@ -1,0 +1,47 @@
+<Solution>
+  <Folder Name="/libs/">
+    <Project Path="libs/Contract/Contract.csproj" />
+    <Project Path="libs/Libs.Shared/Libs.Shared.csproj" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Gateway/">
+    <Project Path="src/Gateway/Gateway.API.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/Exercise/">
+    <Project Path="src/Services/Exercise/Exercise.API/Exercise.API.csproj" />
+    <Project Path="src/Services/Exercise/Exercise.Application/Exercise.Application.csproj" />
+    <Project Path="src/Services/Exercise/Exercise.Domain/Exercise.Domain.csproj" />
+    <Project Path="src/Services/Exercise/Exercise.Infrastructure/Exercise.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Iam/">
+    <Project Path="src/Services/Iam/Iam.API/Iam.API.csproj" />
+    <Project Path="src/Services/Iam/Iam.Application/Iam.Application.csproj" />
+    <Project Path="src/Services/Iam/Iam.Domain/Iam.Domain.csproj" />
+    <Project Path="src/Services/Iam/Iam.Infrastructure/Iam.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Marketplace/">
+    <Project Path="src/Services/Marketplace/Marketplace.API/Marketplace.API.csproj" />
+    <Project Path="src/Services/Marketplace/Marketplace.Application/Marketplace.Application.csproj" />
+    <Project Path="src/Services/Marketplace/Marketplace.Domain/Marketplace.Domain.csproj" />
+    <Project Path="src/Services/Marketplace/Marketplace.Infrastructure/Marketplace.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Notification/">
+    <Project Path="src/Services/Notification/Notification.API/Notification.API.csproj" />
+    <Project Path="src/Services/Notification/Notification.Application/Notification.Application.csproj" />
+    <Project Path="src/Services/Notification/Notification.Domain/Notification.Domain.csproj" />
+    <Project Path="src/Services/Notification/Notification.Infrastructure/Notification.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Payment/">
+    <Project Path="src/Services/Payment/Payment.API/Payment.API.csproj" />
+    <Project Path="src/Services/Payment/Payment.Application/Payment.Application.csproj" />
+    <Project Path="src/Services/Payment/Payment.Domain/Payment.Domain.csproj" />
+    <Project Path="src/Services/Payment/Payment.Infrastructure/Payment.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Roadmap/">
+    <Project Path="src/Services/Roadmap/Roadmap.API/Roadmap.API.csproj" />
+    <Project Path="src/Services/Roadmap/Roadmap.Application/Roadmap.Application.csproj" />
+    <Project Path="src/Services/Roadmap/Roadmap.Domain/Roadmap.Domain.csproj" />
+    <Project Path="src/Services/Roadmap/Roadmap.Infrastructure/Roadmap.Infrastructure.csproj" />
+  </Folder>
+</Solution>

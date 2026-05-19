@@ -1,0 +1,62 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Driver;
+using Roadmap.Infrastructure.Persistence;
+
+namespace Roadmap.Infrastructure.Extensions;
+
+public static class InfrastructureServiceExtensions
+{
+    private static bool _conventionsRegistered;
+    private static readonly Lock _lock = new();
+
+    public static IServiceCollection AddRoadmapInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        RegisterBsonConventions();
+
+        var connectionString = configuration.GetConnectionString("RoadmapDatabase")
+            ?? throw new InvalidOperationException("Connection string 'RoadmapDatabase' is not configured.");
+
+        var databaseName = configuration["MongoDB:RoadmapDatabaseName"] ?? "sync_roadmap";
+
+        services.AddSingleton<IMongoClient>(_ =>
+        {
+            var settings = MongoClientSettings.FromConnectionString(connectionString);
+            settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+            return new MongoClient(settings);
+        });
+
+        services.AddSingleton<IMongoDatabase>(sp =>
+            sp.GetRequiredService<IMongoClient>().GetDatabase(databaseName));
+
+        services.AddSingleton<RoadmapMongoContext>();
+
+        return services;
+    }
+
+    private static void RegisterBsonConventions()
+    {
+        lock (_lock)
+        {
+            if (_conventionsRegistered) return;
+
+            var pack = new ConventionPack
+            {
+                new EnumRepresentationConvention(BsonType.String),
+                new IgnoreIfNullConvention(true),
+            };
+
+            ConventionRegistry.Register(
+                "RoadmapConventions",
+                pack,
+                t => t.Namespace != null &&
+                     (t.Namespace.StartsWith("Roadmap") || t.Namespace.StartsWith("Libs.Shared")));
+
+            _conventionsRegistered = true;
+        }
+    }
+}

@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  sync-postgres:
+    image: postgres:17.6
+    container_name: sync-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+    ports:
+      - "5434:5432"
+    volumes:
+      - sync_postgres_data:/var/lib/postgresql/data
+    networks:
+      - sync-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sync_admin -d sync_master"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sync-mongodb:
+    image: mongo:8.0
+    container_name: sync-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - sync_mongodb_data:/data/db
+    networks:
+      - sync-network
+    restart: unless-stopped
+    healthcheck:
+      test: echo 'db.runCommand({ping:1})' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  sync-rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: sync-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: sync_mq_user
+      RABBITMQ_DEFAULT_PASS: SyncMqSecurePassword2026
+    volumes:
+      - sync_rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - sync-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_local_readiness"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  sync-redis:
+    image: redis:7-alpine
+    container_name: sync-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - sync_redis_data:/data
+    networks:
+      - sync-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  sync-network:
+    driver: bridge
+
+volumes:
+  sync_postgres_data:
+  sync_mongodb_data:
+  sync_rabbitmq_data:
+  sync_redis_data:
