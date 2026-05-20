@@ -9,36 +9,21 @@ public class ExerciseMotionAsset : BaseMongoEntity
 
     public AssetType AssetType { get; set; }
 
+    // Dùng chung cho cả link Video (.mp4) hoặc link Unity Bundle
+    public string ResourceUrl { get; set; } = string.Empty;
+
+    // Ảnh bìa để hiển thị nhanh ngoài danh sách mà không cần load 3D/Video
+    [BsonIgnoreIfNull]
+    public string? ThumbnailUrl { get; set; }
+
+    // --- CÁC TRƯỜNG DÀNH RIÊNG CHO UNITY (Sẽ null nếu là Video) ---
+    
     [BsonIgnoreIfNull]
     public string? UnityPrefabId { get; set; }
 
     [BsonIgnoreIfNull]
     public string? UnityAnimationClip { get; set; }
 
-    [BsonIgnoreIfNull]
-    public string? VideoUrl { get; set; }
-
-    [BsonIgnoreIfNull]
-    public string? ThumbnailUrl { get; set; }
-
-    [BsonIgnoreIfNull]
-    public string? S3Key { get; set; }
-
-    [BsonIgnoreIfNull]
-    public string? CdnUrl { get; set; }
-
     public int AnimationDurationSeconds { get; set; }
 
-    public List<string> CameraAngles { get; set; } = [];
-
-    public bool SupportsRealtimePoseOverlay { get; set; }
-
-    [BsonIgnoreIfNull]
-    public string? PoseDetectionModel { get; set; }
-
-    public bool SupportsARMode { get; set; }
-
-    public List<string> SupportedPlatforms { get; set; } = [];
-
-    public List<string> QualityVariants { get; set; } = [];
 }

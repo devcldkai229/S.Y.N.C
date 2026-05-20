@@ -10,7 +10,7 @@ public class ExerciseCatalog : BaseMongoEntity
 
     public string NameVi { get; set; } = string.Empty;
 
-    public string Slug { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty; 
 
     public ExerciseCategory Category { get; set; }
 
@@ -24,11 +24,8 @@ public class ExerciseCatalog : BaseMongoEntity
 
     public List<string> EquipmentRequired { get; set; } = [];
 
-    public string ExerciseType { get; set; } = string.Empty;
-
-    public string ForceType { get; set; } = string.Empty;
-
-    public string MechanicType { get; set; } = string.Empty;
+    // true = Compound (Đa khớp), false = Isolation (Cô lập)
+    public bool IsCompound { get; set; }
 
     public BodyRegion BodyRegion { get; set; }
 
@@ -48,11 +45,7 @@ public class ExerciseCatalog : BaseMongoEntity
 
     public List<string> CommonMistakes { get; set; } = [];
 
-    public string SafetyLevel { get; set; } = string.Empty;
-
     public bool RequiresSpotter { get; set; }
 
-    public bool IsAiRecommended { get; set; }
-
-    public bool IsActive { get; set; }
+    public bool IsActive { get; set; } = true;
 }

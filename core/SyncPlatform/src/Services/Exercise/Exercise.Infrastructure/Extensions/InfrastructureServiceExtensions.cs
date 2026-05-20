@@ -23,7 +23,6 @@ public static class InfrastructureServiceExtensions
 
         var databaseName = configuration["MongoDB:ExerciseDatabaseName"] ?? "sync_exercise";
 
-        // IMongoClient — một instance duy nhất toàn app (thread-safe, connection-pooled)
         services.AddSingleton<IMongoClient>(_ =>
         {
             var settings = MongoClientSettings.FromConnectionString(connectionString);
@@ -31,20 +30,14 @@ public static class InfrastructureServiceExtensions
             return new MongoClient(settings);
         });
 
-        // IMongoDatabase — derive từ client, cũng là Singleton
         services.AddSingleton<IMongoDatabase>(sp =>
             sp.GetRequiredService<IMongoClient>().GetDatabase(databaseName));
 
-        // Typed context — inject vào repositories thay vì IMongoDatabase trực tiếp
         services.AddSingleton<ExerciseMongoContext>();
 
         return services;
     }
 
-    /// <summary>
-    /// Đăng ký global BSON conventions cho toàn bộ Exercise domain models.
-    /// Chỉ chạy một lần — an toàn khi gọi nhiều lần nhờ lock.
-    /// </summary>
     private static void RegisterBsonConventions()
     {
         lock (_lock)
@@ -53,17 +46,13 @@ public static class InfrastructureServiceExtensions
 
             var pack = new ConventionPack
             {
-                // Lưu enum dưới dạng string ("Strength") thay vì integer (0)
                 new EnumRepresentationConvention(BsonType.String),
 
-                // Bỏ qua các field null khi serialize — giảm kích thước document
                 new IgnoreIfNullConvention(true),
 
-                // Bỏ qua các field có giá trị default — tối ưu storage
                 new IgnoreIfDefaultConvention(false),
             };
 
-            // Áp dụng cho tất cả class trong namespace Exercise và Libs.Shared
             ConventionRegistry.Register(
                 "ExerciseConventions",
                 pack,
