@@ -17,6 +17,7 @@ public static class MongoDbIndexInitializer
         await ConfigureWorkoutExecutionLogIndexesAsync(database);
         await ConfigureUserCustomWorkoutIndexesAsync(database);
         await ConfigureRecoveryProfileIndexesAsync(database);
+        await ConfigureExerciseSetLogIndexesAsync(database);
     }
 
     private static async Task ConfigurePersonalizedRoadmapIndexesAsync(IMongoDatabase database)
@@ -118,5 +119,23 @@ public static class MongoDbIndexInitializer
             new CreateIndexOptions { Unique = true, Name = "UIX_UserId" });
 
         await collection.Indexes.CreateOneAsync(userIndex);
+    }
+
+    private static async Task ConfigureExerciseSetLogIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<ExerciseSetLog>("ExerciseSetLogs");
+        var ix = Builders<ExerciseSetLog>.IndexKeys;
+
+        // Tất cả sets của một execution log, sắp xếp theo thứ tự set
+        var executionIndex = new CreateIndexModel<ExerciseSetLog>(
+            ix.Ascending(x => x.ExecutionId).Ascending(x => x.SetNumber),
+            new CreateIndexOptions { Name = "IX_ExecutionId_SetNumber" });
+
+        // Tìm toàn bộ lịch sử sets của một bài tập cụ thể
+        var exerciseIndex = new CreateIndexModel<ExerciseSetLog>(
+            ix.Ascending(x => x.ExerciseId),
+            new CreateIndexOptions { Name = "IX_ExerciseId" });
+
+        await collection.Indexes.CreateManyAsync([executionIndex, exerciseIndex]);
     }
 }
