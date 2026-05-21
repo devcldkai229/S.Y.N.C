@@ -35,6 +35,11 @@ public static class InfrastructureServiceExtensions
 
         services.AddSingleton<ExerciseMongoContext>();
 
+        services.AddScoped(typeof(Exercise.Domain.Repositories.IGenericRepository<>), typeof(Exercise.Infrastructure.Persistence.Repositories.GenericRepository<>));
+        services.AddScoped<Exercise.Domain.Repositories.IExerciseCatalogRepository, Exercise.Infrastructure.Persistence.Repositories.ExerciseCatalogRepository>();
+        services.AddScoped<Exercise.Domain.Repositories.IExerciseMotionAssetRepository, Exercise.Infrastructure.Persistence.Repositories.ExerciseMotionAssetRepository>();
+        services.AddScoped<Exercise.Domain.Repositories.IWorkoutTemplateRepository, Exercise.Infrastructure.Persistence.Repositories.WorkoutTemplateRepository>();
+
         return services;
     }
 
