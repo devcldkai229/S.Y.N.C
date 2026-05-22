@@ -27,4 +27,6 @@ public class SubscriptionPlan : BaseAuditableEntity
     public int MaxAiAutoOrdersPerMonth { get; set; }
 
     public bool IsActive { get; set; }
+
+    public string? GooglePlayProductId { get; set; }
 }

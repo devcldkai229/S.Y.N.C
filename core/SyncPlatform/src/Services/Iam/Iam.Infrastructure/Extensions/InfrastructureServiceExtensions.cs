@@ -1,4 +1,6 @@
+using Iam.Domain.Repositories;
 using Iam.Infrastructure.Persistence;
+using Iam.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,9 @@ public static class InfrastructureServiceExtensions
                 })
                 .UseLazyLoadingProxies()
                 .UseSnakeCaseNamingConvention());
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
 
         return services;
     }
