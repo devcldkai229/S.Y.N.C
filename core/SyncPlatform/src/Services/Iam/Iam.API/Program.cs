@@ -8,8 +8,10 @@ using Iam.Infrastructure.Extensions;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddIamApplication();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.UseInlineDefinitionsForEnums();
+});
 builder.Services.AddIamInfrastructure(builder.Configuration);
 builder.Services.AddScoped<ICurrentUserAccessor, HeaderCurrentUserAccessor>();
 
@@ -27,6 +29,8 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
