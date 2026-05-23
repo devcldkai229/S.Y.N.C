@@ -12,6 +12,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Layer shared configuration (Jwt, baseline Logging, AllowedHosts) from configs/appsettings.Shared*.json
 builder.Configuration.AddSharedConfiguration(builder.Environment);
+// Add services to the container.
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.UseInlineDefinitionsForEnums();
+});
 
 var configuration = builder.Configuration;
 
@@ -51,6 +58,13 @@ builder.Services
             NameClaimType            = ClaimTypes.NameIdentifier,
             RoleClaimType            = ClaimTypes.Role
         };
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
         // Return 401 JSON (not a redirect to login)
         options.Events = new JwtBearerEvents

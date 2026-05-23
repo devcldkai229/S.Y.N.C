@@ -1,6 +1,135 @@
 @Iam.API_HostAddress = http://localhost:5288
+@Test_User_Id = d1cd3b1e-b8cc-4d37-8f55-09ad18b76c5f
 
-GET {{Iam.API_HostAddress}}/weatherforecast/
+### Step 1: Save Basic Info (Onboarding Step 1)
+POST {{Iam.API_HostAddress}}/api/v1/biometrics/onboarding/basic
+Content-Type: application/json
+X-User-Id: {{Test_User_Id}}
+
+{
+  "gender": "Male",
+  "dateOfBirth": "1995-05-15",
+  "heightCm": 175.0
+}
+
+### Step 2: Save Goals & Activity (Onboarding Step 2 - Triggers BMR, TDEE & Macros)
+POST {{Iam.API_HostAddress}}/api/v1/biometrics/onboarding/goals
+Content-Type: application/json
+X-User-Id: {{Test_User_Id}}
+
+{
+  "currentWeightKg": 75.0,
+  "targetWeightKg": 70.0,
+  "fitnessGoal": "LoseFat",
+  "activityLevel": "ModeratelyActive",
+  "fitnessExperienceLevel": "Intermediate",
+  "workoutLocationPreference": "Gym"
+}
+
+### Step 3: Save Body Composition (Onboarding Step 3 - Optional)
+POST {{Iam.API_HostAddress}}/api/v1/biometrics/onboarding/composition
+Content-Type: application/json
+X-User-Id: {{Test_User_Id}}
+
+{
+  "currentBodyFatPercentage": 18.5,
+  "goalBodyFatPercentage": 12.0,
+  "muscleMassKg": 35.2
+}
+
+### Step 4: Save Safeguards (Onboarding Step 4 - Optional)
+POST {{Iam.API_HostAddress}}/api/v1/biometrics/onboarding/safeguards
+Content-Type: application/json
+X-User-Id: {{Test_User_Id}}
+
+{
+  "injuries": [
+    "Lower back stiffness",
+    "Left shoulder impingement"
+  ],
+  "medications": [
+    "None"
+  ]
+}
+
+### Step 5: Get Full Biometric Profile
+GET {{Iam.API_HostAddress}}/api/v1/biometrics
+X-User-Id: {{Test_User_Id}}
+@UserId = 00000000-0000-0000-0000-000000000001
+
+### View profile + preferences (InfoProfile & Preferences)
+GET {{Iam.API_HostAddress}}/api/me/profile-settings
 Accept: application/json
+X-User-Id: {{UserId}}
 
 ###
+
+### View vouchers + achievements inventory
+GET {{Iam.API_HostAddress}}/api/me/inventory
+Accept: application/json
+X-User-Id: {{UserId}}
+
+###
+
+### Update basic account display fields
+PUT {{Iam.API_HostAddress}}/api/me/basic-profile
+Content-Type: application/json
+X-User-Id: {{UserId}}
+
+{
+  "fullName": "Nguyen Van A",
+  "avatarUrl": "https://cdn.example/avatars/a.png",
+  "preferredLanguage": "vi",
+  "timeZone": "Asia/Ho_Chi_Minh"
+}
+
+###
+
+### Create / update fitness (biometric) profile
+PUT {{Iam.API_HostAddress}}/api/me/fitness-profile
+Content-Type: application/json
+X-User-Id: {{UserId}}
+
+{
+  "gender": "Male",
+  "dateOfBirth": "2000-01-15",
+  "heightCm": 175,
+  "currentWeightKg": 72,
+  "targetWeightKg": 68,
+  "fitnessGoal": "LoseFat",
+  "activityLevel": "ModeratelyActive",
+  "fitnessExperienceLevel": "Beginner",
+  "workoutLocationPreference": "Gym",
+  "injuries": [],
+  "medications": []
+}
+
+###
+
+### Setup account preferences (UserPreference)
+PUT {{Iam.API_HostAddress}}/api/me/account-preferences
+Content-Type: application/json
+X-User-Id: {{UserId}}
+
+{
+  "agentPersona": "FriendlyBuddy",
+  "motivationStyle": "Supportive",
+  "autoOrderEnabled": false,
+  "dataSharingConsent": true,
+  "marketingConsent": false,
+  "favoriteFoods": ["chicken", "rice"],
+  "dislikedFoods": ["liver"],
+  "allergies": [
+    { "allergenName": "peanut", "severity": "high", "notes": null }
+  ]
+}
+
+### Step 6: Log New Weight (Triggers recalculation)
+HttpPatch {{Iam.API_HostAddress}}/api/v1/biometrics/weight
+Content-Type: application/json
+X-User-Id: {{Test_User_Id}}
+
+{
+  "currentWeightKg": 74.2
+}
+

@@ -13,7 +13,8 @@ public static class ApplicationServiceExtensions
         // JwtAuthSettings is configured by Libs.Auth.AddSyncJwtAuthentication() at the API layer.
         services.Configure<GoogleAuthSettings>(configuration.GetSection(GoogleAuthSettings.SectionName));
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
-
+        services.AddScoped<IBiometricProfileService, BiometricProfileService>();
+        services.AddScoped<UserMeService>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
@@ -25,7 +26,4 @@ public static class ApplicationServiceExtensions
             services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
         services.AddScoped<IAuthService, AuthService>();
-
-        return services;
-    }
 }

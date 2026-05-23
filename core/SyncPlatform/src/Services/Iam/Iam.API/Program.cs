@@ -5,6 +5,14 @@ using Iam.Infrastructure.Extensions;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
+using Iam.API.Auth;
+using Iam.API.Endpoints;
+using Iam.API.Middleware;
+using Iam.Application.Abstractions;
+using Iam.Application.Extensions;
+using Iam.Infrastructure.Extensions;
+using Iam.API.Exceptions;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +33,20 @@ builder.Services.AddExceptionHandler<Iam.API.Exceptions.GlobalExceptionHandler>(
 
 builder.Services.AddIamApplication(builder.Configuration);
 builder.Services.AddIamInfrastructure(builder.Configuration);
+builder.Services.AddScoped<ICurrentUserAccessor, HeaderCurrentUserAccessor>();
+
+builder.Services.AddAuthentication(DevAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, DevAuthenticationHandler>(
+        DevAuthenticationHandler.SchemeName,
+        _ => { });
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 // JWT authentication + authorization policies + ICurrentUserContext (shared lib)
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
@@ -55,6 +77,7 @@ builder.Services.AddControllers()
 var app = builder.Build();
 
 app.UseExceptionHandler(_ => { });
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -70,6 +93,12 @@ else
 app.UseSyncJwtAuthentication();
 
 app.MapSyncHealthChecks();
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapMeEndpoints();
+
 app.MapControllers();
 
 app.Run();

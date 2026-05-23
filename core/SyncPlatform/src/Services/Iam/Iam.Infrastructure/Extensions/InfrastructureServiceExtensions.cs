@@ -1,4 +1,5 @@
 using Iam.Domain.Repositories;
+using Iam.Application.Abstractions;
 using Iam.Infrastructure.Persistence;
 using Iam.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +29,8 @@ public static class InfrastructureServiceExtensions
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
+        services.AddScoped<IBiometricProfileRepository, BiometricProfileRepository>();
+        services.AddScoped<IUserMeRepository, UserMeRepository>();
 
         return services;
     }
