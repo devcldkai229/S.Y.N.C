@@ -28,6 +28,7 @@ public static class InfrastructureServiceExtensions
                 .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
         services.AddScoped<IBiometricProfileRepository, BiometricProfileRepository>();
         services.AddScoped<IUserMeRepository, UserMeRepository>();
 

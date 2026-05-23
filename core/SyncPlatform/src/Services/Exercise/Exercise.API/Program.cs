@@ -2,7 +2,9 @@ using Exercise.Application.Common;
 using Exercise.Application.Extensions;
 using Exercise.Infrastructure.Extensions;
 using Exercise.Infrastructure.Persistence;
+using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -14,15 +16,20 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Layer shared configuration (Jwt, baseline Logging, AllowedHosts) from configs/appsettings.Shared*.json
+builder.Configuration.AddSharedConfiguration(builder.Environment);
+
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.SwaggerDoc("v1", new OpenApiInfo { Title = "Exercise API", Version = "v1" });
     options.UseInlineDefinitionsForEnums();
 });
 
 builder.Services.AddExceptionHandler<Exercise.API.Exceptions.GlobalExceptionHandler>();
 builder.Services.AddExerciseApplication();
 builder.Services.AddExerciseInfrastructure(builder.Configuration);
+builder.Services.AddSyncHealthChecks();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -71,6 +78,7 @@ if (!app.Environment.IsDevelopment())
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
 
+app.MapSyncHealthChecks();
 app.MapControllers();
 
 app.Run();

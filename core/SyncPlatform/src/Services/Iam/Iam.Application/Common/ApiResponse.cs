@@ -8,24 +8,8 @@ public class ApiResponse<T>
     public object? Errors { get; set; }
 
     public static ApiResponse<T> SuccessResponse(T data, string message = "Operation completed successfully.")
-    {
-        return new ApiResponse<T>
-        {
-            Success = true,
-            Message = message,
-            Data = data,
-            Errors = null
-        };
-    }
+        => new() { Success = true, Message = message, Data = data, Errors = null };
 
     public static ApiResponse<T> FailureResponse(string message, object? errors = null)
-    {
-        return new ApiResponse<T>
-        {
-            Success = false,
-            Message = message,
-            Data = default,
-            Errors = errors
-        };
-    }
+        => new() { Success = false, Message = message, Data = default, Errors = errors };
 }

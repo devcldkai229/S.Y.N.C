@@ -423,6 +423,11 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("email");
 
+                    b.Property<string>("EmailVerificationToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("email_verification_token");
+
                     b.Property<bool>("EmailVerified")
                         .HasColumnType("boolean")
                         .HasColumnName("email_verified");
@@ -500,6 +505,11 @@ namespace Iam.Infrastructure.Persistence.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
+
+                    b.HasIndex("EmailVerificationToken")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_email_verification_token")
+                        .HasFilter("email_verification_token IS NOT NULL");
 
                     b.HasIndex("PhoneNumber")
                         .IsUnique()
@@ -666,6 +676,12 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("device_id");
 
+                    b.Property<bool>("IsRevoked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_revoked");
+
                     b.Property<DateTimeOffset?>("LastSeenAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_seen_at");
@@ -681,6 +697,15 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("push_token");
 
+                    b.Property<DateTimeOffset?>("RefreshTokenExpiryTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("refresh_token_expiry_time");
+
+                    b.Property<string>("RefreshTokenHash")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("refresh_token_hash");
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -691,6 +716,9 @@ namespace Iam.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_user_devices");
+
+                    b.HasIndex("DeviceId")
+                        .HasDatabaseName("ix_user_devices_device_id");
 
                     b.HasIndex("UserId", "DeviceId")
                         .IsUnique()

@@ -29,11 +29,17 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         // AI reasoning context snapshot — stored as jsonb for auditability
         builder.Property(t => t.AIReasoningSnapshotJson).HasColumnType("jsonb");
 
+        builder.Property(t => t.Provider).HasConversion<string>().HasMaxLength(32);
+        builder.Property(t => t.RawProviderPayload).HasColumnType("jsonb");
+
         // Indexes for common query patterns
         builder.HasIndex(t => t.UserId);
         builder.HasIndex(t => t.WalletId);
         builder.HasIndex(t => t.Status);
         builder.HasIndex(t => t.CreatedAt);
+
+        // PayOS webhook lookup path: SELECT WHERE provider = 'PayOS' AND order_code = ?
+        builder.HasIndex(t => new { t.Provider, t.OrderCode });
 
         builder.Property(t => t.CreatedAt).HasDefaultValueSql("now()");
     }

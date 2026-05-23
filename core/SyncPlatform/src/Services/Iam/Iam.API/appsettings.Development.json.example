@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored). Local dev overrides for IAM.",
+
+  "Logging": {
+    "LogLevel": {
+      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
+    }
+  },
+  "ConnectionStrings": {
+    "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=YOUR_DB_PASSWORD;Include Error Detail=true"
+  },
+  "GoogleAuth": {
+    "ClientIds": [
+      "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
+      "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com"
+    ]
+  },
+  "Email": {
+    "VerificationBaseUrl": "http://localhost:5288",
+    "Smtp": {
+      "Enabled": false,
+      "Host": "smtp.gmail.com",
+      "Port": 587,
+      "UserName": "YOUR_SMTP_USER",
+      "Password": "YOUR_SMTP_APP_PASSWORD",
+      "FromEmail": "noreply@your-domain.com",
+      "FromName": "Sync",
+      "UseSsl": true
+    }
+  }
+}

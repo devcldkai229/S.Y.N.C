@@ -31,6 +31,8 @@ public class User : BaseAuditableEntity
 
     public bool EmailVerified { get; set; }
 
+    public string? EmailVerificationToken { get; set; }
+
     public bool PhoneVerified { get; set; }
 
     public string PreferredLanguage { get; set; } = string.Empty;

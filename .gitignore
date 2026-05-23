@@ -480,3 +480,16 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# ── Sync Platform: local appsettings (NEVER commit) ─────────────────────────
+# Committed templates only: *.example.json — see core/SyncPlatform/CONFIGURATION.md
+core/SyncPlatform/**/appsettings.json
+core/SyncPlatform/**/appsettings.Development.json
+core/SyncPlatform/**/appsettings.*.local.json
+core/SyncPlatform/**/appsettings.Production.json
+core/SyncPlatform/**/appsettings.Staging.json
+core/SyncPlatform/configs/appsettings.Shared.json
+core/SyncPlatform/configs/appsettings.Shared.*.json
+
+!core/SyncPlatform/**/*.example.json
+**/secrets.json

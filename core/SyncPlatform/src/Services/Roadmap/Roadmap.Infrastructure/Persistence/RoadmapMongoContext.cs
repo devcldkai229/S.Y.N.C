@@ -29,4 +29,7 @@ public sealed class RoadmapMongoContext
 
     public IMongoCollection<RecoveryProfile> RecoveryProfiles
         => _db.GetCollection<RecoveryProfile>("RecoveryProfiles");
+
+    public IMongoCollection<ExerciseSetLog> ExerciseSetLogs
+        => _db.GetCollection<ExerciseSetLog>("ExerciseSetLogs");
 }
