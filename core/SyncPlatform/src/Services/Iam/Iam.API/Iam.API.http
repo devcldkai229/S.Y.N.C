@@ -55,7 +55,74 @@ X-User-Id: {{Test_User_Id}}
 ### Step 5: Get Full Biometric Profile
 GET {{Iam.API_HostAddress}}/api/v1/biometrics
 X-User-Id: {{Test_User_Id}}
+@UserId = 00000000-0000-0000-0000-000000000001
+
+### View profile + preferences (InfoProfile & Preferences)
+GET {{Iam.API_HostAddress}}/api/me/profile-settings
 Accept: application/json
+X-User-Id: {{UserId}}
+
+###
+
+### View vouchers + achievements inventory
+GET {{Iam.API_HostAddress}}/api/me/inventory
+Accept: application/json
+X-User-Id: {{UserId}}
+
+###
+
+### Update basic account display fields
+PUT {{Iam.API_HostAddress}}/api/me/basic-profile
+Content-Type: application/json
+X-User-Id: {{UserId}}
+
+{
+  "fullName": "Nguyen Van A",
+  "avatarUrl": "https://cdn.example/avatars/a.png",
+  "preferredLanguage": "vi",
+  "timeZone": "Asia/Ho_Chi_Minh"
+}
+
+###
+
+### Create / update fitness (biometric) profile
+PUT {{Iam.API_HostAddress}}/api/me/fitness-profile
+Content-Type: application/json
+X-User-Id: {{UserId}}
+
+{
+  "gender": "Male",
+  "dateOfBirth": "2000-01-15",
+  "heightCm": 175,
+  "currentWeightKg": 72,
+  "targetWeightKg": 68,
+  "fitnessGoal": "LoseFat",
+  "activityLevel": "ModeratelyActive",
+  "fitnessExperienceLevel": "Beginner",
+  "workoutLocationPreference": "Gym",
+  "injuries": [],
+  "medications": []
+}
+
+###
+
+### Setup account preferences (UserPreference)
+PUT {{Iam.API_HostAddress}}/api/me/account-preferences
+Content-Type: application/json
+X-User-Id: {{UserId}}
+
+{
+  "agentPersona": "FriendlyBuddy",
+  "motivationStyle": "Supportive",
+  "autoOrderEnabled": false,
+  "dataSharingConsent": true,
+  "marketingConsent": false,
+  "favoriteFoods": ["chicken", "rice"],
+  "dislikedFoods": ["liver"],
+  "allergies": [
+    { "allergenName": "peanut", "severity": "high", "notes": null }
+  ]
+}
 
 ### Step 6: Log New Weight (Triggers recalculation)
 HttpPatch {{Iam.API_HostAddress}}/api/v1/biometrics/weight

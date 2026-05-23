@@ -35,6 +35,10 @@ public static class InfrastructureServiceExtensions
 
         services.AddSingleton<NotificationMongoContext>();
 
+        services.AddScoped(typeof(Notification.Domain.Repositories.IGenericRepository<>), typeof(Notification.Infrastructure.Persistence.Repositories.GenericRepository<>));
+        services.AddScoped<Notification.Domain.Repositories.INotificationMessageRepository, Notification.Infrastructure.Persistence.Repositories.NotificationMessageRepository>();
+        services.AddScoped<Notification.Domain.Repositories.INotificationTemplateRepository, Notification.Infrastructure.Persistence.Repositories.NotificationTemplateRepository>();
+
         return services;
     }
 

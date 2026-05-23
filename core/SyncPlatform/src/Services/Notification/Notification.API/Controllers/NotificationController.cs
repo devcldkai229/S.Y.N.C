@@ -1,0 +1,96 @@
+using Notification.Application.Common;
+using Notification.Application.DTOs;
+using Notification.Application.Services;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Notification.API.Controllers;
+
+[ApiController]
+[Route("api/v1/notifications")]
+public class NotificationController : ControllerBase
+{
+    private readonly INotificationService _service;
+
+    public NotificationController(INotificationService service)
+    {
+        _service = service;
+    }
+
+    [HttpGet("users/{userId:guid}")]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<NotificationMessageDto>>>> GetPaged(
+        Guid userId,
+        [FromQuery] NotificationSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.GetPagedByUserIdAsync(userId, request, cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<NotificationMessageDto>>.SuccessPagedResponse(
+            result.Items,
+            result.Pagination,
+            "Notifications retrieved successfully."));
+    }
+
+    [HttpGet("users/{userId:guid}/unread-count")]
+    public async Task<ActionResult<ApiResponse<int>>> GetUnreadCount(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var count = await _service.GetUnreadCountByUserIdAsync(userId, cancellationToken);
+        return Ok(ApiResponse<int>.SuccessResponse(count, "Unread count retrieved successfully."));
+    }
+
+    [HttpPatch("users/{userId:guid}/{id:guid}/read")]
+    public async Task<ActionResult<ApiResponse<object?>>> MarkAsRead(
+        Guid userId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _service.MarkAsReadAsync(userId, id, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Notification marked as read successfully."));
+    }
+
+    [HttpPost("users/{userId:guid}/read-all")]
+    public async Task<ActionResult<ApiResponse<object?>>> MarkAllAsRead(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        await _service.MarkAllAsReadAsync(userId, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "All notifications marked as read successfully."));
+    }
+
+    [HttpDelete("users/{userId:guid}/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object?>>> Delete(
+        Guid userId,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _service.DeleteNotificationAsync(userId, id, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Notification deleted successfully."));
+    }
+
+    [HttpPost("send")]
+    public async Task<ActionResult<ApiResponse<NotificationMessageDto>>> Send(
+        [FromBody] SendNotificationDto dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.SendNotificationAsync(dto, cancellationToken);
+        return Ok(ApiResponse<NotificationMessageDto>.SuccessResponse(result, "Notification sent/scheduled successfully."));
+    }
+
+    [HttpPost("send-templated")]
+    public async Task<ActionResult<ApiResponse<NotificationMessageDto>>> SendTemplated(
+        [FromBody] SendTemplatedNotificationDto dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.SendTemplatedNotificationAsync(dto, cancellationToken);
+        return Ok(ApiResponse<NotificationMessageDto>.SuccessResponse(result, "Templated notification sent/scheduled successfully."));
+    }
+
+    [HttpDelete("scheduled/{id:guid}")]
+    public async Task<ActionResult<ApiResponse<object?>>> CancelScheduled(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _service.CancelScheduledNotificationAsync(id, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Scheduled notification cancelled successfully."));
+    }
+}

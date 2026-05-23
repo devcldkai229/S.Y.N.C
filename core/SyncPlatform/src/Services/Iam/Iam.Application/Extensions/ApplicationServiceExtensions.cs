@@ -9,6 +9,7 @@ public static class ApplicationServiceExtensions
     {
         services.AddScoped<IBiometricProfileService, BiometricProfileService>();
 
+        services.AddScoped<UserMeService>();
         return services;
     }
 }
