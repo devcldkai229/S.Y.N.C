@@ -1,3 +1,4 @@
+using Iam.Domain.Repositories;
 using Iam.Application.Abstractions;
 using Iam.Infrastructure.Persistence;
 using Iam.Infrastructure.Persistence.Repositories;
@@ -26,6 +27,8 @@ public static class InfrastructureServiceExtensions
                 .UseLazyLoadingProxies()
                 .UseSnakeCaseNamingConvention());
 
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IBiometricProfileRepository, BiometricProfileRepository>();
         services.AddScoped<IUserMeRepository, UserMeRepository>();
 
         return services;

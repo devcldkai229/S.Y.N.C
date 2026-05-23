@@ -7,6 +7,8 @@ public static class ApplicationServiceExtensions
 {
     public static IServiceCollection AddIamApplication(this IServiceCollection services)
     {
+        services.AddScoped<IBiometricProfileService, BiometricProfileService>();
+
         services.AddScoped<UserMeService>();
         return services;
     }
