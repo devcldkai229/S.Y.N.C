@@ -2,11 +2,14 @@ using Exercise.Application.Common;
 using Exercise.Application.DTOs;
 using Exercise.Application.Exceptions;
 using Exercise.Application.Services;
+using Libs.Auth.Constants;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Exercise.API.Controllers;
 
 [ApiController]
+[Authorize(Policy = AuthPolicies.AuthenticatedUser)]
 [Route("api/v1")]
 public class ExerciseMotionAssetController : ControllerBase
 {

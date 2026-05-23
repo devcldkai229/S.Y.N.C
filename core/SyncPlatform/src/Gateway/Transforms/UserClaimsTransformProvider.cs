@@ -1,26 +1,17 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Libs.Auth.Constants;
 using Yarp.ReverseProxy.Transforms;
 using Yarp.ReverseProxy.Transforms.Builder;
 
 namespace Gateway.API.Transforms;
 
 /// <summary>
-/// Applied to every YARP route automatically.
-/// When a request carries a validated JWT, the proven user identity is forwarded
-/// to downstream services as trusted internal headers — so services never need to
-/// re-parse the JWT themselves.
-///
-/// Header contract (internal only — strip at the ingress if exposed externally):
-///   X-User-Id    = sub claim (Guid string)
-///   X-User-Email = email claim
-///   X-User-Role  = role claim
-///   X-Request-Id = per-request correlation id (always set)
+/// Injects correlation and user identity headers after gateway JWT validation.
+/// Downstream services must authorize via <c>HttpContext.User</c> (Bearer re-validated), not these headers.
 /// </summary>
 public sealed class UserClaimsTransformProvider : ITransformProvider
 {
-    // ITransformProvider is called once per route at startup to register transforms.
-    // The actual execution happens per-request inside AddRequestTransform.
-
     public void ValidateRoute(TransformRouteValidationContext context) { }
     public void ValidateCluster(TransformClusterValidationContext context) { }
 
@@ -30,28 +21,26 @@ public sealed class UserClaimsTransformProvider : ITransformProvider
         {
             var headers = ctx.ProxyRequest.Headers;
 
-            // ── Always inject a correlation ID ───────────────────────────────
-            var correlationId = ctx.HttpContext.TraceIdentifier;
-            headers.TryAddWithoutValidation("X-Request-Id", correlationId);
+            headers.TryAddWithoutValidation(AuthHeaders.RequestId, ctx.HttpContext.TraceIdentifier);
 
-            // ── Forward user identity from validated JWT claims ──────────────
             var user = ctx.HttpContext.User;
             if (user.Identity?.IsAuthenticated != true)
                 return ValueTask.CompletedTask;
 
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-            var email  = user.FindFirstValue(ClaimTypes.Email);
-            var role   = user.FindFirstValue(ClaimTypes.Role);
+            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            var email = user.FindFirstValue(ClaimTypes.Email)
+                        ?? user.FindFirstValue(JwtRegisteredClaimNames.Email);
+            var role = user.FindFirstValue(ClaimTypes.Role) ?? user.FindFirstValue("role");
 
             if (userId is not null)
-                headers.TryAddWithoutValidation("X-User-Id", userId);
+                headers.TryAddWithoutValidation(AuthHeaders.UserId, userId);
 
             if (email is not null)
-                // URI-encode to prevent header injection via unusual email chars
-                headers.TryAddWithoutValidation("X-User-Email", Uri.EscapeDataString(email));
+                headers.TryAddWithoutValidation(AuthHeaders.UserEmail, Uri.EscapeDataString(email));
 
             if (role is not null)
-                headers.TryAddWithoutValidation("X-User-Role", role);
+                headers.TryAddWithoutValidation(AuthHeaders.UserRole, role);
 
             return ValueTask.CompletedTask;
         });

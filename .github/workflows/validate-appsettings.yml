@@ -1,0 +1,23 @@
+name: Validate appsettings (no secrets)
+
+on:
+  pull_request:
+    paths:
+      - 'core/SyncPlatform/**/appsettings*.json'
+      - 'core/SyncPlatform/configs/**'
+      - '.github/workflows/validate-appsettings.yml'
+  push:
+    branches: [develop, main]
+    paths:
+      - 'core/SyncPlatform/**/appsettings*.json'
+      - 'core/SyncPlatform/configs/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate committed appsettings contain no secrets
+        shell: pwsh
+        run: ./core/SyncPlatform/scripts/validate-committed-appsettings.ps1

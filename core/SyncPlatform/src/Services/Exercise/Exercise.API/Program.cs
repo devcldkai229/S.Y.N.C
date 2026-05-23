@@ -1,7 +1,10 @@
+using System.Text.Json.Serialization;
+using Exercise.API.Exceptions;
 using Exercise.Application.Common;
 using Exercise.Application.Extensions;
 using Exercise.Infrastructure.Extensions;
 using Exercise.Infrastructure.Persistence;
+using Exercise.Infrastructure.Persistence.Seed;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
@@ -9,14 +12,11 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
-using System.Text.Json.Serialization;
-using static Exercise.Infrastructure.Persistence.Seed.ExerciseSeedData;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Layer shared configuration (Jwt, baseline Logging, AllowedHosts) from configs/appsettings.Shared*.json
 builder.Configuration.AddSharedConfiguration(builder.Environment);
 
 builder.Services.AddOpenApi();
@@ -24,11 +24,16 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "Exercise API", Version = "v1" });
     options.UseInlineDefinitionsForEnums();
+    options.AddJwtBearerSecurityScheme();
 });
 
-builder.Services.AddExceptionHandler<Exercise.API.Exceptions.GlobalExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddExerciseApplication();
 builder.Services.AddExerciseInfrastructure(builder.Configuration);
+
+builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSyncHealthChecks();
 
 builder.Services.AddControllers()
@@ -44,8 +49,7 @@ builder.Services.AddControllers()
                 .Where(e => e.Value?.Errors.Count > 0)
                 .ToDictionary(
                     kvp => kvp.Key,
-                    kvp => kvp.Value!.Errors.Select(x => x.ErrorMessage).ToArray()
-                );
+                    kvp => kvp.Value!.Errors.Select(x => x.ErrorMessage).ToArray());
 
             var response = ApiResponse<object>.FailureResponse("Validation failed.", errors);
             return new BadRequestObjectResult(response);
@@ -54,13 +58,7 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
-using var scope = app.Services.CreateScope();
-
-var database = scope.ServiceProvider.GetRequiredService<IMongoDatabase>();
-
-await ExerciseMongoSeeder.SeedAsync(database);
-
-app.UseExceptionHandler(_ => { });
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {
@@ -68,14 +66,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
-if (!app.Environment.IsDevelopment())
+else
 {
     app.UseHttpsRedirection();
 }
 
-// Initialize MongoDB indexes once at startup — idempotent, safe on every deploy
+app.UseSyncJwtAuthentication();
+
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
+await ExerciseSeedData.ExerciseMongoSeeder.SeedAsync(mongoDb);
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
 
 app.MapSyncHealthChecks();

@@ -1,11 +1,13 @@
 using Notification.Application.Common;
 using Notification.Application.DTOs;
 using Notification.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Notification.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/templates")]
 public class NotificationTemplateController : ControllerBase
 {

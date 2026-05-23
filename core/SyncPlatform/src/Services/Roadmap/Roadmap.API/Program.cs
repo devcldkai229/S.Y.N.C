@@ -27,6 +27,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddExceptionHandler<Roadmap.API.Exceptions.GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddRoadmapApplication();
 builder.Services.AddRoadmapInfrastructure(builder.Configuration);
 
@@ -57,7 +59,7 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
-app.UseExceptionHandler(_ => { });
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

@@ -1,60 +1,63 @@
-# Sync Platform — Local configuration
+# Sync Platform — Configuration
 
-Repository **does not** contain real `appsettings.json` or `appsettings.Development.json` files.  
-Only **templates** (`*.example.json`) are committed.
+## Mô hình (an toàn khi `git push`)
 
-## After clone (required once per machine)
+| Loại file | Trên Git | Bạn điền secret |
+|-----------|----------|-----------------|
+| `appsettings.json` | Có — **giá trị rỗng** `""` | Sau pull, hoặc dùng `.local.json` |
+| `appsettings.Development.json` | Có — **giá trị rỗng** | Sau pull, hoặc dùng `.local.json` |
+| `appsettings.*.local.json` | **Không** (gitignore) | Khuyên dùng cho secret thật |
+| `.env` | **Không** (gitignore) | UI / tooling |
+
+**Không cần** đổi tên `*.example.json` — pull xong chỉ việc điền giá trị (hoặc tạo file `.local.json`).
+
+## Setup một lần sau clone
+
+Từ **root repo**:
+
+```powershell
+.\scripts\install-git-hooks.ps1
+```
+
+Hook `pre-commit` sẽ **chặn commit** nếu `appsettings*.json` có password / API key / connection string không rỗng.
+
+Bạn vẫn có thể `git add .` và `git push` bình thường khi chỉ commit code + file config **để trống secret**.
+
+## Điền secret để chạy local
+
+1. `configs/appsettings.Shared.Development.json` → `Jwt:SecretKey` (≥ 32 ký tự).
+2. Mỗi service `appsettings.Development.json` → connection strings, PayOS, Google, SMTP, …
+
+**Khuyến nghị:** tạo `appsettings.Development.local.json` (gitignored) trong từng project:
+
+```json
+{
+  "ConnectionStrings": {
+    "IamDatabase": "Host=localhost;Port=5432;Database=sync_iam;Username=postgres;Password=YOUR_PASSWORD"
+  },
+  "Jwt": {
+    "SecretKey": "your-dev-jwt-secret-at-least-32-characters-long"
+  }
+}
+```
+
+ASP.NET Core tự merge file `.local.json` sau `appsettings.Development.json`.
+
+## Kiểm tra thủ công trước push
+
+```powershell
+.\core\SyncPlatform\scripts\validate-committed-appsettings.ps1
+```
+
+## Production
+
+Dùng biến môi trường (`Jwt__SecretKey`, `ConnectionStrings__IamDatabase`, …) hoặc secret store — không đưa secret vào JSON trên Git.
+
+## Chạy tất cả service
 
 ```powershell
 cd core/SyncPlatform
-.\scripts\setup-local-config.ps1
+.\scripts\run-all.ps1
 ```
 
-This copies every `*.example.json` → `*.json` in the same folder (skips if the target already exists).
-
-Then edit the generated files with your local values:
-
-| Area | Files |
-|------|--------|
-| JWT (all services) | `configs/appsettings.Shared.json`, `configs/appsettings.Shared.Development.json` |
-| IAM | `src/Services/Iam/Iam.API/appsettings*.json` |
-| Payment | `src/Services/Payment/Payment.API/appsettings*.json` |
-| Exercise / Roadmap / Notification | respective `appsettings*.json` |
-| Gateway (YARP) | `src/Gateway/appsettings*.json` |
-
-## Manual copy (alternative)
-
-```powershell
-copy path\to\appsettings.json.example path\to\appsettings.json
-copy path\to\appsettings.Development.json.example path\to\appsettings.Development.json
-```
-
-## Environment variables (optional override)
-
-Double underscore maps to nested JSON keys:
-
-```text
-Jwt__SecretKey
-ConnectionStrings__IamDatabase
-PayOS__ApiKey
-GoogleAuth__ClientIds__0
-Email__Smtp__Password
-```
-
-## Git rules
-
-| Committed | Gitignored |
-|-----------|------------|
-| `*.example.json` | `appsettings.json` |
-| | `appsettings.Development.json` |
-| | `configs/appsettings.Shared*.json` (non-example) |
-
-Never `git add` local `appsettings.json` — use `git status` and confirm only `*.example.json` is staged.
-
-## Run services
-
-```powershell
-.\scripts\run-all.ps1 -Build
-```
-
-If `appsettings.Shared.json` is missing, services fail at startup with `FileNotFoundException` — run setup script first.
+`run-all.ps1` kiểm tra `Jwt:SecretKey` đã được cấu hình (từ file tracked hoặc `.local.json`).

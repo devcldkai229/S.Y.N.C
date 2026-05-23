@@ -23,6 +23,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddPaymentApplication(builder.Configuration);
 builder.Services.AddPaymentInfrastructure(builder.Configuration);
@@ -54,7 +55,7 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
-app.UseExceptionHandler(_ => { });
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

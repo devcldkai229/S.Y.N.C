@@ -1,4 +1,4 @@
-namespace Iam.Application.Dtos;
+namespace Iam.Application.DTOs;
 
 public sealed record BasicProfileDto(
     string FullName,

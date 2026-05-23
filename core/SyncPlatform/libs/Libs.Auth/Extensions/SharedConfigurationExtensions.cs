@@ -35,8 +35,8 @@ public static class SharedConfigurationExtensions
         {
             throw new FileNotFoundException(
                 $"Shared configuration file '{SharedFileName}' was not found in '{baseDir}'. " +
-                "Copy configs/appsettings.Shared.json.example → configs/appsettings.Shared.json " +
-                "(and Development variant), then rebuild. Or run: core/SyncPlatform/scripts/setup-local-config.ps1",
+                "Ensure configs/appsettings.Shared.json exists (committed in repo) and rebuild the project. " +
+                "See core/SyncPlatform/CONFIGURATION.md.",
                 sharedPath);
         }
 

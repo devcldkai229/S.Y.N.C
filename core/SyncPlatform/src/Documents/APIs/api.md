@@ -10,7 +10,7 @@ Tài liệu các API đã expose từ **IAM**, **Payment**, **Roadmap**, **Exerc
 
 | Service | Direct (dev) | Swagger |
 |---------|--------------|---------|
-| **Gateway** (khuyên dùng cho client) | `http://localhost:5057` | — |
+| **Gateway** (khuyên dùng cho client) | `http://localhost:5057` | `/swagger` (Development) |
 | IAM | `http://localhost:5288` | `/swagger` |
 | Payment | `http://localhost:5084` | `/swagger` |
 | Roadmap | `http://localhost:5118` | `/swagger` |
@@ -32,24 +32,32 @@ GET /health
 
 ## Gateway routing (YARP)
 
-Client nên gọi qua Gateway. Prefix Gateway → path thật trên service:
+Client **luôn** gọi qua Gateway (`http://localhost:5057`). Hai loại route:
 
-| Gateway path | Service path thực tế |
-|--------------|----------------------|
-| `/api/v1/auth/{**}` | `/api/v1/auth/{**}` (IAM, không đổi) |
-| `/api/v1/iam/{**}` | `/api/v1/{**}` (IAM) |
-| `/api/v1/payment/{**}` | `/api/v1/{**}` (Payment) |
-| `/api/v1/roadmap/{**}` | `/api/v1/{**}` (Roadmap) |
-| `/api/v1/exercise/{**}` | `/api/v1/{**}` (Exercise) |
+1. **Passthrough** — path Gateway = path service (IAM auth / me / biometrics).
+2. **Prefix rewrite** — bỏ prefix service, giữ `/api/v1/...` phía downstream.
+
+| Gateway path | Rewrite? | Service | Path trên service |
+|--------------|----------|---------|-------------------|
+| `/api/v1/auth/{**}` | Không | IAM `:5288` | `/api/v1/auth/{**}` |
+| `/api/v1/me/{**}` | Không | IAM | `/api/v1/me/{**}` |
+| `/api/v1/biometrics/{**}` | Không | IAM | `/api/v1/biometrics/{**}` |
+| `/api/v1/payment/{**}` | Có → `/api/v1/{**}` | Payment `:5084` | `/api/v1/payments/...` |
+| `/api/v1/roadmap/{**}` | Có → `/api/v1/{**}` | Roadmap `:5118` | `/api/v1/sessions/...` |
+| `/api/v1/exercise/{**}` | Có → `/api/v1/{**}` | Exercise `:5187` | `/api/v1/exercises/...` |
+| `/api/v1/notification/{**}` | Có → `/api/v1/{**}` | Notification `:5106` | `/api/v1/notifications/...` |
 
 **Ví dụ:**
 
-| Gọi qua Gateway | Tương đương trực tiếp Exercise |
-|-----------------|--------------------------------|
+| Gọi qua Gateway | Tương đương trực tiếp |
+|-----------------|----------------------|
 | `POST http://localhost:5057/api/v1/auth/login` | `POST http://localhost:5288/api/v1/auth/login` |
+| `GET http://localhost:5057/api/v1/me/profile-settings` | `GET http://localhost:5288/api/v1/me/profile-settings` |
+| `POST http://localhost:5057/api/v1/biometrics/onboarding/basic` | `POST http://localhost:5288/api/v1/biometrics/onboarding/basic` |
 | `GET http://localhost:5057/api/v1/exercise/exercises` | `GET http://localhost:5187/api/v1/exercises` |
 | `POST http://localhost:5057/api/v1/roadmap/sessions/schedule` | `POST http://localhost:5118/api/v1/sessions/schedule` |
 | `POST http://localhost:5057/api/v1/payment/payments/payos/create-link` | `POST http://localhost:5084/api/v1/payments/payos/create-link` |
+| `GET http://localhost:5057/api/v1/notification/notifications/user/{userId}` | `GET http://localhost:5106/api/v1/notifications/user/{userId}` |
 
 ### JWT qua Gateway
 
@@ -63,6 +71,8 @@ Route **không** cần JWT trên Gateway:
 
 - `/api/v1/auth/register`, `login`, `google`, `refresh`, `verify-email`
 - `/api/v1/payment/payments/payos/webhook` (PayOS gọi vào)
+
+Gateway cũng inject header nội bộ sau khi validate JWT (`X-User-Id`, `X-User-Email`, `X-User-Role`, `X-Request-Id`). Downstream **vẫn** phải authorize qua `Authorization: Bearer` — không tin header này cho phân quyền.
 
 ---
 
@@ -171,8 +181,13 @@ Khi model binding/validation fail (`ApiBehaviorOptions`):
 
 # 1. IAM API
 
-**Base path:** `/api/v1/auth`  
-**Auth:** Chỉ `logout` yêu cầu `Authorization: Bearer`.
+| Nhóm | Base path | Auth |
+|------|-----------|------|
+| Auth | `/api/v1/auth` | Public (trừ `logout`) |
+| Me (profile settings) | `/api/v1/me` | Bearer JWT |
+| Biometrics (onboarding) | `/api/v1/biometrics` | Bearer JWT |
+
+**Qua Gateway:** dùng cùng path (`/api/v1/auth`, `/api/v1/me`, `/api/v1/biometrics`) — không có prefix `/iam`.
 
 ---
 
@@ -357,6 +372,268 @@ Content-Type: application/json
 ```
 
 **Lỗi:** `401` thiếu/sai JWT.
+
+---
+
+## 1.7 Me — Profile settings & inventory
+
+**Auth:** `Authorization: Bearer` (mọi endpoint). User lấy từ JWT — không gửi `userId` trên URL.
+
+### Get profile settings
+
+```http
+GET /api/v1/me/profile-settings
+Authorization: Bearer <access_token>
+```
+
+**Response** `200`:
+
+```json
+{
+  "success": true,
+  "message": "Profile settings retrieved successfully.",
+  "data": {
+    "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "basic": {
+      "fullName": "Nguyen Van A",
+      "avatarUrl": null,
+      "email": "user@example.com",
+      "phoneNumber": null,
+      "preferredLanguage": "vi",
+      "timeZone": "Asia/Ho_Chi_Minh",
+      "role": "User",
+      "status": "Active",
+      "subscriptionTier": "Free",
+      "emailVerified": true,
+      "phoneVerified": false
+    },
+    "fitness": {
+      "isConfigured": true,
+      "gender": "Male",
+      "dateOfBirth": "1995-06-15",
+      "heightCm": 175,
+      "currentWeightKg": 72,
+      "targetWeightKg": 68,
+      "fitnessGoal": "LoseFat",
+      "activityLevel": "ModeratelyActive",
+      "baseTDEE": 2400,
+      "bmr": 1650,
+      "dailyProteinTargetGram": 158,
+      "dailyCarbTargetGram": 220,
+      "dailyFatTargetGram": 67,
+      "injuries": [],
+      "medications": []
+    },
+    "preferences": {
+      "isConfigured": true,
+      "allergies": [],
+      "favoriteFoods": ["Chicken"],
+      "dislikedFoods": [],
+      "agentPersona": "FriendlyBuddy",
+      "motivationStyle": "Supportive",
+      "autoOrderEnabled": false,
+      "dataSharingConsent": false,
+      "marketingConsent": false
+    },
+    "profileCompletenessPercent": 85,
+    "missingProfileHints": []
+  },
+  "errors": null
+}
+```
+
+### Get inventory (gamification, vouchers, achievements)
+
+```http
+GET /api/v1/me/inventory
+Authorization: Bearer <access_token>
+```
+
+**Response** `200`: `InventoryResponse` (gamification summary + vouchers + achievements).
+
+### Update basic profile
+
+```http
+PUT /api/v1/me/basic-profile
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request:**
+
+```json
+{
+  "fullName": "Nguyen Van A",
+  "avatarUrl": "https://cdn.example.com/avatar.jpg",
+  "preferredLanguage": "vi",
+  "timeZone": "Asia/Ho_Chi_Minh"
+}
+```
+
+**Response** `200`: `ProfileSettingsResponse` (cùng cấu trúc GET profile-settings).
+
+### Update fitness profile
+
+```http
+PUT /api/v1/me/fitness-profile
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request** (partial update — chỉ gửi field cần đổi):
+
+```json
+{
+  "currentWeightKg": 71,
+  "activityLevel": "VeryActive",
+  "fitnessGoal": "LoseFat"
+}
+```
+
+> Khi đổi cân nặng / mục tiêu / activity level (và đủ dữ liệu tối thiểu), server **tự tính lại** BMR, TDEE và macro (`BiometricTargetCalculator`).
+
+**Response** `200`: `ProfileSettingsResponse`.
+
+### Update account preferences
+
+```http
+PUT /api/v1/me/account-preferences
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request:**
+
+```json
+{
+  "allergies": [
+    { "allergenName": "Peanuts", "severity": "High", "notes": null }
+  ],
+  "agentPersona": "StrictCoach",
+  "autoOrderEnabled": true,
+  "maxAutoOrderLimitDaily": 500000,
+  "maxAutoOrderLimitPerOrder": 150000,
+  "dataSharingConsent": true,
+  "marketingConsent": false
+}
+```
+
+**Lỗi:** `400` validation (vd. bật auto-order nhưng thiếu limit).
+
+**Qua Gateway:** `GET http://localhost:5057/api/v1/me/profile-settings`
+
+---
+
+## 1.8 Biometrics — Onboarding wizard
+
+**Auth:** Bearer JWT. Flow từng bước cho mobile onboarding (khác `PUT /me/fitness-profile` dùng cho settings sau đăng nhập).
+
+### Get biometric profile
+
+```http
+GET /api/v1/biometrics
+Authorization: Bearer <access_token>
+```
+
+**Response** `200`: `BiometricProfileDto` (enum dạng chuỗi trong JSON).
+
+**Lỗi:** `404` chưa khởi tạo profile.
+
+### Onboarding step 1 — Basic
+
+```http
+POST /api/v1/biometrics/onboarding/basic
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request:**
+
+```json
+{
+  "gender": "Male",
+  "dateOfBirth": "1995-06-15",
+  "heightCm": 175
+}
+```
+
+### Onboarding step 2 — Goals (tính BMR/TDEE/macros)
+
+```http
+POST /api/v1/biometrics/onboarding/goals
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request:**
+
+```json
+{
+  "currentWeightKg": 72,
+  "targetWeightKg": 68,
+  "fitnessGoal": "LoseFat",
+  "activityLevel": "ModeratelyActive",
+  "fitnessExperienceLevel": "Intermediate",
+  "workoutLocationPreference": "Gym"
+}
+```
+
+### Onboarding step 3 — Body composition
+
+```http
+POST /api/v1/biometrics/onboarding/composition
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request:**
+
+```json
+{
+  "currentBodyFatPercentage": 22,
+  "goalBodyFatPercentage": 15,
+  "muscleMassKg": 32
+}
+```
+
+### Onboarding step 4 — Safeguards
+
+```http
+POST /api/v1/biometrics/onboarding/safeguards
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request:**
+
+```json
+{
+  "injuries": ["Lower back"],
+  "medications": []
+}
+```
+
+### Log weight (recalculate targets)
+
+```http
+PATCH /api/v1/biometrics/weight
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request:**
+
+```json
+{
+  "currentWeightKg": 71
+}
+```
+
+**Response** `200` (các bước trên): `ApiResponse<BiometricProfileDto>`.
+
+**Lỗi:** `400` chưa hoàn thành bước trước, `404` user/profile không tồn tại.
+
+**Qua Gateway:** `POST http://localhost:5057/api/v1/biometrics/onboarding/basic`
 
 ---
 
@@ -790,7 +1067,7 @@ Authorization: Bearer <access_token>
 
 # 4. Exercise API
 
-**Lưu ý auth:** Controllers Exercise **không** gắn `[Authorize]` khi gọi trực tiếp service. Qua **Gateway**, route `/api/v1/exercise/**` yêu cầu JWT.
+**Auth:** `Authorization: Bearer` (`AuthenticatedUser`) — cả khi gọi trực tiếp service hoặc qua Gateway (`/api/v1/exercise/**`).
 
 ---
 
@@ -1121,6 +1398,12 @@ sequenceDiagram
     GW->>IAM: forward
     IAM-->>App: accessToken + refreshToken
 
+    App->>GW: GET /api/v1/me/profile-settings (Bearer)
+    GW->>IAM: forward
+
+    App->>GW: POST /api/v1/biometrics/onboarding/goals (Bearer)
+    GW->>IAM: forward
+
     App->>GW: GET /api/v1/exercise/exercises (Bearer)
     GW->>EX: forward
 
@@ -1136,5 +1419,16 @@ sequenceDiagram
 
 ## Chưa có trong tài liệu này
 
-- **Notification API** — service có build nhưng không nằm phạm vi yêu cầu.
-- **Biometric / Marketplace** — chưa implement.
+- **Notification API** — đã route qua Gateway (`/api/v1/notification/**` → `/api/v1/notifications/**`) nhưng chưa mô tả endpoint chi tiết.
+- **Marketplace** — chưa implement.
+
+## Convention mã nguồn IAM
+
+- Tất cả DTO nằm trong `Iam.Application/DTOs/` với namespace `Iam.Application.DTOs` (không dùng `Dtos`).
+
+## Cấu hình môi trường (appsettings)
+
+- Git track trực tiếp `appsettings.json` và `appsettings.Development.json` (không dùng `*.example.json`).
+- Secret / API key / connection password: key có trong JSON, **giá trị rỗng** `""` trên repo.
+- Sau `git pull`: điền giá trị local (hoặc dùng `appsettings.Development.local.json` — gitignored).
+- Chi tiết: `core/SyncPlatform/CONFIGURATION.md`.

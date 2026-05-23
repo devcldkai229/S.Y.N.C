@@ -15,9 +15,23 @@ $SyncRoot = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Resolve-Path (Join-Path $SyncRoot "..\..")
 $StartServiceScript = Join-Path $PSScriptRoot "start-service.ps1"
 
-$sharedConfig = Join-Path $SyncRoot "configs\appsettings.Shared.json"
-if (-not (Test-Path $sharedConfig)) {
-    Write-Host "Missing configs\appsettings.Shared.json — run .\scripts\setup-local-config.ps1 first." -ForegroundColor Red
+function Get-ConfigSecretKey {
+    param([string]$Path)
+    if (-not (Test-Path $Path)) { return $null }
+    try {
+        return (Get-Content -Raw $Path | ConvertFrom-Json).Jwt.SecretKey
+    }
+    catch { return $null }
+}
+
+$secretKey = Get-ConfigSecretKey (Join-Path $SyncRoot "configs\appsettings.Shared.Development.local.json")
+if ([string]::IsNullOrWhiteSpace($secretKey)) {
+    $secretKey = Get-ConfigSecretKey (Join-Path $SyncRoot "configs\appsettings.Shared.Development.json")
+}
+if ([string]::IsNullOrWhiteSpace($secretKey) -or $secretKey.Length -lt 32) {
+    Write-Host "Jwt:SecretKey not set (min 32 chars)." -ForegroundColor Red
+    Write-Host "Use configs\appsettings.Shared.Development.local.json (gitignored) or fill Development.json locally." -ForegroundColor Yellow
+    Write-Host "See CONFIGURATION.md" -ForegroundColor Yellow
     exit 1
 }
 

@@ -1,19 +1,25 @@
+using Libs.Auth.Context;
 using Notification.Application.Common;
 using Notification.Application.DTOs;
+using Notification.Application.Exceptions;
 using Notification.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Notification.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/v1/notifications")]
 public class NotificationController : ControllerBase
 {
     private readonly INotificationService _service;
+    private readonly ICurrentUserContext _currentUser;
 
-    public NotificationController(INotificationService service)
+    public NotificationController(INotificationService service, ICurrentUserContext currentUser)
     {
         _service = service;
+        _currentUser = currentUser;
     }
 
     [HttpGet("users/{userId:guid}")]
@@ -22,6 +28,7 @@ public class NotificationController : ControllerBase
         [FromQuery] NotificationSearchRequest request,
         CancellationToken cancellationToken)
     {
+        EnsureUserAccess(userId);
         var result = await _service.GetPagedByUserIdAsync(userId, request, cancellationToken);
         return Ok(PagedApiResponse<IReadOnlyList<NotificationMessageDto>>.SuccessPagedResponse(
             result.Items,
@@ -34,6 +41,7 @@ public class NotificationController : ControllerBase
         Guid userId,
         CancellationToken cancellationToken)
     {
+        EnsureUserAccess(userId);
         var count = await _service.GetUnreadCountByUserIdAsync(userId, cancellationToken);
         return Ok(ApiResponse<int>.SuccessResponse(count, "Unread count retrieved successfully."));
     }
@@ -44,6 +52,7 @@ public class NotificationController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        EnsureUserAccess(userId);
         await _service.MarkAsReadAsync(userId, id, cancellationToken);
         return Ok(ApiResponse<object?>.SuccessResponse(null, "Notification marked as read successfully."));
     }
@@ -53,6 +62,7 @@ public class NotificationController : ControllerBase
         Guid userId,
         CancellationToken cancellationToken)
     {
+        EnsureUserAccess(userId);
         await _service.MarkAllAsReadAsync(userId, cancellationToken);
         return Ok(ApiResponse<object?>.SuccessResponse(null, "All notifications marked as read successfully."));
     }
@@ -63,6 +73,7 @@ public class NotificationController : ControllerBase
         Guid id,
         CancellationToken cancellationToken)
     {
+        EnsureUserAccess(userId);
         await _service.DeleteNotificationAsync(userId, id, cancellationToken);
         return Ok(ApiResponse<object?>.SuccessResponse(null, "Notification deleted successfully."));
     }
@@ -92,5 +103,11 @@ public class NotificationController : ControllerBase
     {
         await _service.CancelScheduledNotificationAsync(id, cancellationToken);
         return Ok(ApiResponse<object?>.SuccessResponse(null, "Scheduled notification cancelled successfully."));
+    }
+
+    private void EnsureUserAccess(Guid userId)
+    {
+        if (_currentUser.RequireUserId() != userId)
+            throw new ForbiddenException("You can only access notifications for your own account.");
     }
 }

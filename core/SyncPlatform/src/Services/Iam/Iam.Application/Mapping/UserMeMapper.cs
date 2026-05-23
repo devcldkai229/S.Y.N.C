@@ -1,4 +1,4 @@
-using Iam.Application.Dtos;
+using Iam.Application.DTOs;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
 

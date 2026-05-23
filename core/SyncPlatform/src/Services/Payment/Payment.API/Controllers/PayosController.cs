@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using Libs.Auth.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Payment.Application.Common;
@@ -13,12 +13,12 @@ namespace Payment.API.Controllers;
 public class PayosController : ControllerBase
 {
     private readonly IPayosPaymentService _payosService;
-    private readonly ILogger<PayosController> _logger;
+    private readonly ICurrentUserContext _currentUser;
 
-    public PayosController(IPayosPaymentService payosService, ILogger<PayosController> logger)
+    public PayosController(IPayosPaymentService payosService, ICurrentUserContext currentUser)
     {
         _payosService = payosService;
-        _logger = logger;
+        _currentUser = currentUser;
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ public class PayosController : ControllerBase
         [FromBody] CreatePaymentLinkRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = _currentUser.RequireUserId();
         var result = await _payosService.CreatePaymentLinkAsync(userId, request, cancellationToken);
         return StatusCode(
             StatusCodes.Status201Created,
@@ -55,7 +55,6 @@ public class PayosController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<ApiResponse<PayosWebhookProcessResult>>> Webhook(CancellationToken cancellationToken)
     {
-        // We need the EXACT raw JSON body to verify the PayOS signature — bypass model binding.
         string rawBody;
         Request.EnableBuffering();
         Request.Body.Position = 0;
@@ -69,19 +68,6 @@ public class PayosController : ControllerBase
 
         var result = await _payosService.ProcessWebhookAsync(rawBody, cancellationToken);
 
-        // Always return 200 OK so PayOS does not retry indefinitely
-        // (idempotency / not-found cases are already handled by the service).
         return Ok(ApiResponse<PayosWebhookProcessResult>.SuccessResponse(result, result.Message));
-    }
-
-    // ── helpers ─────────────────────────────────────────────────────────────
-
-    private Guid GetCurrentUserId()
-    {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                  ?? User.FindFirstValue("sub");
-        if (Guid.TryParse(sub, out var userId))
-            return userId;
-        throw new UnauthorizedException("Invalid or missing user identity claim.");
     }
 }

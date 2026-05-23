@@ -6,7 +6,7 @@ public interface IUserMeRepository
 {
     Task<User?> GetUserWithProfilesAsync(Guid userId, CancellationToken cancellationToken = default);
 
-    Task<User> GetUserForUpdateAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<User?> GetUserForUpdateAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<UserVoucher>> GetVouchersAsync(Guid userId, CancellationToken cancellationToken = default);
 

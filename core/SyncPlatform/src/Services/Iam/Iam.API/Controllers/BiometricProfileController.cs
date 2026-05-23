@@ -1,26 +1,34 @@
 using Iam.Application.Common;
 using Iam.Application.DTOs;
+using Iam.Application.Exceptions;
 using Iam.Application.Services;
+using Libs.Auth.Constants;
+using Libs.Auth.Context;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Iam.API.Controllers;
 
 [ApiController]
+[Authorize(Policy = AuthPolicies.AuthenticatedUser)]
 [Route("api/v1/biometrics")]
 public class BiometricProfileController : ControllerBase
 {
     private readonly IBiometricProfileService _service;
+    private readonly ICurrentUserContext _currentUser;
 
-    public BiometricProfileController(IBiometricProfileService service)
+    public BiometricProfileController(
+        IBiometricProfileService service,
+        ICurrentUserContext currentUser)
     {
         _service = service;
+        _currentUser = currentUser;
     }
 
     [HttpGet]
     public async Task<ActionResult<ApiResponse<BiometricProfileDto>>> GetProfile(CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = _currentUser.RequireUserId();
         var result = await _service.GetProfileAsync(userId, cancellationToken);
         return Ok(ApiResponse<BiometricProfileDto>.SuccessResponse(result, "Biometric profile retrieved successfully."));
     }
@@ -30,7 +38,7 @@ public class BiometricProfileController : ControllerBase
         [FromBody] OnboardingStep1Dto dto,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = _currentUser.RequireUserId();
         var result = await _service.SaveBasicInfoAsync(userId, dto, cancellationToken);
         return Ok(ApiResponse<BiometricProfileDto>.SuccessResponse(result, "Basic info saved successfully."));
     }
@@ -40,7 +48,7 @@ public class BiometricProfileController : ControllerBase
         [FromBody] OnboardingStep2Dto dto,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = _currentUser.RequireUserId();
         var result = await _service.SaveGoalsAsync(userId, dto, cancellationToken);
         return Ok(ApiResponse<BiometricProfileDto>.SuccessResponse(result, "Goals saved and calorie targets calculated successfully."));
     }
@@ -50,7 +58,7 @@ public class BiometricProfileController : ControllerBase
         [FromBody] OnboardingStep3Dto dto,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = _currentUser.RequireUserId();
         var result = await _service.SaveCompositionAsync(userId, dto, cancellationToken);
         return Ok(ApiResponse<BiometricProfileDto>.SuccessResponse(result, "Body composition saved successfully."));
     }
@@ -60,7 +68,7 @@ public class BiometricProfileController : ControllerBase
         [FromBody] OnboardingStep4Dto dto,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = _currentUser.RequireUserId();
         var result = await _service.SaveSafeguardsAsync(userId, dto, cancellationToken);
         return Ok(ApiResponse<BiometricProfileDto>.SuccessResponse(result, "Safety guardrails saved successfully."));
     }
@@ -70,27 +78,8 @@ public class BiometricProfileController : ControllerBase
         [FromBody] UpdateWeightDto dto,
         CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
+        var userId = _currentUser.RequireUserId();
         var result = await _service.LogWeightAsync(userId, dto, cancellationToken);
         return Ok(ApiResponse<BiometricProfileDto>.SuccessResponse(result, "Weight logged and calorie targets recalculated successfully."));
-    }
-
-    private Guid GetCurrentUserId()
-    {
-        var sub = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                  ?? User.FindFirst("sub")?.Value;
-        
-        if (Guid.TryParse(sub, out var userIdFromClaim))
-        {
-            return userIdFromClaim;
-        }
-
-        if (Request.Headers.TryGetValue("X-User-Id", out var userIdHeader) && 
-            Guid.TryParse(userIdHeader, out var userIdFromHeader))
-        {
-            return userIdFromHeader;
-        }
-
-        throw new UnauthorizedAccessException("User identification not found in request context.");
     }
 }

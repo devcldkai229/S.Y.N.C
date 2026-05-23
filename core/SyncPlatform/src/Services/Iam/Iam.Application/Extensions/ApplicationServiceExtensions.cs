@@ -26,4 +26,7 @@ public static class ApplicationServiceExtensions
             services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
         services.AddScoped<IAuthService, AuthService>();
+
+        return services;
+    }
 }

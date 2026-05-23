@@ -1,5 +1,5 @@
 using Iam.Application.Common;
-using Iam.Application.Dtos;
+using Iam.Application.DTOs;
 using Iam.Domain.Enums;
 
 namespace Iam.Application.Validation;

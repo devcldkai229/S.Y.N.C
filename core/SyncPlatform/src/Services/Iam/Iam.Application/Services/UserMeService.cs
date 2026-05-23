@@ -1,8 +1,10 @@
 using Iam.Application.Abstractions;
 using Iam.Application.Common;
-using Iam.Application.Dtos;
+using Iam.Application.DTOs;
+using Iam.Application.Exceptions;
 using Iam.Application.Mapping;
 using Iam.Application.Validation;
+using Libs.Auth.Context;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
 
@@ -11,9 +13,9 @@ namespace Iam.Application.Services;
 public sealed class UserMeService
 {
     private readonly IUserMeRepository _repository;
-    private readonly ICurrentUserAccessor _currentUser;
+    private readonly ICurrentUserContext _currentUser;
 
-    public UserMeService(IUserMeRepository repository, ICurrentUserAccessor currentUser)
+    public UserMeService(IUserMeRepository repository, ICurrentUserContext currentUser)
     {
         _repository = repository;
         _currentUser = currentUser;
@@ -21,19 +23,19 @@ public sealed class UserMeService
 
     public async Task<ProfileSettingsResponse> GetProfileSettingsAsync(CancellationToken cancellationToken = default)
     {
-        var userId = _currentUser.GetRequiredUserId();
+        var userId = _currentUser.RequireUserId();
         var user = await _repository.GetUserWithProfilesAsync(userId, cancellationToken)
-            ?? throw new AppNotFoundException($"User '{userId}' was not found.");
+            ?? throw new NotFoundException(nameof(User), userId);
 
         return UserMeMapper.ToProfileSettingsResponse(user);
     }
 
     public async Task<InventoryResponse> GetInventoryAsync(CancellationToken cancellationToken = default)
     {
-        var userId = _currentUser.GetRequiredUserId();
+        var userId = _currentUser.RequireUserId();
 
         _ = await _repository.GetUserWithProfilesAsync(userId, cancellationToken)
-            ?? throw new AppNotFoundException($"User '{userId}' was not found.");
+            ?? throw new NotFoundException(nameof(User), userId);
 
         var gamification = await _repository.GetGamificationAsync(userId, cancellationToken);
         var vouchers = await _repository.GetVouchersAsync(userId, cancellationToken);
@@ -97,6 +99,10 @@ public sealed class UserMeService
             user.BiometricProfile = profile;
 
         ApplyFitnessPatch(profile, request, isCreate);
+
+        if (ShouldRecalculateTargets(request) && BiometricTargetCalculator.HasMinimumData(profile))
+            BiometricTargetCalculator.Recalculate(profile);
+
         profile.UpdatedAt = DateTimeOffset.UtcNow;
         user.UpdatedAt = DateTimeOffset.UtcNow;
 
@@ -127,10 +133,18 @@ public sealed class UserMeService
 
     private async Task<User> GetUserForUpdateAsync(CancellationToken cancellationToken)
     {
-        var userId = _currentUser.GetRequiredUserId();
+        var userId = _currentUser.RequireUserId();
         return await _repository.GetUserForUpdateAsync(userId, cancellationToken)
-            ?? throw new AppNotFoundException($"User '{userId}' was not found.");
+            ?? throw new NotFoundException(nameof(User), userId);
     }
+
+    private static bool ShouldRecalculateTargets(UpdateFitnessProfileRequest request) =>
+        request.Gender is not null
+        || request.DateOfBirth is not null
+        || request.HeightCm is not null
+        || request.CurrentWeightKg is not null
+        || request.FitnessGoal is not null
+        || request.ActivityLevel is not null;
 
     private static BiometricProfile CreateDefaultBiometricProfile(Guid userId) =>
         new()

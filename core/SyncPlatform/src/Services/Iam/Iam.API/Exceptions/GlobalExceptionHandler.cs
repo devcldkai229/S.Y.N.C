@@ -18,15 +18,7 @@ public class GlobalExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        var (statusCode, message) = exception switch
-        {
-            NotFoundException notFoundEx => (StatusCodes.Status404NotFound, notFoundEx.Message),
-            BadRequestException badEx => (StatusCodes.Status400BadRequest, badEx.Message),
-            ConflictException conflictEx => (StatusCodes.Status409Conflict, conflictEx.Message),
-            UnauthorizedException unauthEx => (StatusCodes.Status401Unauthorized, unauthEx.Message),
-            ForbiddenException forbiddenEx => (StatusCodes.Status403Forbidden, forbiddenEx.Message),
-            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
-        };
+        var (statusCode, message, errors) = MapException(exception);
 
         if (statusCode == StatusCodes.Status500InternalServerError)
             _logger.LogError(exception, "Unhandled exception: {Message}", exception.Message);
@@ -34,9 +26,36 @@ public class GlobalExceptionHandler : IExceptionHandler
         httpContext.Response.StatusCode = statusCode;
         httpContext.Response.ContentType = "application/json";
 
-        var response = ApiResponse<object>.FailureResponse(message);
+        var response = ApiResponse<object>.FailureResponse(message, errors);
         await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
 
         return true;
     }
+
+    private static (int StatusCode, string Message, object? Errors) MapException(Exception exception) =>
+        exception switch
+        {
+            NotFoundException ex =>
+                (StatusCodes.Status404NotFound, ex.Message, null),
+
+            BadRequestException ex =>
+                (StatusCodes.Status400BadRequest, ex.Message, null),
+
+            AppValidationException ex =>
+                (StatusCodes.Status400BadRequest, ex.Message, ex.Errors),
+
+            ConflictException ex =>
+                (StatusCodes.Status409Conflict, ex.Message, null),
+
+            UnauthorizedException ex =>
+                (StatusCodes.Status401Unauthorized, ex.Message, null),
+
+            ForbiddenException ex =>
+                (StatusCodes.Status403Forbidden, ex.Message, null),
+
+            UnauthorizedAccessException ex =>
+                (StatusCodes.Status401Unauthorized, ex.Message, null),
+
+            _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.", null)
+        };
 }
