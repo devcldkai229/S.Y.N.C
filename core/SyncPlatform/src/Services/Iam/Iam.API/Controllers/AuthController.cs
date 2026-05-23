@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Iam.API.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api/v1/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
@@ -20,7 +20,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/register — Create account + send verification email (token is logged to console for dev).
+    /// POST /api/v1/auth/register — Create account + send verification email (SMTP when enabled).
     /// </summary>
     [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), StatusCodes.Status201Created)]
@@ -37,22 +37,59 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// GET /api/auth/verify-email?token=... — Activate the account using the token sent by email.
+    /// GET /api/v1/auth/verify-email?token=... — Activate the account (opened from email button in browser).
+    /// Returns a simple HTML page for humans; JSON clients can send Accept: application/json.
     /// </summary>
     [HttpGet("verify-email")]
     [ProducesResponseType(typeof(ApiResponse<VerifyEmailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ApiResponse<VerifyEmailResponse>>> VerifyEmail(
+    public async Task<IActionResult> VerifyEmail(
         [FromQuery] string token,
         CancellationToken cancellationToken)
     {
-        var result = await _authService.VerifyEmailAsync(token, cancellationToken);
-        return Ok(ApiResponse<VerifyEmailResponse>.SuccessResponse(result, "Email verified successfully."));
+        var wantsJson = Request.Headers.Accept.Any(h =>
+            h?.Contains("application/json", StringComparison.OrdinalIgnoreCase) == true);
+
+        try
+        {
+            var result = await _authService.VerifyEmailAsync(token, cancellationToken);
+
+            if (wantsJson)
+                return Ok(ApiResponse<VerifyEmailResponse>.SuccessResponse(result, "Email verified successfully."));
+
+            var html = VerificationEmailTemplate.BuildVerifyResultHtml(
+                success: true,
+                title: "Email đã được xác nhận",
+                message: $"Tài khoản {result.Email} đã kích hoạt. Bạn có thể đóng trang này và đăng nhập trên app.");
+            return Content(html, "text/html; charset=utf-8");
+        }
+        catch (BadRequestException ex)
+        {
+            if (wantsJson)
+                return BadRequest(ApiResponse<object>.FailureResponse(ex.Message));
+            return new ContentResult
+            {
+                Content = VerificationEmailTemplate.BuildVerifyResultHtml(false, "Không thể xác nhận", ex.Message),
+                ContentType = "text/html; charset=utf-8",
+                StatusCode = StatusCodes.Status400BadRequest
+            };
+        }
+        catch (NotFoundException ex)
+        {
+            if (wantsJson)
+                return NotFound(ApiResponse<object>.FailureResponse(ex.Message));
+            return new ContentResult
+            {
+                Content = VerificationEmailTemplate.BuildVerifyResultHtml(false, "Link không hợp lệ", ex.Message),
+                ContentType = "text/html; charset=utf-8",
+                StatusCode = StatusCodes.Status404NotFound
+            };
+        }
     }
 
     /// <summary>
-    /// POST /api/auth/login — Issue an access + refresh token pair for the given device.
+    /// POST /api/v1/auth/login — Issue an access + refresh token pair for the given device.
     /// </summary>
     [HttpPost("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
@@ -68,7 +105,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/google — Sign in / sign up using a Google ID token from the Flutter SDK.
+    /// POST /api/v1/auth/google — Sign in / sign up using a Google ID token from the Flutter SDK.
     /// </summary>
     [HttpPost("google")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
@@ -83,7 +120,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/refresh — Rotate refresh token + issue a new access token.
+    /// POST /api/v1/auth/refresh — Rotate refresh token + issue a new access token.
     /// </summary>
     [HttpPost("refresh")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponse>), StatusCodes.Status200OK)]
@@ -97,7 +134,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/auth/logout — Revoke the refresh token for the current device. Requires Bearer auth.
+    /// POST /api/v1/auth/logout — Revoke the refresh token for the current device. Requires Bearer auth.
     /// </summary>
     [HttpPost("logout")]
     [Authorize]

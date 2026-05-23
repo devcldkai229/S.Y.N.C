@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.json (gitignored).",
+
+  "Logging": {
+    "LogLevel": {
+      "MongoDB.Driver": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "NotificationDatabase": "mongodb://localhost:27017"
+  },
+  "MongoDB": {
+    "NotificationDatabaseName": "sync_notification"
+  }
+}

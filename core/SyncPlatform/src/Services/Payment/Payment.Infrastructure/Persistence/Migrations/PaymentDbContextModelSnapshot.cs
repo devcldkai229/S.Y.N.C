@@ -344,12 +344,14 @@ namespace Payment.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
 
-                    b.Property<int>("Provider")
-                        .HasColumnType("integer")
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
                         .HasColumnName("provider");
 
                     b.Property<string>("RawProviderPayload")
-                        .HasColumnType("text")
+                        .HasColumnType("jsonb")
                         .HasColumnName("raw_provider_payload");
 
                     b.Property<Guid?>("RelatedEntityId")
@@ -405,6 +407,9 @@ namespace Payment.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("WalletId")
                         .HasDatabaseName("ix_transactions_wallet_id");
+
+                    b.HasIndex("Provider", "OrderCode")
+                        .HasDatabaseName("ix_transactions_provider_order_code");
 
                     b.ToTable("transactions", "payment");
                 });

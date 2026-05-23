@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Iam.Domain\Iam.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Contract\Contract.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Auth\Libs.Auth.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,6 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.8" />
+    <PackageReference Include="MailKit" Version="4.11.0" />
   </ItemGroup>
 
   <PropertyGroup>

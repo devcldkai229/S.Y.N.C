@@ -1,15 +1,15 @@
-using System.Text;
 using System.Text.Json.Serialization;
 using Iam.Application.Common;
 using Iam.Application.Extensions;
-using Iam.Application.Options;
 using Iam.Infrastructure.Extensions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Layer shared configuration (Jwt, baseline Logging, AllowedHosts) from configs/appsettings.Shared*.json
+builder.Configuration.AddSharedConfiguration(builder.Environment);
 
 // ── Services ─────────────────────────────────────────────────────────────────
 
@@ -18,22 +18,17 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo { Title = "IAM API", Version = "v1" });
     options.UseInlineDefinitionsForEnums();
-
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Enter the JWT access token (without the 'Bearer ' prefix)."
-    });
+    options.AddJwtBearerSecurityScheme();
 });
 
 builder.Services.AddExceptionHandler<Iam.API.Exceptions.GlobalExceptionHandler>();
 
 builder.Services.AddIamApplication(builder.Configuration);
 builder.Services.AddIamInfrastructure(builder.Configuration);
+
+// JWT authentication + authorization policies + ICurrentUserContext (shared lib)
+builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
+builder.Services.AddSyncHealthChecks();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -55,38 +50,6 @@ builder.Services.AddControllers()
         };
     });
 
-// ── JWT Authentication ───────────────────────────────────────────────────────
-
-var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
-    ?? throw new InvalidOperationException("'Jwt' configuration section is missing.");
-
-if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || jwtSettings.SecretKey.Length < 32)
-    throw new InvalidOperationException("Jwt:SecretKey must be configured and at least 32 characters long.");
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtSettings.Issuer,
-        ValidAudience = jwtSettings.Audience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey)),
-        ClockSkew = TimeSpan.FromSeconds(30)
-    };
-});
-
-builder.Services.AddAuthorization();
-
 // ── Pipeline ─────────────────────────────────────────────────────────────────
 
 var app = builder.Build();
@@ -104,9 +67,9 @@ else
     app.UseHttpsRedirection();
 }
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseSyncJwtAuthentication();
 
+app.MapSyncHealthChecks();
 app.MapControllers();
 
 app.Run();

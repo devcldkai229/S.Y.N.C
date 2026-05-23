@@ -1,0 +1,101 @@
+namespace Iam.Application.Services;
+
+public static class VerificationEmailTemplate
+{
+    public static string BuildHtml(string verifyUrl, string recipientEmail)
+    {
+        var encodedUrl = System.Net.WebUtility.HtmlEncode(verifyUrl);
+        var encodedEmail = System.Net.WebUtility.HtmlEncode(recipientEmail);
+
+        return $"""
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Xác nhận email</title>
+            </head>
+            <body style="margin:0;padding:0;background:#f4f6f8;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6f8;padding:32px 16px;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                      <tr>
+                        <td style="background:linear-gradient(135deg,#2563eb,#7c3aed);padding:28px 32px;">
+                          <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;">Sync Lifestyle</h1>
+                          <p style="margin:8px 0 0;color:#e0e7ff;font-size:14px;">Xác nhận địa chỉ email của bạn</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:32px;">
+                          <p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.6;">
+                            Xin chào,<br />
+                            Bạn vừa đăng ký tài khoản với email <strong>{encodedEmail}</strong>.
+                            Nhấn nút bên dưới để kích hoạt tài khoản và đăng nhập.
+                          </p>
+                          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
+                            <tr>
+                              <td style="border-radius:8px;background:#2563eb;">
+                                <a href="{encodedUrl}"
+                                   style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;">
+                                  Xác nhận email
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                          <p style="margin:0 0 8px;color:#64748b;font-size:13px;line-height:1.5;">
+                            Nếu nút không hoạt động, copy link sau vào trình duyệt:
+                          </p>
+                          <p style="margin:0;word-break:break-all;">
+                            <a href="{encodedUrl}" style="color:#2563eb;font-size:12px;">{encodedUrl}</a>
+                          </p>
+                          <p style="margin:24px 0 0;color:#94a3b8;font-size:12px;line-height:1.5;">
+                            Link có hiệu lực một lần. Nếu bạn không đăng ký, hãy bỏ qua email này.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+            """;
+    }
+
+    public static string BuildVerifyResultHtml(bool success, string title, string message)
+    {
+        var color = success ? "#16a34a" : "#dc2626";
+        var icon = success ? "✓" : "✕";
+        var encodedTitle = System.Net.WebUtility.HtmlEncode(title);
+        var encodedMessage = System.Net.WebUtility.HtmlEncode(message);
+
+        return $"""
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>{encodedTitle}</title>
+            </head>
+            <body style="margin:0;padding:0;background:#f4f6f8;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:48px 16px;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" style="max-width:440px;background:#fff;border-radius:12px;padding:40px 32px;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                      <tr>
+                        <td align="center">
+                          <div style="width:64px;height:64px;border-radius:50%;background:{color};color:#fff;font-size:32px;line-height:64px;text-align:center;">{icon}</div>
+                          <h1 style="margin:24px 0 12px;color:#0f172a;font-size:22px;">{encodedTitle}</h1>
+                          <p style="margin:0;color:#64748b;font-size:15px;line-height:1.6;">{encodedMessage}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </body>
+            </html>
+            """;
+    }
+}

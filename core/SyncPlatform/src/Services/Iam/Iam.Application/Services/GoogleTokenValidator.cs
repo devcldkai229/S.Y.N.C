@@ -23,8 +23,9 @@ public class GoogleTokenValidator : IGoogleTokenValidator
         try
         {
             var validationSettings = new GoogleJsonWebSignature.ValidationSettings();
-            if (!string.IsNullOrWhiteSpace(_settings.ClientId))
-                validationSettings.Audience = new[] { _settings.ClientId };
+            var allowedClientIds = _settings.GetAllowedClientIds();
+            if (allowedClientIds.Count > 0)
+                validationSettings.Audience = allowedClientIds;
 
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, validationSettings);
 

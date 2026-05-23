@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored).",
+
+  "Logging": {
+    "LogLevel": {
+      "MongoDB.Driver": "Information"
+    }
+  },
+  "ConnectionStrings": {
+    "RoadmapDatabase": "mongodb://localhost:27017"
+  },
+  "MongoDB": {
+    "RoadmapDatabaseName": "sync_roadmap"
+  }
+}

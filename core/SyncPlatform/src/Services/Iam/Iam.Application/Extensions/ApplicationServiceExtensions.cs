@@ -10,13 +10,19 @@ public static class ApplicationServiceExtensions
 {
     public static IServiceCollection AddIamApplication(this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        // JwtAuthSettings is configured by Libs.Auth.AddSyncJwtAuthentication() at the API layer.
         services.Configure<GoogleAuthSettings>(configuration.GetSection(GoogleAuthSettings.SectionName));
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
 
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
-        services.AddSingleton<IEmailSender, ConsoleEmailSender>();
+
+        var email = configuration.GetSection(EmailSettings.SectionName).Get<EmailSettings>() ?? new EmailSettings();
+        if (email.Smtp.Enabled && !string.IsNullOrWhiteSpace(email.Smtp.Host))
+            services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        else
+            services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
         services.AddScoped<IAuthService, AuthService>();
 

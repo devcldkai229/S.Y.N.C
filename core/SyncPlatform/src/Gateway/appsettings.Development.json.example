@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored).",
+
+  "Logging": {
+    "LogLevel": {
+      "Yarp": "Information"
+    }
+  },
+  "Cors": {
+    "AllowedOrigins": [ "*" ]
+  }
+}

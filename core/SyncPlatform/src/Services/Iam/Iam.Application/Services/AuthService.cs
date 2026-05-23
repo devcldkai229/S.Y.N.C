@@ -5,6 +5,7 @@ using Iam.Application.Options;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
 using Iam.Domain.Repositories;
+using Libs.Auth.Options;
 using Microsoft.Extensions.Options;
 
 namespace Iam.Application.Services;
@@ -17,7 +18,7 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _tokenService;
     private readonly IGoogleTokenValidator _googleValidator;
     private readonly IEmailSender _emailSender;
-    private readonly JwtSettings _jwtSettings;
+    private readonly JwtAuthSettings _jwtSettings;
 
     public AuthService(
         IUserRepository userRepository,
@@ -26,7 +27,7 @@ public class AuthService : IAuthService
         IJwtTokenService tokenService,
         IGoogleTokenValidator googleValidator,
         IEmailSender emailSender,
-        IOptions<JwtSettings> jwtOptions)
+        IOptions<JwtAuthSettings> jwtOptions)
     {
         _userRepository = userRepository;
         _deviceRepository = deviceRepository;

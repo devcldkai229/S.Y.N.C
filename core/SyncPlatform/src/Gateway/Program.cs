@@ -3,11 +3,16 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Gateway.API.Options;
 using Gateway.API.Transforms;
+using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Layer shared configuration (Jwt, baseline Logging, AllowedHosts) from configs/appsettings.Shared*.json
+builder.Configuration.AddSharedConfiguration(builder.Environment);
+
 var configuration = builder.Configuration;
 
 // ════════════════════════════════════════════════════════════════════════════
