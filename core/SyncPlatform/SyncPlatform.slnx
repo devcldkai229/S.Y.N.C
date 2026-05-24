@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/libs/">
     <Project Path="libs/Contract/Contract.csproj" />
+    <Project Path="libs/Libs.Auth/Libs.Auth.csproj" />
     <Project Path="libs/Libs.Shared/Libs.Shared.csproj" />
   </Folder>
   <Folder Name="/src/" />
