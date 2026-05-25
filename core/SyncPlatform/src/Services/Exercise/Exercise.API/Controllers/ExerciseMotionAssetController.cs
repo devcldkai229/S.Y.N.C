@@ -1,9 +1,16 @@
+using System;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 using Exercise.Application.Common;
 using Exercise.Application.DTOs;
 using Exercise.Application.Exceptions;
 using Exercise.Application.Services;
+using Exercise.API.Models;
 using Libs.Auth.Constants;
+using Libs.Shared.Enums;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Exercise.API.Controllers;
@@ -35,6 +42,7 @@ public class ExerciseMotionAssetController : ControllerBase
     }
 
     [HttpPost("exercises/{exerciseId:guid}/motion-assets")]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     public async Task<ActionResult<ApiResponse<ExerciseMotionAssetDto>>> Create(Guid exerciseId, [FromBody] CreateExerciseMotionAssetDto dto, CancellationToken cancellationToken)
     {
         if (exerciseId != dto.ExerciseId)
@@ -48,6 +56,7 @@ public class ExerciseMotionAssetController : ControllerBase
     }
 
     [HttpPut("motion-assets/{id:guid}")]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     public async Task<ActionResult<ApiResponse<object?>>> Update(Guid id, [FromBody] UpdateExerciseMotionAssetDto dto, CancellationToken cancellationToken)
     {
         await _service.UpdateAsync(id, dto, cancellationToken);
@@ -55,9 +64,62 @@ public class ExerciseMotionAssetController : ControllerBase
     }
 
     [HttpDelete("motion-assets/{id:guid}")]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     public async Task<ActionResult<ApiResponse<object?>>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _service.DeleteAsync(id, cancellationToken);
         return Ok(ApiResponse<object?>.SuccessResponse(null, "Motion asset deleted successfully."));
+    }
+
+    [HttpPost("exercises/{exerciseId:guid}/motion-assets/upload")]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<ApiResponse<ExerciseMotionAssetDto>>> UploadAsset(
+        Guid exerciseId,
+        [FromForm] ExerciseMotionAssetUploadRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.File == null || request.File.Length == 0)
+        {
+            throw new BadRequestException("File is empty.");
+        }
+
+        using var fileStream = request.File.OpenReadStream();
+        Stream? thumbnailStream = null;
+        if (request.ThumbnailFile != null && request.ThumbnailFile.Length > 0)
+        {
+            thumbnailStream = request.ThumbnailFile.OpenReadStream();
+        }
+
+        try
+        {
+            var uploadDto = new CreateExerciseMotionAssetUploadDto
+            {
+                ExerciseId = exerciseId,
+                AssetType = request.AssetType,
+                FileName = request.File.FileName,
+                FileStream = fileStream,
+                ContentType = request.File.ContentType,
+                FileSize = request.File.Length,
+                ThumbnailFileName = request.ThumbnailFile?.FileName,
+                ThumbnailStream = thumbnailStream,
+                ThumbnailContentType = request.ThumbnailFile?.ContentType,
+                ThumbnailSize = request.ThumbnailFile?.Length,
+                UnityPrefabId = request.UnityPrefabId,
+                UnityAnimationClip = request.UnityAnimationClip,
+                AnimationDurationSeconds = request.AnimationDurationSeconds
+            };
+
+            var result = await _service.CreateWithUploadAsync(uploadDto, cancellationToken);
+            var response = ApiResponse<ExerciseMotionAssetDto>.SuccessResponse(result, "Motion asset uploaded and created successfully.");
+            return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
+        }
+        finally
+        {
+            if (thumbnailStream != null)
+            {
+                await thumbnailStream.DisposeAsync();
+            }
+        }
     }
 }

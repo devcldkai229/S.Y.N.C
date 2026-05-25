@@ -42,6 +42,9 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IScheduledWorkoutRepository, ScheduledWorkoutRepository>();
         services.AddScoped<IWorkoutExecutionLogRepository, WorkoutExecutionLogRepository>();
         services.AddScoped<IExerciseSetLogRepository, ExerciseSetLogRepository>();
+        services.AddScoped<IPersonalizedRoadmapRepository, PersonalizedRoadmapRepository>();
+        services.AddScoped<IRecoveryProfileRepository, RecoveryProfileRepository>();
+
 
         return services;
     }

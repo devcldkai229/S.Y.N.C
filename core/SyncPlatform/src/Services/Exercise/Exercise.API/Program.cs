@@ -33,7 +33,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExerciseApplication();
 builder.Services.AddExerciseInfrastructure(builder.Configuration);
 
-builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
+//builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSyncHealthChecks();
 
 builder.Services.AddControllers()
@@ -71,13 +71,13 @@ else
     app.UseHttpsRedirection();
 }
 
-app.UseSyncJwtAuthentication();
+//app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await ExerciseSeedData.ExerciseMongoSeeder.SeedAsync(mongoDb);
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
 
-app.MapSyncHealthChecks();
+//app.MapSyncHealthChecks();
 app.MapControllers();
 
 app.Run();

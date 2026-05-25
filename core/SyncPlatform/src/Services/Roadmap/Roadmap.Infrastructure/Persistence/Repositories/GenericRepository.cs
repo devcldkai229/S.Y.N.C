@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using MongoDB.Driver;
 using Roadmap.Domain.Models;
 using Roadmap.Domain.Repositories;
@@ -40,4 +41,20 @@ public class GenericRepository<TEntity> : IGenericRepository<TEntity>
         var count = await Collection.CountDocumentsAsync(x => x.Id == id, cancellationToken: cancellationToken);
         return count > 0;
     }
+
+    public virtual async Task<(IReadOnlyList<TEntity> Items, int TotalCount)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        Expression<Func<TEntity, bool>>? filter = null,
+        CancellationToken cancellationToken = default)
+    {
+        var filterDef = filter ?? (_ => true);
+        var totalCount = (int)await Collection.CountDocumentsAsync(filterDef, cancellationToken: cancellationToken);
+        var items = await Collection.Find(filterDef)
+            .Skip((pageNumber - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync(cancellationToken);
+        return (items, totalCount);
+    }
 }
+

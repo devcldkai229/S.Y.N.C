@@ -41,3 +41,13 @@ public class CreateCustomBlockDto
     public decimal WeightKg { get; set; }
     public int RestSeconds { get; set; }
 }
+
+public class UpdateUserCustomWorkoutDto
+{
+    public string WorkoutName { get; set; } = string.Empty;
+    public string ScheduleMode { get; set; } = string.Empty;
+    public Visibility Visibility { get; set; }
+    public bool AllowAiOptimization { get; set; }
+    public List<CreateCustomBlockDto> CustomBlocks { get; set; } = [];
+}
+
