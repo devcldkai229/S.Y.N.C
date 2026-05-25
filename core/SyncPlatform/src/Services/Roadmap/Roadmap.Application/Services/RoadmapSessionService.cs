@@ -1,9 +1,11 @@
 using Libs.Shared.Enums;
+using Roadmap.Application.Common;
 using Roadmap.Application.DTOs;
 using Roadmap.Application.Exceptions;
 using Roadmap.Application.Mappers;
 using Roadmap.Domain.Models;
 using Roadmap.Domain.Repositories;
+
 
 namespace Roadmap.Application.Services;
 
@@ -138,6 +140,54 @@ public class RoadmapSessionService : IRoadmapSessionService
         return entities.Select(e => e.ToDto()).ToList();
     }
 
+    public async Task<RoadmapSessionDto> CreateAsync(CreateRoadmapSessionDto dto, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(dto.SessionTitle))
+            throw new BadRequestException("SessionTitle is required.");
+
+        var entity = dto.ToEntity();
+        await _sessionRepository.CreateAsync(entity, cancellationToken);
+        return entity.ToDto();
+    }
+
+    public async Task<(IReadOnlyList<RoadmapSessionDto> Items, PaginationMetadata Metadata)> GetPagedAsync(
+        int pageNumber,
+        int pageSize,
+        Guid? roadmapId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (entities, totalCount) = await _sessionRepository.GetPagedAsync(
+            pageNumber,
+            pageSize,
+            roadmapId.HasValue ? x => x.RoadmapId == roadmapId.Value : null,
+            cancellationToken);
+
+        var dtos = entities.Select(e => e.ToDto()).ToList();
+        var metadata = new PaginationMetadata(pageNumber, pageSize, totalCount);
+        return (dtos, metadata);
+    }
+
+    public async Task<RoadmapSessionDto> UpdateAsync(Guid id, UpdateRoadmapSessionDto dto, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(dto.SessionTitle))
+            throw new BadRequestException("SessionTitle is required.");
+
+        var entity = await _sessionRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException(nameof(RoadmapSession), id);
+
+        entity.UpdateEntity(dto);
+        await _sessionRepository.UpdateAsync(id, entity, cancellationToken);
+        return entity.ToDto();
+    }
+
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        if (!await _sessionRepository.ExistsAsync(id, cancellationToken))
+            throw new NotFoundException(nameof(RoadmapSession), id);
+
+        await _sessionRepository.DeleteAsync(id, cancellationToken);
+    }
+
     // ── Private helpers ──────────────────────────────────────────────────────
 
     private static ScheduledWorkout BuildScheduledWorkout(
@@ -157,3 +207,4 @@ public class RoadmapSessionService : IRoadmapSessionService
         };
     }
 }
+
