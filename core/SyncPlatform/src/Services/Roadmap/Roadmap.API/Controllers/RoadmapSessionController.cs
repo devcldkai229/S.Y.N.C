@@ -93,6 +93,59 @@ public class RoadmapSessionController : ControllerBase
         return Ok(ApiResponse<IReadOnlyList<RoadmapSessionDto>>.SuccessResponse(result, "Sessions retrieved successfully."));
     }
 
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<RoadmapSessionDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<RoadmapSessionDto>>> Create(
+        [FromBody] CreateRoadmapSessionDto dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sessionService.CreateAsync(dto, cancellationToken);
+        var response = ApiResponse<RoadmapSessionDto>.SuccessResponse(result, "Session created successfully.");
+        return CreatedAtAction(nameof(GetById), new { sessionId = result.Id }, response);
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(PagedApiResponse<IReadOnlyList<RoadmapSessionDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<RoadmapSessionDto>>>> GetPaged(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] Guid? roadmapId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (items, metadata) = await _sessionService.GetPagedAsync(pageNumber, pageSize, roadmapId, cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<RoadmapSessionDto>>.SuccessPagedResponse(items, metadata, "Sessions retrieved successfully."));
+    }
+
+    [HttpPut("{sessionId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<RoadmapSessionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<RoadmapSessionDto>>> Update(
+        Guid sessionId,
+        [FromBody] UpdateRoadmapSessionDto dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sessionService.UpdateAsync(sessionId, dto, cancellationToken);
+        return Ok(ApiResponse<RoadmapSessionDto>.SuccessResponse(result, "Session updated successfully."));
+    }
+
+    [HttpDelete("{sessionId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<object?>>> Delete(
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        await _sessionService.DeleteAsync(sessionId, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Session deleted successfully."));
+    }
+
+
     /// <summary>
     /// Task 6 — Submit actual workout execution results for a session.
     /// POST /api/v1/sessions/{sessionId}/execute
@@ -115,3 +168,4 @@ public class RoadmapSessionController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { sessionId }, response);
     }
 }
+

@@ -75,4 +75,46 @@ public class UserCustomWorkoutController : ControllerBase
         var result = await _service.GetByUserIdAsync(userId, cancellationToken);
         return Ok(ApiResponse<IReadOnlyList<UserCustomWorkoutDto>>.SuccessResponse(result, "Custom workouts retrieved successfully."));
     }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(PagedApiResponse<IReadOnlyList<UserCustomWorkoutDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<UserCustomWorkoutDto>>>> GetPaged(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] Guid? userId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var targetUserId = userId ?? _currentUser.RequireUserId();
+        var (items, metadata) = await _service.GetPagedAsync(pageNumber, pageSize, targetUserId, cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<UserCustomWorkoutDto>>.SuccessPagedResponse(items, metadata, "Custom workouts retrieved successfully."));
+    }
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<UserCustomWorkoutDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<UserCustomWorkoutDto>>> Update(
+        Guid id,
+        [FromBody] UpdateUserCustomWorkoutDto dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.UpdateAsync(id, dto, cancellationToken);
+        return Ok(ApiResponse<UserCustomWorkoutDto>.SuccessResponse(result, "Custom workout updated successfully."));
+    }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<object?>>> Delete(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _service.DeleteAsync(id, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Custom workout deleted successfully."));
+    }
+
 }
+

@@ -60,6 +60,7 @@ public class ExerciseCatalogController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     public async Task<ActionResult<ApiResponse<ExerciseCatalogDto>>> Create([FromBody] CreateExerciseCatalogDto dto, CancellationToken cancellationToken)
     {
         var result = await _service.CreateAsync(dto, cancellationToken);
@@ -68,6 +69,7 @@ public class ExerciseCatalogController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     public async Task<ActionResult<ApiResponse<object?>>> Update(Guid id, [FromBody] UpdateExerciseCatalogDto dto, CancellationToken cancellationToken)
     {
         await _service.UpdateAsync(id, dto, cancellationToken);
@@ -75,6 +77,7 @@ public class ExerciseCatalogController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = AuthPolicies.AdminOnly)]
     public async Task<ActionResult<ApiResponse<object?>>> Delete(Guid id, CancellationToken cancellationToken)
     {
         await _service.DeleteAsync(id, cancellationToken);

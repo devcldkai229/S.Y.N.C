@@ -10,6 +10,12 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IUserCustomWorkoutService, UserCustomWorkoutService>();
         services.AddScoped<IRoadmapSessionService, RoadmapSessionService>();
         services.AddScoped<IWorkoutExecutionService, WorkoutExecutionService>();
+        services.AddScoped<IExerciseSetLogService, ExerciseSetLogService>();
+        services.AddScoped<IPersonalizedRoadmapService, PersonalizedRoadmapService>();
+        services.AddScoped<IRecoveryProfileService, RecoveryProfileService>();
+        services.AddScoped<IScheduledWorkoutService, ScheduledWorkoutService>();
+        services.AddScoped<IWorkoutExecutionLogService, WorkoutExecutionLogService>();
+
 
         return services;
     }

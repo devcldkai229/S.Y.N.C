@@ -1,6 +1,10 @@
+using Exercise.Application.Services;
+using Exercise.Application.Configuration;
 using Exercise.Infrastructure.Persistence;
+using Exercise.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Minio;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
@@ -17,6 +21,20 @@ public static class InfrastructureServiceExtensions
         IConfiguration configuration)
     {
         RegisterBsonConventions();
+
+        services.Configure<MinioOptions>(configuration.GetSection(MinioOptions.SectionName));
+
+        services.AddSingleton<IMinioClient>(sp =>
+        {
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MinioOptions>>().Value;
+            return new MinioClient()
+                .WithEndpoint(options.Endpoint)
+                .WithCredentials(options.AccessKey, options.SecretKey)
+                .WithSSL(options.UseSsl)
+                .Build();
+        });
+
+        services.AddSingleton<IStorageService, MinioStorageService>();
 
         var connectionString = configuration.GetConnectionString("ExerciseDatabase")
             ?? throw new InvalidOperationException("Connection string 'ExerciseDatabase' is not configured.");
