@@ -179,7 +179,7 @@ foreach ($file in $files) {
     $fileViolations = [System.Collections.Generic.List[string]]::new()
     Test-JsonSecrets $json $fileViolations
     foreach ($v in $fileViolations) {
-        $rel = $file.Substring($repoRoot.Length + 1)
+        $rel = $file.FullName.Substring($repoRoot.Length + 1)
         $allViolations.Add("${rel}: $v")
     }
 }
