@@ -69,4 +69,10 @@ app.UseSyncJwtAuthentication();
 app.MapSyncHealthChecks();
 app.MapControllers();
 
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<Iam.Infrastructure.Persistence.IamDbContext>();
+    await Iam.Infrastructure.Persistence.IamDbSeed.SeedAsync(context);
+}
+
 app.Run();
