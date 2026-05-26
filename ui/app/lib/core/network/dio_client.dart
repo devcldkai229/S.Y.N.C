@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
+import 'package:sync_app/core/network/auth_interceptor.dart';
 import '../config/app_config.dart';
 
 final _logger = Logger();
 
-Dio createDio() {
+Dio createDio({FlutterSecureStorage? storage}) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.baseUrl,
@@ -13,6 +15,10 @@ Dio createDio() {
       headers: {'Content-Type': 'application/json'},
     ),
   );
+
+  if (storage != null) {
+    dio.interceptors.add(AuthInterceptor(storage));
+  }
 
   if (!AppConfig.isProduction) {
     dio.interceptors.add(

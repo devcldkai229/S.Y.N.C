@@ -4,6 +4,7 @@ using Iam.Application.Abstractions;
 using Iam.Application.Common;
 using Iam.Application.Extensions;
 using Iam.Infrastructure.Extensions;
+using Iam.Infrastructure.Persistence.Seed;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
@@ -66,5 +67,10 @@ else
 app.UseSyncJwtAuthentication();
 app.MapSyncHealthChecks();
 app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    await IamDevDataSeeder.SeedAsync(app.Services, app.Configuration);
+}
 
 app.Run();

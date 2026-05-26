@@ -20,4 +20,8 @@ else {
     Write-Host "    Health:  http://localhost:$Port/health" -ForegroundColor DarkGray
 }
 
-dotnet run --launch-profile http
+dotnet run --launch-profile http --no-build
+if ($LASTEXITCODE -ne 0) {
+    Write-Host ""
+    Write-Host "Service failed to start. Run without --no-build once, or rebuild from run-all.ps1 -Build." -ForegroundColor Red
+}

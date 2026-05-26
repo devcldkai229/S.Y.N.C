@@ -1,17 +1,19 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored). Local dev overrides for Payment.",
+
   "Logging": {
     "LogLevel": {
       "Microsoft.EntityFrameworkCore.Database.Command": "Information"
     }
   },
   "ConnectionStrings": {
-    "PaymentDatabase": ""
+    "PaymentDatabase": "Host=localhost;Port=5434;Database=sync_payment;Username=postgres;Password=12345;Include Error Detail=true"
   },
   "PayOS": {
-    "ClientId": "",
-    "ApiKey": "",
-    "ChecksumKey": "",
+    "ClientId": "3d2983d2-3b36-41b2-8a8a-c56b29450f26",
+    "ApiKey": "7a6f1a34-43cb-4e74-bd7e-db175f8820b4",
+    "ChecksumKey": "f9306d398ceae90e66ebc76400fc1da9a45fae9fe56088c544162522fed43d7a",
     "ReturnUrl": "http://localhost:3000/payment/success",
     "CancelUrl": "http://localhost:3000/payment/cancel",
     "MonthlyDurationDays": 30,
