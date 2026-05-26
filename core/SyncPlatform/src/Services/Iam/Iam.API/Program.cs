@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Iam.API.Exceptions;
+using Iam.API.Middleware;
 using Iam.Application.Abstractions;
 using Iam.Application.Common;
 using Iam.Application.Extensions;
@@ -63,8 +64,15 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 app.MapSyncHealthChecks();
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<Iam.Infrastructure.Persistence.IamDbContext>();
+    await Iam.Infrastructure.Persistence.IamDbSeed.SeedAsync(context);
+}
 
 app.Run();

@@ -31,6 +31,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
         services.AddScoped<IBiometricProfileRepository, BiometricProfileRepository>();
         services.AddScoped<IUserMeRepository, UserMeRepository>();
+        services.AddScoped<IInternalSmartPushRepository, InternalSmartPushRepository>();
 
         return services;
     }

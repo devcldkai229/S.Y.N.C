@@ -33,7 +33,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddExerciseApplication();
 builder.Services.AddExerciseInfrastructure(builder.Configuration);
 
-//builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
+builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSyncHealthChecks();
 
 builder.Services.AddControllers()

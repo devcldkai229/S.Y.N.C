@@ -492,3 +492,7 @@ core/SyncPlatform/**/*.example.json
 **/.env
 **/.env.*
 !**/.env.example
+/core/SyncPlatform/configs/appsettings.Shared.Development.json
+*.json
+/core/SyncPlatform/scripts/setup-appsettings.ps1
+/core/SyncPlatform/src/Services/Iam/Iam.API/appsettings.json.example

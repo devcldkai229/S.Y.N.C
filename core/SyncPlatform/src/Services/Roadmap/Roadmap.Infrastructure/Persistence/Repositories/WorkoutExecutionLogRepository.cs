@@ -23,4 +23,16 @@ public class WorkoutExecutionLogRepository : GenericRepository<WorkoutExecutionL
         => await Collection
             .Find(x => x.SessionId == sessionId)
             .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<WorkoutExecutionLog>> GetByUserIdAndDateRangeAsync(
+        Guid userId,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken cancellationToken = default)
+        => await Collection
+            .Find(x => x.UserId == userId
+                     && x.StartedAt >= from
+                     && x.StartedAt < to)
+            .SortByDescending(x => x.StartedAt)
+            .ToListAsync(cancellationToken);
 }

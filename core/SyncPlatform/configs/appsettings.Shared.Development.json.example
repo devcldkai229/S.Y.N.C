@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_comment": "Dev-only JWT issuer/audience. Fill SecretKey locally (min 32 chars).",
+  "_comment": "Development overrides shared across all Sync services. Use dev-only issuer/audience/secret so prod tokens cannot accidentally be accepted in development.",
 
   "Logging": {
     "LogLevel": {
@@ -12,7 +12,7 @@
   "Jwt": {
     "Issuer": "sync-lifestyle-iam-dev",
     "Audience": "sync-lifestyle-clients-dev",
-    "SecretKey": "",
+    "SecretKey": "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{",
     "AccessTokenExpiryMinutes": 60,
     "RefreshTokenExpiryDays": 30
   }
