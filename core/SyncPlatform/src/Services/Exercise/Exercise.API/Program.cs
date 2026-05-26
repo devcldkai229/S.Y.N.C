@@ -71,13 +71,13 @@ else
     app.UseHttpsRedirection();
 }
 
-//app.UseSyncJwtAuthentication();
+app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await ExerciseSeedData.ExerciseMongoSeeder.SeedAsync(mongoDb);
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
 
-//app.MapSyncHealthChecks();
+app.MapSyncHealthChecks();
 app.MapControllers();
 
 app.Run();

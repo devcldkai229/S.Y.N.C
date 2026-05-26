@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "ConnectionStrings": {
+    "PaymentDatabase": "Host=localhost;Port=5434;Database=sync_payment;Username=postgres;Password=YOUR_PASSWORD;Include Error Detail=true"
+  },
+  "PayOS": {
+    "ClientId": "",
+    "ApiKey": "",
+    "ChecksumKey": "",
+    "ReturnUrl": "http://localhost:3000/payment/success",
+    "CancelUrl": "http://localhost:3000/payment/cancel",
+    "MonthlyDurationDays": 30,
+    "YearlyDurationDays": 365
+  }
+}

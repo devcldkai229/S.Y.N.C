@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "Logging": {
+    "LogLevel": {
+      "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "IamDatabase": ""
+  },
+  "GoogleAuth": {
+    "ClientIds": []
+  },
+  "Email": {
+    "VerificationBaseUrl": "http://localhost:5288",
+    "Smtp": {
+      "Enabled": false,
+      "Host": "smtp.gmail.com",
+      "Port": 587,
+      "UserName": "",
+      "Password": "",
+      "FromEmail": "",
+      "FromName": "Sync",
+      "UseSsl": true
+    }
+  }
+}

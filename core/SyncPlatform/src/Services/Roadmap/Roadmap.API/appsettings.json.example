@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "ConnectionStrings": {
+    "RoadmapDatabase": "mongodb://localhost:27017"
+  },
+  "MongoDB": {
+    "RoadmapDatabaseName": "sync_roadmap"
+  }
+}

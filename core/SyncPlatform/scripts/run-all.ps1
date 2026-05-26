@@ -24,13 +24,16 @@ function Get-ConfigSecretKey {
     catch { return $null }
 }
 
-$secretKey = Get-ConfigSecretKey (Join-Path $SyncRoot "configs\appsettings.Shared.Development.local.json")
-if ([string]::IsNullOrWhiteSpace($secretKey)) {
-    $secretKey = Get-ConfigSecretKey (Join-Path $SyncRoot "configs\appsettings.Shared.Development.json")
+$sharedDevPath = Join-Path $SyncRoot "configs\appsettings.Shared.Development.json"
+if (-not (Test-Path $sharedDevPath)) {
+    Write-Host "Missing configs\appsettings.Shared.Development.json" -ForegroundColor Red
+    Write-Host "Run: .\core\SyncPlatform\scripts\setup-appsettings.ps1" -ForegroundColor Yellow
+    exit 1
 }
+
+$secretKey = Get-ConfigSecretKey $sharedDevPath
 if ([string]::IsNullOrWhiteSpace($secretKey) -or $secretKey.Length -lt 32) {
-    Write-Host "Jwt:SecretKey not set (min 32 chars)." -ForegroundColor Red
-    Write-Host "Use configs\appsettings.Shared.Development.local.json (gitignored) or fill Development.json locally." -ForegroundColor Yellow
+    Write-Host "Jwt:SecretKey not set in configs\appsettings.Shared.Development.json (min 32 chars)." -ForegroundColor Red
     Write-Host "See CONFIGURATION.md" -ForegroundColor Yellow
     exit 1
 }
@@ -102,6 +105,33 @@ foreach ($svc in $services) {
 }
 
 Write-Host "All processes launched." -ForegroundColor Green
+Write-Host "Waiting for APIs to start (Exercise seeds Mongo; may take 20-40s)..." -ForegroundColor DarkGray
+
+$healthScript = Join-Path $PSScriptRoot "health-check-all.ps1"
+$maxAttempts = 6
+$allHealthy = $false
+for ($i = 1; $i -le $maxAttempts; $i++) {
+    Start-Sleep -Seconds 8
+    & $healthScript -TimeoutSec 4
+    if ($LASTEXITCODE -eq 0) {
+        $allHealthy = $true
+        break
+    }
+    if ($i -lt $maxAttempts) {
+        Write-Host "Retry health check ($i/$maxAttempts)..." -ForegroundColor DarkYellow
+    }
+}
+
+if (-not $allHealthy) {
+    Write-Host ""
+    Write-Host "Some services did not respond. Check each PowerShell window for errors." -ForegroundColor Red
+    Write-Host "Common fixes:" -ForegroundColor Yellow
+    Write-Host "  1. Docker infra:  .\scripts\run-all.ps1 -Infra   (Postgres :5434, Mongo :27017)" -ForegroundColor Yellow
+    Write-Host "  2. Config:        .\scripts\setup-appsettings.ps1  then fill Development.json" -ForegroundColor Yellow
+    Write-Host "  3. Jwt secret:    configs\appsettings.Shared.Development.json" -ForegroundColor Yellow
+    Write-Host "  4. See:           CONFIGURATION.md" -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Host "Gateway (entry point): http://localhost:5057" -ForegroundColor Yellow
 Write-Host "IAM Swagger:           http://localhost:5288/swagger" -ForegroundColor Yellow

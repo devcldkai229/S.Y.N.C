@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_comment": "Shared JWT baseline for all services. Copy via setup-appsettings.ps1",
+
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+
+  "AllowedHosts": "*"
+}

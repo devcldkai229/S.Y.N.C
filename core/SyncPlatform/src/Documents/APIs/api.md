@@ -1428,7 +1428,7 @@ sequenceDiagram
 
 ## Cấu hình môi trường (appsettings)
 
-- Git track trực tiếp `appsettings.json` và `appsettings.Development.json` (không dùng `*.example.json`).
-- Secret / API key / connection password: key có trong JSON, **giá trị rỗng** `""` trên repo.
-- Sau `git pull`: điền giá trị local (hoặc dùng `appsettings.Development.local.json` — gitignored).
+- Git track **`*.example.json`** (template, secret rỗng).
+- `appsettings.json` và `appsettings.Development.json` **gitignore** — mỗi dev giữ bản local.
+- Sau clone: `.\core\SyncPlatform\scripts\setup-appsettings.ps1` rồi điền secret trong `Development.json`.
 - Chi tiết: `core/SyncPlatform/CONFIGURATION.md`.
