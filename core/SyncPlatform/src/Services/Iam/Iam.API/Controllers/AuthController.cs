@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Iam.API.Controllers;
 
 [ApiController]
+[AllowAnonymous]
 [Route("api/v1/auth")]
 public class AuthController : ControllerBase
 {

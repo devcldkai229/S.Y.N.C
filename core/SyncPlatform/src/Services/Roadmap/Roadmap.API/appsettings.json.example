@@ -5,5 +5,11 @@
   },
   "MongoDB": {
     "RoadmapDatabaseName": "sync_roadmap"
+  },
+  "Roadmap": {
+    "Seed": {
+      "Enabled": true,
+      "SeedDemoData": true
+    }
   }
 }

@@ -76,6 +76,7 @@ app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
+await app.Services.InitializeRoadmapDatabaseAsync();
 
 app.MapSyncHealthChecks();
 app.MapControllers();

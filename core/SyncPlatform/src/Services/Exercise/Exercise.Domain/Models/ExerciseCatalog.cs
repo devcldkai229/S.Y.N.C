@@ -1,4 +1,5 @@
 using Libs.Shared.Enums;
+using System.Numerics;
 
 namespace Exercise.Domain.Models;
 
@@ -48,4 +49,5 @@ public class ExerciseCatalog : BaseMongoEntity
     public bool RequiresSpotter { get; set; }
 
     public bool IsActive { get; set; } = true;
+
 }

@@ -23,10 +23,15 @@ public static class JwtAuthenticationExtensions
     /// <param name="services">DI container.</param>
     /// <param name="configuration">App configuration (expects a "Jwt" section).</param>
     /// <param name="environment">Host environment (used to relax HTTPS in Development).</param>
+    /// <param name="requireAuthenticationByDefault">
+    /// When true, all controller endpoints require a valid JWT unless marked [AllowAnonymous].
+    /// Set false for the API Gateway (YARP routes declare their own policies).
+    /// </param>
     public static IServiceCollection AddSyncJwtAuthentication(
         this IServiceCollection services,
         IConfiguration configuration,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        bool requireAuthenticationByDefault = true)
     {
         var settings = configuration.GetSection(JwtAuthSettings.SectionName).Get<JwtAuthSettings>()
             ?? throw new InvalidOperationException(
@@ -90,6 +95,13 @@ public static class JwtAuthenticationExtensions
 
         services.AddAuthorization(options =>
         {
+            if (requireAuthenticationByDefault)
+            {
+                options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+            }
+
             options.AddPolicy(AuthPolicies.AuthenticatedUser, p =>
                 p.RequireAuthenticatedUser());
 

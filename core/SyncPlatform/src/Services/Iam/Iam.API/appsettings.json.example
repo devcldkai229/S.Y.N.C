@@ -8,6 +8,15 @@
   "ConnectionStrings": {
     "IamDatabase": ""
   },
+  "Iam": {
+    "Seed": {
+      "Enabled": true,
+      "ApplyMigrations": true,
+      "SeedAchievements": true,
+      "SeedDemoUsers": true,
+      "DemoUserPassword": "SyncDemo123!"
+    }
+  },
   "GoogleAuth": {
     "ClientIds": []
   },

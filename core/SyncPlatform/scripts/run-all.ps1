@@ -53,6 +53,7 @@ $services = @(
     @{ Name = "Roadmap";      Dir = "src\Services\Roadmap\Roadmap.API";             Port = 5118 },
     @{ Name = "Exercise";     Dir = "src\Services\Exercise\Exercise.API";           Port = 5187 },
     @{ Name = "Notification"; Dir = "src\Services\Notification\Notification.API"; Port = 5106 },
+    @{ Name = "Social";       Dir = "src\Services\Social\Social.API";             Port = 5120 },
     @{ Name = "Gateway";      Dir = "src\Gateway";                                  Port = 5057 }
 )
 
