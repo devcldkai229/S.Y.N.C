@@ -15,4 +15,10 @@ public interface INotificationMessageRepository : IGenericRepository<Notificatio
     Task<int> GetUnreadCountByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task MarkAllAsReadByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    Task<bool> HasSmartPushSentTodayAsync(
+        Guid userId,
+        DateTimeOffset utcNow,
+        string timeZoneId,
+        CancellationToken cancellationToken);
 }

@@ -7,6 +7,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using Roadmap.Application.Common;
 using Roadmap.Application.Extensions;
+using Roadmap.API.Middleware;
 using Roadmap.Infrastructure.Extensions;
 using Roadmap.Infrastructure.Persistence;
 using System.Text.Json.Serialization;
@@ -72,6 +73,7 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();

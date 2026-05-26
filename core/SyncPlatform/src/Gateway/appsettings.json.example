@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_comment": "YARP reverse-proxy for local microservices. JWT from configs/appsettings.Shared*.json",
+  "_readme": "Copy to appsettings.json (gitignored). YARP routes for local microservices.",
 
   "Logging": {
     "LogLevel": {
@@ -18,19 +18,16 @@
           "Path": "/api/v1/auth/{**catch-all}"
         }
       },
-      "iam-me-route": {
+      "iam-route": {
         "ClusterId": "iam-cluster",
         "AuthorizationPolicy": "AuthenticatedUser",
         "Match": {
-          "Path": "/api/v1/me/{**catch-all}"
-        }
-      },
-      "iam-biometrics-route": {
-        "ClusterId": "iam-cluster",
-        "AuthorizationPolicy": "AuthenticatedUser",
-        "Match": {
-          "Path": "/api/v1/biometrics/{**catch-all}"
-        }
+          "Path": "/api/v1/iam/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/iam" },
+          { "PathPrefix": "/api/v1" }
+        ]
       },
       "roadmap-route": {
         "ClusterId": "roadmap-cluster",

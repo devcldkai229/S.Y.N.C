@@ -8,8 +8,8 @@
   },
   "Minio": {
     "Endpoint": "localhost:9000",
-    "AccessKey": "",
-    "SecretKey": "",
+    "AccessKey": "minioadmin",
+    "SecretKey": "minioadmin123",
     "BucketName": "exercise-assets",
     "UseSsl": false,
     "PublicUrl": "http://localhost:9000",
