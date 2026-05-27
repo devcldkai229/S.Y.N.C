@@ -494,3 +494,6 @@ core/SyncPlatform/**/appsettings.Staging.json
 **/.env
 **/.env.*
 !**/.env.example
+
+# ── AI ecosystem (Python agent / voice gateway — local dev only) ─────────────
+ai-ecosystem/
