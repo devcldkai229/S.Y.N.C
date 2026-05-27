@@ -481,6 +481,10 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
+# ── Sync Platform: per-dev appsettings (NEVER commit) ───────────────────────
+# Templates on Git: *.example.json — run core/SyncPlatform/scripts/setup-appsettings.ps1
+core/SyncPlatform/**/appsettings.json
+core/SyncPlatform/**/appsettings.Development.json
 # Flutter / Android local build artifacts
 ui/app/android/build/
 ui/app/android/*.hprof
@@ -499,3 +503,6 @@ core/SyncPlatform/**/appsettings.Staging.json
 **/.env
 **/.env.*
 !**/.env.example
+
+# ── AI ecosystem (Python agent / voice gateway — local dev only) ─────────────
+ai-ecosystem/

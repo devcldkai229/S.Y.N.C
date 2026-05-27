@@ -10,6 +10,7 @@ $targets = @(
     @{ Name = "Roadmap";      Url = "http://localhost:5118/health" },
     @{ Name = "Exercise";     Url = "http://localhost:5187/health" },
     @{ Name = "Notification"; Url = "http://localhost:5106/health" },
+    @{ Name = "Social";       Url = "http://localhost:5120/health" },
     @{ Name = "Gateway";      Url = "http://localhost:5057/health" }
 )
 

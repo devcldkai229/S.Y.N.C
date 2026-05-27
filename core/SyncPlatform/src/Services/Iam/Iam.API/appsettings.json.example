@@ -11,6 +11,15 @@
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
   },
+  "Iam": {
+    "Seed": {
+      "Enabled": true,
+      "ApplyMigrations": true,
+      "SeedAchievements": true,
+      "SeedDemoUsers": true,
+      "DemoUserPassword": "SyncDemo123!"
+    }
+  },
   "GoogleAuth": {
     "ClientIds": [
       "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",

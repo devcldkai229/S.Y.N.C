@@ -52,6 +52,8 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
+await app.Services.InitializeIamDatabaseAsync();
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())

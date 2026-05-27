@@ -29,6 +29,12 @@
           { "PathPrefix": "/api/v1" }
         ]
       },
+      "iam-users-public-profile-route": {
+        "ClusterId": "iam-cluster",
+        "Match": {
+          "Path": "/api/v1/users/{id}/public-profile"
+        }
+      },
       "roadmap-route": {
         "ClusterId": "roadmap-cluster",
         "AuthorizationPolicy": "AuthenticatedUser",
@@ -59,6 +65,16 @@
         },
         "Transforms": [
           { "PathRemovePrefix": "/api/v1/notification" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "social-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/social/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/social" },
           { "PathPrefix": "/api/v1" }
         ]
       },
@@ -151,6 +167,21 @@
           "notification/primary": {
             "Address": "http://localhost:5106"
           }
+        }
+      },
+      "social-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "social/primary": { "Address": "http://localhost:5120" }
         }
       },
       "payment-cluster": {

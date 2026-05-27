@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "ConnectionStrings": {
+    "SocialDatabase": "mongodb://localhost:27017"
+  },
+  "MongoDB": {
+    "SocialDatabaseName": "sync_social"
+  },
+  "Social": {
+    "Seed": {
+      "Enabled": true,
+      "SeedDemoData": true
+    },
+    "Maintenance": {
+      "AllowShareCodeBackfillApi": true,
+      "BackfillShareCodesOnStartup": false
+    }
+  }
+}

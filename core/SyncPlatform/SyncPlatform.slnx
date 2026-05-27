@@ -45,4 +45,10 @@
     <Project Path="src/Services/Roadmap/Roadmap.Domain/Roadmap.Domain.csproj" />
     <Project Path="src/Services/Roadmap/Roadmap.Infrastructure/Roadmap.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Services/Social/">
+    <Project Path="src/Services/Social/Social.API/Social.API.csproj" />
+    <Project Path="src/Services/Social/Social.Application/Social.Application.csproj" />
+    <Project Path="src/Services/Social/Social.Domain/Social.Domain.csproj" />
+    <Project Path="src/Services/Social/Social.Infrastructure/Social.Infrastructure.csproj" />
+  </Folder>
 </Solution>

@@ -4,8 +4,10 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Roadmap.Domain.Repositories;
+using Roadmap.Infrastructure.Options;
 using Roadmap.Infrastructure.Persistence;
 using Roadmap.Infrastructure.Persistence.Repositories;
+using Roadmap.Infrastructure.Persistence.Seed;
 
 namespace Roadmap.Infrastructure.Extensions;
 
@@ -45,6 +47,8 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IPersonalizedRoadmapRepository, PersonalizedRoadmapRepository>();
         services.AddScoped<IRecoveryProfileRepository, RecoveryProfileRepository>();
 
+        services.Configure<RoadmapSeedOptions>(configuration.GetSection(RoadmapSeedOptions.SectionName));
+        services.AddScoped<IRoadmapDatabaseSeeder, RoadmapDatabaseSeeder>();
 
         return services;
     }

@@ -20,7 +20,10 @@ builder.Services.AddSwaggerGen(options =>
 
 // JWT validated once at the edge; Bearer is forwarded to downstream services (defense in depth).
 // X-User-* headers are injected for correlation/logging — not for authorization.
-builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
+builder.Services.AddSyncJwtAuthentication(
+    builder.Configuration,
+    builder.Environment,
+    requireAuthenticationByDefault: false);
 
 builder.Services.AddRateLimiter(rl =>
 {

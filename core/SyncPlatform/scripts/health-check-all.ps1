@@ -7,6 +7,7 @@ $services = @(
     @{ Name = "Roadmap";      Port = 5118 },
     @{ Name = "Exercise";     Port = 5187 },
     @{ Name = "Notification"; Port = 5106 },
+    @{ Name = "Social";       Port = 5120 },
     @{ Name = "Gateway";      Port = 5057 }
 )
 

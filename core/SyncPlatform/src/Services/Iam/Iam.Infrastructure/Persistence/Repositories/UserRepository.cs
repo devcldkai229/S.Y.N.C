@@ -18,6 +18,12 @@ public class UserRepository : IUserRepository
             .Include(u => u.BiometricProfile)
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
+    public Task<User?> GetByIdForPublicProfileAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _db.Users
+            .AsNoTracking()
+            .Include(u => u.GamificationProfile)
+            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         _db.Users.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
