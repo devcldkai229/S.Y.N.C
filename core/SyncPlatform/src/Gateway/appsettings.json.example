@@ -97,7 +97,9 @@
           }
         },
         "Destinations": {
-          "iam/primary": { "Address": "http://localhost:5288" }
+          "iam/primary": {
+            "Address": "http://localhost:5288"
+          }
         }
       },
       "roadmap-cluster": {
@@ -112,7 +114,9 @@
           }
         },
         "Destinations": {
-          "roadmap/primary": { "Address": "http://localhost:5118" }
+          "roadmap/primary": {
+            "Address": "http://localhost:5118"
+          }
         }
       },
       "exercise-cluster": {
@@ -127,7 +131,9 @@
           }
         },
         "Destinations": {
-          "exercise/primary": { "Address": "http://localhost:5187" }
+          "exercise/primary": {
+            "Address": "http://localhost:5187"
+          }
         }
       },
       "notification-cluster": {
@@ -142,7 +148,9 @@
           }
         },
         "Destinations": {
-          "notification/primary": { "Address": "http://localhost:5106" }
+          "notification/primary": {
+            "Address": "http://localhost:5106"
+          }
         }
       },
       "payment-cluster": {
@@ -157,7 +165,9 @@
           }
         },
         "Destinations": {
-          "payment/primary": { "Address": "http://localhost:5084" }
+          "payment/primary": {
+            "Address": "http://localhost:5084"
+          }
         }
       }
     }

@@ -481,20 +481,21 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# ── Sync Platform: local secret overrides (NEVER commit) ─────────────────────
-# Tracked on Git: appsettings.json + appsettings.Development.json (empty secrets only).
-# Real values → appsettings.*.local.json or env vars. See core/SyncPlatform/CONFIGURATION.md
+# Flutter / Android local build artifacts
+ui/app/android/build/
+ui/app/android/*.hprof
+
+# ── Sync Platform configuration (see core/SyncPlatform/CONFIGURATION.md) ─────
+# Chỉ commit file *.example — KHÔNG commit appsettings đã điền secret trên máy local.
+core/SyncPlatform/src/**/appsettings.json
+core/SyncPlatform/src/**/appsettings.Development.json
+core/SyncPlatform/configs/appsettings.Shared.json
+core/SyncPlatform/configs/appsettings.Shared.Development.json
 core/SyncPlatform/**/appsettings.*.local.json
 core/SyncPlatform/**/appsettings.Production.json
 core/SyncPlatform/**/appsettings.Staging.json
-core/SyncPlatform/**/*.example.json
+!core/SyncPlatform/**/*.example
 **/secrets.json
 **/.env
 **/.env.*
 !**/.env.example
-/core/SyncPlatform/configs/appsettings.Shared.Development.json
-*.json
-/core/SyncPlatform/scripts/setup-appsettings.ps1
-/core/SyncPlatform/src/Services/Iam/Iam.API/appsettings.json.example
-/ai-ecosystem
-/scripts

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.json (gitignored). Production / default overrides for IAM.",
+  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1.",
 
   "Logging": {
     "LogLevel": {
@@ -9,6 +9,9 @@
   },
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
+  },
+  "DevSeed": {
+    "Enabled": true
   },
   "GoogleAuth": {
     "ClientIds": [

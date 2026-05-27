@@ -5,6 +5,7 @@ using Iam.Application.Abstractions;
 using Iam.Application.Common;
 using Iam.Application.Extensions;
 using Iam.Infrastructure.Extensions;
+using Iam.Infrastructure.Persistence.Seed;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
@@ -69,10 +70,14 @@ app.UseSyncJwtAuthentication();
 app.MapSyncHealthChecks();
 app.MapControllers();
 
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment())
 {
-    var context = scope.ServiceProvider.GetRequiredService<Iam.Infrastructure.Persistence.IamDbContext>();
-    await Iam.Infrastructure.Persistence.IamDbSeed.SeedAsync(context);
+    await IamDevDataSeeder.SeedAsync(app.Services, app.Configuration);
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<Iam.Infrastructure.Persistence.IamDbContext>();
+        await Iam.Infrastructure.Persistence.IamDbSeed.SeedAsync(context);
+    }
 }
 
 app.Run();

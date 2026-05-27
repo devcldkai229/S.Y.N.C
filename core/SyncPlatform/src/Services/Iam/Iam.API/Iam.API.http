@@ -1,5 +1,23 @@
 @Iam.API_HostAddress = http://localhost:5288
+@Gateway_HostAddress = http://localhost:5057
 @Test_User_Id = d1cd3b1e-b8cc-4d37-8f55-09ad18b76c5f
+@DevSeed_Email = dev.seed@sync.local
+@DevSeed_Password = Sync@12345
+@DevSeed_DeviceId = dev-seed-device-001
+
+### Dev seed login (auto-created on IAM startup in Development)
+# Accounts: dev.seed@sync.local / demo@sync.local — password: Sync@12345
+POST {{Gateway_HostAddress}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{DevSeed_Email}}",
+  "password": "{{DevSeed_Password}}",
+  "deviceId": "{{DevSeed_DeviceId}}",
+  "platform": "Android"
+}
+
+###
 
 ### Step 1: Save Basic Info (Onboarding Step 1)
 POST {{Iam.API_HostAddress}}/api/v1/biometrics/onboarding/basic

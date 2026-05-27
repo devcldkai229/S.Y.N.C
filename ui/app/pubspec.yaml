@@ -47,6 +47,7 @@ dependencies:
   # Local storage
   shared_preferences: ^2.5.3
   flutter_secure_storage: ^9.2.4
+  google_sign_in: ^7.2.0
 
   # Dependency injection
   get_it: ^8.0.3
@@ -55,6 +56,9 @@ dependencies:
   freezed_annotation: ^2.4.4
   json_annotation: ^4.9.0
   logger: ^2.5.0
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.4.1
+  video_player: ^2.9.5
 
 dev_dependencies:
   flutter_test:
