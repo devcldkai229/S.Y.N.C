@@ -745,6 +745,10 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("allergies");
 
+                    b.Property<bool>("AllowAiGeneratedNotification")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allow_ai_generated_notification");
+
                     b.Property<bool>("AutoOrderEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("auto_order_enabled");
@@ -790,6 +794,14 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("motivation_style");
+
+                    b.Property<TimeSpan?>("PreferredReminderTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("preferred_reminder_time");
+
+                    b.Property<bool>("SmartPushEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("smart_push_enabled");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

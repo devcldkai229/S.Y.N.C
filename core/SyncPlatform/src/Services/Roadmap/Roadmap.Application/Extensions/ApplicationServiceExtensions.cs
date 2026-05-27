@@ -15,6 +15,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IRecoveryProfileService, RecoveryProfileService>();
         services.AddScoped<IScheduledWorkoutService, ScheduledWorkoutService>();
         services.AddScoped<IWorkoutExecutionLogService, WorkoutExecutionLogService>();
+        services.AddScoped<IInternalWorkoutActivityService, InternalWorkoutActivityService>();
 
 
         return services;
