@@ -6,4 +6,9 @@ public interface IWorkoutExecutionLogRepository : IGenericRepository<WorkoutExec
 {
     Task<IReadOnlyList<WorkoutExecutionLog>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<WorkoutExecutionLog?> GetBySessionIdAsync(Guid sessionId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<WorkoutExecutionLog>> GetByUserIdAndDateRangeAsync(
+        Guid userId,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken cancellationToken = default);
 }

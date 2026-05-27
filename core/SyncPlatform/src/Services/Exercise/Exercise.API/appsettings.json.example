@@ -1,15 +1,18 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
+
   "ConnectionStrings": {
     "ExerciseDatabase": "mongodb://localhost:27017"
   },
+
   "MongoDB": {
     "ExerciseDatabaseName": "sync_exercise"
   },
+
   "Minio": {
     "Endpoint": "localhost:9000",
-    "AccessKey": "",
-    "SecretKey": "",
+    "AccessKey": "minioadmin",
+    "SecretKey": "minioadmin123",
     "BucketName": "exercise-assets",
     "UseSsl": false,
     "PublicUrl": "http://localhost:9000",

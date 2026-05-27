@@ -1,7 +1,17 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1.",
+
+  "Logging": {
+    "LogLevel": {
+      "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
+    }
+  },
   "ConnectionStrings": {
-    "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=YOUR_PASSWORD;Include Error Detail=true"
+    "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
+  },
+  "DevSeed": {
+    "Enabled": true
   },
   "Iam": {
     "Seed": {
@@ -13,7 +23,10 @@
     }
   },
   "GoogleAuth": {
-    "ClientIds": []
+    "ClientIds": [
+      "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",
+      "366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com"
+    ]
   },
   "Email": {
     "VerificationBaseUrl": "http://localhost:5288",
@@ -21,9 +34,9 @@
       "Enabled": false,
       "Host": "smtp.gmail.com",
       "Port": 587,
-      "UserName": "",
-      "Password": "",
-      "FromEmail": "",
+      "UserName": "kag40222@gmail.com",
+      "Password": "jegh ucpq tcom akcz",
+      "FromEmail": "kag40222@gmail.com",
       "FromName": "Sync",
       "UseSsl": true
     }

@@ -4,7 +4,7 @@
 
 | File | Trên Git | Mục đích |
 |------|----------|----------|
-| `*.example.json` | **Có** | Template cấu trúc, secret rỗng |
+| `*.json.example` | **Có** | Template cấu trúc, secret rỗng |
 | `appsettings.json` | **Không** (gitignore) | Cấu hình local / mặc định |
 | `appsettings.Development.json` | **Không** (gitignore) | Override khi `ASPNETCORE_ENVIRONMENT=Development` |
 | `configs/appsettings.Shared*.json` | **Không** (gitignore) | JWT + logging dùng chung |
@@ -19,7 +19,7 @@ Từ **root repo**:
 .\core\SyncPlatform\scripts\setup-appsettings.ps1
 ```
 
-Script copy `*.example.json` → `*.json` (bỏ qua file đã tồn tại). Dùng `-Force` để ghi đè.
+Script copy `*.json.example` → `*.json` (bỏ qua file đã tồn tại). Dùng `-Force` để ghi đè.
 
 Sau đó điền secret trong:
 
@@ -34,8 +34,27 @@ Dùng biến môi trường (`Jwt__SecretKey`, `ConnectionStrings__IamDatabase`,
 
 ```powershell
 cd core/SyncPlatform
+.\scripts\setup-appsettings.ps1
 .\scripts\run-all.ps1 -Infra   # lần đầu: Docker Postgres/Mongo/MinIO
 .\scripts\run-all.ps1
 ```
 
-`run-all.ps1` kiểm tra `Jwt:SecretKey` trong `configs/appsettings.Shared.Development.json`.
+Yêu cầu: **.NET 10 SDK**, Docker (Postgres `:5434`, Mongo `:27017`), `Jwt:SecretKey` trong `configs/appsettings.Shared.Development.json`.
+
+`run-all.ps1` build toàn bộ service trước khi mở cửa sổ — lỗi build hiện ngay terminal chính (không chỉ timeout health check).
+
+## IAM database (lần đầu)
+
+```powershell
+cd core/SyncPlatform/src/Services/Iam/Iam.API
+dotnet ef database update --project ..\Iam.Infrastructure\Iam.Infrastructure.csproj
+```
+
+Khi chạy IAM ở **Development**, seed dev tự chạy **một lần** (bỏ qua nếu đã có user `dev.seed@sync.local`):
+
+| Email | Password | Ghi chú |
+|-------|----------|---------|
+| `dev.seed@sync.local` | `Sync@12345` | Email đã verify — login ngay |
+| `demo@sync.local` | `Sync@12345` | Tài khoản demo thứ hai |
+
+Tắt seed: `DevSeed:Enabled: false` trong `Iam.API/appsettings.Development.json`.

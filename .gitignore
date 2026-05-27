@@ -485,11 +485,20 @@ $RECYCLE.BIN/
 # Templates on Git: *.example.json — run core/SyncPlatform/scripts/setup-appsettings.ps1
 core/SyncPlatform/**/appsettings.json
 core/SyncPlatform/**/appsettings.Development.json
+# Flutter / Android local build artifacts
+ui/app/android/build/
+ui/app/android/*.hprof
+
+# ── Sync Platform configuration (see core/SyncPlatform/CONFIGURATION.md) ─────
+# Chỉ commit file *.example — KHÔNG commit appsettings đã điền secret trên máy local.
+core/SyncPlatform/src/**/appsettings.json
+core/SyncPlatform/src/**/appsettings.Development.json
 core/SyncPlatform/configs/appsettings.Shared.json
 core/SyncPlatform/configs/appsettings.Shared.Development.json
 core/SyncPlatform/**/appsettings.*.local.json
 core/SyncPlatform/**/appsettings.Production.json
 core/SyncPlatform/**/appsettings.Staging.json
+!core/SyncPlatform/**/*.example
 **/secrets.json
 **/.env
 **/.env.*

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sync Lifestyle",
-  description: "Sync Lifestyle Automation Platform",
+  title: "SYNC — AI Fitness Platform",
+  description: "SYNC là nền tảng fitness AI giúp bạn tập luyện thông minh hơn và sống khỏe hơn.",
 };
 
 export default function RootLayout({

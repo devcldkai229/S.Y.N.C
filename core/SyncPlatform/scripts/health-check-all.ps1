@@ -1,5 +1,5 @@
 # Quick health probe for all Sync Platform APIs.
-param([int]$TimeoutSec = 5)
+param([int]$TimeoutSec = 10)
 
 $services = @(
     @{ Name = "IAM";          Port = 5288 },
@@ -11,11 +11,22 @@ $services = @(
     @{ Name = "Gateway";      Port = 5057 }
 )
 
+function Test-PortListening([int]$Port) {
+    return [bool](Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+}
+
 $ok = 0
 $fail = 0
 
 foreach ($svc in $services) {
     $url = "http://localhost:$($svc.Port)/health"
+
+    if (-not (Test-PortListening $svc.Port)) {
+        Write-Host "[FAIL] $($svc.Name) (:$($svc.Port)) - port not listening (service did not start)" -ForegroundColor Red
+        $fail++
+        continue
+    }
+
     try {
         $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec $TimeoutSec
         if ($r.StatusCode -eq 200) {

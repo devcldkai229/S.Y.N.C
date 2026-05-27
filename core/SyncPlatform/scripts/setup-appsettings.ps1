@@ -1,4 +1,4 @@
-# Creates gitignored appsettings*.json from committed *.example.json templates (skip if target exists).
+# Creates gitignored appsettings*.json from committed *.json.example templates (skip if target exists).
 # Usage (from repo root):
 #   .\core\SyncPlatform\scripts\setup-appsettings.ps1
 #   .\core\SyncPlatform\scripts\setup-appsettings.ps1 -Force
@@ -8,9 +8,9 @@ param([switch]$Force)
 $ErrorActionPreference = "Stop"
 $SyncRoot = Split-Path -Parent $PSScriptRoot
 
-$examples = Get-ChildItem -Path $SyncRoot -Recurse -Filter "*.example.json" -File
+$examples = Get-ChildItem -Path $SyncRoot -Recurse -Filter "*.json.example" -File
 if ($examples.Count -eq 0) {
-    Write-Host "No *.example.json found under $SyncRoot" -ForegroundColor Yellow
+    Write-Host "No *.json.example found under $SyncRoot" -ForegroundColor Yellow
     exit 0
 }
 
@@ -18,7 +18,7 @@ $created = 0
 $skipped = 0
 
 foreach ($example in $examples) {
-  $targetName = $example.Name -replace '\.example\.json$', '.json'
+  $targetName = $example.Name -replace '\.json\.example$', '.json'
   $target = Join-Path $example.DirectoryName $targetName
 
   if ((Test-Path $target) -and -not $Force) {
@@ -36,4 +36,4 @@ Write-Host "Created/updated: $created  |  Skipped (exists): $skipped" -Foregroun
 if ($skipped -gt 0) {
   Write-Host "Use -Force to overwrite existing files." -ForegroundColor DarkGray
 }
-Write-Host "Fill secrets in appsettings.Development.json — see CONFIGURATION.md" -ForegroundColor Yellow
+Write-Host "Fill secrets in appsettings.Development.json - see CONFIGURATION.md" -ForegroundColor Yellow

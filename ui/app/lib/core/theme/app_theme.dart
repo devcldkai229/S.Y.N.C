@@ -1,21 +1,70 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:sync_app/core/theme/app_colors.dart';
 
 class AppTheme {
-  static const _primaryColor = Color(0xFF6366F1);
+  static ThemeData get light {
+    final base = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: AppColors.background,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.primaryGreen,
+        primary: AppColors.primaryGreen,
+        surface: AppColors.cardBackground,
+        onSurface: AppColors.textPrimary,
+      ),
+    );
 
-  static ThemeData get light => ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: _primaryColor,
-          brightness: Brightness.light,
-        ),
-      );
+    final textTheme = GoogleFonts.interTextTheme(base.textTheme).apply(
+      bodyColor: AppColors.textPrimary,
+      displayColor: AppColors.textPrimary,
+    );
 
-  static ThemeData get dark => ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: _primaryColor,
-          brightness: Brightness.dark,
+    return base.copyWith(
+      textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: AppColors.textPrimary,
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: AppColors.primaryGreen,
         ),
-      );
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.cardBackground,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: AppColors.primaryGreen, width: 1.5),
+        ),
+        hintStyle: textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+        labelStyle: textTheme.labelMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: AppColors.textSecondary,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryGreen,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+          textStyle: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
 }

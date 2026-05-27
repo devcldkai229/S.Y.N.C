@@ -11,6 +11,7 @@ using Notification.Application.Common;
 using Notification.Application.Extensions;
 using Notification.Infrastructure.Extensions;
 using Notification.Infrastructure.Persistence;
+using Notification.API.BackgroundWorkers;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
 
@@ -31,6 +32,7 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddNotificationApplication();
 builder.Services.AddNotificationInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<SmartPushNotificationWorker>();
 
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSyncHealthChecks();
