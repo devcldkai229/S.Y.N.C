@@ -23,9 +23,12 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _verificationCodeController = TextEditingController();
   late final AuthRepository _authRepository;
   late final bool _isAuthEnabled;
   bool _isLoading = false;
+  bool _isCodeSent = false;
+  String _registeredEmail = '';
 
   @override
   void initState() {
@@ -42,6 +45,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _verificationCodeController.dispose();
     super.dispose();
   }
 
@@ -54,7 +58,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ProgressHeader(
-              currentStep: 1,
+              currentStep: _isCodeSent ? 2 : 1,
               totalSteps: 3,
               onClose: () => context.go(AppRoutes.login),
             ),
@@ -72,7 +76,9 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.registerTitle,
+                      _isCodeSent
+                          ? context.l10n.verifyEmailTitle
+                          : context.l10n.registerTitle,
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
@@ -81,7 +87,9 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      context.l10n.registerSubtitle,
+                      _isCodeSent
+                          ? 'Mã xác minh đã được gửi đến ${_registeredEmail.isEmpty ? _emailController.text.trim() : _registeredEmail}. Vui lòng nhập mã để hoàn tất.'
+                          : context.l10n.registerSubtitle,
                       style: const TextStyle(
                         fontSize: 15,
                         height: 1.5,
@@ -95,11 +103,63 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                       controller: _usernameController,
                     ),
                     const SizedBox(height: 20),
+                    Text(
+                      context.l10n.emailLabel,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.textPrimary,
+                            ),
+                            decoration: const InputDecoration(
+                              hintText: 'hello@vitality.com',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          height: 56,
+                          child: OutlinedButton(
+                            onPressed: _isLoading ? null : _onSendCodePressed,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                              ),
+                            ),
+                            child: Text(
+                              _isCodeSent ? 'Resend code' : 'Verify email',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     CustomTextField(
-                      label: context.l10n.emailLabel,
-                      hint: 'hello@vitality.com',
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                      label: 'Mã xác minh email',
+                      hint: 'Nhập mã 6 số gửi về email',
+                      controller: _verificationCodeController,
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Nếu SMTP tắt, mã sẽ xuất hiện trong log IAM.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
                     ),
                     const SizedBox(height: 20),
                     CustomTextField(
@@ -123,10 +183,15 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: PrimaryButton(
-                label: context.l10n.actionContinue,
-                isLoading: _isLoading,
-                onPressed: _onContinuePressed,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PrimaryButton(
+                    label: context.l10n.actionContinue,
+                    isLoading: _isLoading,
+                    onPressed: _onContinuePressed,
+                  ),
+                ],
               ),
             ),
           ],
@@ -148,8 +213,63 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (username.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (username.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       _showMessage('Please complete all fields.');
+      return;
+    }
+    if (password.length < 8) {
+      _showMessage('Password must be at least 8 characters.');
+      return;
+    }
+    if (password != confirmPassword) {
+      _showMessage('Confirm password does not match.');
+      return;
+    }
+
+    if (!_isCodeSent) {
+      _showMessage('Vui lòng nhấn "Verify email" để gửi mã xác minh trước.');
+      return;
+    }
+
+    final code = _verificationCodeController.text.trim();
+    if (code.isEmpty) {
+      _showMessage('Vui lòng nhập mã xác minh email.');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final result = await _authRepository.verifyEmail(_extractToken(code));
+      if (!mounted) return;
+      _showMessage(
+        'Email ${result.email} đã xác minh thành công. Mời bạn đăng nhập.',
+      );
+      context.go(AppRoutes.login);
+    } catch (error) {
+      _showMessage(mapAuthError(error, context.l10n));
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _onSendCodePressed() async {
+    if (_isLoading) return;
+    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+    if (username.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      _showMessage(
+        'Vui lòng nhập đầy đủ họ tên, email và mật khẩu trước khi xác minh email.',
+      );
       return;
     }
     if (password.length < 8) {
@@ -163,14 +283,23 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
 
     setState(() => _isLoading = true);
     try {
-      final result = await _authRepository.register(
-        fullName: username,
-        email: email,
-        password: password,
-      );
+      final result = _isCodeSent
+          ? await _authRepository.resendVerificationCode(email: email)
+          : await _authRepository.register(
+              fullName: username,
+              email: email,
+              password: password,
+            );
       if (!mounted) return;
-      _showMessage(result.message);
-      context.go(AppRoutes.verifyEmail);
+      _showMessage(
+        _isCodeSent
+            ? 'Đã gửi lại mã xác minh mới về ${result.email}.'
+            : 'Đã gửi mã xác minh về ${result.email}.',
+      );
+      setState(() {
+        _isCodeSent = true;
+        _registeredEmail = result.email;
+      });
     } catch (error) {
       _showMessage(mapAuthError(error, context.l10n));
     } finally {
@@ -178,6 +307,16 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  String _extractToken(String input) {
+    // Hỗ trợ cả khi người dùng dán full URL verify-email.
+    final uri = Uri.tryParse(input);
+    if (uri != null) {
+      final q = uri.queryParameters['token'];
+      if (q != null && q.isNotEmpty) return q;
+    }
+    return input;
   }
 
   void _showMessage(String message) {

@@ -2,10 +2,11 @@ namespace Iam.Application.Services;
 
 public static class VerificationEmailTemplate
 {
-    public static string BuildHtml(string verifyUrl, string recipientEmail)
+    public static string BuildHtml(string verifyUrl, string recipientEmail, string verificationCode)
     {
         var encodedUrl = System.Net.WebUtility.HtmlEncode(verifyUrl);
         var encodedEmail = System.Net.WebUtility.HtmlEncode(recipientEmail);
+        var encodedCode = System.Net.WebUtility.HtmlEncode(verificationCode);
 
         return $"""
             <!DOCTYPE html>
@@ -31,14 +32,18 @@ public static class VerificationEmailTemplate
                           <p style="margin:0 0 16px;color:#334155;font-size:15px;line-height:1.6;">
                             Xin chào,<br />
                             Bạn vừa đăng ký tài khoản với email <strong>{encodedEmail}</strong>.
-                            Nhấn nút bên dưới để kích hoạt tài khoản và đăng nhập.
+                            Nhập mã xác minh bên dưới vào ứng dụng để kích hoạt tài khoản.
                           </p>
+                          <div style="margin:16px 0 20px;padding:16px;border:1px dashed #94a3b8;border-radius:10px;background:#f8fafc;text-align:center;">
+                            <div style="font-size:12px;color:#64748b;margin-bottom:6px;">MÃ XÁC MINH</div>
+                            <div style="font-size:30px;letter-spacing:8px;font-weight:700;color:#0f172a;">{encodedCode}</div>
+                          </div>
                           <table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0;">
                             <tr>
                               <td style="border-radius:8px;background:#2563eb;">
                                 <a href="{encodedUrl}"
                                    style="display:inline-block;padding:14px 28px;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;">
-                                  Xác nhận email
+                                  Hoặc xác nhận qua link
                                 </a>
                               </td>
                             </tr>

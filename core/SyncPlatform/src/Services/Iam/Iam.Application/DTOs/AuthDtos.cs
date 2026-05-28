@@ -34,6 +34,12 @@ public class LoginRequest
     public DevicePlatform Platform { get; set; } = DevicePlatform.Web;
 }
 
+public class ResendVerificationRequest
+{
+    [Required, EmailAddress, MaxLength(256)]
+    public string Email { get; set; } = string.Empty;
+}
+
 public class GoogleLoginRequest
 {
     [Required]

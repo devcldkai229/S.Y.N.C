@@ -7,6 +7,7 @@ using Iam.Domain.Models;
 using Iam.Domain.Repositories;
 using Libs.Auth.Options;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
 
 namespace Iam.Application.Services;
 
@@ -47,7 +48,7 @@ public class AuthService : IAuthService
         if (await _userRepository.EmailExistsAsync(normalizedEmail, cancellationToken))
             throw new ConflictException($"An account with email '{normalizedEmail}' already exists.");
 
-        var verificationToken = Guid.NewGuid().ToString("N");
+        var verificationToken = await GenerateUniqueVerificationCodeAsync(cancellationToken);
 
         var user = new User
         {
@@ -72,7 +73,31 @@ public class AuthService : IAuthService
         {
             UserId = user.Id,
             Email = user.Email,
-            Message = "Registration successful. Please check your email to verify your account."
+            Message = "Registration successful. Please check your email for the verification code."
+        };
+    }
+
+    public async Task<RegisterResponse> ResendVerificationAsync(ResendVerificationRequest request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken)
+            ?? throw new NotFoundException($"No account found with email '{normalizedEmail}'.");
+
+        if (user.EmailVerified)
+            throw new ConflictException("Email is already verified. Please login.");
+
+        var verificationToken = await GenerateUniqueVerificationCodeAsync(cancellationToken);
+        user.EmailVerificationToken = verificationToken;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        await _emailSender.SendVerificationEmailAsync(user.Email, verificationToken, cancellationToken);
+
+        return new RegisterResponse
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            Message = "A new verification code has been sent to your email."
         };
     }
 
@@ -297,5 +322,21 @@ public class AuthService : IAuthService
             RefreshToken = refreshToken,
             ExpiresIn = expiresInSeconds
         };
+    }
+
+    private async Task<string> GenerateUniqueVerificationCodeAsync(CancellationToken cancellationToken)
+    {
+        // 6-digit code for in-app OTP-style verification.
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            var number = RandomNumberGenerator.GetInt32(0, 1_000_000);
+            var code = number.ToString("D6");
+            var existing = await _userRepository.GetByEmailVerificationTokenAsync(code, cancellationToken);
+            if (existing is null)
+                return code;
+        }
+
+        // Fallback for extremely rare collisions.
+        return Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
     }
 }
