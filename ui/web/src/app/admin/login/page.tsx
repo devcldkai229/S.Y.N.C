@@ -29,11 +29,24 @@ export default function AdminLoginPage() {
     setError("");
 
     try {
-      const res = await api.post<LoginResponse>("/api/v1/auth/login", { email, password });
+      let deviceId = typeof window !== "undefined" ? localStorage.getItem("sync_device_id") : null;
+      if (!deviceId && typeof window !== "undefined") {
+        deviceId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem("sync_device_id", deviceId);
+      }
+      deviceId = deviceId || "web-admin-default";
+
+      const res = await api.post<LoginResponse>("/api/v1/auth/login", { 
+        email, 
+        password,
+        deviceId,
+        platform: "Web"
+      });
       login(res.data.token, res.data.user);
       router.push("/admin/dashboard");
-    } catch {
-      setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || err?.response?.data?.Message || err?.message || "Email hoặc mật khẩu không đúng. Vui lòng thử lại.";
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
