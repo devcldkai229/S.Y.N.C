@@ -18,6 +18,14 @@ public class UserRepository : IUserRepository
             .Include(u => u.BiometricProfile)
             .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
+    public Task<User?> GetByIdWithOnboardingProfilesAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _db.Users
+            .Include(u => u.BiometricProfile)
+            .Include(u => u.UserPreference)
+            .Include(u => u.AIContextProfile)
+            .Include(u => u.GamificationProfile)
+            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+
     public Task<User?> GetByIdForPublicProfileAsync(Guid id, CancellationToken cancellationToken = default) =>
         _db.Users
             .AsNoTracking()

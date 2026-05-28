@@ -1,9 +1,7 @@
 using Iam.Domain.Repositories;
 using Iam.Application.Abstractions;
-using Iam.Infrastructure.Options;
 using Iam.Infrastructure.Persistence;
 using Iam.Infrastructure.Persistence.Repositories;
-using Iam.Infrastructure.Persistence.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,9 +32,6 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IBiometricProfileRepository, BiometricProfileRepository>();
         services.AddScoped<IUserMeRepository, UserMeRepository>();
         services.AddScoped<IInternalSmartPushRepository, InternalSmartPushRepository>();
-
-        services.Configure<IamSeedOptions>(configuration.GetSection(IamSeedOptions.SectionName));
-        services.AddScoped<IIamDatabaseSeeder, IamDatabaseSeeder>();
 
         return services;
     }

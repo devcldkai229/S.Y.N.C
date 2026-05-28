@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/shared/widgets/app_bottom_nav_bar.dart';
 
 /// Bottom navigation shell — dùng với [StatefulShellRoute].
@@ -48,7 +49,7 @@ class MainShellScaffold extends StatelessWidget {
         onTabSelected: _onTabSelected,
         onCenterTap: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Quick actions — coming soon')),
+            SnackBar(content: Text(context.l10n.quickActionsComingSoon)),
           );
         },
       ),

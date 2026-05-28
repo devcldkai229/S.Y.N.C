@@ -64,10 +64,13 @@ class PaginationMeta {
   final int totalPages;
 
   factory PaginationMeta.fromJson(Map<String, dynamic> json) {
+    // Backend nhiều service dùng key `totalRecords`, UI hiện tại lại đọc `totalCount`.
+    // Hỗ trợ cả hai để parse pagination ổn định.
+    final totalRecordsOrCount = (json['totalCount'] ?? json['totalRecords'] ?? 0) as int;
     return PaginationMeta(
       pageNumber: (json['pageNumber'] ?? 1) as int,
       pageSize: (json['pageSize'] ?? 20) as int,
-      totalCount: (json['totalCount'] ?? 0) as int,
+      totalCount: totalRecordsOrCount,
       totalPages: (json['totalPages'] ?? 0) as int,
     );
   }

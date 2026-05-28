@@ -10,25 +10,15 @@
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
   },
-  "DevSeed": {
-    "Enabled": true
-  },
-  "Iam": {
-    "Seed": {
-      "Enabled": true,
-      "ApplyMigrations": true,
-      "SeedAchievements": true,
-      "SeedDemoUsers": true,
-      "DemoUserPassword": "SyncDemo123!"
-    }
-  },
   "GoogleAuth": {
+    "_comment": "List every OAuth client ID that may appear in the Google ID token aud claim. Web client ID must match ui/app web/index.html meta + Flutter AppConfig.defaultGoogleWebClientId.",
     "ClientIds": [
       "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",
       "366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com"
     ]
   },
   "Email": {
+    "_comment": "Public IAM or Gateway URL (no trailing slash). Verify link: {VerificationBaseUrl}/api/v1/auth/verify-email?token=...",
     "VerificationBaseUrl": "http://localhost:5288",
     "Smtp": {
       "Enabled": false,

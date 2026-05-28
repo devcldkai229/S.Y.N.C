@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/auth_repository.dart';
+import 'package:sync_app/core/locale/l10n_extensions.dart';
+import 'package:sync_app/features/auth/utils/auth_error_mapper.dart';
 import 'package:sync_app/shared/widgets/custom_text_field.dart';
+import 'package:sync_app/shared/widgets/language_switcher.dart';
 import 'package:sync_app/shared/widgets/primary_button.dart';
 import 'package:sync_app/shared/widgets/progress_header.dart';
 
@@ -56,24 +58,31 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
               totalSteps: 3,
               onClose: () => context.go(AppRoutes.login),
             ),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: EdgeInsets.only(right: 16),
+                child: LanguageIconToggle(),
+              ),
+            ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Create your account',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.registerTitle,
+                      style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
-                      "Let's start with the basics for your fitness journey.",
-                      style: TextStyle(
+                    Text(
+                      context.l10n.registerSubtitle,
+                      style: const TextStyle(
                         fontSize: 15,
                         height: 1.5,
                         color: AppColors.textSecondary,
@@ -81,20 +90,20 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                     ),
                     const SizedBox(height: 32),
                     CustomTextField(
-                      label: 'Username',
+                      label: context.l10n.fullNameLabel,
                       hint: 'FitWarrior',
                       controller: _usernameController,
                     ),
                     const SizedBox(height: 20),
                     CustomTextField(
-                      label: 'Email Address',
+                      label: context.l10n.emailLabel,
                       hint: 'hello@vitality.com',
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                     ),
                     const SizedBox(height: 20),
                     CustomTextField(
-                      label: 'Password',
+                      label: context.l10n.passwordLabel,
                       hint: '••••••••',
                       controller: _passwordController,
                       obscureText: true,
@@ -102,7 +111,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                     ),
                     const SizedBox(height: 20),
                     CustomTextField(
-                      label: 'Confirm Password',
+                      label: context.l10n.confirmPasswordLabel,
                       hint: '••••••••',
                       controller: _confirmPasswordController,
                       obscureText: true,
@@ -115,7 +124,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
               child: PrimaryButton(
-                label: 'Continue',
+                label: context.l10n.actionContinue,
                 isLoading: _isLoading,
                 onPressed: _onContinuePressed,
               ),
@@ -160,33 +169,15 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
         password: password,
       );
       if (!mounted) return;
-      _showMessage(
-        result.message.isEmpty
-            ? 'Đăng ký thành công. Vui lòng xác minh email trước khi đăng nhập (xem link trong log IAM nếu SMTP đang tắt).'
-            : result.message,
-      );
-      context.go(AppRoutes.login);
+      _showMessage(result.message);
+      context.go(AppRoutes.verifyEmail);
     } catch (error) {
-      _showMessage(_mapError(error));
+      _showMessage(mapAuthError(error, context.l10n));
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  String _mapError(Object error) {
-    if (error is DioException) {
-      final data = error.response?.data;
-      if (data is Map<String, dynamic>) {
-        final message = data['message']?.toString();
-        if (message != null && message.isNotEmpty) {
-          return message;
-        }
-      }
-      return error.message ?? 'Registration request failed.';
-    }
-    return error.toString().replaceFirst('Exception: ', '');
   }
 
   void _showMessage(String message) {

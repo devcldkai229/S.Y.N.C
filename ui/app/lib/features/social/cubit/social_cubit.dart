@@ -11,94 +11,139 @@ class SocialCubit extends Cubit<SocialState> {
 
   final SocialRepository _repository;
 
-  Future<void> loadFeed() async {
-    emit(state.copyWith(status: SocialStatus.loading, clearError: true));
+  static const _feedLimit = 20;
+
+  Future<void> loadFeed({bool refresh = true}) async {
+    if (refresh) {
+      emit(
+        state.copyWith(
+          status: SocialStatus.loading,
+          clearError: true,
+          posts: const [],
+          nextCursor: null,
+          hasMore: false,
+          isLoadingMore: false,
+          likedPostIds: const [],
+          sharedPostIds: const [],
+        ),
+      );
+    } else {
+      emit(state.copyWith(status: SocialStatus.loading, clearError: true));
+    }
+
     try {
-      final posts = await _repository.loadFeed();
-      emit(state.copyWith(status: SocialStatus.success, posts: posts));
+      final page = await _repository.loadFeed(cursor: null, limit: _feedLimit);
+      emit(
+        state.copyWith(
+          status: SocialStatus.success,
+          posts: page.items,
+          nextCursor: page.nextCursor,
+          hasMore: page.nextCursor != null && page.nextCursor!.isNotEmpty,
+          isLoadingMore: false,
+        ),
+      );
     } catch (e) {
       emit(state.copyWith(status: SocialStatus.failure, error: mapApiError(e)));
     }
   }
 
-  void toggleLike(String postId) {
-    final posts = [...state.posts];
-    final index = posts.indexWhere((p) => p.id == postId);
-    if (index < 0) return;
+  Future<void> loadMore() async {
+    if (state.isLoadingMore || !state.hasMore) return;
 
-    final post = posts[index];
-    final wasLiked = post.isLikedByMe;
-    var likes = post.likeCount;
-    var dislikes = post.dislikeCount;
-    var disliked = post.isDislikedByMe;
+    final cursor = state.nextCursor;
+    if (cursor == null || cursor.isEmpty) return;
 
-    if (wasLiked) {
-      likes--;
-    } else {
-      likes++;
-      if (disliked) {
-        dislikes--;
-        disliked = false;
-      }
+    emit(state.copyWith(isLoadingMore: true, clearError: true));
+
+    try {
+      final page = await _repository.loadFeed(cursor: cursor, limit: _feedLimit);
+      final merged = [...state.posts, ...page.items];
+      emit(
+        state.copyWith(
+          status: SocialStatus.success,
+          posts: merged,
+          nextCursor: page.nextCursor,
+          hasMore: page.nextCursor != null && page.nextCursor!.isNotEmpty,
+          isLoadingMore: false,
+        ),
+      );
+    } catch (e) {
+      emit(state.copyWith(
+        status: SocialStatus.failure,
+        error: mapApiError(e),
+        isLoadingMore: false,
+      ));
     }
-
-    final updated = post.copyWith(
-      isLikedByMe: !wasLiked,
-      isDislikedByMe: disliked,
-      likeCount: likes,
-      dislikeCount: dislikes,
-    );
-    posts[index] = updated;
-    emit(state.copyWith(posts: posts));
-    _repository.syncLike(postId, !wasLiked);
   }
 
-  void toggleDislike(String postId) {
-    final posts = [...state.posts];
-    final index = posts.indexWhere((p) => p.id == postId);
-    if (index < 0) return;
+  Future<void> likePost(String postId) async {
+    if (state.likedPostIds.contains(postId)) return;
 
-    final post = posts[index];
-    final wasDisliked = post.isDislikedByMe;
-    var likes = post.likeCount;
-    var dislikes = post.dislikeCount;
-    var liked = post.isLikedByMe;
-
-    if (wasDisliked) {
-      dislikes--;
-    } else {
-      dislikes++;
-      if (liked) {
-        likes--;
-        liked = false;
-      }
+    try {
+      await _repository.likePost(postId);
+      final posts = [...state.posts];
+      final idx = posts.indexWhere((p) => p.id == postId);
+      if (idx < 0) return;
+      final post = posts[idx];
+      posts[idx] = post.copyWith(
+        isLikedByMe: true,
+        metrics: SocialPostMetrics(
+          likeCount: post.metrics.likeCount + 1,
+          commentCount: post.metrics.commentCount,
+          shareCount: post.metrics.shareCount,
+        ),
+      );
+      emit(
+        state.copyWith(
+          posts: posts,
+          likedPostIds: [...state.likedPostIds, postId],
+        ),
+      );
+    } catch (_) {
+      // Conflict nếu đã like rồi — ignore.
     }
-
-    final updated = post.copyWith(
-      isDislikedByMe: !wasDisliked,
-      isLikedByMe: liked,
-      likeCount: likes,
-      dislikeCount: dislikes,
-    );
-    posts[index] = updated;
-    emit(state.copyWith(posts: posts));
-    _repository.syncDislike(postId, !wasDisliked);
   }
 
-  Future<void> addComment(String postId, String content) async {
-    final trimmed = content.trim();
-    if (trimmed.isEmpty) return;
+  Future<void> sharePost(String postId) async {
+    if (state.sharedPostIds.contains(postId)) return;
 
-    final comment = await _repository.addComment(postId, trimmed);
+    try {
+      await _repository.sharePost(postId);
+      final posts = [...state.posts];
+      final idx = posts.indexWhere((p) => p.id == postId);
+      if (idx < 0) return;
+      final post = posts[idx];
+      posts[idx] = post.copyWith(
+        isSharedByMe: true,
+        metrics: SocialPostMetrics(
+          likeCount: post.metrics.likeCount,
+          commentCount: post.metrics.commentCount,
+          shareCount: post.metrics.shareCount + 1,
+        ),
+      );
+      emit(
+        state.copyWith(
+          posts: posts,
+          sharedPostIds: [...state.sharedPostIds, postId],
+        ),
+      );
+    } catch (_) {
+      // Conflict nếu đã share rồi — ignore.
+    }
+  }
+
+  /// Cập nhật số comment trên một bài trong feed (sau khi gửi comment thành công).
+  void bumpCommentCount(String postId) {
     final posts = [...state.posts];
-    final index = posts.indexWhere((p) => p.id == postId);
-    if (index < 0) return;
-
-    final post = posts[index];
-    final comments = [...post.comments, comment];
-    posts[index] = post.copyWith(
-      comments: comments,
-      commentCount: post.commentCount + 1,
+    final idx = posts.indexWhere((p) => p.id == postId);
+    if (idx < 0) return;
+    final post = posts[idx];
+    posts[idx] = post.copyWith(
+      metrics: SocialPostMetrics(
+        likeCount: post.metrics.likeCount,
+        commentCount: post.metrics.commentCount + 1,
+        shareCount: post.metrics.shareCount,
+      ),
     );
     emit(state.copyWith(posts: posts));
   }

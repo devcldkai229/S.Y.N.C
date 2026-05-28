@@ -3,11 +3,15 @@ import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/features/auth/screens/login_screen.dart';
 import 'package:sync_app/features/auth/screens/register_step1_screen.dart';
+import 'package:sync_app/features/auth/screens/verify_email_screen.dart';
 import 'package:sync_app/features/home/screens/home_screen.dart';
 import 'package:sync_app/features/notifications/screens/notifications_screen.dart';
 import 'package:sync_app/features/onboarding/screens/onboarding_screen.dart';
 import 'package:sync_app/features/profile/screens/profile_screen.dart';
+import 'package:sync_app/features/social/screens/social_other_user_profile_screen.dart';
 import 'package:sync_app/features/social/screens/social_screen.dart';
+import 'package:sync_app/features/workouts/models/workout_models.dart';
+import 'package:sync_app/features/workouts/screens/exercise_detail_screen.dart';
 import 'package:sync_app/features/workouts/screens/workouts_screen.dart';
 import 'package:sync_app/shared/widgets/main_shell_scaffold.dart';
 
@@ -25,6 +29,13 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.register,
         builder: (context, state) => const RegisterStep1Screen(),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          return VerifyEmailScreen(initialToken: token);
+        },
       ),
       GoRoute(
         path: AppRoutes.onboarding,
@@ -57,6 +68,16 @@ abstract final class AppRouter {
               GoRoute(
                 path: AppRoutes.social,
                 builder: (context, state) => const SocialScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'user/:userId',
+                    parentNavigatorKey: rootNavigatorKey,
+                    builder: (context, state) {
+                      final userId = state.pathParameters['userId']!;
+                      return SocialOtherUserProfileScreen(userId: userId);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -74,6 +95,18 @@ abstract final class AppRouter {
         path: AppRoutes.notifications,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/workouts/exercise/:exerciseId',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final exerciseId = state.pathParameters['exerciseId']!;
+          final preview = state.extra;
+          return ExerciseDetailScreen(
+            exerciseId: exerciseId,
+            preview: preview is ExerciseCatalogItem ? preview : null,
+          );
+        },
       ),
     ],
   );

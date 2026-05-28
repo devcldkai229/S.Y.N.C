@@ -7,6 +7,8 @@ class ProfileState extends Equatable {
     required this.status,
     this.settings,
     this.inventory,
+    this.biometric,
+    this.publicProfile,
     this.error,
   });
 
@@ -15,12 +17,22 @@ class ProfileState extends Equatable {
   final ProfileStatus status;
   final ProfileSettings? settings;
   final UserInventory? inventory;
+  final BiometricProfileDetail? biometric;
+  final PublicProfile? publicProfile;
   final String? error;
+
+  bool get isLoading =>
+      settings == null &&
+      (status == ProfileStatus.loading || status == ProfileStatus.initial);
+
+  bool get isSaving => status == ProfileStatus.saving;
 
   ProfileState copyWith({
     ProfileStatus? status,
     ProfileSettings? settings,
     UserInventory? inventory,
+    BiometricProfileDetail? biometric,
+    PublicProfile? publicProfile,
     String? error,
     bool clearError = false,
   }) {
@@ -28,10 +40,12 @@ class ProfileState extends Equatable {
       status: status ?? this.status,
       settings: settings ?? this.settings,
       inventory: inventory ?? this.inventory,
+      biometric: biometric ?? this.biometric,
+      publicProfile: publicProfile ?? this.publicProfile,
       error: clearError ? null : (error ?? this.error),
     );
   }
 
   @override
-  List<Object?> get props => [status, settings, inventory, error];
+  List<Object?> get props => [status, settings, inventory, biometric, publicProfile, error];
 }

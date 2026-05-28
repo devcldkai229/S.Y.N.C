@@ -49,6 +49,32 @@ class AuthService {
     if (!envelope.success || envelope.data == null) {
       throw Exception(envelope.message.isEmpty ? 'Register failed.' : envelope.message);
     }
+    return RegisterResult.fromEnvelope(envelope);
+  }
+
+  /// Confirms email via token (same as opening the link in email / IAM log when SMTP is off).
+  Future<VerifyEmailResult> verifyEmail(String token) async {
+    final trimmed = token.trim();
+    if (trimmed.isEmpty) {
+      throw Exception('Verification token is required.');
+    }
+
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.authVerifyEmail,
+      queryParameters: <String, dynamic>{'token': trimmed},
+      options: Options(
+        headers: <String, dynamic>{'Accept': 'application/json'},
+      ),
+    );
+    final envelope = ApiEnvelope<VerifyEmailResult>.fromJson(
+      response.data ?? <String, dynamic>{},
+      VerifyEmailResult.fromJson,
+    );
+    if (!envelope.success || envelope.data == null) {
+      throw Exception(
+        envelope.message.isEmpty ? 'Email verification failed.' : envelope.message,
+      );
+    }
     return envelope.data!;
   }
 
@@ -82,18 +108,12 @@ class AuthService {
   }
 
   Future<AuthSession> loginWithGoogle() async {
-    if (!_googleInitialized) {
-      await GoogleSignIn.instance.initialize(
-        clientId: AppConfig.googleClientId.isEmpty ? null : AppConfig.googleClientId,
-        serverClientId: AppConfig.googleServerClientId.isEmpty ? null : AppConfig.googleServerClientId,
-      );
-      _googleInitialized = true;
-    }
+    await _ensureGoogleSignInInitialized();
 
     if (!GoogleSignIn.instance.supportsAuthenticate()) {
       throw Exception(
         'Google Sign-In chưa hỗ trợ trên platform này. '
-        'Hãy chạy Android/iOS hoặc cấu hình Web client ID.',
+        'Hãy chạy Web (Chrome), Android hoặc iOS.',
       );
     }
 
@@ -145,12 +165,35 @@ class AuthService {
     ]);
   }
 
+  Future<void> _ensureGoogleSignInInitialized() async {
+    if (_googleInitialized) return;
+
+    final clientId = AppConfig.googleClientId;
+    final serverClientId = AppConfig.googleServerClientId;
+
+    if (kIsWeb && clientId.isEmpty) {
+      throw Exception(
+        'Thiếu Google Web Client ID. Thêm thẻ meta google-signin-client_id trong '
+        'web/index.html hoặc chạy với --dart-define=GOOGLE_CLIENT_ID=<web-client-id>.',
+      );
+    }
+
+    await GoogleSignIn.instance.initialize(
+      clientId: clientId.isEmpty ? null : clientId,
+      serverClientId: serverClientId.isEmpty ? null : serverClientId,
+    );
+    _googleInitialized = true;
+  }
+
   Future<String> _getOrCreateDeviceId() async {
     final existing = await _storage.read(key: _deviceIdKey);
     if (existing != null && existing.isNotEmpty) {
       return existing;
     }
-    final random = Random.secure().nextInt(1 << 32).toRadixString(16);
+    // nextInt(1 << 32) is invalid on some runtimes (shift yields 0 or max > 2^32).
+    final random = List<int>.generate(8, (_) => Random.secure().nextInt(256))
+        .map((b) => b.toRadixString(16).padLeft(2, '0'))
+        .join();
     final generated = 'sync-${_platformName.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}-$random';
     await _storage.write(key: _deviceIdKey, value: generated);
     return generated;

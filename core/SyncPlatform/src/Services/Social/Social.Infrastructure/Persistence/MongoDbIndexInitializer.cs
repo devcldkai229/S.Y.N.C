@@ -30,6 +30,8 @@ public static class MongoDbIndexInitializer
             ix.Ascending(x => x.PostType),
             new CreateIndexOptions { Name = "IX_PostType" });
 
+        // Partial unique index: only non-empty ShareCode. $ne "" becomes $not (unsupported); $regex is also unsupported in partial indexes.
+        // String order: any non-empty ShareCode satisfies ShareCode > "".
         var shareCodeIndex = new CreateIndexModel<Post>(
             ix.Ascending(x => x.ShareCode),
             new CreateIndexOptions<Post>
@@ -38,7 +40,7 @@ public static class MongoDbIndexInitializer
                 Name = "UIX_ShareCode",
                 PartialFilterExpression = Builders<Post>.Filter.And(
                     Builders<Post>.Filter.Exists(x => x.ShareCode, true),
-                    Builders<Post>.Filter.Ne(x => x.ShareCode, string.Empty)),
+                    Builders<Post>.Filter.Gt(x => x.ShareCode, string.Empty)),
             });
 
         await collection.Indexes.CreateManyAsync([feedIndex, authorIndex, typeIndex, shareCodeIndex]);

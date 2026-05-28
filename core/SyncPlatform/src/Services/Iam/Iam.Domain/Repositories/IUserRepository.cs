@@ -12,6 +12,8 @@ public interface IUserRepository
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<User?> GetByIdWithBiometricAsync(Guid id, CancellationToken cancellationToken = default);
 
+    Task<User?> GetByIdWithOnboardingProfilesAsync(Guid id, CancellationToken cancellationToken = default);
+
     /// <summary>User + gamification only — for public profile (no biometrics/preferences).</summary>
     Task<User?> GetByIdForPublicProfileAsync(Guid id, CancellationToken cancellationToken = default);
     Task UpdateAsync(User user, CancellationToken cancellationToken = default);

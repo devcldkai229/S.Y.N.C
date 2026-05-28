@@ -45,9 +45,12 @@ public static class BiometricTargetCalculator
 
         profile.BaseTDEE = (int)Math.Round(profile.BMR * multiplier);
 
+        var genderFloor = profile.Gender == Gender.Male ? 1500 : 1200;
         var calorieTarget = profile.FitnessGoal switch
         {
-            FitnessGoal.LoseFat => Math.Max(profile.Gender == Gender.Male ? 1500 : 1200, profile.BaseTDEE - 500),
+            FitnessGoal.LoseFat => Math.Max(
+                profile.BMR,
+                Math.Max(genderFloor, profile.BaseTDEE - 500)),
             FitnessGoal.BuildMuscle => profile.BaseTDEE + 300,
             _ => profile.BaseTDEE
         };
@@ -56,7 +59,8 @@ public static class BiometricTargetCalculator
         {
             FitnessGoal.LoseFat => 2.2,
             FitnessGoal.BuildMuscle => 2.0,
-            _ => 1.6
+            FitnessGoal.Maintain => 1.8,
+            _ => 1.8
         };
 
         var proteinGrams = (int)Math.Round(proteinPerKg * (double)profile.CurrentWeightKg);

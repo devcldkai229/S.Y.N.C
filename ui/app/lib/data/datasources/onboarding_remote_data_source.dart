@@ -23,6 +23,21 @@ class OnboardingRemoteDataSource {
     await _post(ApiPaths.onboardingSafeguards, request.toJson());
   }
 
+  Future<void> saveAccountPreferences(OnboardingAccountPreferencesRequest request) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      ApiPaths.meAccountPreferences,
+      data: request.toJson(),
+    );
+    final success = response.data?['success'] == true;
+    if (!success) {
+      throw Exception(response.data?['message']?.toString() ?? 'Failed to save preferences.');
+    }
+  }
+
+  Future<void> completeOnboarding() async {
+    await _post(ApiPaths.onboardingComplete, {});
+  }
+
   Future<void> _post(String path, Map<String, dynamic> data) async {
     final response = await _dio.post<Map<String, dynamic>>(path, data: data);
     final success = response.data?['success'] == true;

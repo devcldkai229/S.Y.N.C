@@ -1,0 +1,23 @@
+A. Thông tin Sinh trắc học & Mục tiêu (BiometricProfile)
+
+Gender, DateOfBirth, HeightCm, CurrentWeightKg: Bắt buộc. Đây là 4 biến số cốt lõi của phương trình Mifflin-St Jeor để tính Calo.
+
+TargetWeightKg & FitnessGoal: Bắt buộc. Để AI biết người dùng đang muốn Tăng cơ, Giảm mỡ hay Duy trì.
+
+ActivityLevel: (Ít vận động, Vận động nhẹ...). Dùng để nhân hệ số ra TDEE.
+
+FitnessExperienceLevel: Bắt buộc. AI cần biết để quyết định đưa giáo án Beginner hay Advanced.
+
+WorkoutLocationPreference: Gym hay Ở nhà (quyết định việc AI có thêm các bài tập dùng tạ/máy hay không).
+
+Injuries (Chấn thương): Rào chắn an toàn sinh tử (Guardrail). Cho phép họ chọn các tag (Thoát vị đĩa đệm, Đau cổ tay...). LLM sẽ bị cấm tuyệt đối việc đưa các bài tập chống chỉ định vào lịch.
+
+B. Thông tin Sở thích & Cấu hình AI (UserPreference)
+
+Allergies (Dị ứng): Bắt buộc. Rào chắn y tế để AI Nutrition không gợi ý sai.
+
+FavoriteFoods / DislikedFoods: Khuyến khích điền nhanh qua dạng tag. Hệ thống sẽ cá nhân hóa cực tốt nếu biết người dùng có sở thích đặc biệt với các món ăn cụ thể như bún bò, bún thịt nướng, hay heo quay Tây Bắc, từ đó AI sẽ tự động tính toán macro cho các món này vào thực đơn "Cheat meal" (bữa ăn xả) cuối tuần mà không làm hỏng tiến độ.
+
+AgentPersona & MotivationStyle: Cấu hình "linh hồn" cho LangGraph. Người dùng thích AI nói chuyện nghiêm khắc như quân đội hay nhẹ nhàng như bác sĩ?
+
+DataSharingConsent & MarketingConsent: Bắt buộc check box để tuân thủ pháp lý.

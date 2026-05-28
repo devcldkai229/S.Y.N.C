@@ -39,22 +39,21 @@ cd core/SyncPlatform
 .\scripts\run-all.ps1
 ```
 
-Yêu cầu: **.NET 10 SDK**, Docker (Postgres `:5434`, Mongo `:27017`), `Jwt:SecretKey` trong `configs/appsettings.Shared.Development.json`.
+Yêu cầu: **.NET 10 SDK**, Docker (Postgres `:5434`, Mongo `:27018` — tránh trùng MongoDB cài sẵn trên Windows `:27017`), `Jwt:SecretKey` trong `configs/appsettings.Shared.Development.json`.
 
 `run-all.ps1` build toàn bộ service trước khi mở cửa sổ — lỗi build hiện ngay terminal chính (không chỉ timeout health check).
 
-## IAM database (lần đầu)
+## IAM / Roadmap / Exercise seed (tự động)
 
-```powershell
-cd core/SyncPlatform/src/Services/Iam/Iam.API
-dotnet ef database update --project ..\Iam.Infrastructure\Iam.Infrastructure.csproj
-```
+Khi chạy từng API (`Iam.API`, `Roadmap.API`, `Exercise.API`), seed **tự apply lúc startup** (giống `ExerciseSeedData.ExerciseMongoSeeder`) — không cần script SQL riêng.
 
-Khi chạy IAM ở **Development**, seed dev tự chạy **một lần** (bỏ qua nếu đã có user `dev.seed@sync.local`):
+**IAM** (`IamSeedData.IamDbSeeder`): migrate Postgres + achievements + users (idempotent).
 
-| Email | Password | Ghi chú |
-|-------|----------|---------|
-| `dev.seed@sync.local` | `Sync@12345` | Email đã verify — login ngay |
-| `demo@sync.local` | `Sync@12345` | Tài khoản demo thứ hai |
+| Email | Password | Role |
+|-------|----------|------|
+| `demo@sync.local` | `Sync@12345` | User |
+| `admin@sync.local` | `Sync@12345` | SystemAdmin |
+| `partner@sync.local` | `Sync@12345` | Partner |
+| `dev.seed@sync.local` | `Sync@12345` | User |
 
-Tắt seed: `DevSeed:Enabled: false` trong `Iam.API/appsettings.Development.json`.
+Mật khẩu cố định trong code: `IamSeedData.DefaultDevPassword`. Mỗi lần restart IAM, hash mật khẩu của các email trên được đồng bộ lại.

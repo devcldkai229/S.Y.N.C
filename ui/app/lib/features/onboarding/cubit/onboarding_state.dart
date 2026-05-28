@@ -2,26 +2,31 @@ part of 'onboarding_cubit.dart';
 
 class OnboardingState extends Equatable {
   const OnboardingState({
-    this.currentStep = 0,
+    this.currentSide = 0,
+    this.sideACompleted = false,
     this.isSubmitting = false,
     this.isCompleted = false,
     this.error,
   });
 
-  final int currentStep;
+  /// 0 = Side A (biometrics), 1 = Side B (preferences)
+  final int currentSide;
+  final bool sideACompleted;
   final bool isSubmitting;
   final bool isCompleted;
   final String? error;
 
   OnboardingState copyWith({
-    int? currentStep,
+    int? currentSide,
+    bool? sideACompleted,
     bool? isSubmitting,
     bool? isCompleted,
     String? error,
     bool clearError = false,
   }) {
     return OnboardingState(
-      currentStep: currentStep ?? this.currentStep,
+      currentSide: currentSide ?? this.currentSide,
+      sideACompleted: sideACompleted ?? this.sideACompleted,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isCompleted: isCompleted ?? this.isCompleted,
       error: clearError ? null : (error ?? this.error),
@@ -29,5 +34,5 @@ class OnboardingState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [currentStep, isSubmitting, isCompleted, error];
+  List<Object?> get props => [currentSide, sideACompleted, isSubmitting, isCompleted, error];
 }

@@ -1,0 +1,174 @@
+1. 🛑 Injuries (Chấn thương & Bệnh lý thể chất)
+Rào chắn y tế. Các tag này phản ánh những bệnh lý văn phòng và chấn thương thể thao cực kỳ phổ biến tại Việt Nam.
+
+Thoát vị đĩa đệm
+
+Đau thần kinh tọa
+
+Đau thắt lưng (Đau lưng dưới)
+
+Đau cổ vai gáy
+
+Viêm khớp gối / Tràn dịch khớp gối
+
+Đứt dây chằng chéo (ACL)
+
+Tổn thương sụn chêm
+
+Đau khớp cổ tay / Hội chứng ống cổ tay
+
+Trật khớp vai / Lỏng khớp vai
+
+Viêm chóp xoay vai (Rotator cuff)
+
+Lật sơ mi / Bong gân mắt cá chân
+
+Đau khuỷu tay (Tennis Elbow)
+
+Viêm cân gan chân (Đau gót chân)
+
+Thoái hóa cột sống
+
+Huyết áp cao / Bệnh tim mạch
+
+Hen suyễn / Khó thở
+
+Giãn tĩnh mạch chi dưới
+
+Tràn dịch khớp
+
+Gù lưng / Võng lưng (Sai tư thế)
+
+Đang phục hồi sau phẫu thuật (Cần AI cực kỳ cẩn trọng)
+
+2. ⚠️ Allergies (Dị ứng & Không dung nạp)
+Rào chắn dinh dưỡng. Nếu user chọn các tag này, hệ thống sẽ lọc bỏ hoàn toàn các món có thành phần liên quan.
+
+Đậu phộng (Lạc)
+
+Sữa bò (Bất dung nạp Lactose)
+
+Hải sản nói chung
+
+Tôm
+
+Cua / Ghẹ
+
+Mực / Bạch tuộc
+
+Đậu nành
+
+Lúa mì / Không dung nạp Gluten
+
+Trứng
+
+Hạt điều / Hạt mắc ca (Tree nuts)
+
+Cá biển (Cá ngừ, cá hồi, cá thu...)
+
+Bột ngọt / Mì chính (Cực kỳ phổ biến ở Việt Nam)
+
+Nhộng tằm / Côn trùng
+
+Đồ lên men (Mắm, dưa muối)
+
+Sứa biển
+
+Nấm các loại
+
+Dứa (Thơm)
+
+Phẩm màu / Chất bảo quản
+
+Đồ uống có cồn (Bia, rượu)
+
+Caffeine (Say cà phê/trà)
+
+3. ❤️ Favorite Foods (Món ăn yêu thích / "Cheat Meal" tiềm năng)
+Dữ liệu để AI khéo léo gài vào làm phần thưởng (Reward) khi người dùng đạt Streak, hoặc thiết kế một bữa xả stress không phạm luật.
+
+Phở bò / Phở gà
+
+Bún bò Huế
+
+Cơm tấm sườn bì chả
+
+Bún chả Hà Nội
+
+Bánh mì thịt / Bánh mì chảo
+
+Bún đậu mắm tôm
+
+Bún thịt nướng
+
+Heo quay / Vịt quay Bắc Kinh
+
+Gà rán / Hamburger (Fast food)
+
+Lẩu Thái / Lẩu hải sản
+
+Ốc / Đồ nướng vỉa hè
+
+Trà sữa trân châu
+
+Đồ nướng BBQ Hàn Quốc (Kogi)
+
+Hủ tiếu Nam Vang
+
+Bánh xèo / Bánh khọt
+
+Xôi mặn / Xôi xéo
+
+Mì Quảng
+
+Gỏi cuốn / Bò bía
+
+Sushi / Sashimi
+
+Chè / Đồ ngọt tráng miệng
+
+4. 🚫 Disliked Foods (Món ăn ghét / Kiêng kỵ)
+Dữ liệu để AI cá nhân hóa thực đơn hàng ngày. Dù món đó có healthy đến mấy (như ức gà, súp lơ), nếu user ghét thì tuyệt đối không đưa vào.
+
+Hành lá / Hành tây sống
+
+Rau mùi (Ngò gai, ngò rí)
+
+Rau diếp cá (Mùi tanh)
+
+Khổ qua (Mướp đắng)
+
+Mắm tôm / Mắm nêm / Mắm ruốc
+
+Đồ lòng / Nội tạng động vật
+
+Sầu riêng
+
+Tiết canh / Đồ sống
+
+Thịt mỡ / Da động vật
+
+Cà chua sống
+
+Giá đỗ
+
+Măng tươi / Măng chua
+
+Ớt chuông
+
+Các loại rau luộc nhạt nhẽo
+
+Cá sông / Đồ ăn có mùi tanh
+
+Ức gà khô (Nỗi ám ảnh của dân tập gym)
+
+Khoai lang luộc
+
+Đồ ăn quá cay
+
+Đồ ăn nhiều dầu mỡ (Ngấy)
+
+Các loại thịt nạc dăm / Gân cứng
+
+💡 Lời khuyên UI/UX cho App Flutter:
+Bạn không nên sổ toàn bộ 80 cái tags này ra màn hình cùng một lúc. Hãy thiết kế một ô tìm kiếm (Searchable Multi-select Dropdown) hoặc các Bubble Tags vuốt ngang. Hiển thị sẵn 5-7 tags phổ biến nhất lên đầu (Ví dụ: Đau cổ vai gáy, Đậu phộng, Cơm tấm, Hành lá), những tags còn lại sẽ hiện ra khi người dùng gõ từ khóa.

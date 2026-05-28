@@ -6,13 +6,59 @@ class SocialRepository {
 
   final SocialRemoteDataSource _remote;
 
-  Future<List<SocialPost>> loadFeed() => _remote.fetchFeed();
+  Future<CursorFeedPage<SocialPost>> loadFeed({String? cursor, int limit = 20}) =>
+      _remote.fetchFeed(cursor: cursor, limit: limit);
 
-  Future<void> syncLike(String postId, bool like) => _remote.toggleLike(postId, like);
+  Future<CursorFeedPage<SocialPost>> loadUserWall({
+    required String userId,
+    String? cursor,
+    int limit = 20,
+    bool onlyMedia = false,
+  }) =>
+      _remote.fetchUserWall(
+        userId: userId,
+        cursor: cursor,
+        limit: limit,
+        onlyMedia: onlyMedia,
+      );
 
-  Future<void> syncDislike(String postId, bool dislike) =>
-      _remote.toggleDislike(postId, dislike);
+  Future<void> likePost(String postId) => _remote.likePost(postId);
 
-  Future<SocialComment> addComment(String postId, String content) =>
-      _remote.addComment(postId, content);
+  Future<void> sharePost(String postId) => _remote.sharePost(postId);
+
+  Future<CommentsPage> fetchComments(String postId, {int pageNumber = 1, int pageSize = 20}) =>
+      _remote.fetchComments(postId, pageNumber: pageNumber, pageSize: pageSize);
+
+  Future<SocialComment> createComment({
+    required String postId,
+    required String content,
+    required String authorFullName,
+    String? authorAvatarUrl,
+  }) =>
+      _remote.createComment(
+        postId: postId,
+        content: content,
+        authorFullName: authorFullName,
+        authorAvatarUrl: authorAvatarUrl,
+      );
+
+  Future<List<String>> uploadMediaFiles(List<String> filePaths) =>
+      _remote.uploadMediaFiles(filePaths);
+
+  Future<SocialPost> createPost({
+    required String content,
+    required List<String> mediaUrls,
+    required bool isPublic,
+    required String authorFullName,
+    String? authorAvatarUrl,
+    String postType = 'Standard',
+  }) =>
+      _remote.createPost(
+        content: content,
+        mediaUrls: mediaUrls,
+        isPublic: isPublic,
+        authorFullName: authorFullName,
+        authorAvatarUrl: authorAvatarUrl,
+        postType: postType,
+      );
 }

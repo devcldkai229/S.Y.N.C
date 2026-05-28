@@ -60,3 +60,8 @@ public class UpdateWeightDto
 {
     public decimal CurrentWeightKg { get; set; }
 }
+
+public sealed record OnboardingCompleteResultDto(
+    BiometricProfileDto Biometric,
+    bool AIContextProfileCreated,
+    bool GamificationProfileCreated);

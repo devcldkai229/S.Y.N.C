@@ -1,18 +1,25 @@
+using Iam.Application.Abstractions;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
+using Iam.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Iam.Infrastructure.Persistence.Seed;
 
-/// <summary>Stable IDs for local/dev references (Flutter, Social author snapshots, etc.).</summary>
+/// <summary>Stable IDs and dev seed data (Flutter, Social, Roadmap cross-service references).</summary>
 public static class IamSeedData
 {
+    public const string DefaultDevPassword = "Sync@12345";
+
     public static readonly Guid DemoUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     public static readonly Guid AdminUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
     public static readonly Guid PartnerUserId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+    public static readonly Guid DevSeedUserId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
 
     public const string DemoUserEmail = "demo@sync.local";
     public const string AdminUserEmail = "admin@sync.local";
     public const string PartnerUserEmail = "partner@sync.local";
+    public const string DevSeedUserEmail = "dev.seed@sync.local";
 
     public static IReadOnlyList<Achievement> GetAchievements() =>
     [
@@ -165,4 +172,111 @@ public static class IamSeedData
             AchievementPoints = 120,
         },
     };
+
+    public static User CreateDevSeedUser(string passwordHash) => new()
+    {
+        Id = DevSeedUserId,
+        Email = DevSeedUserEmail,
+        PasswordHash = passwordHash,
+        FullName = "Sync Dev",
+        Role = UserRole.User,
+        Status = UserStatus.Active,
+        SubscriptionTier = SubscriptionTier.Free,
+        EmailVerified = true,
+        PhoneVerified = false,
+        PreferredLanguage = "vi",
+        TimeZone = "Asia/Ho_Chi_Minh",
+    };
+
+    public static IReadOnlyList<User> GetSeedUsers(string passwordHash) =>
+    [
+        CreateDemoUser(passwordHash),
+        CreateAdminUser(passwordHash),
+        CreatePartnerUser(passwordHash),
+        CreateDevSeedUser(passwordHash),
+    ];
+
+    /// <summary>Applies EF migrations and idempotent dev seed (run once at IAM.API startup).</summary>
+    public static class IamDbSeeder
+    {
+        public static async Task SeedAsync(
+            IamDbContext db,
+            IPasswordHasher passwordHasher,
+            CancellationToken cancellationToken = default)
+        {
+            await db.Database.MigrateAsync(cancellationToken);
+
+            await SeedAchievementsAsync(db, cancellationToken);
+            await SeedUsersAsync(db, passwordHasher, cancellationToken);
+        }
+
+        private static async Task SeedAchievementsAsync(IamDbContext db, CancellationToken cancellationToken)
+        {
+            var seeds = GetAchievements();
+            var codes = seeds.Select(a => a.Code).ToList();
+            var existingCodes = await db.Achievements
+                .AsNoTracking()
+                .Where(a => codes.Contains(a.Code))
+                .Select(a => a.Code)
+                .ToListAsync(cancellationToken);
+
+            var missing = seeds.Where(a => !existingCodes.Contains(a.Code)).ToList();
+            if (missing.Count == 0)
+                return;
+
+            var now = DateTimeOffset.UtcNow;
+            foreach (var achievement in missing)
+            {
+                achievement.CreatedAt = now;
+                achievement.UpdatedAt = now;
+            }
+
+            await db.Achievements.AddRangeAsync(missing, cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        private static async Task SeedUsersAsync(
+            IamDbContext db,
+            IPasswordHasher passwordHasher,
+            CancellationToken cancellationToken)
+        {
+            var passwordHash = passwordHasher.Hash(DefaultDevPassword);
+            var candidates = GetSeedUsers(passwordHash);
+            var emails = candidates.Select(u => u.Email).ToList();
+
+            var existingUsers = await db.Users
+                .Where(u => emails.Contains(u.Email))
+                .ToListAsync(cancellationToken);
+
+            var existingEmails = existingUsers.Select(u => u.Email).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var now = DateTimeOffset.UtcNow;
+
+            foreach (var user in existingUsers)
+            {
+                user.PasswordHash = passwordHash;
+                user.EmailVerified = true;
+                if (user.Status == UserStatus.PendingVerification)
+                    user.Status = UserStatus.Active;
+                user.UpdatedAt = now;
+            }
+
+            var toAdd = candidates.Where(u => !existingEmails.Contains(u.Email)).ToList();
+            foreach (var user in toAdd)
+            {
+                user.CreatedAt = now;
+                user.UpdatedAt = now;
+                if (user.GamificationProfile is not null)
+                {
+                    user.GamificationProfile.CreatedAt = now;
+                    user.GamificationProfile.UpdatedAt = now;
+                }
+            }
+
+            if (toAdd.Count > 0)
+                await db.Users.AddRangeAsync(toAdd, cancellationToken);
+
+            if (existingUsers.Count > 0 || toAdd.Count > 0)
+                await db.SaveChangesAsync(cancellationToken);
+        }
+    }
 }

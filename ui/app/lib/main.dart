@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sync_app/l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sync_app/app/router/app_router.dart';
 import 'package:sync_app/core/config/app_config.dart';
+import 'package:sync_app/core/locale/locale_cubit.dart';
 import 'package:sync_app/core/theme/app_theme.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/auth_repository.dart';
@@ -15,11 +18,19 @@ import 'package:sync_app/data/repositories/workout_repository.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await configureDependencies();
-  runApp(const SyncApp());
+  final localeCubit = getIt<LocaleCubit>();
+  runApp(SyncApp(localeCubit: localeCubit));
+
+  // Defer secure-storage + network work so the first frame is not blocked (avoids emulator disconnect).
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    localeCubit.bootstrap();
+  });
 }
 
 class SyncApp extends StatelessWidget {
-  const SyncApp({super.key});
+  const SyncApp({super.key, required this.localeCubit});
+
+  final LocaleCubit localeCubit;
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +44,27 @@ class SyncApp extends StatelessWidget {
         RepositoryProvider.value(value: getIt<OnboardingRepository>()),
         RepositoryProvider.value(value: getIt<SocialRepository>()),
       ],
-      child: MaterialApp.router(
-        title: AppConfig.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        themeMode: ThemeMode.light,
-        routerConfig: AppRouter.router,
+      child: BlocProvider.value(
+        value: localeCubit,
+        child: BlocBuilder<LocaleCubit, Locale>(
+          builder: (context, locale) {
+            return MaterialApp.router(
+              title: AppConfig.appName,
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              themeMode: ThemeMode.light,
+              locale: locale,
+              supportedLocales: AppLocalizations.supportedLocales,
+              localizationsDelegates: const [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              routerConfig: AppRouter.router,
+            );
+          },
+        ),
       ),
     );
   }

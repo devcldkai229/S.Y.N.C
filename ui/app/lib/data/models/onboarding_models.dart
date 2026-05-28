@@ -72,3 +72,35 @@ class OnboardingStep4Request {
         'medications': medications ?? [],
       };
 }
+
+class OnboardingAccountPreferencesRequest {
+  OnboardingAccountPreferencesRequest({
+    required this.allergies,
+    this.favoriteFoods = const [],
+    this.dislikedFoods = const [],
+    required this.agentPersona,
+    required this.motivationStyle,
+    required this.dataSharingConsent,
+    required this.marketingConsent,
+  });
+
+  final List<String> allergies;
+  final List<String> favoriteFoods;
+  final List<String> dislikedFoods;
+  final String agentPersona;
+  final String motivationStyle;
+  final bool dataSharingConsent;
+  final bool marketingConsent;
+
+  Map<String, dynamic> toJson() => {
+        'allergies': allergies
+            .map((name) => <String, dynamic>{'allergenName': name})
+            .toList(),
+        'favoriteFoods': favoriteFoods,
+        'dislikedFoods': dislikedFoods,
+        'agentPersona': agentPersona,
+        'motivationStyle': motivationStyle,
+        'dataSharingConsent': dataSharingConsent,
+        'marketingConsent': marketingConsent,
+      };
+}

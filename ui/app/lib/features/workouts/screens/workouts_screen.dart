@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/workouts/cubit/workouts_cubit.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
+
 class WorkoutsScreen extends StatelessWidget {
   const WorkoutsScreen({super.key});
 
@@ -12,6 +15,7 @@ class WorkoutsScreen extends StatelessWidget {
     return BlocProvider(
       create: (_) => WorkoutsCubit(getIt())
         ..loadRoadmap()
+        ..loadCustomWorkouts()
         ..loadCatalog(),
       child: const _WorkoutsView(),
     );
@@ -31,7 +35,7 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -46,97 +50,105 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 18,
-                    backgroundColor: AppColors.border,
-                    child: Icon(Icons.person, size: 20, color: AppColors.textMuted),
-                  ),
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        'SYNC',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryGreen,
-                          letterSpacing: 1.1,
-                        ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  radius: 18,
+                  backgroundColor: AppColors.border,
+                  child: Icon(Icons.person, size: 20, color: AppColors.textMuted),
+                ),
+                const Expanded(
+                  child: Center(
+                    child: Text(
+                      'SYNC',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryGreen,
+                        letterSpacing: 1.1,
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.smart_toy_outlined, color: AppColors.primaryGreen),
-                  ),
-                ],
-              ),
+                ),
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.smart_toy_outlined, color: AppColors.primaryGreen),
+                ),
+              ],
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Workouts',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Workouts',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.border.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicator: BoxDecoration(
-                    color: AppColors.cardBackground,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  labelColor: AppColors.textPrimary,
-                  unselectedLabelColor: AppColors.textMuted,
-                  labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-                  tabs: const [
-                    Tab(text: 'My Roadmap'),
-                    Tab(text: 'Catalog'),
-                  ],
-                ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.border.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            Expanded(
-              child: TabBarView(
+              child: TabBar(
                 controller: _tabController,
-                children: const [
-                  _RoadmapTab(),
-                  _CatalogTab(),
+                indicator: BoxDecoration(
+                  color: AppColors.cardBackground,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: AppColors.textPrimary,
+                unselectedLabelColor: AppColors.textMuted,
+                labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                tabs: const [
+                  Tab(text: 'AI Roadmap'),
+                  Tab(text: 'My Workouts'),
+                  Tab(text: 'Catalog'),
                 ],
               ),
             ),
-          ],
-        ),
-      );
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                _AiRoadmapTab(),
+                _CustomWorkoutsTab(),
+                _CatalogTab(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
-class _RoadmapTab extends StatefulWidget {
-  const _RoadmapTab();
-
-  @override
-  State<_RoadmapTab> createState() => _RoadmapTabState();
+List<RoadmapSession> _sessionsThisWeek(List<RoadmapSession> sessions) {
+  final now = DateTime.now();
+  final start = DateTime(now.year, now.month, now.day)
+      .subtract(Duration(days: now.weekday - DateTime.monday));
+  final end = start.add(const Duration(days: 7));
+  return sessions.where((s) {
+    final d = s.scheduledDate.toLocal();
+    return !d.isBefore(start) && d.isBefore(end);
+  }).toList();
 }
 
-class _RoadmapTabState extends State<_RoadmapTab> {
+class _AiRoadmapTab extends StatelessWidget {
+  const _AiRoadmapTab();
+
   int _progressPercent(List<RoadmapSession> sessions) {
     if (sessions.isEmpty) return 0;
     final done = sessions.where((s) => s.isCompleted).length;
@@ -172,25 +184,30 @@ class _RoadmapTabState extends State<_RoadmapTab> {
             ),
           );
         }
+
         final roadmap = state.roadmap;
         if (roadmap == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'No roadmap yet. Create one from the web admin or seed Roadmap service.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.9)),
-          ),
-        ),
-      );
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'No AI roadmap yet. Personalized roadmaps are created by SYNC AI — you cannot create them manually.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.9)),
+              ),
+            ),
+          );
         }
 
-        final sessions = state.sessions;
+        final allSessions = state.sessions;
+        final weekSessions = _sessionsThisWeek(allSessions);
         final recovery = state.recovery;
-        final nextSession = sessions.cast<RoadmapSession?>().firstWhere(
+        final nextSession = weekSessions.cast<RoadmapSession?>().firstWhere(
               (s) => s != null && !s.isCompleted && !s.isInProgress,
-              orElse: () => null,
+              orElse: () => allSessions.cast<RoadmapSession?>().firstWhere(
+                    (s) => s != null && !s.isCompleted && !s.isInProgress,
+                    orElse: () => null,
+                  ),
             );
 
         return RefreshIndicator(
@@ -199,10 +216,15 @@ class _RoadmapTabState extends State<_RoadmapTab> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
             children: [
+              const _AiManagedBanner(),
+              const SizedBox(height: 12),
               _PhaseCard(
                 phaseTitle: roadmap.currentPhase.isNotEmpty ? roadmap.currentPhase : roadmap.roadmapName,
                 subtitle: _weekSubtitle(roadmap),
-                progressPercent: _progressPercent(sessions),
+                progressPercent: _progressPercent(allSessions),
+                weightLine: roadmap.targetWeightKg > 0
+                    ? '${roadmap.currentWeightKg.toStringAsFixed(1)} kg → ${roadmap.targetWeightKg.toStringAsFixed(1)} kg'
+                    : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -224,28 +246,128 @@ class _RoadmapTabState extends State<_RoadmapTab> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "This Week's Sessions",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+              if (recovery != null && recovery.recommendedTrainingIntensity.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGreen.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.25)),
                   ),
-                  TextButton(onPressed: () {}, child: const Text('View All')),
-                ],
+                  child: Row(
+                    children: [
+                      const Icon(Icons.insights_outlined, color: AppColors.primaryGreen, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'AI recommends: ${recovery.recommendedTrainingIntensity} intensity',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              const Text(
+                "This Week's Sessions",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
-              if (sessions.isEmpty)
+              if (weekSessions.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text('No sessions scheduled.', style: TextStyle(color: AppColors.textMuted)),
+                  child: Text('No sessions this week.', style: TextStyle(color: AppColors.textMuted)),
                 )
               else
-                ...sessions.map((s) {
+                ...weekSessions.map((s) {
                   final isNext = nextSession?.id == s.id;
                   return _SessionTile(session: s, isNextUp: isNext);
                 }),
+              if (allSessions.length > weekSessions.length) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '+ ${allSessions.length - weekSessions.length} more sessions in your plan',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CustomWorkoutsTab extends StatelessWidget {
+  const _CustomWorkoutsTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<WorkoutsCubit, WorkoutsState>(
+      builder: (context, state) {
+        if (state.customStatus == LoadStatus.loading && state.customWorkouts.isEmpty) {
+          return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
+        }
+        if (state.customStatus == LoadStatus.failure && state.customWorkouts.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(state.customError ?? 'Error', textAlign: TextAlign.center),
+                TextButton(
+                  onPressed: () => context.read<WorkoutsCubit>().loadCustomWorkouts(),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final workouts = state.customWorkouts;
+
+        return RefreshIndicator(
+          onRefresh: () => context.read<WorkoutsCubit>().loadCustomWorkouts(),
+          color: AppColors.primaryGreen,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBackground,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, color: AppColors.primaryGreen),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Templates you create. Schedule them into your calendar from the web or future mobile flow.',
+                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              if (workouts.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                    child: Text(
+                      'No custom workouts yet.\nCreate one via POST /workouts/custom.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  ),
+                )
+              else
+                ...workouts.map((w) => _CustomWorkoutCard(workout: w)),
             ],
           ),
         );
@@ -288,6 +410,10 @@ class _CatalogTabState extends State<_CatalogTab> {
     return map;
   }
 
+  void _openDetail(BuildContext context, ExerciseCatalogItem exercise) {
+    context.push(AppRoutes.exerciseDetail(exercise.id), extra: exercise);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<WorkoutsCubit, WorkoutsState>(
@@ -299,87 +425,139 @@ class _CatalogTabState extends State<_CatalogTab> {
         final grouped = _grouped(exercises);
 
         return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-          child: TextField(
-            controller: _searchController,
-            onSubmitted: (_) => _load(context),
-            decoration: InputDecoration(
-              hintText: 'Search exercises...',
-              prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.tune, color: AppColors.textMuted),
-                onPressed: () => _load(context),
-              ),
-              filled: true,
-              fillColor: AppColors.cardBackground,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: AppColors.border),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: TextField(
+                controller: _searchController,
+                onSubmitted: (_) => _load(context),
+                decoration: InputDecoration(
+                  hintText: 'Search exercises...',
+                  prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.tune, color: AppColors.textMuted),
+                    onPressed: () => _load(context),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.cardBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-        SizedBox(
-          height: 40,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _categories.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, i) {
-              final c = _categories[i];
-              final selected = c == _category;
-              return FilterChip(
-                label: Text(c == 'All' ? 'All Categories' : c),
-                selected: selected,
-                onSelected: (_) {
-                  setState(() => _category = c);
-                  _load(context);
-                },
-                selectedColor: AppColors.primaryGreen,
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-                backgroundColor: AppColors.border.withValues(alpha: 0.4),
-                showCheckmark: false,
-              );
-            },
-          ),
-        ),
-        Expanded(
-          child: loading
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
-              : error != null && exercises.isEmpty
-                  ? Center(child: Text(error))
-                  : RefreshIndicator(
-                      onRefresh: () async => _load(context),
-                      color: AppColors.primaryGreen,
-                      child: ListView(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
-                        children: [
-                          if (featured != null) _AiFeaturedCard(exercise: featured),
-                          const SizedBox(height: 16),
-                          ...grouped.entries.map(
-                            (e) => _ExerciseGroup(title: e.key, items: e.value),
-                          ),
-                          if (exercises.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.all(32),
-                              child: Center(
-                                child: Text('No exercises found.', style: TextStyle(color: AppColors.textMuted)),
-                              ),
-                            ),
-                        ],
-                      ),
+            SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: _categories.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  final c = _categories[i];
+                  final selected = c == _category;
+                  return FilterChip(
+                    label: Text(c == 'All' ? 'All Categories' : c),
+                    selected: selected,
+                    onSelected: (_) {
+                      setState(() => _category = c);
+                      _load(context);
+                    },
+                    selectedColor: AppColors.primaryGreen,
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.white : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
                     ),
-        ),
-      ],
+                    backgroundColor: AppColors.border.withValues(alpha: 0.4),
+                    showCheckmark: false,
+                  );
+                },
+              ),
+            ),
+            Expanded(
+              child: loading
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                  : error != null && exercises.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(error, textAlign: TextAlign.center),
+                              TextButton(onPressed: () => _load(context), child: const Text('Retry')),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () async => _load(context),
+                          color: AppColors.primaryGreen,
+                          child: ListView(
+                            padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                            children: [
+                              if (featured != null)
+                                _AiFeaturedCard(
+                                  exercise: featured,
+                                  onTap: () => _openDetail(context, featured),
+                                ),
+                              const SizedBox(height: 16),
+                              ...grouped.entries.map(
+                                (e) => _ExerciseGroup(
+                                  title: e.key,
+                                  items: e.value,
+                                  onTapExercise: (ex) => _openDetail(context, ex),
+                                ),
+                              ),
+                              if (exercises.isEmpty)
+                                const Padding(
+                                  padding: EdgeInsets.all(32),
+                                  child: Center(
+                                    child: Text(
+                                      'No exercises found.',
+                                      style: TextStyle(color: AppColors.textMuted),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+            ),
+          ],
         );
       },
+    );
+  }
+}
+
+class _AiManagedBanner extends StatelessWidget {
+  const _AiManagedBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primaryGreen.withValues(alpha: 0.15),
+            AppColors.lightGreen.withValues(alpha: 0.3),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.35)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.auto_awesome, color: AppColors.primaryGreen, size: 20),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'AI-managed roadmap — sessions are generated and adjusted by SYNC AI.',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -389,11 +567,13 @@ class _PhaseCard extends StatelessWidget {
     required this.phaseTitle,
     required this.subtitle,
     required this.progressPercent,
+    this.weightLine,
   });
 
   final String phaseTitle;
   final String subtitle;
   final int progressPercent;
+  final String? weightLine;
 
   @override
   Widget build(BuildContext context) {
@@ -420,12 +600,13 @@ class _PhaseCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  phaseTitle,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                ),
+                Text(phaseTitle, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                if (weightLine != null) ...[
+                  const SizedBox(height: 6),
+                  Text(weightLine!, style: const TextStyle(fontSize: 12, color: AppColors.primaryGreen, fontWeight: FontWeight.w600)),
+                ],
               ],
             ),
           ),
@@ -441,10 +622,7 @@ class _PhaseCard extends StatelessWidget {
                   backgroundColor: AppColors.border,
                   color: AppColors.primaryGreen,
                 ),
-                Text(
-                  '$progressPercent%',
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-                ),
+                Text('$progressPercent%', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
               ],
             ),
           ),
@@ -529,15 +707,34 @@ class _SessionTile extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isNextUp)
-                  const Text(
-                    'NEXT UP',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryGreen,
-                    ),
-                  ),
+                Row(
+                  children: [
+                    if (isNextUp)
+                      const Padding(
+                        padding: EdgeInsets.only(right: 8),
+                        child: Text(
+                          'NEXT UP',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primaryGreen,
+                          ),
+                        ),
+                      ),
+                    if (session.aiGenerated)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.lightGreen,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'AI',
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+                        ),
+                      ),
+                  ],
+                ),
                 Text(
                   session.sessionTitle,
                   style: TextStyle(
@@ -547,7 +744,7 @@ class _SessionTile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${session.estimatedDurationMinutes} Min • Energy Demand: ${session.energyDemandLabel}',
+                  session.subtitleLine,
                   style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ],
@@ -570,7 +767,7 @@ class _SessionTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                completed ? 'Completed $day' : 'Scheduled $day',
+                completed ? 'Done $day' : day,
                 style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
               ),
             ),
@@ -580,10 +777,63 @@ class _SessionTile extends StatelessWidget {
   }
 }
 
+class _CustomWorkoutCard extends StatelessWidget {
+  const _CustomWorkoutCard({required this.workout});
+
+  final UserCustomWorkout workout;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(workout.workoutName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              ),
+              if (workout.allowAiOptimization)
+                const Icon(Icons.auto_awesome, size: 18, color: AppColors.primaryGreen),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${workout.exerciseCount} exercises • ${workout.totalSets} sets • ${workout.scheduleMode.isNotEmpty ? workout.scheduleMode : workout.visibility}',
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          if (workout.blocks.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...workout.blocks.take(3).map(
+                  (b) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '• ${b.summary} (${b.restSeconds}s rest)',
+                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                    ),
+                  ),
+                ),
+            if (workout.blocks.length > 3)
+              Text('+ ${workout.blocks.length - 3} more', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _AiFeaturedCard extends StatelessWidget {
-  const _AiFeaturedCard({required this.exercise});
+  const _AiFeaturedCard({required this.exercise, required this.onTap});
 
   final ExerciseCatalogItem exercise;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -604,7 +854,12 @@ class _AiFeaturedCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Container(
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
@@ -612,14 +867,10 @@ class _AiFeaturedCard extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              Container(
+              SizedBox(
                 height: 160,
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.fitness_center,
-                  size: 64,
-                  color: AppColors.primaryGreen.withValues(alpha: 0.5),
-                ),
+                width: double.infinity,
+                child: Icon(Icons.fitness_center, size: 64, color: AppColors.primaryGreen.withValues(alpha: 0.5)),
               ),
               Positioned(
                 left: 16,
@@ -658,16 +909,23 @@ class _AiFeaturedCard extends StatelessWidget {
             ],
           ),
         ),
+          ),
+        ),
       ],
     );
   }
 }
 
 class _ExerciseGroup extends StatelessWidget {
-  const _ExerciseGroup({required this.title, required this.items});
+  const _ExerciseGroup({
+    required this.title,
+    required this.items,
+    required this.onTapExercise,
+  });
 
   final String title;
   final List<ExerciseCatalogItem> items;
+  final void Function(ExerciseCatalogItem) onTapExercise;
 
   @override
   Widget build(BuildContext context) {
@@ -678,16 +936,17 @@ class _ExerciseGroup extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 8, top: 8),
           child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
         ),
-        ...items.map((e) => _ExerciseListTile(exercise: e)),
+        ...items.map((e) => _ExerciseListTile(exercise: e, onTap: () => onTapExercise(e))),
       ],
     );
   }
 }
 
 class _ExerciseListTile extends StatelessWidget {
-  const _ExerciseListTile({required this.exercise});
+  const _ExerciseListTile({required this.exercise, required this.onTap});
 
   final ExerciseCatalogItem exercise;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -696,66 +955,70 @@ class _ExerciseListTile extends StatelessWidget {
     if (diff.contains('ADVANCED')) diffColor = Colors.red.shade400;
     if (diff.contains('INTERMEDIATE')) diffColor = AppColors.brightGreen;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: AppColors.primaryGreen.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primaryGreen.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.fitness_center, color: AppColors.primaryGreen),
             ),
-            child: const Icon(Icons.fitness_center, color: AppColors.primaryGreen),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(exercise.nameEn, style: const TextStyle(fontWeight: FontWeight.w700)),
-                if (exercise.nameVi.isNotEmpty)
-                  Text(exercise.nameVi, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                Text(
-                  exercise.musclesEquipmentLine,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: diffColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(exercise.nameEn, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  if (exercise.nameVi.isNotEmpty)
+                    Text(exercise.nameVi, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  Text(
+                    exercise.musclesEquipmentLine,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: diffColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          diff,
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: diffColor),
+                        ),
                       ),
-                      child: Text(
-                        diff,
-                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: diffColor),
+                      const SizedBox(width: 8),
+                      Text(
+                        '~${exercise.estimatedCaloriesPerMinute} kcal/min',
+                        style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '~${exercise.estimatedCaloriesPerMinute} kcal/min',
-                      style: const TextStyle(fontSize: 10, color: AppColors.textMuted),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (exercise.aiCoachingCues.isNotEmpty)
-            const Icon(Icons.smart_toy_outlined, size: 18, color: AppColors.primaryGreen),
-        ],
+            if (exercise.aiCoachingCues.isNotEmpty)
+              const Icon(Icons.smart_toy_outlined, size: 18, color: AppColors.primaryGreen),
+          ],
+        ),
       ),
     );
   }

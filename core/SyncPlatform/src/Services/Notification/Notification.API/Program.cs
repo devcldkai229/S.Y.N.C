@@ -11,6 +11,7 @@ using Notification.Application.Common;
 using Notification.Application.Extensions;
 using Notification.Infrastructure.Extensions;
 using Notification.Infrastructure.Persistence;
+using Notification.Infrastructure.Persistence.Seed;
 using Notification.API.BackgroundWorkers;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
@@ -76,6 +77,7 @@ app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
+await NotificationSeedData.NotificationMongoSeeder.SeedAsync(mongoDb);
 
 app.MapSyncHealthChecks();
 app.MapControllers();

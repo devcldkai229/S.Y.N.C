@@ -13,4 +13,9 @@ class OnboardingRepository {
   Future<void> submitStep3(OnboardingStep3Request request) => _remote.saveComposition(request);
 
   Future<void> submitStep4(OnboardingStep4Request request) => _remote.saveSafeguards(request);
+
+  Future<void> submitAccountPreferences(OnboardingAccountPreferencesRequest request) =>
+      _remote.saveAccountPreferences(request);
+
+  Future<void> completeOnboarding() => _remote.completeOnboarding();
 }

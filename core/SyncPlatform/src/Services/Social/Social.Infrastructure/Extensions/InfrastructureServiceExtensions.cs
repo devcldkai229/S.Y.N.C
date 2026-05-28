@@ -1,12 +1,17 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
+using Minio;
 using Social.Domain.Repositories;
+using Social.Application.Configuration;
+using Social.Application.Services;
 using Social.Infrastructure.Options;
 using Social.Infrastructure.Persistence;
 using Social.Infrastructure.Persistence.Repositories;
+using Social.Infrastructure.Services;
 using Social.Infrastructure.Persistence.Seed;
 
 namespace Social.Infrastructure.Extensions;
@@ -22,6 +27,20 @@ public static class InfrastructureServiceExtensions
     {
         RegisterBsonConventions();
 
+        services.Configure<MinioOptions>(configuration.GetSection(MinioOptions.SectionName));
+
+        services.AddSingleton<IMinioClient>(sp =>
+        {
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MinioOptions>>().Value;
+            return new MinioClient()
+                .WithEndpoint(options.Endpoint)
+                .WithCredentials(options.AccessKey, options.SecretKey)
+                .WithSSL(options.UseSsl)
+                .Build();
+        });
+
+        services.AddSingleton<IStorageService, MinioStorageService>();
+
         var connectionString = configuration.GetConnectionString("SocialDatabase")
             ?? throw new InvalidOperationException("Connection string 'SocialDatabase' is not configured.");
 
@@ -29,9 +48,7 @@ public static class InfrastructureServiceExtensions
 
         services.AddSingleton<IMongoClient>(_ =>
         {
-            var settings = MongoClientSettings.FromConnectionString(connectionString);
-            settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-            return new MongoClient(settings);
+            return new MongoClient(MongoClientSettings.FromConnectionString(connectionString));
         });
 
         services.AddSingleton<IMongoDatabase>(sp =>

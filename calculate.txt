@@ -1,0 +1,68 @@
+2. NHÓM HỆ THỐNG / AI TỰ ĐỘNG TÍNH TOÁN (The Magic Behind)
+Ngay khi người dùng bấm "Hoàn tất", hệ thống C# Backend của bạn sẽ chạy ngầm để sinh ra các chỉ số sau và lưu vào Database. Người dùng hoàn toàn không cần (và không nên) biết những con số khô khan này lúc setup.
+
+A. Khởi tạo tính toán Sinh trắc (BiometricProfile)
+
+BMR (Basal Metabolic Rate): Backend tự tính dựa trên Giới tính, Tuổi (từ DateOfBirth), Chiều cao, Cân nặng.
+
+BaseTDEE: Tính bằng BMR x Hệ số của ActivityLevel.
+
+DailyProteinTargetGram, DailyCarbTargetGram, DailyFatTargetGram: Dựa trên BaseTDEE và FitnessGoal, backend sẽ chia Macro. (Ví dụ: Nếu mục tiêu là giảm mỡ, protein sẽ được đẩy lên cao để giữ cơ).
+
+B. Khởi tạo Bối cảnh AI ở mức nền (AIContextProfile)
+Bảng này là nơi các ML pipeline/batch job cập nhật sau này, nhưng lúc tạo mới cần set các giá trị baseline (cơ sở):
+
+AIConfidenceScore: Mặc định = 1.0 (AI hoàn toàn tự tin với data mới).
+
+BurnoutRiskScore / ChurnRiskScore / StressScore: Mặc định = 0 hoặc mức thấp nhất.
+
+AdherenceScore / NutritionComplianceScore: Mặc định = 100 (Khởi đầu hoàn hảo).
+
+C. Khởi tạo Game hóa (GamificationProfile)
+
+CurrentLevel = 1, CurrentXP = 0, CurrentStreak = 0, SyncCoins = 0.0.
+
+
+==== Chi tiết cách tính toán các chỉ số ====
+
+Bước 1: Tính Toán TargetCalories (Calo mục tiêu)
+Không phải cứ lấy BaseTDEE đi chia Macro, mà phải tính lượng Calo họ thực sự cần ăn dựa vào FitnessGoal.
+
+Giảm mỡ (LoseFat): TargetCalories = BaseTDEE - 500 (Tạo thâm hụt. Khuyến cáo an toàn: không để TargetCalories giảm xuống dưới BMR).
+
+Tăng cơ (BuildMuscle): TargetCalories = BaseTDEE + 300 (Thặng dư nhẹ để xây cơ mà không tích mỡ).
+
+Duy trì (Maintain): TargetCalories = BaseTDEE.
+
+(Lưu ý: 1g Protein = 4 kcal, 1g Carb = 4 kcal, 1g Fat = 9 kcal)
+
+Bước 2: Tính DailyProteinTargetGram (Ưu tiên số 1)
+Protein phải được tính dựa trên cân nặng thực tế (CurrentWeightKg) để đảm bảo không bị mất cơ khi giảm mỡ, hoặc đủ nguyên liệu xây cơ.
+
+Giảm mỡ: Protein = CurrentWeightKg * 2.2 (Khi thâm hụt calo, cơ thể rất dễ dị hóa cơ bắp, nên hệ số phải cao).
+
+Tăng cơ: Protein = CurrentWeightKg * 2.0
+
+Duy trì: Protein = CurrentWeightKg * 1.8
+
+Bước 3: Tính DailyFatTargetGram (Chất béo thiết yếu)
+Fat rất quan trọng để duy trì hormone (nhất là Testosterone). Tiêu chuẩn an toàn là lấy 25% tổng lượng TargetCalories dành cho Fat (hoặc tối thiểu 0.8g/kg cân nặng).
+
+Fat = (TargetCalories * 0.25) / 9
+
+Bước 4: Tính DailyCarbTargetGram (Năng lượng còn lại)
+Carb là biến số linh hoạt nhất. Sau khi đã chốt xong lượng Protein và Fat, toàn bộ lượng Calo còn thừa sẽ được đổ vào Carb để làm năng lượng tập luyện.
+
+Carb = (TargetCalories - (Protein * 4) - (Fat * 9)) / 4
+
+📝 Ví dụ thực tế (Test Case cho Backend)
+User: Nam, Nặng 70kg, BaseTDEE = 2500 kcal, Mục tiêu: Giảm mỡ (LoseFat).
+
+TargetCalories: 2500 - 500 = 2000 kcal
+
+Protein: 70kg * 2.2 = 154g (~616 kcal)
+
+Fat: (2000 * 25%) / 9 = 55g (~500 kcal)
+
+Carb: (2000 - 616 - 500) / 4 = 221g (~884 kcal)
+(Tổng cộng: 154g Pro / 55g Fat / 221g Carb)

@@ -2,21 +2,28 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
+import 'package:sync_app/features/social/screens/social_image_viewer_screen.dart';
 import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
 
 class SocialPostCard extends StatelessWidget {
   const SocialPostCard({
     super.key,
     required this.post,
+    required this.isLikedByMe,
+    required this.isSharedByMe,
     required this.onLike,
-    required this.onDislike,
+    required this.onShare,
     required this.onComment,
+    required this.onOpenProfile,
   });
 
   final SocialPost post;
+  final bool isLikedByMe;
+  final bool isSharedByMe;
   final VoidCallback onLike;
-  final VoidCallback onDislike;
+  final VoidCallback onShare;
   final VoidCallback onComment;
+  final void Function(String userId) onOpenProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -41,18 +48,26 @@ class SocialPostCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
               children: [
-                _Avatar(name: post.authorName, url: post.authorAvatarUrl),
+                _Avatar(
+                  name: post.authorSnapshot.fullName,
+                  url: post.authorSnapshot.avatarUrl,
+                  onTap: () => onOpenProfile(post.authorId),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        post.authorName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
+                      InkWell(
+                        borderRadius: BorderRadius.circular(8),
+                        onTap: () => onOpenProfile(post.authorId),
+                        child: Text(
+                          post.authorSnapshot.fullName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                       Text(
@@ -81,17 +96,15 @@ class SocialPostCard extends StatelessWidget {
                 ),
               ),
             ),
-          if (post.mediaType == SocialMediaType.image && post.imageUrl != null) ...[
+          if (post.mediaUrls.isNotEmpty) ...[
             const SizedBox(height: 12),
-            _ImageMedia(url: post.imageUrl!),
-          ],
-          if (post.mediaType == SocialMediaType.video &&
-              (post.videoThumbnailUrl != null || post.videoUrl != null)) ...[
-            const SizedBox(height: 12),
-            _VideoMedia(
-              thumbnailUrl: post.videoThumbnailUrl ?? post.videoUrl!,
-              videoUrl: post.videoUrl,
-            ),
+            ...post.mediaUrls.map((url) {
+              final imageUrls = post.mediaUrls.where(SocialPostCard._isImageUrl).toList();
+              return _MediaItem(
+                url: url,
+                imageUrls: imageUrls,
+              );
+            }).whereType<Widget>(),
           ],
           Padding(
             padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
@@ -100,35 +113,24 @@ class SocialPostCard extends StatelessWidget {
                 _ReactionButton(
                   icon: Icons.thumb_up_alt_outlined,
                   activeIcon: Icons.thumb_up_alt_rounded,
-                  label: _formatCount(post.likeCount),
-                  active: post.isLikedByMe,
+                  label: _formatCount(post.metrics.likeCount),
+                  active: isLikedByMe,
                   activeColor: AppColors.primaryGreen,
                   onTap: onLike,
                 ),
                 _ReactionButton(
-                  icon: Icons.thumb_down_alt_outlined,
-                  activeIcon: Icons.thumb_down_alt_rounded,
-                  label: _formatCount(post.dislikeCount),
-                  active: post.isDislikedByMe,
-                  activeColor: Colors.red.shade400,
-                  onTap: onDislike,
-                ),
-                _ReactionButton(
                   icon: Icons.chat_bubble_outline_rounded,
                   activeIcon: Icons.chat_bubble_rounded,
-                  label: _formatCount(post.commentCount),
+                  label: _formatCount(post.metrics.commentCount),
                   active: false,
                   activeColor: AppColors.primaryGreen,
                   onTap: onComment,
                 ),
                 const Spacer(),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.bookmark_border, color: AppColors.textMuted),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.ios_share_outlined, color: AppColors.textMuted, size: 22),
+                _ShareButton(
+                  label: _formatCount(post.metrics.shareCount),
+                  active: isSharedByMe,
+                  onTap: onShare,
                 ),
               ],
             ),
@@ -143,58 +145,129 @@ class SocialPostCard extends StatelessWidget {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
     return n.toString();
   }
+
+  static bool _isImageUrl(String url) {
+    final lower = url.toLowerCase();
+    return lower.endsWith('.png') ||
+        lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp');
+  }
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, this.url});
+  const _Avatar({required this.name, this.url, this.onTap});
 
   final String name;
   final String? url;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    if (url != null && url!.isNotEmpty) {
-      return CircleAvatar(
-        radius: 22,
-        backgroundColor: AppColors.lightGreen,
-        backgroundImage: CachedNetworkImageProvider(url!),
-      );
-    }
-    return CircleAvatar(
-      radius: 22,
-      backgroundColor: AppColors.lightGreen,
-      child: Text(
-        initial,
-        style: const TextStyle(
-          fontWeight: FontWeight.w800,
-          color: AppColors.primaryGreen,
-        ),
-      ),
+    final avatar = (url != null && url!.isNotEmpty)
+        ? CircleAvatar(
+            radius: 22,
+            backgroundColor: AppColors.lightGreen,
+            backgroundImage: CachedNetworkImageProvider(url!),
+          )
+        : CircleAvatar(
+            radius: 22,
+            backgroundColor: AppColors.lightGreen,
+            child: Text(
+              initial,
+              style: const TextStyle(
+                fontWeight: FontWeight.w800,
+                color: AppColors.primaryGreen,
+              ),
+            ),
+          );
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(200),
+      onTap: onTap,
+      child: avatar,
     );
   }
 }
 
-class _ImageMedia extends StatelessWidget {
-  const _ImageMedia({required this.url});
+class _MediaItem extends StatelessWidget {
+  const _MediaItem({
+    required this.url,
+    required this.imageUrls,
+  });
 
   final String url;
+  final List<String> imageUrls;
+
+  static SocialMediaType _mediaTypeForUrl(String url) {
+    final lower = url.toLowerCase();
+    if (lower.endsWith('.mp4') || lower.endsWith('.webm') || lower.endsWith('.mov')) {
+      return SocialMediaType.video;
+    }
+    if (lower.endsWith('.png') ||
+        lower.endsWith('.jpg') ||
+        lower.endsWith('.jpeg') ||
+        lower.endsWith('.gif') ||
+        lower.endsWith('.webp')) {
+      return SocialMediaType.image;
+    }
+    return SocialMediaType.none;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final type = _mediaTypeForUrl(url);
+    switch (type) {
+      case SocialMediaType.image:
+        final initialIndex = imageUrls.indexOf(url);
+        return _ImageMedia(
+          url: url,
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SocialImageViewerScreen(
+                  imageUrls: imageUrls,
+                  initialIndex: initialIndex < 0 ? 0 : initialIndex,
+                ),
+              ),
+            );
+          },
+        );
+      case SocialMediaType.video:
+        return _VideoMedia(videoUrl: url);
+      case SocialMediaType.none:
+        return const SizedBox.shrink();
+    }
+  }
+}
+
+class _ImageMedia extends StatelessWidget {
+  const _ImageMedia({required this.url, this.onTap});
+
+  final String url;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: ClipRRect(
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        child: AspectRatio(
-          aspectRatio: 16 / 10,
-          child: CachedNetworkImage(
-            imageUrl: url,
-            fit: BoxFit.cover,
-            placeholder: (_, __) => Container(color: AppColors.lightGreen),
-            errorWidget: (_, __, ___) => Container(
-              color: AppColors.lightGreen,
-              child: const Icon(Icons.broken_image_outlined, size: 48),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: AspectRatio(
+            aspectRatio: 16 / 10,
+            child: CachedNetworkImage(
+              imageUrl: url,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(color: AppColors.lightGreen),
+              errorWidget: (context, url, error) => Container(
+                color: AppColors.lightGreen,
+                child: const Icon(Icons.broken_image_outlined, size: 48),
+              ),
             ),
           ),
         ),
@@ -204,10 +277,9 @@ class _ImageMedia extends StatelessWidget {
 }
 
 class _VideoMedia extends StatelessWidget {
-  const _VideoMedia({required this.thumbnailUrl, this.videoUrl});
+  const _VideoMedia({required this.videoUrl});
 
-  final String thumbnailUrl;
-  final String? videoUrl;
+  final String videoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -215,10 +287,9 @@ class _VideoMedia extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: GestureDetector(
         onTap: () {
-          if (videoUrl == null) return;
           Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => SocialVideoPlayerScreen(videoUrl: videoUrl!),
+              builder: (_) => SocialVideoPlayerScreen(videoUrl: videoUrl),
             ),
           );
         },
@@ -229,12 +300,8 @@ class _VideoMedia extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                CachedNetworkImage(
-                  imageUrl: thumbnailUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(color: AppColors.lightGreen),
-                ),
-                Container(color: Colors.black.withValues(alpha: 0.25)),
+                Container(color: AppColors.lightGreen.withValues(alpha: 0.2)),
+                Container(color: Colors.black.withValues(alpha: 0.35)),
                 Center(
                   child: Container(
                     padding: const EdgeInsets.all(14),
@@ -267,6 +334,45 @@ class _VideoMedia extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShareButton extends StatelessWidget {
+  const _ShareButton({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? AppColors.primaryGreen : AppColors.textMuted;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.ios_share_outlined, color: color, size: 22),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: color,
+              ),
+            )
+          ],
         ),
       ),
     );

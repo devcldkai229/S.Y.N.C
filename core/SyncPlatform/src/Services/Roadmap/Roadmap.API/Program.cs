@@ -10,6 +10,7 @@ using Roadmap.Application.Extensions;
 using Roadmap.API.Middleware;
 using Roadmap.Infrastructure.Extensions;
 using Roadmap.Infrastructure.Persistence;
+using Roadmap.Infrastructure.Persistence.Seed;
 using System.Text.Json.Serialization;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
@@ -78,7 +79,7 @@ app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
-await app.Services.InitializeRoadmapDatabaseAsync();
+await RoadmapSeedData.RoadmapMongoSeeder.SeedAsync(mongoDb);
 
 app.MapSyncHealthChecks();
 app.MapControllers();

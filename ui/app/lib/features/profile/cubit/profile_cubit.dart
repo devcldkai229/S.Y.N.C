@@ -19,22 +19,82 @@ class ProfileCubit extends Cubit<ProfileState> {
         status: ProfileStatus.success,
         settings: result.settings,
         inventory: result.inventory,
+        biometric: result.biometric,
+        publicProfile: result.publicProfile,
       ));
     } catch (e) {
       emit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));
     }
   }
 
-  Future<void> save({required String fullName, required FitnessProfile fitness}) async {
+  Future<bool> saveBasic({
+    required String fullName,
+    String? preferredLanguage,
+    String? timeZone,
+  }) async {
     emit(state.copyWith(status: ProfileStatus.saving, clearError: true));
     try {
-      final updated = await _repository.save(fullName: fullName, fitness: fitness);
+      final updated = await _repository.updateBasic(
+        fullName: fullName,
+        preferredLanguage: preferredLanguage,
+        timeZone: timeZone,
+      );
+      emit(state.copyWith(status: ProfileStatus.success, settings: updated));
+      return true;
+    } catch (e) {
+      emit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));
+      return false;
+    }
+  }
+
+  Future<bool> saveFitness(FitnessProfile fitness) async {
+    emit(state.copyWith(status: ProfileStatus.saving, clearError: true));
+    try {
+      final updated = await _repository.updateFitness(fitness);
+      BiometricProfileDetail? biometric;
+      try {
+        biometric = (await _repository.load()).biometric;
+      } catch (_) {}
       emit(state.copyWith(
         status: ProfileStatus.success,
         settings: updated,
+        biometric: biometric,
       ));
+      return true;
     } catch (e) {
       emit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));
+      return false;
+    }
+  }
+
+  Future<bool> savePreferences(AccountPreferences preferences) async {
+    emit(state.copyWith(status: ProfileStatus.saving, clearError: true));
+    try {
+      final updated = await _repository.updatePreferences(preferences);
+      emit(state.copyWith(status: ProfileStatus.success, settings: updated));
+      return true;
+    } catch (e) {
+      emit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));
+      return false;
+    }
+  }
+
+  Future<bool> logWeight(double kg) async {
+    emit(state.copyWith(status: ProfileStatus.saving, clearError: true));
+    try {
+      await _repository.logWeight(kg);
+      final result = await _repository.load();
+      emit(state.copyWith(
+        status: ProfileStatus.success,
+        settings: result.settings,
+        inventory: result.inventory,
+        biometric: result.biometric,
+        publicProfile: result.publicProfile,
+      ));
+      return true;
+    } catch (e) {
+      emit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));
+      return false;
     }
   }
 }

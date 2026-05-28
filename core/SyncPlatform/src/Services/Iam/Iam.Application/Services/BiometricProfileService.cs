@@ -116,6 +116,71 @@ public class BiometricProfileService : IBiometricProfileService
         return profile.ToDto();
     }
 
+    public async Task<OnboardingCompleteResultDto> CompleteOnboardingAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdWithOnboardingProfilesAsync(userId, cancellationToken)
+            ?? throw new NotFoundException(nameof(User), userId);
+
+        var profile = user.BiometricProfile
+            ?? throw new BadRequestException("Complete your fitness profile before finishing onboarding.");
+
+        if (!BiometricTargetCalculator.HasMinimumData(profile))
+            throw new BadRequestException("Missing required biometric fields (gender, date of birth, height, weight, goal, activity).");
+
+        if (user.UserPreference is null
+            || user.UserPreference.Allergies is not { Count: > 0 })
+        {
+            throw new BadRequestException("Set at least one allergy (or \"no known allergies\") in account preferences before finishing.");
+        }
+
+        BiometricTargetCalculator.Recalculate(profile);
+        await _biometricRepository.UpdateAsync(profile, cancellationToken);
+
+        var aiCreated = false;
+        if (user.AIContextProfile is null)
+        {
+            user.AIContextProfile = new AIContextProfile
+            {
+                UserId = userId,
+                AIConfidenceScore = 1.0m,
+                AdherenceScore = 1.0m,
+                NutritionComplianceScore = 1.0m,
+                WorkoutComplianceScore = 1.0m,
+                BurnoutRiskScore = 0m,
+                ChurnRiskScore = 0m,
+                StressScore = 0m,
+                MotivationScore = 1.0m,
+                RecoveryScore = 1.0m,
+                SleepQualityScore = 1.0m,
+            };
+            aiCreated = true;
+        }
+
+        var gamificationCreated = false;
+        if (user.GamificationProfile is null)
+        {
+            user.GamificationProfile = new GamificationProfile
+            {
+                UserId = userId,
+                CurrentLevel = 1,
+                CurrentXP = 0,
+                CurrentStreak = 0,
+                LongestStreak = 0,
+                SyncCoins = 0m,
+                AchievementPoints = 0,
+                ConsecutivePerfectDays = 0,
+            };
+            gamificationCreated = true;
+        }
+
+        if (aiCreated || gamificationCreated)
+            await _userRepository.UpdateAsync(user, cancellationToken);
+
+        return new OnboardingCompleteResultDto(profile.ToDto(), aiCreated, gamificationCreated);
+    }
+
     public async Task<BiometricProfileDto> LogWeightAsync(Guid userId, UpdateWeightDto dto, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByIdWithBiometricAsync(userId, cancellationToken)

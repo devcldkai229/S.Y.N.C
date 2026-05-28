@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 
 class AppTheme {
-  static ThemeData get light {
+  AppTheme._();
+
+  /// Built once — avoids re-downloading fonts and rebuilding theme on every locale change.
+  static final ThemeData light = _buildLight();
+
+  static ThemeData _buildLight() {
     final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
@@ -16,7 +20,7 @@ class AppTheme {
       ),
     );
 
-    final textTheme = GoogleFonts.interTextTheme(base.textTheme).apply(
+    final textTheme = base.textTheme.apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     );

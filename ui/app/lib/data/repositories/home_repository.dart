@@ -25,7 +25,7 @@ class HomeRepository {
 
     PersonalizedRoadmap? active;
     for (final r in roadmaps) {
-      if (r.roadmapStatus.toLowerCase().contains('active')) {
+      if (r.isActive) {
         active = r;
         break;
       }

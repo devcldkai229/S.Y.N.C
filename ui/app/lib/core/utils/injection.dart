@@ -1,5 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sync_app/core/locale/locale_cubit.dart';
 import 'package:sync_app/core/network/dio_client.dart';
 import 'package:sync_app/data/datasources/notification_remote_data_source.dart';
 import 'package:sync_app/data/datasources/onboarding_remote_data_source.dart';
@@ -18,6 +20,9 @@ import 'package:sync_app/features/workouts/services/workout_api_service.dart';
 final getIt = GetIt.instance;
 
 Future<void> configureDependencies() async {
+  final prefs = await SharedPreferences.getInstance();
+  getIt.registerSingleton<SharedPreferences>(prefs);
+  getIt.registerLazySingleton(() => LocaleCubit(prefs));
   getIt.registerLazySingleton(() => const FlutterSecureStorage());
   getIt.registerLazySingleton(() => createDio(storage: getIt()));
   getIt.registerLazySingleton(() => AuthService(getIt(), getIt()));

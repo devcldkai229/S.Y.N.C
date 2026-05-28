@@ -29,6 +29,19 @@ class WorkoutsCubit extends Cubit<WorkoutsState> {
     }
   }
 
+  Future<void> loadCustomWorkouts() async {
+    emit(state.copyWith(customStatus: LoadStatus.loading, clearCustomError: true));
+    try {
+      final items = await _repository.loadCustomWorkouts();
+      emit(state.copyWith(customStatus: LoadStatus.success, customWorkouts: items));
+    } catch (e) {
+      emit(state.copyWith(
+        customStatus: LoadStatus.failure,
+        customError: mapApiError(e),
+      ));
+    }
+  }
+
   Future<void> loadCatalog({String? query, String? category}) async {
     emit(state.copyWith(catalogStatus: LoadStatus.loading, clearCatalogError: true));
     try {
@@ -41,4 +54,7 @@ class WorkoutsCubit extends Cubit<WorkoutsState> {
       ));
     }
   }
+
+  Future<ExerciseCatalogDetail?> fetchExerciseDetail(String id) =>
+      _repository.getExerciseDetail(id);
 }

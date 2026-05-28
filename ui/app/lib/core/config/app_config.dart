@@ -19,9 +19,25 @@ class AppConfig {
   }
 
   static const bool isProduction = bool.fromEnvironment('dart.vm.product');
-  static const String googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID', defaultValue: '');
-  static const String googleServerClientId = String.fromEnvironment(
-    'GOOGLE_SERVER_CLIENT_ID',
-    defaultValue: '',
-  );
+
+  /// Web OAuth 2.0 client (Google Cloud Console → **Web application**).
+  /// Must also appear in IAM `GoogleAuth:ClientIds` (see appsettings.Development.json).
+  static const String defaultGoogleWebClientId =
+      '366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com';
+
+  /// Override: `--dart-define=GOOGLE_CLIENT_ID=...` (required for Web if you change the default).
+  static String get googleClientId {
+    const fromEnv = String.fromEnvironment('GOOGLE_CLIENT_ID', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (kIsWeb) return defaultGoogleWebClientId;
+    return '';
+  }
+
+  /// Override: `--dart-define=GOOGLE_SERVER_CLIENT_ID=...`
+  /// Android/iOS: use the **Web** client ID here so Google returns an ID token IAM can verify.
+  static String get googleServerClientId {
+    const fromEnv = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    return defaultGoogleWebClientId;
+  }
 }

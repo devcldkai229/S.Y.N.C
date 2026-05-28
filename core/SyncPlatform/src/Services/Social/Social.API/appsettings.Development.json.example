@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
   "ConnectionStrings": {
-    "SocialDatabase": "mongodb://localhost:27017"
+    "SocialDatabase": "mongodb://localhost:27018"
   },
   "MongoDB": {
     "SocialDatabaseName": "sync_social"
@@ -15,5 +15,15 @@
       "AllowShareCodeBackfillApi": true,
       "BackfillShareCodesOnStartup": false
     }
+  },
+  "Minio": {
+    "Endpoint": "localhost:9000",
+    "AccessKey": "minioadmin",
+    "SecretKey": "minioadmin",
+    "BucketName": "social-assets",
+    "UseSsl": false,
+    "PublicUrl": "http://localhost:9000",
+    "AutoCreateBucket": true,
+    "MaxFileSizeMb": 50
   }
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/social/cubit/social_cubit.dart';
 import 'package:sync_app/features/social/widgets/social_comments_sheet.dart';
 import 'package:sync_app/features/social/widgets/social_post_card.dart';
+import 'package:sync_app/features/social/widgets/social_create_post_sheet.dart';
+import 'package:sync_app/core/constants/app_routes.dart';
 
 class SocialScreen extends StatelessWidget {
   const SocialScreen({super.key});
@@ -77,47 +80,85 @@ class _SocialView extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: BlocBuilder<SocialCubit, SocialState>(
-                builder: (context, state) {
-                  if (state.status == SocialStatus.loading && state.posts.isEmpty) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: AppColors.primaryGreen),
-                    );
-                  }
-                  if (state.status == SocialStatus.failure && state.posts.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(state.error ?? 'Failed to load feed'),
-                          TextButton(
-                            onPressed: () => context.read<SocialCubit>().loadFeed(),
-                            child: const Text('Retry'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return RefreshIndicator(
-                    color: AppColors.primaryGreen,
-                    onRefresh: () => context.read<SocialCubit>().loadFeed(),
-                    child: ListView.builder(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-                      itemCount: state.posts.length,
-                      itemBuilder: (context, index) {
-                        final post = state.posts[index];
-                        return SocialPostCard(
-                          post: post,
-                          onLike: () => context.read<SocialCubit>().toggleLike(post.id),
-                          onDislike: () => context.read<SocialCubit>().toggleDislike(post.id),
-                          onComment: () => SocialCommentsSheet.show(context, postId: post.id),
+              child: Stack(
+                children: [
+                  BlocBuilder<SocialCubit, SocialState>(
+                    builder: (context, state) {
+                      if (state.status == SocialStatus.loading && state.posts.isEmpty) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: AppColors.primaryGreen),
                         );
-                      },
+                      }
+                      if (state.status == SocialStatus.failure && state.posts.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(state.error ?? 'Failed to load feed'),
+                              TextButton(
+                                onPressed: () => context.read<SocialCubit>().loadFeed(),
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      return RefreshIndicator(
+                        color: AppColors.primaryGreen,
+                        onRefresh: () => context.read<SocialCubit>().loadFeed(),
+                        child: NotificationListener<ScrollNotification>(
+                          onNotification: (scroll) {
+                            const thresholdPx = 300.0;
+                            if (scroll.metrics.extentAfter < thresholdPx) {
+                              context.read<SocialCubit>().loadMore();
+                            }
+                            return false;
+                          },
+                          child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                            itemCount: state.posts.length + (state.isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index >= state.posts.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  child: Center(child: CircularProgressIndicator()),
+                                );
+                              }
+
+                              final post = state.posts[index];
+                              final liked = state.likedPostIds.contains(post.id);
+                              final shared = state.sharedPostIds.contains(post.id);
+
+                              return SocialPostCard(
+                                post: post,
+                                isLikedByMe: liked,
+                                isSharedByMe: shared,
+                                onLike: () => context.read<SocialCubit>().likePost(post.id),
+                                onShare: () => context.read<SocialCubit>().sharePost(post.id),
+                                onComment: () => SocialCommentsSheet.show(context, postId: post.id),
+                                onOpenProfile: (userId) {
+                                  if (userId.isEmpty) return;
+                                  context.push(AppRoutes.socialUserProfile(userId));
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: FloatingActionButton(
+                      backgroundColor: AppColors.primaryGreen,
+                      onPressed: () => SocialCreatePostSheet.show(context),
+                      child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           ],

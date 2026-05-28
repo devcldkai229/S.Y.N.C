@@ -4,10 +4,8 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Roadmap.Domain.Repositories;
-using Roadmap.Infrastructure.Options;
 using Roadmap.Infrastructure.Persistence;
 using Roadmap.Infrastructure.Persistence.Repositories;
-using Roadmap.Infrastructure.Persistence.Seed;
 
 namespace Roadmap.Infrastructure.Extensions;
 
@@ -29,9 +27,7 @@ public static class InfrastructureServiceExtensions
 
         services.AddSingleton<IMongoClient>(_ =>
         {
-            var settings = MongoClientSettings.FromConnectionString(connectionString);
-            settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-            return new MongoClient(settings);
+            return new MongoClient(MongoClientSettings.FromConnectionString(connectionString));
         });
 
         services.AddSingleton<IMongoDatabase>(sp =>
@@ -46,9 +42,6 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IExerciseSetLogRepository, ExerciseSetLogRepository>();
         services.AddScoped<IPersonalizedRoadmapRepository, PersonalizedRoadmapRepository>();
         services.AddScoped<IRecoveryProfileRepository, RecoveryProfileRepository>();
-
-        services.Configure<RoadmapSeedOptions>(configuration.GetSection(RoadmapSeedOptions.SectionName));
-        services.AddScoped<IRoadmapDatabaseSeeder, RoadmapDatabaseSeeder>();
 
         return services;
     }

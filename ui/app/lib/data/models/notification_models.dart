@@ -1,3 +1,5 @@
+import 'package:sync_app/core/models/api_models.dart';
+
 class AppNotification {
   AppNotification({
     required this.id,
@@ -19,7 +21,23 @@ class AppNotification {
   final DateTime? readAt;
   final String? imageUrl;
 
-  bool get isRead => readAt != null;
+  bool get isRead {
+    final s = status.toLowerCase();
+    return readAt != null || s == 'read';
+  }
+
+  AppNotification copyWith({DateTime? readAt, String? status}) {
+    return AppNotification(
+      id: id,
+      title: title,
+      body: body,
+      type: type,
+      status: status ?? this.status,
+      createdAt: createdAt,
+      readAt: readAt ?? this.readAt,
+      imageUrl: imageUrl,
+    );
+  }
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(
@@ -42,6 +60,16 @@ class AppNotification {
     if (diff.inDays < 7) return '${diff.inDays}d ago';
     return '${createdAt.month}/${createdAt.day}';
   }
+}
+
+class NotificationsPage {
+  NotificationsPage({
+    required this.items,
+    required this.pagination,
+  });
+
+  final List<AppNotification> items;
+  final PaginationMeta pagination;
 }
 
 String _enumLabel(dynamic value) {

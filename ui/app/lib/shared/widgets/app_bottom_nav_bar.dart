@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 
 enum AppNavTab { home, workouts, social, profile }
@@ -19,6 +20,7 @@ class AppBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
@@ -40,26 +42,26 @@ class AppBottomNavBar extends StatelessWidget {
             children: [
               _NavItem(
                 icon: Icons.home_rounded,
-                label: 'Home',
+                label: l10n.navHome,
                 selected: currentTab == AppNavTab.home,
                 onTap: () => onTabSelected(AppNavTab.home),
               ),
               _NavItem(
                 icon: Icons.fitness_center_outlined,
-                label: 'Workouts',
+                label: l10n.navWorkouts,
                 selected: currentTab == AppNavTab.workouts,
                 onTap: () => onTabSelected(AppNavTab.workouts),
               ),
               _CenterFab(onTap: onCenterTap),
               _NavItem(
                 icon: Icons.groups_outlined,
-                label: 'Social',
+                label: l10n.navSocial,
                 selected: currentTab == AppNavTab.social,
                 onTap: () => onTabSelected(AppNavTab.social),
               ),
               _NavItem(
                 icon: Icons.person_outline_rounded,
-                label: 'Profile',
+                label: l10n.navProfile,
                 selected: currentTab == AppNavTab.profile,
                 showBadge: showProfileBadge,
                 onTap: () => onTabSelected(AppNavTab.profile),

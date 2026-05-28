@@ -71,7 +71,8 @@ public class AuthService : IAuthService
         return new RegisterResponse
         {
             UserId = user.Id,
-            Email = user.Email
+            Email = user.Email,
+            Message = "Registration successful. Please check your email to verify your account."
         };
     }
 

@@ -18,19 +18,24 @@ class AuthRepository {
   }) =>
       _auth.register(fullName: fullName, email: email, password: password);
 
+  Future<VerifyEmailResult> verifyEmail(String token) => _auth.verifyEmail(token);
+
   Future<AuthSession> signInWithGoogle() => _auth.loginWithGoogle();
 
   Future<bool> isLoggedIn() => _auth.isLoggedIn();
 
   Future<void> logout() => _auth.logout();
 
-  /// Returns true when user should complete biometric onboarding.
+  /// Returns true when user should complete profile onboarding (Side A + B).
   Future<bool> needsOnboarding() async {
     try {
       final settings = await _profileApi.getProfileSettings();
-      return !settings.fitness.isConfigured;
+      final fitnessReady = settings.fitness.isConfigured &&
+          (settings.fitness.fitnessGoal ?? '').isNotEmpty &&
+          (settings.fitness.activityLevel ?? '').isNotEmpty;
+      final prefsReady = settings.preferences.isConfigured;
+      return !fitnessReady || !prefsReady;
     } catch (_) {
-      // API lỗi → không ép vào onboarding (tránh kẹt màn hình)
       return false;
     }
   }

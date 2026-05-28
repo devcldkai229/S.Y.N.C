@@ -2,13 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/app/router/app_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
+import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/core/locale/locale_cubit.dart';
+import 'package:sync_app/data/repositories/auth_repository.dart';
+import 'package:sync_app/features/profile/services/profile_api_service.dart';
 
-/// Đóng dialog (nếu có) rồi vào shell Home — không ép onboarding để tránh kẹt màn hình.
+/// Đóng dialog (nếu có) rồi điều hướng onboarding hoặc Home.
 Future<void> navigateAfterAuth(BuildContext context) async {
   final rootNav = rootNavigatorKey.currentState;
   if (rootNav != null) {
     rootNav.popUntil((route) => route is! PopupRoute);
   }
   if (!context.mounted) return;
-  context.go(AppRoutes.home);
+
+  if (getIt.isRegistered<ProfileApiService>()) {
+    try {
+      final settings = await getIt<ProfileApiService>().getProfileSettings();
+      await getIt<LocaleCubit>().changeLanguage(settings.basic.preferredLanguage);
+    } catch (_) {}
+  }
+
+  if (!context.mounted) return;
+
+  final needsOnboarding = await getIt<AuthRepository>().needsOnboarding();
+  if (!context.mounted) return;
+  context.go(needsOnboarding ? AppRoutes.onboarding : AppRoutes.home);
 }

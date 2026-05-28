@@ -1,10 +1,21 @@
 using Libs.Shared.Enums;
+using MongoDB.Driver;
 using Roadmap.Domain.Models;
 
 namespace Roadmap.Infrastructure.Persistence.Seed;
 
 public static class RoadmapSeedData
 {
+    // ── Cross-service IDs (must match IamSeedData / ExerciseSeedData) ─────────
+    public static readonly Guid DemoUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    public static readonly Guid AdminUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
+    public static readonly Guid PartnerUserId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+
+    public static readonly Guid PushUpExerciseId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    public static readonly Guid SquatExerciseId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    public static readonly Guid PlankExerciseId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+    public static readonly Guid BurpeeExerciseId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
     // ── Stable document IDs ───────────────────────────────────────────────────
     public static readonly Guid DemoRoadmapId = Guid.Parse("f1000001-0000-0000-0000-000000000001");
     public static readonly Guid AdminRoadmapId = Guid.Parse("f1000002-0000-0000-0000-000000000002");
@@ -34,7 +45,7 @@ public static class RoadmapSeedData
         new PersonalizedRoadmap
         {
             Id = DemoRoadmapId,
-            UserId = RoadmapSeedUserIds.Demo,
+            UserId = DemoUserId,
             RoadmapName = "Demo Fat Loss 12W",
             FitnessGoal = "FatLoss",
             CurrentPhase = "Foundation",
@@ -53,7 +64,7 @@ public static class RoadmapSeedData
         new PersonalizedRoadmap
         {
             Id = AdminRoadmapId,
-            UserId = RoadmapSeedUserIds.Admin,
+            UserId = AdminUserId,
             RoadmapName = "Admin Maintenance",
             FitnessGoal = "GeneralHealth",
             CurrentPhase = "Maintenance",
@@ -72,7 +83,7 @@ public static class RoadmapSeedData
         new PersonalizedRoadmap
         {
             Id = PartnerRoadmapId,
-            UserId = RoadmapSeedUserIds.Partner,
+            UserId = PartnerUserId,
             RoadmapName = "Partner Strength Block",
             FitnessGoal = "MuscleGain",
             CurrentPhase = "Hypertrophy",
@@ -95,7 +106,7 @@ public static class RoadmapSeedData
         new RecoveryProfile
         {
             Id = DemoRecoveryId,
-            UserId = RoadmapSeedUserIds.Demo,
+            UserId = DemoUserId,
             CurrentRecoveryScore = 72,
             FatigueLevel = 3,
             SleepRecoveryScore = 70,
@@ -107,7 +118,7 @@ public static class RoadmapSeedData
         new RecoveryProfile
         {
             Id = AdminRecoveryId,
-            UserId = RoadmapSeedUserIds.Admin,
+            UserId = AdminUserId,
             CurrentRecoveryScore = 88,
             FatigueLevel = 2,
             SleepRecoveryScore = 85,
@@ -119,7 +130,7 @@ public static class RoadmapSeedData
         new RecoveryProfile
         {
             Id = PartnerRecoveryId,
-            UserId = RoadmapSeedUserIds.Partner,
+            UserId = PartnerUserId,
             CurrentRecoveryScore = 65,
             FatigueLevel = 4,
             SleepRecoveryScore = 60,
@@ -135,7 +146,7 @@ public static class RoadmapSeedData
         new UserCustomWorkout
         {
             Id = DemoCustomWorkoutId,
-            UserId = RoadmapSeedUserIds.Demo,
+            UserId = DemoUserId,
             WorkoutName = "Demo Upper Push",
             Visibility = Visibility.Private,
             ScheduleMode = "manual",
@@ -144,7 +155,7 @@ public static class RoadmapSeedData
             [
                 new UserCustomWorkout.CustomBlock
                 {
-                    ExerciseId = RoadmapSeedExerciseIds.PushUp,
+                    ExerciseId = PushUpExerciseId,
                     Sets = 3,
                     Reps = 12,
                     WeightKg = 0,
@@ -152,7 +163,7 @@ public static class RoadmapSeedData
                 },
                 new UserCustomWorkout.CustomBlock
                 {
-                    ExerciseId = RoadmapSeedExerciseIds.Plank,
+                    ExerciseId = PlankExerciseId,
                     Sets = 3,
                     Reps = 45,
                     WeightKg = 0,
@@ -163,7 +174,7 @@ public static class RoadmapSeedData
         new UserCustomWorkout
         {
             Id = PartnerCustomWorkoutId,
-            UserId = RoadmapSeedUserIds.Partner,
+            UserId = PartnerUserId,
             WorkoutName = "Partner HIIT Template",
             Visibility = Visibility.Public,
             ScheduleMode = "manual",
@@ -172,7 +183,7 @@ public static class RoadmapSeedData
             [
                 new UserCustomWorkout.CustomBlock
                 {
-                    ExerciseId = RoadmapSeedExerciseIds.Burpee,
+                    ExerciseId = BurpeeExerciseId,
                     Sets = 4,
                     Reps = 10,
                     WeightKg = 0,
@@ -180,7 +191,7 @@ public static class RoadmapSeedData
                 },
                 new UserCustomWorkout.CustomBlock
                 {
-                    ExerciseId = RoadmapSeedExerciseIds.Squat,
+                    ExerciseId = SquatExerciseId,
                     Sets = 4,
                     Reps = 15,
                     WeightKg = 20,
@@ -219,7 +230,7 @@ public static class RoadmapSeedData
                     new RoadmapSession.ExecutionBlock
                     {
                         Order = 1,
-                        ExerciseId = RoadmapSeedExerciseIds.PushUp,
+                        ExerciseId = PushUpExerciseId,
                         ExerciseName = "Push Up",
                         TargetSets = 3,
                         TargetReps = 12,
@@ -230,7 +241,7 @@ public static class RoadmapSeedData
                     new RoadmapSession.ExecutionBlock
                     {
                         Order = 2,
-                        ExerciseId = RoadmapSeedExerciseIds.Plank,
+                        ExerciseId = PlankExerciseId,
                         ExerciseName = "Plank",
                         TargetSets = 3,
                         TargetReps = 45,
@@ -261,7 +272,7 @@ public static class RoadmapSeedData
                     new RoadmapSession.ExecutionBlock
                     {
                         Order = 1,
-                        ExerciseId = RoadmapSeedExerciseIds.Squat,
+                        ExerciseId = SquatExerciseId,
                         ExerciseName = "Squat",
                         TargetSets = 3,
                         TargetReps = 10,
@@ -292,7 +303,7 @@ public static class RoadmapSeedData
                     new RoadmapSession.ExecutionBlock
                     {
                         Order = 1,
-                        ExerciseId = RoadmapSeedExerciseIds.Plank,
+                        ExerciseId = PlankExerciseId,
                         ExerciseName = "Plank",
                         TargetSets = 2,
                         TargetReps = 60,
@@ -315,7 +326,7 @@ public static class RoadmapSeedData
             new ScheduledWorkout
             {
                 Id = DemoScheduledWorkoutId,
-                UserId = RoadmapSeedUserIds.Demo,
+                UserId = DemoUserId,
                 SessionId = DemoSessionScheduledId,
                 ScheduledStartTime = demoStart,
                 ScheduledEndTime = demoStart.AddMinutes(45),
@@ -325,7 +336,7 @@ public static class RoadmapSeedData
             new ScheduledWorkout
             {
                 Id = AdminScheduledWorkoutId,
-                UserId = RoadmapSeedUserIds.Admin,
+                UserId = AdminUserId,
                 SessionId = AdminSessionScheduledId,
                 ScheduledStartTime = adminStart,
                 ScheduledEndTime = adminStart.AddMinutes(30),
@@ -345,7 +356,7 @@ public static class RoadmapSeedData
             new WorkoutExecutionLog
             {
                 Id = DemoExecutionLogId,
-                UserId = RoadmapSeedUserIds.Demo,
+                UserId = DemoUserId,
                 SessionId = DemoSessionCompletedId,
                 StartedAt = started,
                 CompletedAt = completed,
@@ -368,7 +379,7 @@ public static class RoadmapSeedData
         {
             Id = DemoSetLog1Id,
             ExecutionId = DemoExecutionLogId,
-            ExerciseId = RoadmapSeedExerciseIds.Squat,
+            ExerciseId = SquatExerciseId,
             SetNumber = 1,
             TargetReps = 10,
             ActualReps = 10,
@@ -382,7 +393,7 @@ public static class RoadmapSeedData
         {
             Id = DemoSetLog2Id,
             ExecutionId = DemoExecutionLogId,
-            ExerciseId = RoadmapSeedExerciseIds.Squat,
+            ExerciseId = SquatExerciseId,
             SetNumber = 2,
             TargetReps = 10,
             ActualReps = 9,
@@ -396,7 +407,7 @@ public static class RoadmapSeedData
         {
             Id = DemoSetLog3Id,
             ExecutionId = DemoExecutionLogId,
-            ExerciseId = RoadmapSeedExerciseIds.Squat,
+            ExerciseId = SquatExerciseId,
             SetNumber = 3,
             TargetReps = 10,
             ActualReps = 8,
@@ -407,4 +418,76 @@ public static class RoadmapSeedData
             Completed = true,
         },
     ];
+
+    /// <summary>Idempotent Mongo seed (run once at Roadmap.API startup).</summary>
+    public static class RoadmapMongoSeeder
+    {
+        public static async Task SeedAsync(IMongoDatabase database, CancellationToken cancellationToken = default)
+        {
+            var utcNow = DateTimeOffset.UtcNow;
+
+            await SeedCollectionAsync(
+                database.GetCollection<PersonalizedRoadmap>("PersonalizedRoadmaps"),
+                GetPersonalizedRoadmaps(utcNow),
+                cancellationToken);
+
+            await SeedCollectionAsync(
+                database.GetCollection<RecoveryProfile>("RecoveryProfiles"),
+                GetRecoveryProfiles(),
+                cancellationToken);
+
+            await SeedCollectionAsync(
+                database.GetCollection<UserCustomWorkout>("UserCustomWorkouts"),
+                GetUserCustomWorkouts(),
+                cancellationToken);
+
+            await SeedCollectionAsync(
+                database.GetCollection<RoadmapSession>("RoadmapSessions"),
+                GetRoadmapSessions(utcNow),
+                cancellationToken);
+
+            await SeedCollectionAsync(
+                database.GetCollection<ScheduledWorkout>("ScheduledWorkouts"),
+                GetScheduledWorkouts(utcNow),
+                cancellationToken);
+
+            await SeedCollectionAsync(
+                database.GetCollection<WorkoutExecutionLog>("WorkoutExecutionLogs"),
+                GetWorkoutExecutionLogs(utcNow),
+                cancellationToken);
+
+            await SeedCollectionAsync(
+                database.GetCollection<ExerciseSetLog>("ExerciseSetLogs"),
+                GetExerciseSetLogs(),
+                cancellationToken);
+        }
+
+        private static async Task SeedCollectionAsync<T>(
+            IMongoCollection<T> collection,
+            IReadOnlyList<T> seeds,
+            CancellationToken cancellationToken) where T : BaseMongoEntity
+        {
+            if (seeds.Count == 0)
+                return;
+
+            var ids = seeds.Select(s => s.Id).ToList();
+            var existingIds = await collection
+                .Find(Builders<T>.Filter.In(x => x.Id, ids))
+                .Project(x => x.Id)
+                .ToListAsync(cancellationToken);
+
+            var toInsert = seeds.Where(s => !existingIds.Contains(s.Id)).ToList();
+            if (toInsert.Count == 0)
+                return;
+
+            var now = DateTimeOffset.UtcNow;
+            foreach (var entity in toInsert)
+            {
+                entity.CreatedAt = now;
+                entity.UpdatedAt = now;
+            }
+
+            await collection.InsertManyAsync(toInsert, cancellationToken: cancellationToken);
+        }
+    }
 }

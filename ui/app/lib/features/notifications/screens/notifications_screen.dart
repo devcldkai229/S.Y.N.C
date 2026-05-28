@@ -5,6 +5,7 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/models/notification_models.dart';
 import 'package:sync_app/features/notifications/cubit/notifications_cubit.dart';
+import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/shared/widgets/notification_card.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -13,7 +14,7 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NotificationsCubit(getIt())..load(),
+      create: (_) => NotificationsCubit(getIt(), getIt<ProfileApiService>())..load(),
       child: Scaffold(
         backgroundColor: AppColors.backgroundAlt,
         appBar: AppBar(
@@ -22,6 +23,18 @@ class NotificationsScreen extends StatelessWidget {
             onPressed: () => context.pop(),
           ),
           title: const Text('Notifications'),
+          actions: [
+            BlocBuilder<NotificationsCubit, NotificationsState>(
+              buildWhen: (prev, next) => prev.unreadCount != next.unreadCount,
+              builder: (context, state) {
+                if (state.unreadCount == 0) return const SizedBox.shrink();
+                return TextButton(
+                  onPressed: () => context.read<NotificationsCubit>().markAllAsRead(),
+                  child: const Text('Mark all read'),
+                );
+              },
+            ),
+          ],
         ),
         body: BlocBuilder<NotificationsCubit, NotificationsState>(
           builder: (context, state) {
@@ -30,7 +43,7 @@ class NotificationsScreen extends StatelessWidget {
                 child: CircularProgressIndicator(color: AppColors.primaryGreen),
               );
             }
-            if (state.status == NotificationsStatus.failure) {
+            if (state.status == NotificationsStatus.failure && state.items.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -54,16 +67,52 @@ class NotificationsScreen extends StatelessWidget {
             return RefreshIndicator(
               color: AppColors.primaryGreen,
               onRefresh: () => context.read<NotificationsCubit>().load(),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-                children: [
-                  for (final entry in groups.entries) ...[
-                    _SectionHeader(title: entry.key),
-                    const SizedBox(height: 8),
-                    ...entry.value.map(_notificationTile),
-                    const SizedBox(height: 16),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (scroll) {
+                  const thresholdPx = 200.0;
+                  if (scroll.metrics.extentAfter < thresholdPx) {
+                    context.read<NotificationsCubit>().loadMore();
+                  }
+                  return false;
+                },
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                  children: [
+                    if (state.unreadCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          '${state.unreadCount} unread',
+                          style: const TextStyle(
+                            color: AppColors.primaryGreen,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    for (final entry in groups.entries) ...[
+                      _SectionHeader(title: entry.key),
+                      const SizedBox(height: 8),
+                      ...entry.value.map((n) => _notificationTile(context, n)),
+                      const SizedBox(height: 16),
+                    ],
+                    if (state.isLoadingMore) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                    ] else if (state.hasMore) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: OutlinedButton(
+                            onPressed: () => context.read<NotificationsCubit>().loadMore(),
+                            child: const Text('View more'),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             );
           },
@@ -93,16 +142,27 @@ class NotificationsScreen extends StatelessWidget {
     return '${date.month}/${date.day}/${date.year}';
   }
 
-  Widget _notificationTile(AppNotification n) {
+  Widget _notificationTile(BuildContext context, AppNotification n) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
-      child: NotificationCard(
-        accentBar: !n.isRead,
-        icon: _iconForType(n.type),
-        iconBackground: AppColors.lightGreen,
-        title: n.title,
-        time: n.timeAgoLabel,
-        body: n.body,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            if (!n.isRead) {
+              context.read<NotificationsCubit>().markAsRead(n.id);
+            }
+          },
+          child: NotificationCard(
+            accentBar: !n.isRead,
+            icon: _iconForType(n.type),
+            iconBackground: AppColors.lightGreen,
+            title: n.title,
+            time: n.timeAgoLabel,
+            body: n.body,
+          ),
+        ),
       ),
     );
   }

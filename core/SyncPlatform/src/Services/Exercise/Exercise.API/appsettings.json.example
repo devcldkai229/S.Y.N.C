@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/appsettings.json",
 
   "ConnectionStrings": {
-    "ExerciseDatabase": "mongodb://localhost:27017"
+    "ExerciseDatabase": "mongodb://localhost:27018"
   },
 
   "MongoDB": {

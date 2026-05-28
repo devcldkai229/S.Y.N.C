@@ -5,6 +5,7 @@ using Iam.Application.Abstractions;
 using Iam.Application.Common;
 using Iam.Application.Extensions;
 using Iam.Infrastructure.Extensions;
+using Iam.Infrastructure.Persistence;
 using Iam.Infrastructure.Persistence.Seed;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
@@ -52,7 +53,12 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
-await app.Services.InitializeIamDatabaseAsync();
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<IamDbContext>();
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    await IamSeedData.IamDbSeeder.SeedAsync(db, passwordHasher);
+}
 
 app.UseExceptionHandler();
 
@@ -71,15 +77,5 @@ app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 app.MapSyncHealthChecks();
 app.MapControllers();
-
-if (app.Environment.IsDevelopment())
-{
-    await IamDevDataSeeder.SeedAsync(app.Services, app.Configuration);
-    using (var scope = app.Services.CreateScope())
-    {
-        var context = scope.ServiceProvider.GetRequiredService<Iam.Infrastructure.Persistence.IamDbContext>();
-        await Iam.Infrastructure.Persistence.IamDbSeed.SeedAsync(context);
-    }
-}
 
 app.Run();

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
+import 'package:sync_app/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:sync_app/core/config/app_config.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/auth_repository.dart';
+import 'package:sync_app/core/locale/l10n_extensions.dart';
+import 'package:sync_app/features/auth/utils/auth_error_mapper.dart';
 import 'package:sync_app/features/auth/utils/auth_navigation.dart';
 import 'package:sync_app/shared/widgets/custom_text_field.dart';
+import 'package:sync_app/shared/widgets/language_switcher.dart';
 import 'package:sync_app/shared/widgets/glass_card.dart';
 import 'package:sync_app/shared/widgets/primary_button.dart';
 import 'package:sync_app/shared/widgets/social_login_button.dart';
@@ -57,9 +59,13 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  const SizedBox(height: 48),
-                  const Text(
-                    'SYNC',
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: const LanguageIconToggle(),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    context.l10n.appTitle,
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.w800,
@@ -69,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'HIGH PERFORMANCE TRAINING',
+                    context.l10n.loginTagline,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -82,25 +88,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Welcome Back',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.loginWelcome,
+                          style: const TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
-                          'Sign in to continue your progress.',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.loginSubtitle,
+                          style: const TextStyle(
                             fontSize: 14,
                             color: AppColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 28),
                         CustomTextField(
-                          label: 'Email',
+                          label: context.l10n.emailLabel,
                           hint: 'hello@vitality.com',
                           controller: _emailController,
                           prefixIcon: Icons.mail_outline_rounded,
@@ -108,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 20),
                         CustomTextField(
-                          label: 'Password',
+                          label: context.l10n.passwordLabel,
                           hint: '••••••••',
                           controller: _passwordController,
                           prefixIcon: Icons.lock_outline_rounded,
@@ -127,9 +133,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 onChanged: (v) => setState(() => _rememberMe = v ?? false),
                               ),
                             ),
-                            const Text(
-                              'Remember me',
-                              style: TextStyle(
+                            Text(
+                              context.l10n.rememberMe,
+                              style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColors.textSecondary,
                               ),
@@ -137,9 +143,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             const Spacer(),
                             TextButton(
                               onPressed: () {},
-                              child: const Text(
-                                'Forgot password?',
-                                style: TextStyle(
+                              child: Text(
+                                context.l10n.forgotPassword,
+                                style: const TextStyle(
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.primaryGreen,
                                 ),
@@ -149,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         PrimaryButton(
-                          label: 'Login',
+                          label: context.l10n.signIn,
                           trailingIcon: Icons.arrow_forward_rounded,
                           isLoading: _isLoginLoading,
                           onPressed: _onLoginPressed,
@@ -161,8 +167,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 12),
                               child: Text(
-                                'OR CONTINUE WITH',
-                                style: TextStyle(
+                                context.l10n.orContinueWith.toUpperCase(),
+                                style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.5,
@@ -195,7 +201,20 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => context.push(AppRoutes.verifyEmail),
+                      child: Text(
+                        context.l10n.verifyEmailLink,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.brightGreen,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -247,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       await navigateAfterAuth(context);
     } catch (error) {
-      _showError(_mapError(error));
+      _showError(_mapError(error, context.l10n));
     } finally {
       if (mounted) {
         setState(() => _isLoginLoading = false);
@@ -267,7 +286,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       await navigateAfterAuth(context);
     } catch (error) {
-      _showError(_mapError(error));
+      _showError(_mapError(error, context.l10n));
     } finally {
       if (mounted) {
         setState(() => _isGoogleLoading = false);
@@ -275,30 +294,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  String _mapError(Object error) {
+  String _mapError(Object error, AppLocalizations l10n) {
     if (error is GoogleSignInException) {
-      return 'Google Sign-In lỗi (${error.code.name}): ${error.description ?? 'Unknown error'}';
+      return 'Google Sign-In (${error.code.name}): ${error.description ?? 'Unknown error'}';
     }
-    if (error is DioException) {
-      final data = error.response?.data;
-      if (data is Map<String, dynamic>) {
-        final message = data['message']?.toString();
-        if (message != null && message.isNotEmpty) {
-          if (message == 'An unexpected error occurred.') {
-            return 'Lỗi server (500). Kiểm tra backend/IAM database đã migrate chưa.';
-          }
-          if (message.toLowerCase().contains('email has not been verified')) {
-            return 'Email chưa được xác minh. Mở link verify trong email (hoặc log IAM console khi SMTP tắt).';
-          }
-          return message;
-        }
-      }
-      if (error.type == DioExceptionType.connectionError) {
-        return 'Không kết nối được API (${AppConfig.baseUrl}). Hãy chạy backend Gateway :5057.';
-      }
-      return error.message ?? 'Authentication request failed.';
-    }
-    return error.toString().replaceFirst('Exception: ', '');
+    return mapAuthError(error, l10n);
   }
 
   void _showError(String message) {
@@ -333,29 +333,17 @@ class _LoginBackground extends StatelessWidget {
           ],
         ),
       ),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.network(
-            'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80',
-            fit: BoxFit.cover,
-            color: Colors.black.withValues(alpha: 0.45),
-            colorBlendMode: BlendMode.darken,
-            errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.loginOverlay.withValues(alpha: 0.5),
+              AppColors.loginOverlay,
+            ],
           ),
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.loginOverlay.withValues(alpha: 0.5),
-                  AppColors.loginOverlay,
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

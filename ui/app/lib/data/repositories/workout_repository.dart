@@ -6,12 +6,13 @@ class WorkoutRepository {
 
   final WorkoutApiService _api;
 
+  /// Loads the active AI personalized roadmap, its sessions, and latest recovery.
   Future<({PersonalizedRoadmap? roadmap, List<RoadmapSession> sessions, RecoveryProfile? recovery})>
       loadRoadmap() async {
     final roadmaps = await _api.getRoadmaps();
     PersonalizedRoadmap? active;
     for (final r in roadmaps) {
-      if (r.roadmapStatus.toLowerCase().contains('active')) {
+      if (r.isActive) {
         active = r;
         break;
       }
@@ -19,14 +20,23 @@ class WorkoutRepository {
     active ??= roadmaps.isNotEmpty ? roadmaps.first : null;
 
     if (active == null) {
-      return (roadmap: null, sessions: <RoadmapSession>[], recovery: null);
+      final recovery = await _api.getLatestRecoveryProfile();
+      return (roadmap: null, sessions: <RoadmapSession>[], recovery: recovery);
     }
 
-    final sessions = await _api.getSessions(roadmapId: active.id, pageSize: 30);
+    List<RoadmapSession> sessions;
+    try {
+      sessions = await _api.getSessionsByRoadmap(active.id);
+    } catch (_) {
+      sessions = await _api.getSessions(roadmapId: active.id);
+    }
     sessions.sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
+
     final recovery = await _api.getLatestRecoveryProfile();
     return (roadmap: active, sessions: sessions, recovery: recovery);
   }
+
+  Future<List<UserCustomWorkout>> loadCustomWorkouts() => _api.getCustomWorkouts();
 
   Future<List<ExerciseCatalogItem>> searchCatalog({
     String? query,
@@ -37,4 +47,7 @@ class WorkoutRepository {
         category: category == 'All' ? null : category,
         pageSize: 80,
       );
+
+  Future<ExerciseCatalogDetail?> getExerciseDetail(String id) =>
+      _api.getExerciseDetail(id);
 }

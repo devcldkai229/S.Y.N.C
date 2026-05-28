@@ -5,8 +5,11 @@
 @DevSeed_Password = Sync@12345
 @DevSeed_DeviceId = dev-seed-device-001
 
-### Dev seed login (auto-created on IAM startup in Development)
-# Accounts: dev.seed@sync.local / demo@sync.local — password: Sync@12345
+### Dev login (IamSeedData.IamDbSeeder on IAM.API startup — password Sync@12345)
+#   demo@sync.local      — User
+#   admin@sync.local     — SystemAdmin
+#   partner@sync.local   — Partner
+#   dev.seed@sync.local  — User
 POST {{Gateway_HostAddress}}/api/v1/auth/login
 Content-Type: application/json
 

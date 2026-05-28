@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
   "ConnectionStrings": {
-    "NotificationDatabase": "mongodb://localhost:27017"
+    "NotificationDatabase": "mongodb://localhost:27018"
   },
   "MongoDB": {
     "NotificationDatabaseName": "sync_notification"
