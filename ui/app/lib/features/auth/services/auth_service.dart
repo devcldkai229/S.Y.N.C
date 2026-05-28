@@ -47,7 +47,28 @@ class AuthService {
       RegisterResult.fromJson,
     );
     if (!envelope.success || envelope.data == null) {
-      throw Exception(envelope.message.isEmpty ? 'Register failed.' : envelope.message);
+      throw Exception(
+        envelope.message.isEmpty ? 'Register failed.' : envelope.message,
+      );
+    }
+    return RegisterResult.fromEnvelope(envelope);
+  }
+
+  Future<RegisterResult> resendVerificationCode({required String email}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.authResendVerification,
+      data: <String, dynamic>{'email': email.trim()},
+    );
+    final envelope = ApiEnvelope<RegisterResult>.fromJson(
+      response.data ?? <String, dynamic>{},
+      RegisterResult.fromJson,
+    );
+    if (!envelope.success || envelope.data == null) {
+      throw Exception(
+        envelope.message.isEmpty
+            ? 'Resend verification code failed.'
+            : envelope.message,
+      );
     }
     return RegisterResult.fromEnvelope(envelope);
   }
@@ -72,7 +93,9 @@ class AuthService {
     );
     if (!envelope.success || envelope.data == null) {
       throw Exception(
-        envelope.message.isEmpty ? 'Email verification failed.' : envelope.message,
+        envelope.message.isEmpty
+            ? 'Email verification failed.'
+            : envelope.message,
       );
     }
     return envelope.data!;
@@ -98,7 +121,9 @@ class AuthService {
       AuthSession.fromJson,
     );
     if (!envelope.success || envelope.data == null) {
-      throw Exception(envelope.message.isEmpty ? 'Login failed.' : envelope.message);
+      throw Exception(
+        envelope.message.isEmpty ? 'Login failed.' : envelope.message,
+      );
     }
 
     if (rememberMe) {
@@ -141,7 +166,9 @@ class AuthService {
       AuthSession.fromJson,
     );
     if (!envelope.success || envelope.data == null) {
-      throw Exception(envelope.message.isEmpty ? 'Google login failed.' : envelope.message);
+      throw Exception(
+        envelope.message.isEmpty ? 'Google login failed.' : envelope.message,
+      );
     }
     await _saveSession(envelope.data!);
     return envelope.data!;
@@ -191,10 +218,12 @@ class AuthService {
       return existing;
     }
     // nextInt(1 << 32) is invalid on some runtimes (shift yields 0 or max > 2^32).
-    final random = List<int>.generate(8, (_) => Random.secure().nextInt(256))
-        .map((b) => b.toRadixString(16).padLeft(2, '0'))
-        .join();
-    final generated = 'sync-${_platformName.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}-$random';
+    final random = List<int>.generate(
+      8,
+      (_) => Random.secure().nextInt(256),
+    ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final generated =
+        'sync-${_platformName.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}-$random';
     await _storage.write(key: _deviceIdKey, value: generated);
     return generated;
   }

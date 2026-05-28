@@ -8,17 +8,22 @@ class AuthRepository {
   final AuthService _auth;
   final ProfileApiService _profileApi;
 
-  Future<AuthSession> login({required String email, required String password}) =>
-      _auth.login(email: email, password: password);
+  Future<AuthSession> login({
+    required String email,
+    required String password,
+  }) => _auth.login(email: email, password: password);
 
   Future<RegisterResult> register({
     required String fullName,
     required String email,
     required String password,
-  }) =>
-      _auth.register(fullName: fullName, email: email, password: password);
+  }) => _auth.register(fullName: fullName, email: email, password: password);
 
-  Future<VerifyEmailResult> verifyEmail(String token) => _auth.verifyEmail(token);
+  Future<RegisterResult> resendVerificationCode({required String email}) =>
+      _auth.resendVerificationCode(email: email);
+
+  Future<VerifyEmailResult> verifyEmail(String token) =>
+      _auth.verifyEmail(token);
 
   Future<AuthSession> signInWithGoogle() => _auth.loginWithGoogle();
 
@@ -30,7 +35,8 @@ class AuthRepository {
   Future<bool> needsOnboarding() async {
     try {
       final settings = await _profileApi.getProfileSettings();
-      final fitnessReady = settings.fitness.isConfigured &&
+      final fitnessReady =
+          settings.fitness.isConfigured &&
           (settings.fitness.fitnessGoal ?? '').isNotEmpty &&
           (settings.fitness.activityLevel ?? '').isNotEmpty;
       final prefsReady = settings.preferences.isConfigured;

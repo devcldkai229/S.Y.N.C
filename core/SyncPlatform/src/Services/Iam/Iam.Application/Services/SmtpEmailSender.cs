@@ -36,7 +36,7 @@ public class SmtpEmailSender : IEmailSender
             throw new InvalidOperationException("Email:Smtp:FromEmail is not configured.");
 
         var verifyUrl = BuildVerifyUrl(verificationToken);
-        var htmlBody = VerificationEmailTemplate.BuildHtml(verifyUrl, toEmail);
+        var htmlBody = VerificationEmailTemplate.BuildHtml(verifyUrl, toEmail, verificationToken);
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(smtp.FromName, smtp.FromEmail));

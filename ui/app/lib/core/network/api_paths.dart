@@ -3,6 +3,7 @@ abstract final class ApiPaths {
   // Auth (direct)
   static const authLogin = '/v1/auth/login';
   static const authRegister = '/v1/auth/register';
+  static const authResendVerification = '/v1/auth/resend-verification';
   static const authGoogle = '/v1/auth/google';
   static const authVerifyEmail = '/v1/auth/verify-email';
 
@@ -18,13 +19,16 @@ abstract final class ApiPaths {
       '/v1/users/$userId/public-profile';
   static const onboardingBasic = '/v1/iam/biometrics/onboarding/basic';
   static const onboardingGoals = '/v1/iam/biometrics/onboarding/goals';
-  static const onboardingComposition = '/v1/iam/biometrics/onboarding/composition';
-  static const onboardingSafeguards = '/v1/iam/biometrics/onboarding/safeguards';
+  static const onboardingComposition =
+      '/v1/iam/biometrics/onboarding/composition';
+  static const onboardingSafeguards =
+      '/v1/iam/biometrics/onboarding/safeguards';
   static const onboardingComplete = '/v1/iam/biometrics/onboarding/complete';
 
   // Exercise
   static const exercises = '/v1/exercise/exercises';
-  static String exerciseDetail(String id) => '/v1/exercise/exercises/$id/detail';
+  static String exerciseDetail(String id) =>
+      '/v1/exercise/exercises/$id/detail';
 
   // Roadmap
   static const roadmaps = '/v1/roadmap/roadmaps';

@@ -38,6 +38,22 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// POST /api/v1/auth/resend-verification — Resend verification code for an existing unverified account.
+    /// </summary>
+    [HttpPost("resend-verification")]
+    [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApiResponse<RegisterResponse>>> ResendVerification(
+        [FromBody] ResendVerificationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _authService.ResendVerificationAsync(request, cancellationToken);
+        return Ok(ApiResponse<RegisterResponse>.SuccessResponse(result, "Verification code resent."));
+    }
+
+    /// <summary>
     /// GET /api/v1/auth/verify-email?token=... — Activate the account (opened from email button in browser).
     /// Returns a simple HTML page for humans; JSON clients can send Accept: application/json.
     /// </summary>
