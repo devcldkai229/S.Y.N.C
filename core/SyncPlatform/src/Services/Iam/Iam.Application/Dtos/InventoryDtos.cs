@@ -31,9 +31,22 @@ public sealed record AchievementInventoryItemDto(
     string IconUrl,
     DateTimeOffset UnlockedAt);
 
+/// <summary>An achievement not yet unlocked, with measurable progress toward it.</summary>
+public sealed record AchievementProgressDto(
+    Guid Id,
+    string Code,
+    string Name,
+    string Description,
+    int XPReward,
+    int CoinReward,
+    string IconUrl,
+    int CurrentValue,
+    int RequiredValue);
+
 public sealed record InventoryResponse(
     GamificationSummaryDto? Gamification,
     IReadOnlyList<VoucherInventoryItemDto> Vouchers,
     IReadOnlyList<AchievementInventoryItemDto> Achievements,
+    IReadOnlyList<AchievementProgressDto> InProgressAchievements,
     int TotalVouchers,
     int TotalAchievementsUnlocked);

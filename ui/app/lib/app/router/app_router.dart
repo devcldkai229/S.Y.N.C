@@ -5,6 +5,9 @@ import 'package:sync_app/features/auth/screens/login_screen.dart';
 import 'package:sync_app/features/auth/screens/register_step1_screen.dart';
 import 'package:sync_app/features/auth/screens/verify_email_screen.dart';
 import 'package:sync_app/features/home/screens/home_screen.dart';
+import 'package:sync_app/features/achievements/screens/achievements_screen.dart';
+import 'package:sync_app/features/shop/screens/shop_screen.dart';
+import 'package:sync_app/features/subscription/screens/subscription_screen.dart';
 import 'package:sync_app/features/notifications/screens/notifications_screen.dart';
 import 'package:sync_app/features/onboarding/screens/onboarding_screen.dart';
 import 'package:sync_app/features/profile/screens/profile_screen.dart';
@@ -95,6 +98,21 @@ abstract final class AppRouter {
         path: AppRoutes.notifications,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.achievements,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const AchievementsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.shop,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const ShopScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.subscription,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const SubscriptionScreen(),
       ),
       GoRoute(
         path: '/workouts/exercise/:exerciseId',

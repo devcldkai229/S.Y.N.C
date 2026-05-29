@@ -5,9 +5,11 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using Minio;
+using Social.Application.Clients;
 using Social.Domain.Repositories;
 using Social.Application.Configuration;
 using Social.Application.Services;
+using Social.Infrastructure.Clients;
 using Social.Infrastructure.Options;
 using Social.Infrastructure.Persistence;
 using Social.Infrastructure.Persistence.Repositories;
@@ -65,6 +67,15 @@ public static class InfrastructureServiceExtensions
 
         services.Configure<SocialSeedOptions>(configuration.GetSection(SocialSeedOptions.SectionName));
         services.AddScoped<ISocialDatabaseSeeder, SocialDatabaseSeeder>();
+
+        // Inter-service: IAM gamification (grant XP after social events)
+        services.AddHttpClient<IIamGamificationClient, IamGamificationClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["IamService:BaseUrl"] ?? "http://localhost:5288";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
+        });
 
         return services;
     }

@@ -102,6 +102,46 @@ class ProfileApiService {
     return envelope.data!;
   }
 
+  Future<LogActivityResult> logActivity() async {
+    final response = await _dio.post<Map<String, dynamic>>(ApiPaths.meActivityLog);
+    final envelope = ApiEnvelope.fromJson(
+      response.data ?? {},
+      LogActivityResult.fromJson,
+    );
+    if (!envelope.success || envelope.data == null) {
+      throw Exception(envelope.message.isEmpty ? 'Failed to log activity.' : envelope.message);
+    }
+    return envelope.data!;
+  }
+
+  Future<List<ShopItem>> getShop() async {
+    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.meShop);
+    final json = response.data ?? {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Failed to load shop.').toString());
+    }
+    final raw = json['data'];
+    return (raw as List<dynamic>? ?? [])
+        .whereType<Map<String, dynamic>>()
+        .map(ShopItem.fromJson)
+        .toList();
+  }
+
+  Future<PurchaseResult> purchaseShopItem(String itemCode) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.meShopPurchase,
+      data: {'itemCode': itemCode},
+    );
+    final envelope = ApiEnvelope.fromJson(
+      response.data ?? {},
+      PurchaseResult.fromJson,
+    );
+    if (!envelope.success || envelope.data == null) {
+      throw Exception(envelope.message.isEmpty ? 'Purchase failed.' : envelope.message);
+    }
+    return envelope.data!;
+  }
+
   ProfileSettings _parseSettings(Map<String, dynamic>? data) {
     final envelope = ApiEnvelope.fromJson(data ?? {}, ProfileSettings.fromJson);
     if (!envelope.success || envelope.data == null) {

@@ -15,6 +15,7 @@ import 'package:sync_app/data/repositories/workout_repository.dart';
 import 'package:sync_app/features/social/data/social_remote_data_source.dart';
 import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
+import 'package:sync_app/features/subscription/services/subscription_api_service.dart';
 import 'package:sync_app/features/workouts/services/workout_api_service.dart';
 
 final getIt = GetIt.instance;
@@ -27,6 +28,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => createDio(storage: getIt()));
   getIt.registerLazySingleton(() => AuthService(getIt(), getIt()));
   getIt.registerLazySingleton(() => ProfileApiService(getIt()));
+  getIt.registerLazySingleton(() => SubscriptionApiService(getIt()));
   getIt.registerLazySingleton(() => WorkoutApiService(getIt()));
   getIt.registerLazySingleton(() => NotificationRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => OnboardingRemoteDataSource(getIt()));
