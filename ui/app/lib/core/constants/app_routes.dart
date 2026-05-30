@@ -9,6 +9,10 @@ class AppRoutes {
   static const profile = '/profile';
   static const notifications = '/notifications';
 
+  static const achievements = '/achievements';
+  static const shop = '/shop';
+  static const subscription = '/subscription';
+
   static String socialUserProfile(String userId) => '/social/user/$userId';
 
   static String exerciseDetail(String exerciseId) => '/workouts/exercise/$exerciseId';

@@ -35,10 +35,12 @@ class AuthRepository {
   Future<bool> needsOnboarding() async {
     try {
       final settings = await _profileApi.getProfileSettings();
+      final goal = settings.fitness.fitnessGoal ?? '';
+      final activity = settings.fitness.activityLevel ?? '';
       final fitnessReady =
           settings.fitness.isConfigured &&
-          (settings.fitness.fitnessGoal ?? '').isNotEmpty &&
-          (settings.fitness.activityLevel ?? '').isNotEmpty;
+          goal.isNotEmpty && goal != 'None' &&
+          activity.isNotEmpty && activity != 'None';
       final prefsReady = settings.preferences.isConfigured;
       return !fitnessReady || !prefsReady;
     } catch (_) {

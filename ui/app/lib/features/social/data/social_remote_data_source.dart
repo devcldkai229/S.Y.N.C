@@ -65,8 +65,16 @@ class SocialRemoteDataSource {
     return CursorFeedPage<SocialPost>(items: items, nextCursor: nextCursor);
   }
 
+  Future<void> deletePost(String postId) async {
+    await _dio.delete<void>('${ApiPaths.socialPosts}/$postId');
+  }
+
   Future<void> likePost(String postId) async {
     await _dio.post<void>('${ApiPaths.socialPosts}/$postId/like');
+  }
+
+  Future<void> unlikePost(String postId) async {
+    await _dio.delete<void>('${ApiPaths.socialPosts}/$postId/like');
   }
 
   Future<void> sharePost(String postId) async {

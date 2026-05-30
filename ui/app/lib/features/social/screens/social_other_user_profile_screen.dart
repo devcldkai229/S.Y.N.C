@@ -12,6 +12,7 @@ import 'package:sync_app/features/social/screens/social_image_viewer_screen.dart
 import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
 import 'package:sync_app/features/social/utils/social_media_utils.dart';
 import 'package:sync_app/features/social/widgets/social_comments_sheet.dart';
+import 'package:sync_app/features/social/widgets/social_post_actions.dart';
 import 'package:sync_app/features/social/widgets/social_post_card.dart';
 
 class SocialOtherUserProfileScreen extends StatefulWidget {
@@ -340,6 +341,15 @@ class _SocialOtherUserProfileScreenState extends State<SocialOtherUserProfileScr
                     onCommentCreated: (pid) => _incrementCommentCount(pid, _feedPosts),
                   ),
                   onOpenProfile: _openProfile,
+                  onMoreTap: (id) {
+                    final post = _feedPosts.firstWhere((p) => p.id == id, orElse: () => _feedPosts.first);
+                    SocialPostActionsSheet.show(
+                      context,
+                      post: post,
+                      isOwnPost: false,
+                      onHide: () => setState(() => _feedPosts.removeWhere((p) => p.id == id)),
+                    );
+                  },
                 ),
                 _PhotosTab(
                   posts: _mediaPosts,
@@ -484,6 +494,7 @@ class _PostsTab extends StatelessWidget {
     required this.onShare,
     required this.onComment,
     required this.onOpenProfile,
+    required this.onMoreTap,
   });
 
   final List<SocialPost> posts;
@@ -498,6 +509,7 @@ class _PostsTab extends StatelessWidget {
   final void Function(String) onShare;
   final void Function(String) onComment;
   final void Function(String) onOpenProfile;
+  final void Function(String) onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -545,6 +557,7 @@ class _PostsTab extends StatelessWidget {
               onShare: () => onShare(post.id),
               onComment: () => onComment(post.id),
               onOpenProfile: onOpenProfile,
+              onMoreTap: () => onMoreTap(post.id),
             );
           },
         ),

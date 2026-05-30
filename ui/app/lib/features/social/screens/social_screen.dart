@@ -5,6 +5,7 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/social/cubit/social_cubit.dart';
 import 'package:sync_app/features/social/widgets/social_comments_sheet.dart';
+import 'package:sync_app/features/social/widgets/social_post_actions.dart';
 import 'package:sync_app/features/social/widgets/social_post_card.dart';
 import 'package:sync_app/features/social/widgets/social_create_post_sheet.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
@@ -15,7 +16,7 @@ class SocialScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => SocialCubit(getIt())..loadFeed(),
+      create: (_) => SocialCubit(getIt(), getIt())..loadFeed(),
       child: const _SocialView(),
     );
   }
@@ -104,6 +105,7 @@ class _SocialView extends StatelessWidget {
                         );
                       }
 
+                      final visiblePosts = state.visiblePosts;
                       return RefreshIndicator(
                         color: AppColors.primaryGreen,
                         onRefresh: () => context.read<SocialCubit>().loadFeed(),
@@ -118,18 +120,20 @@ class _SocialView extends StatelessWidget {
                           child: ListView.builder(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
-                            itemCount: state.posts.length + (state.isLoadingMore ? 1 : 0),
+                            itemCount: visiblePosts.length + (state.isLoadingMore ? 1 : 0),
                             itemBuilder: (context, index) {
-                              if (index >= state.posts.length) {
+                              if (index >= visiblePosts.length) {
                                 return const Padding(
                                   padding: EdgeInsets.symmetric(vertical: 16),
                                   child: Center(child: CircularProgressIndicator()),
                                 );
                               }
 
-                              final post = state.posts[index];
+                              final post = visiblePosts[index];
                               final liked = state.likedPostIds.contains(post.id);
                               final shared = state.sharedPostIds.contains(post.id);
+                              final isOwnPost = state.currentUserId.isNotEmpty &&
+                                  state.currentUserId == post.authorId;
 
                               return SocialPostCard(
                                 post: post,
@@ -141,6 +145,18 @@ class _SocialView extends StatelessWidget {
                                 onOpenProfile: (userId) {
                                   if (userId.isEmpty) return;
                                   context.push(AppRoutes.socialUserProfile(userId));
+                                },
+                                onMoreTap: () {
+                                  final cubit = context.read<SocialCubit>();
+                                  SocialPostActionsSheet.show(
+                                    context,
+                                    post: post,
+                                    isOwnPost: isOwnPost,
+                                    onHide: () => cubit.hidePost(post.id),
+                                    onDelete: isOwnPost
+                                        ? () => cubit.deletePost(post.id)
+                                        : null,
+                                  );
                                 },
                               );
                             },

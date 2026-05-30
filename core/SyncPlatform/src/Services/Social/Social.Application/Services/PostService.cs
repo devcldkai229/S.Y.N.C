@@ -1,3 +1,4 @@
+using Social.Application.Clients;
 using Social.Application.Common;
 using Social.Application.DTOs;
 using Social.Application.Exceptions;
@@ -13,11 +14,16 @@ public class PostService : IPostService
 {
     private readonly IPostRepository _posts;
     private readonly IPostEngagementRepository _engagement;
+    private readonly IIamGamificationClient _gamification;
 
-    public PostService(IPostRepository posts, IPostEngagementRepository engagement)
+    public PostService(
+        IPostRepository posts,
+        IPostEngagementRepository engagement,
+        IIamGamificationClient gamification)
     {
         _posts = posts;
         _engagement = engagement;
+        _gamification = gamification;
     }
 
     public async Task<PostDto> CreateAsync(
@@ -49,6 +55,10 @@ public class PostService : IPostService
 
         await ShareCodeGenerator.AssignUniqueToPostAsync(_posts, entity, cancellationToken);
         await _posts.CreateAsync(entity, cancellationToken);
+
+        // Grant XP for posting (fire-and-forget, error swallowed in client)
+        _ = _gamification.GrantXpAsync(authorId, 75, 20, "social.post.created", cancellationToken);
+
         return entity.ToDto();
     }
 
@@ -78,9 +88,13 @@ public class PostService : IPostService
         if (hasMore && page.Count > 0)
             nextCursor = page[^1].CreatedAt.ToString("O");
 
+        HashSet<Guid> likedIds = [];
+        if (query.ViewerUserId.HasValue && page.Count > 0)
+            likedIds = await _engagement.GetLikedPostIdsAsync(query.ViewerUserId.Value, page.Select(p => p.Id), cancellationToken);
+
         return new CursorFeedResult<PostDto>
         {
-            Items = page.Select(x => x.ToDto()).ToList(),
+            Items = page.Select(x => x.ToDto(likedIds.Contains(x.Id))).ToList(),
             NextCursor = nextCursor,
         };
     }
@@ -166,6 +180,11 @@ public class PostService : IPostService
         {
             throw new ConflictException("You have already liked this post.");
         }
+    }
+
+    public async Task UnlikePostAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default)
+    {
+        await _engagement.UnlikePostAsync(postId, userId, cancellationToken);
     }
 
     public async Task DeleteAsync(Guid authorId, Guid postId, CancellationToken cancellationToken = default)

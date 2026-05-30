@@ -18,7 +18,12 @@ export default function DisplayTextSection() {
           Bắt đầu hành trình
         </motion.p>
         <div className="flex gap-8 text-sm">
-          {["Tính năng", "Bảng giá", "Blog", "Liên hệ"].map((item, i) => (
+          {[
+              { label: "Tính năng", href: "#features" },
+              { label: "Bảng giá", href: "/subscription" },
+              { label: "Blog", href: "#" },
+              { label: "Liên hệ", href: "#" },
+            ].map((item, i) => (
             <motion.div
               key={item}
               initial={{ opacity: 0, y: 8 }}
@@ -26,8 +31,8 @@ export default function DisplayTextSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: i * 0.07 }}
             >
-              <Link href="#" className="text-gray-500 hover:text-white transition-colors">
-                {item}
+              <Link href={item.href} className="text-gray-500 hover:text-white transition-colors">
+                {item.label}
               </Link>
             </motion.div>
           ))}

@@ -55,6 +55,39 @@ public class PostEngagementRepository : IPostEngagementRepository
         }
     }
 
+    public async Task UnlikePostAsync(
+        Guid postId,
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _interactions.DeleteOneAsync(
+            x => x.PostId == postId && x.UserId == userId && x.InteractionType == InteractionType.Like,
+            cancellationToken);
+
+        if (result.DeletedCount == 0)
+            return; // Already unliked — idempotent
+
+        await _posts.UpdateOneAsync(
+            p => p.Id == postId,
+            Builders<Post>.Update.Inc(p => p.Metrics.LikeCount, -1),
+            cancellationToken: cancellationToken);
+    }
+
+    public async Task<HashSet<Guid>> GetLikedPostIdsAsync(
+        Guid userId,
+        IEnumerable<Guid> postIds,
+        CancellationToken cancellationToken = default)
+    {
+        var postIdList = postIds.ToList();
+        if (postIdList.Count == 0) return [];
+
+        var interactions = await _interactions
+            .Find(x => x.UserId == userId && postIdList.Contains(x.PostId) && x.InteractionType == InteractionType.Like)
+            .ToListAsync(cancellationToken);
+
+        return [.. interactions.Select(x => x.PostId)];
+    }
+
     public async Task<Comment> AddCommentAsync(
         Guid postId,
         Guid userId,

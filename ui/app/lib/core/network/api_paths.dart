@@ -49,6 +49,16 @@ abstract final class ApiPaths {
   static String notificationMarkAllRead(String userId) =>
       '$notifications/users/$userId/read-all';
 
+  // Payment  (gateway prefix /v1/payment → service /v1, service routes use /api/v1/payments/...)
+  static const subscriptionPlans = '/v1/payment/payments/subscription-plans';
+  static const myActiveSubscription = '/v1/payment/payments/user-subscriptions/me/active';
+  static const payosCreateLink = '/v1/payment/payments/payos/create-link';
+
+  // IAM – gamification / shop
+  static const meActivityLog = '/v1/iam/me/activity/log';
+  static const meShop = '/v1/iam/me/shop';
+  static const meShopPurchase = '/v1/iam/me/shop/purchase';
+
   // Social (future service)
   static const socialPosts = '/v1/social/posts';
 }

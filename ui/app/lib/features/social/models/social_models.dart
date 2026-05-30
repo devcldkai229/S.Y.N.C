@@ -100,6 +100,7 @@ class SocialPost {
       metrics: SocialPostMetrics.fromJson((json['metrics'] ?? const {}) as Map<String, dynamic>),
       isPublic: json['isPublic'] == true,
       shareCode: (json['shareCode'] ?? '').toString(),
+      isLikedByMe: json['isLikedByMe'] == true,
     );
   }
 

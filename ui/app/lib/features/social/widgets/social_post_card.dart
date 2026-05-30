@@ -15,6 +15,7 @@ class SocialPostCard extends StatelessWidget {
     required this.onShare,
     required this.onComment,
     required this.onOpenProfile,
+    required this.onMoreTap,
   });
 
   final SocialPost post;
@@ -24,6 +25,7 @@ class SocialPostCard extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onComment;
   final void Function(String userId) onOpenProfile;
+  final VoidCallback onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +80,7 @@ class SocialPostCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: onMoreTap,
                   icon: const Icon(Icons.more_horiz, color: AppColors.textMuted),
                 ),
               ],

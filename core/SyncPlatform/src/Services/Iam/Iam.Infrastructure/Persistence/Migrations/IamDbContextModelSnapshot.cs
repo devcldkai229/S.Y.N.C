@@ -367,6 +367,10 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
+                    b.Property<DateTimeOffset?>("LastActivityDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_activity_date");
+
                     b.Property<int>("LongestStreak")
                         .HasColumnType("integer")
                         .HasColumnName("longest_streak");

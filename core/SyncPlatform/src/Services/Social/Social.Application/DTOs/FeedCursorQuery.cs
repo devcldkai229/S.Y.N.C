@@ -9,4 +9,7 @@ public class FeedCursorQuery
     public DateTimeOffset? Cursor { get; set; }
 
     public int Limit { get; set; } = 20;
+
+    /// <summary>When provided, each returned post will include <c>IsLikedByMe</c> for this user.</summary>
+    public Guid? ViewerUserId { get; set; }
 }

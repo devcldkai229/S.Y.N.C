@@ -5,10 +5,11 @@ namespace Iam.Domain.Enums;
 /// </summary>
 public enum FitnessGoal
 {
-    LoseFat = 0,
-    BuildMuscle = 1,
-    Maintain = 2,
-    Recomposition = 3,
-    ImproveEndurance = 4,
-    GeneralHealth = 5
+    None = 0,
+    LoseFat = 1,
+    BuildMuscle = 2,
+    Maintain = 3,
+    Recomposition = 4,
+    ImproveEndurance = 5,
+    GeneralHealth = 6
 }

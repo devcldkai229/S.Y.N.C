@@ -11,19 +11,18 @@ interface Particle {
   vy: number;
   rotation: number;
   rotSpeed: number;
-  depth: number;   // 0.3 – 1.0 → controls size, opacity, speed
+  depth: number;
   size: number;
   shape: Shape;
   alpha: number;
 }
 
-/* ── tunables ── */
-const COUNT            = 85;
-const INTERACTION_R    = 140;   // px — cursor repulsion radius
-const PUSH             = 5;     // repulsion force multiplier
-const FRICTION         = 0.955; // velocity decay per frame
-const FLOAT_SPEED      = -0.012; // upward drift (negative = up)
-const SHAPES: Shape[]  = ["circle", "square", "triangle"];
+const COUNT         = 85;
+const INTERACTION_R = 140;
+const PUSH          = 5;
+const FRICTION      = 0.955;
+const FLOAT_SPEED   = -0.008; // reduced from -0.012 → slower upward drift
+const SHAPES: Shape[] = ["circle", "square", "triangle"];
 
 function drawShape(
   ctx: CanvasRenderingContext2D,
@@ -67,17 +66,17 @@ export default function ParticleCursor() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    /* ── build particle grid ── */
     const init = () => {
       const w = canvas.offsetWidth;
       const h = canvas.offsetHeight;
       pts.current = Array.from({ length: COUNT }, () => {
         const depth = 0.25 + Math.random() * 0.75;
         return {
-          x: Math.random() * w,
-          y: Math.random() * h,
+          // Spawn only within the safe inner area to avoid edge clustering
+          x: 20 + Math.random() * (w - 40),
+          y: 20 + Math.random() * (h - 40),
           vx: (Math.random() - 0.5) * 0.6,
-          vy: (Math.random() - 0.5) * 0.6 - 0.15,
+          vy: (Math.random() - 0.5) * 0.6 - 0.1,
           rotation: Math.random() * Math.PI * 2,
           rotSpeed: (Math.random() - 0.5) * 0.025,
           depth,
@@ -88,7 +87,6 @@ export default function ParticleCursor() {
       });
     };
 
-    /* ── size canvas ── */
     const resize = () => {
       canvas.width  = canvas.offsetWidth;
       canvas.height = canvas.offsetHeight;
@@ -97,7 +95,6 @@ export default function ParticleCursor() {
     resize();
     window.addEventListener("resize", resize);
 
-    /* ── mouse tracking ── */
     const onMove = (e: MouseEvent) => {
       const r = canvas.getBoundingClientRect();
       mouse.current.x = e.clientX - r.left;
@@ -107,14 +104,19 @@ export default function ParticleCursor() {
     window.addEventListener("mousemove", onMove);
     canvas.parentElement?.addEventListener("mouseleave", onLeave);
 
-    /* ── animation loop ── */
     const tick = () => {
       const w = canvas.offsetWidth;
       const h = canvas.offsetHeight;
       ctx.clearRect(0, 0, w, h);
 
+      // ── Hard canvas-level clip — nothing escapes the canvas bounds ──────
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
+
       for (const p of pts.current) {
-        /* cursor repulsion */
+        // Cursor repulsion
         const dx   = p.x - mouse.current.x;
         const dy   = p.y - mouse.current.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -125,31 +127,23 @@ export default function ParticleCursor() {
           p.vy += (dy / dist) * force;
         }
 
-        /* float upward */
         p.vy += FLOAT_SPEED * p.depth;
-
-        /* friction */
         p.vx *= FRICTION;
         p.vy *= FRICTION;
-
         p.x        += p.vx;
         p.y        += p.vy;
         p.rotation += p.rotSpeed;
 
-        /* wrap around edges */
-        if (p.x < -20)    p.x = w + 20;
-        if (p.x > w + 20) p.x = -20;
-        if (p.y < -20)    p.y = h + 20;
-        if (p.y > h + 20) p.y = -20;
+        // Wrap — use tight bounds with no buffer zone to prevent edge smear
+        if (p.x < 0)  p.x = w;
+        if (p.x > w)  p.x = 0;
+        if (p.y < 0)  p.y = h;
+        if (p.y > h)  p.y = 0;
 
-        /* depth-based shadow for 3-D feel */
-        ctx.shadowColor = `rgba(26,131,68,${p.depth * 0.12})`;
-        ctx.shadowBlur  = p.depth * 7;
+        // No shadow — shadow blur bleeds past canvas edges in some browsers
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur  = 0;
 
-        /* shade: displaced particles brighten toward primary green */
-        const disp = Math.sqrt(
-          (p.x - mouse.current.x) ** 2 + (p.y - mouse.current.y) ** 2,
-        );
         const bright = dist < INTERACTION_R
           ? Math.min(1, (INTERACTION_R - dist) / 60)
           : 0;
@@ -158,10 +152,7 @@ export default function ParticleCursor() {
         drawShape(ctx, p.shape, p.x, p.y, p.size + bright * 1.5, p.rotation);
       }
 
-      /* reset shadow */
-      ctx.shadowColor = "transparent";
-      ctx.shadowBlur  = 0;
-
+      ctx.restore(); // remove clip path
       raf.current = requestAnimationFrame(tick);
     };
 
