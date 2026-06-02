@@ -25,7 +25,7 @@ public class ExerciseSetLogDto
     public int SetNumber { get; set; }
     public int TargetReps { get; set; }
     public int ActualReps { get; set; }
-    public decimal WeightKg { get; set; }
+    public double WeightKg { get; set; }
     public int Rir { get; set; }
     public int RestTakenSeconds { get; set; }
     public int FormScore { get; set; }
@@ -56,4 +56,56 @@ public class SubmitSetDto
     public int Rir { get; set; }
     public int RestTakenSeconds { get; set; }
     public int FormScore { get; set; }
+}
+
+public class StartWorkoutExecutionDto
+{
+    public Guid SessionId { get; set; }
+    public int? EnergyLevelBefore { get; set; }
+}
+
+public class WorkoutExecutionDetailDto
+{
+    public Guid ExecutionId { get; set; }
+    public Guid SessionId { get; set; }
+    public string SessionTitle { get; set; } = string.Empty;
+    public DateTimeOffset StartedAt { get; set; }
+    public int? EnergyLevelBefore { get; set; }
+    public List<ExecutionExerciseDto> Exercises { get; set; } = [];
+}
+
+public class ExecutionExerciseDto
+{
+    public Guid ExerciseId { get; set; }
+    public string ExerciseName { get; set; } = string.Empty;
+    public Guid? ExerciseAssetId { get; set; }
+    public int Order { get; set; }
+    public List<ExerciseSetLogDto> Sets { get; set; } = [];
+}
+
+public class FinishWorkoutExecutionDto
+{
+    public int? PerceivedDifficulty { get; set; }
+    public int? EnergyLevelAfter { get; set; }
+    public string? SessionFeedback { get; set; }
+}
+
+public class WorkoutExecutionSummaryDto
+{
+    public Guid ExecutionId { get; set; }
+    public Guid SessionId { get; set; }
+    public string SessionTitle { get; set; } = string.Empty;
+    public DateTimeOffset StartedAt { get; set; }
+    public DateTimeOffset CompletedAt { get; set; }
+    public int ActualDurationMinutes { get; set; }
+    public double CompletionRate { get; set; }
+    public int CompletedSetCount { get; set; }
+    public int TotalSetCount { get; set; }
+    public int SkippedExerciseCount { get; set; }
+    public int? PerceivedDifficulty { get; set; }
+    public int? EnergyLevelBefore { get; set; }
+    public int? EnergyLevelAfter { get; set; }
+    public double CaloriesBurned { get; set; }
+    public string AiCoachFeedback { get; set; } = string.Empty;
+    public string? SessionFeedback { get; set; }
 }

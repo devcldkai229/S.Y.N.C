@@ -38,6 +38,21 @@ class WorkoutRepository {
 
   Future<List<UserCustomWorkout>> loadCustomWorkouts() => _api.getCustomWorkouts();
 
+  Future<UserCustomWorkout> createCustomWorkout(Map<String, dynamic> data) =>
+      _api.createCustomWorkout(data);
+
+  Future<UserCustomWorkout> getCustomWorkoutById(String id) =>
+      _api.getCustomWorkoutById(id);
+
+  Future<RoadmapSession> getSessionById(String id) =>
+      _api.getSessionById(id);
+
+  Future<Map<String, dynamic>> createRoadmapSession(Map<String, dynamic> data) =>
+      _api.createRoadmapSession(data);
+
+  Future<Map<String, dynamic>> createScheduledWorkout(Map<String, dynamic> data) =>
+      _api.createScheduledWorkout(data);
+
   Future<List<ExerciseCatalogItem>> searchCatalog({
     String? query,
     String? category,
@@ -50,4 +65,61 @@ class WorkoutRepository {
 
   Future<ExerciseCatalogDetail?> getExerciseDetail(String id) =>
       _api.getExerciseDetail(id);
+
+  Future<List<RoadmapSession>> getSessionsByRoadmap(String roadmapId) =>
+      _api.getSessionsByRoadmap(roadmapId);
+
+  Future<MyWorkoutDetail> getCustomWorkoutDetail(String id) =>
+      _api.getCustomWorkoutDetail(id);
+
+  Future<UserCustomWorkout> updateCustomWorkout(String id, Map<String, dynamic> data) =>
+      _api.updateCustomWorkout(id, data);
+
+  Future<void> deleteCustomWorkout(String id) => _api.deleteCustomWorkout(id);
+
+  Future<RoadmapSession> updateRoadmapSession(String sessionId, Map<String, dynamic> data) =>
+      _api.updateRoadmapSession(sessionId, data);
+
+  Future<WorkoutExecutionDetail> startWorkout(String sessionId, {int? energyLevelBefore}) =>
+      _api.startWorkout(sessionId, energyLevelBefore: energyLevelBefore);
+
+  Future<WorkoutExecutionSummary> finishWorkout(
+    String executionId, {
+    int? perceivedDifficulty,
+    int? energyLevelAfter,
+    String? sessionFeedback,
+  }) =>
+      _api.finishWorkout(
+        executionId,
+        perceivedDifficulty: perceivedDifficulty,
+        energyLevelAfter: energyLevelAfter,
+        sessionFeedback: sessionFeedback,
+      );
+
+  Future<void> cancelWorkout(String executionId) => _api.cancelWorkout(executionId);
+
+  Future<ExerciseSetLog> createExerciseSetLog({
+    required String executionId,
+    required String exerciseId,
+    required int setNumber,
+    required int targetReps,
+    required int actualReps,
+    required double weightKg,
+    required int rir,
+    required int restTakenSeconds,
+    required int formScore,
+    required bool completed,
+  }) =>
+      _api.createExerciseSetLog(
+        executionId: executionId,
+        exerciseId: exerciseId,
+        setNumber: setNumber,
+        targetReps: targetReps,
+        actualReps: actualReps,
+        weightKg: weightKg,
+        rir: rir,
+        restTakenSeconds: restTakenSeconds,
+        formScore: formScore,
+        completed: completed,
+      );
 }

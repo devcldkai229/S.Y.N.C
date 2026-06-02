@@ -6,4 +6,5 @@ public interface IExerciseSetLogRepository : IGenericRepository<ExerciseSetLog>
 {
     Task<IReadOnlyList<ExerciseSetLog>> GetByExecutionIdAsync(Guid executionId, CancellationToken cancellationToken = default);
     Task CreateManyAsync(IEnumerable<ExerciseSetLog> entities, CancellationToken cancellationToken = default);
+    Task DeleteManyByExecutionIdAsync(Guid executionId, CancellationToken cancellationToken = default);
 }

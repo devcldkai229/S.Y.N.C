@@ -51,3 +51,22 @@ public class UpdateUserCustomWorkoutDto
     public List<CreateCustomBlockDto> CustomBlocks { get; set; } = [];
 }
 
+public class MyWorkoutDetailDto
+{
+    public Guid Id { get; set; }
+    public string WorkoutName { get; set; } = string.Empty;
+    public Visibility Visibility { get; set; }
+    public string ScheduleMode { get; set; } = string.Empty;
+    public bool AllowAiOptimization { get; set; }
+    public List<WorkoutSessionDto> Sessions { get; set; } = [];
+    public List<ScheduledWorkoutDto> WeeklySchedules { get; set; } = [];
+}
+
+public class WorkoutSessionDto
+{
+    public Guid Id { get; set; }
+    public string SessionTitle { get; set; } = string.Empty;
+    public int ExerciseCount { get; set; }
+    public int TotalSetCount { get; set; }
+}
+

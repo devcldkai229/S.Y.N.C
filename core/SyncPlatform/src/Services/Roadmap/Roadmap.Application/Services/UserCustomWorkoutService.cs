@@ -11,10 +11,17 @@ namespace Roadmap.Application.Services;
 public class UserCustomWorkoutService : IUserCustomWorkoutService
 {
     private readonly IUserCustomWorkoutRepository _repository;
+    private readonly IRoadmapSessionRepository _sessionRepository;
+    private readonly IScheduledWorkoutRepository _scheduledRepository;
 
-    public UserCustomWorkoutService(IUserCustomWorkoutRepository repository)
+    public UserCustomWorkoutService(
+        IUserCustomWorkoutRepository repository,
+        IRoadmapSessionRepository sessionRepository,
+        IScheduledWorkoutRepository scheduledRepository)
     {
         _repository = repository;
+        _sessionRepository = sessionRepository;
+        _scheduledRepository = scheduledRepository;
     }
 
     public async Task<UserCustomWorkoutDto> CreateAsync(
@@ -26,9 +33,6 @@ public class UserCustomWorkoutService : IUserCustomWorkoutService
 
         if (string.IsNullOrWhiteSpace(dto.WorkoutName))
             throw new BadRequestException("WorkoutName is required.");
-
-        if (dto.CustomBlocks.Count == 0)
-            throw new BadRequestException("At least one exercise block is required.");
 
         var entity = new UserCustomWorkout();
         entity.UpdateEntity(dto);
@@ -58,6 +62,21 @@ public class UserCustomWorkoutService : IUserCustomWorkoutService
         return entity.ToDto();
     }
 
+    public async Task<MyWorkoutDetailDto> GetDetailByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var entity = await _repository.GetByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException(nameof(UserCustomWorkout), id);
+
+        var sessions = await _sessionRepository.GetByRoadmapIdAsync(id, cancellationToken);
+        var sessionIds = sessions.Select(s => s.Id).ToList();
+
+        var schedules = await _scheduledRepository.GetBySessionIdsAsync(sessionIds, cancellationToken);
+
+        return entity.ToDetailDto(sessions.ToList(), schedules.ToList());
+    }
+
     public async Task<(IReadOnlyList<UserCustomWorkoutDto> Items, PaginationMetadata Metadata)> GetPagedAsync(
         int pageNumber,
         int pageSize,
@@ -79,9 +98,6 @@ public class UserCustomWorkoutService : IUserCustomWorkoutService
     {
         if (string.IsNullOrWhiteSpace(dto.WorkoutName))
             throw new BadRequestException("WorkoutName is required.");
-
-        if (dto.CustomBlocks.Count == 0)
-            throw new BadRequestException("At least one exercise block is required.");
 
         var entity = await _repository.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException(nameof(UserCustomWorkout), id);

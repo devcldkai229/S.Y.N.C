@@ -35,8 +35,11 @@ abstract final class ApiPaths {
   static const sessions = '/v1/roadmap/sessions';
   static const recoveryProfiles = '/v1/roadmap/recovery-profiles';
   static const customWorkouts = '/v1/roadmap/workouts';
+  static const scheduledWorkouts = '/v1/roadmap/scheduled-workouts';
   static String sessionsByRoadmap(String roadmapId) =>
       '/v1/roadmap/sessions/roadmap/$roadmapId';
+  static const workoutExecutions = '/v1/roadmap/workout-executions';
+  static const exerciseSetLogs = '/v1/roadmap/exercise-set-logs';
 
   // Notification
   static const notifications = '/v1/notification/notifications';

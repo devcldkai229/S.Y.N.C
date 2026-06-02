@@ -11,4 +11,7 @@ public interface IScheduledWorkoutRepository : IGenericRepository<ScheduledWorko
         DateTimeOffset from,
         DateTimeOffset to,
         CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ScheduledWorkout>> GetBySessionIdsAsync(
+        IEnumerable<Guid> sessionIds,
+        CancellationToken cancellationToken = default);
 }
