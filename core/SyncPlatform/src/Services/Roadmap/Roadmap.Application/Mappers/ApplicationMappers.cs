@@ -121,11 +121,74 @@ public static class ApplicationMappers
             SetNumber = entity.SetNumber,
             TargetReps = entity.TargetReps,
             ActualReps = entity.ActualReps,
-            WeightKg = entity.WeightKg,
+            WeightKg = (double)entity.WeightKg,
             Rir = entity.Rir,
             RestTakenSeconds = entity.RestTakenSeconds,
             FormScore = entity.FormScore,
             Completed = entity.Completed
+        };
+    }
+
+    public static WorkoutExecutionDetailDto ToDetailDto(
+        this WorkoutExecutionLog log,
+        RoadmapSession session,
+        IReadOnlyList<ExerciseSetLog> setLogs)
+    {
+        return new WorkoutExecutionDetailDto
+        {
+            ExecutionId = log.Id,
+            SessionId = log.SessionId,
+            SessionTitle = session.SessionTitle,
+            StartedAt = log.StartedAt,
+            EnergyLevelBefore = log.EnergyLevelBefore,
+            Exercises = session.ExecutionBlocks
+                .OrderBy(b => b.Order)
+                .GroupBy(b => b.ExerciseId)
+                .Select(g =>
+                {
+                    var firstBlock = g.First();
+                    return new ExecutionExerciseDto
+                    {
+                        ExerciseId = g.Key,
+                        ExerciseName = firstBlock.ExerciseName,
+                        ExerciseAssetId = firstBlock.ExerciseAssetId,
+                        Order = firstBlock.Order,
+                        Sets = setLogs
+                            .Where(s => s.ExerciseId == g.Key)
+                            .OrderBy(s => s.SetNumber)
+                            .Select(s => s.ToDto())
+                            .ToList()
+                    };
+                })
+                .OrderBy(e => e.Order)
+                .ToList()
+        };
+    }
+
+    public static WorkoutExecutionSummaryDto ToSummaryDto(
+        this WorkoutExecutionLog log,
+        string sessionTitle,
+        int completedSetCount,
+        int totalSetCount)
+    {
+        return new WorkoutExecutionSummaryDto
+        {
+            ExecutionId = log.Id,
+            SessionId = log.SessionId,
+            SessionTitle = sessionTitle,
+            StartedAt = log.StartedAt,
+            CompletedAt = log.CompletedAt ?? DateTimeOffset.UtcNow,
+            ActualDurationMinutes = log.ActualDurationMinutes,
+            CompletionRate = log.CompletionRate,
+            CompletedSetCount = completedSetCount,
+            TotalSetCount = totalSetCount,
+            SkippedExerciseCount = log.SkippedExercises.Count,
+            PerceivedDifficulty = log.PerceivedDifficulty,
+            EnergyLevelBefore = log.EnergyLevelBefore,
+            EnergyLevelAfter = log.EnergyLevelAfter,
+            CaloriesBurned = log.CaloriesBurned,
+            AiCoachFeedback = log.AiCoachFeedback ?? string.Empty,
+            SessionFeedback = log.SessionFeedback
         };
     }
 
@@ -402,6 +465,38 @@ public static class ApplicationMappers
             WeightKg = b.WeightKg,
             RestSeconds = b.RestSeconds
         }).ToList();
+    }
+
+    public static MyWorkoutDetailDto ToDetailDto(
+        this UserCustomWorkout entity,
+        List<RoadmapSession> sessions,
+        List<ScheduledWorkout> schedules)
+    {
+        return new MyWorkoutDetailDto
+        {
+            Id = entity.Id,
+            WorkoutName = entity.WorkoutName,
+            Visibility = entity.Visibility,
+            ScheduleMode = entity.ScheduleMode,
+            AllowAiOptimization = entity.AllowAiOptimization,
+            Sessions = sessions.Select(s => new WorkoutSessionDto
+            {
+                Id = s.Id,
+                SessionTitle = s.SessionTitle,
+                ExerciseCount = s.ExecutionBlocks.Count,
+                TotalSetCount = s.ExecutionBlocks.Sum(b => b.TargetSets)
+            }).ToList(),
+            WeeklySchedules = schedules.Select(sc => new ScheduledWorkoutDto
+            {
+                Id = sc.Id,
+                SessionId = sc.SessionId,
+                SessionTitle = sessions.FirstOrDefault(s => s.Id == sc.SessionId)?.SessionTitle ?? string.Empty,
+                ScheduledStartTime = sc.ScheduledStartTime,
+                ScheduledEndTime = sc.ScheduledEndTime,
+                RepeatPattern = sc.RepeatPattern,
+                Status = sc.Status
+            }).ToList()
+        };
     }
 
     // ── RoadmapSession Extensions ────────────────────────────────────────────

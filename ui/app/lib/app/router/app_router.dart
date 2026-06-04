@@ -14,8 +14,12 @@ import 'package:sync_app/features/profile/screens/profile_screen.dart';
 import 'package:sync_app/features/social/screens/social_other_user_profile_screen.dart';
 import 'package:sync_app/features/social/screens/social_screen.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
+import 'package:sync_app/features/workouts/screens/create_custom_workout_screen.dart';
+import 'package:sync_app/features/workouts/screens/custom_workout_detail_screen.dart';
+import 'package:sync_app/features/workouts/screens/custom_session_detail_screen.dart';
 import 'package:sync_app/features/workouts/screens/exercise_detail_screen.dart';
 import 'package:sync_app/features/workouts/screens/workouts_screen.dart';
+import 'package:sync_app/features/workouts/screens/workout_execution_screen.dart';
 import 'package:sync_app/shared/widgets/main_shell_scaffold.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -100,22 +104,55 @@ abstract final class AppRouter {
         builder: (context, state) => const NotificationsScreen(),
       ),
       GoRoute(
-        path: AppRoutes.achievements,
-        parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const AchievementsScreen(),
+GoRoute(
+  path: AppRoutes.achievements,
+  parentNavigatorKey: rootNavigatorKey,
+  builder: (context, state) => const AchievementsScreen(),
+),
+GoRoute(
+  path: AppRoutes.shop,
+  parentNavigatorKey: rootNavigatorKey,
+  builder: (context, state) => const ShopScreen(),
+),
+GoRoute(
+  path: AppRoutes.subscription,
+  parentNavigatorKey: rootNavigatorKey,
+  builder: (context, state) => const SubscriptionScreen(),
+),
+GoRoute(
+  path: AppRoutes.createCustomWorkout,
+  parentNavigatorKey: rootNavigatorKey,
+  builder: (context, state) => const CreateCustomWorkoutScreen(),
       ),
       GoRoute(
-        path: AppRoutes.shop,
+        path: '/workouts/custom/:id',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const ShopScreen(),
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return CustomWorkoutDetailScreen(workoutId: id);
+        },
       ),
       GoRoute(
-        path: AppRoutes.subscription,
+        path: '/workouts/session/:sessionId',
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const SubscriptionScreen(),
+        builder: (context, state) {
+          final sessionId = state.pathParameters['sessionId']!;
+          return CustomSessionDetailScreen(sessionId: sessionId);
+        },
       ),
       GoRoute(
-        path: '/workouts/exercise/:exerciseId',
+        path: '/workouts/session/:sessionId/active',
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final sessionId = state.pathParameters['sessionId']!;
+          final session = state.extra as RoadmapSession?;
+          return WorkoutExecutionScreen(
+            sessionId: sessionId,
+            initialSession: session,
+          );
+        },
+GoRoute(
+  path: '/workouts/exercise/:exerciseId',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final exerciseId = state.pathParameters['exerciseId']!;

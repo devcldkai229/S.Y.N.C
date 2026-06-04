@@ -15,6 +15,7 @@ class WorkoutsState extends Equatable {
     this.roadmapError,
     this.customError,
     this.catalogError,
+    this.customSessions = const {},
   });
 
   const WorkoutsState.initial() : this();
@@ -30,6 +31,7 @@ class WorkoutsState extends Equatable {
   final String? roadmapError;
   final String? customError;
   final String? catalogError;
+  final Map<String, List<RoadmapSession>> customSessions;
 
   WorkoutsState copyWith({
     LoadStatus? roadmapStatus,
@@ -43,6 +45,7 @@ class WorkoutsState extends Equatable {
     String? roadmapError,
     String? customError,
     String? catalogError,
+    Map<String, List<RoadmapSession>>? customSessions,
     bool clearRoadmapError = false,
     bool clearCustomError = false,
     bool clearCatalogError = false,
@@ -59,6 +62,7 @@ class WorkoutsState extends Equatable {
       roadmapError: clearRoadmapError ? null : (roadmapError ?? this.roadmapError),
       customError: clearCustomError ? null : (customError ?? this.customError),
       catalogError: clearCatalogError ? null : (catalogError ?? this.catalogError),
+      customSessions: customSessions ?? this.customSessions,
     );
   }
 
@@ -75,5 +79,6 @@ class WorkoutsState extends Equatable {
         roadmapError,
         customError,
         catalogError,
+        customSessions,
       ];
 }

@@ -214,6 +214,7 @@ class _AiRoadmapTab extends StatelessWidget {
           onRefresh: () => context.read<WorkoutsCubit>().loadRoadmap(),
           color: AppColors.primaryGreen,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
             children: [
               const _AiManagedBanner(),
@@ -328,47 +329,88 @@ class _CustomWorkoutsTab extends StatelessWidget {
 
         final workouts = state.customWorkouts;
 
-        return RefreshIndicator(
-          onRefresh: () => context.read<WorkoutsCubit>().loadCustomWorkouts(),
-          color: AppColors.primaryGreen,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: FloatingActionButton(
+            heroTag: 'add_custom_workout_fab',
+            onPressed: () async {
+              final result = await context.push(AppRoutes.createCustomWorkout);
+              if (context.mounted && result == true) {
+                context.read<WorkoutsCubit>().loadCustomWorkouts();
+              }
+            },
+            backgroundColor: AppColors.primaryGreen,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+          body: RefreshIndicator(
+            onRefresh: () => context.read<WorkoutsCubit>().loadCustomWorkouts(),
+            color: AppColors.primaryGreen,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.edit_note_rounded, color: AppColors.primaryGreen),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Templates you create. Schedule them into your calendar from the web or future mobile flow.',
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.edit_note_rounded, color: AppColors.primaryGreen),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Templates you create. Schedule them into your calendar from the web or future mobile flow.',
-                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                const SizedBox(height: 16),
+                if (workouts.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'No custom workouts yet.\nCreate one now!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final result = await context.push(AppRoutes.createCustomWorkout);
+                              if (context.mounted && result == true) {
+                                context.read<WorkoutsCubit>().loadCustomWorkouts();
+                              }
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Create Custom Workout'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryGreen,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (workouts.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(
-                    child: Text(
-                      'No custom workouts yet.\nCreate one via POST /workouts/custom.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textMuted),
-                    ),
-                  ),
-                )
-              else
-                ...workouts.map((w) => _CustomWorkoutCard(workout: w)),
-            ],
+                  )
+                else
+                  ...workouts.map((w) => _CustomWorkoutCard(
+                        workout: w,
+                        sessions: state.customSessions[w.id] ?? const [],
+                      )),
+              ],
+            ),
           ),
         );
       },
@@ -493,6 +535,7 @@ class _CatalogTabState extends State<_CatalogTab> {
                           onRefresh: () async => _load(context),
                           color: AppColors.primaryGreen,
                           child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
                             children: [
                               if (featured != null)
@@ -678,152 +721,452 @@ class _SessionTile extends StatelessWidget {
     final day = days[session.scheduledDate.toLocal().weekday - 1];
     final completed = session.isCompleted;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isNextUp ? AppColors.primaryGreen.withValues(alpha: 0.08) : AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isNextUp ? AppColors.primaryGreen.withValues(alpha: 0.4) : AppColors.border,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            completed
-                ? Icons.check_circle_outline
-                : isNextUp
-                    ? Icons.play_circle_fill
-                    : Icons.calendar_today_outlined,
-            color: completed
-                ? AppColors.textMuted
-                : isNextUp
-                    ? AppColors.primaryGreen
-                    : AppColors.textSecondary,
+    return InkWell(
+      onTap: () async {
+        await context.push(AppRoutes.customSessionDetail(session.id));
+        if (context.mounted) {
+          context.read<WorkoutsCubit>().loadRoadmap();
+        }
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isNextUp ? AppColors.primaryGreen.withValues(alpha: 0.08) : AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isNextUp ? AppColors.primaryGreen.withValues(alpha: 0.4) : AppColors.border,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (isNextUp)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 8),
-                        child: Text(
-                          'NEXT UP',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryGreen,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              completed
+                  ? Icons.check_circle_outline
+                  : isNextUp
+                      ? Icons.play_circle_fill
+                      : Icons.calendar_today_outlined,
+              color: completed
+                  ? AppColors.textMuted
+                  : isNextUp
+                      ? AppColors.primaryGreen
+                      : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (isNextUp)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Text(
+                            'NEXT UP',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryGreen,
+                            ),
                           ),
                         ),
-                      ),
-                    if (session.aiGenerated)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightGreen,
-                          borderRadius: BorderRadius.circular(4),
+                      if (session.aiGenerated)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightGreen,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'AI',
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+                          ),
                         ),
-                        child: const Text(
-                          'AI',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
-                        ),
-                      ),
-                  ],
-                ),
-                Text(
-                  session.sessionTitle,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    decoration: completed ? TextDecoration.lineThrough : null,
-                    color: completed ? AppColors.textMuted : AppColors.textPrimary,
+                    ],
                   ),
-                ),
-                Text(
-                  session.subtitleLine,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          if (isNextUp)
-            FilledButton(
-              onPressed: () {},
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: const Text('Start'),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.border.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                completed ? 'Done $day' : day,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                  Text(
+                    session.sessionTitle,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      decoration: completed ? TextDecoration.lineThrough : null,
+                      color: completed ? AppColors.textMuted : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    session.subtitleLine,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
               ),
             ),
-        ],
+            if (isNextUp)
+              FilledButton(
+                onPressed: () async {
+                  await context.push(AppRoutes.customSessionDetail(session.id));
+                  if (context.mounted) {
+                    context.read<WorkoutsCubit>().loadRoadmap();
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryGreen,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                child: const Text('Start'),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.border.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  completed ? 'Done $day' : day,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _CustomWorkoutCard extends StatelessWidget {
-  const _CustomWorkoutCard({required this.workout});
+  const _CustomWorkoutCard({
+    required this.workout,
+    required this.sessions,
+  });
 
   final UserCustomWorkout workout;
+  final List<RoadmapSession> sessions;
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Xóa lộ trình tập?',
+          style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa lộ trình "${workout.workoutName}"? Hành động này không thể hoàn tác.',
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<WorkoutsCubit>().deleteCustomWorkout(workout.id);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text(
+              'Xóa',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+    final name = workout.workoutName;
+    final isAllForOne = name.toLowerCase().contains('all for one');
+    final isPushOnly = name.toLowerCase() == 'push';
+
+    // Determine card icon based on workout type
+    IconData cardIcon = Icons.fitness_center;
+    if (isAllForOne) cardIcon = Icons.person;
+    if (isPushOnly) cardIcon = Icons.bolt;
+
+    final totalExercises = sessions.fold(0, (sum, s) => sum + s.exerciseCount);
+    final sessionsText = '${sessions.length} session${sessions.length == 1 ? '' : 's'} • $totalExercises exercises';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        side: const BorderSide(color: Color(0xFFF1F3F5)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: InkWell(
+        onTap: () async {
+          await context.push(AppRoutes.customWorkoutDetail(workout.id));
+          if (context.mounted) {
+            context.read<WorkoutsCubit>().loadCustomWorkouts();
+            context.read<WorkoutsCubit>().loadRoadmap();
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(workout.workoutName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ),
-              if (workout.allowAiOptimization)
-                const Icon(Icons.auto_awesome, size: 18, color: AppColors.primaryGreen),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${workout.exerciseCount} exercises • ${workout.totalSets} sets • ${workout.scheduleMode.isNotEmpty ? workout.scheduleMode : workout.visibility}',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-          if (workout.blocks.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            ...workout.blocks.take(3).map(
-                  (b) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+              // Header Row: Icon + Title + Menu
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(cardIcon, color: AppColors.primaryGreen, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Text(
-                      '• ${b.summary} (${b.restSeconds}s rest)',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: AppColors.textMuted, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await context.push(AppRoutes.customWorkoutDetail(workout.id));
+                        if (context.mounted) {
+                          context.read<WorkoutsCubit>().loadCustomWorkouts();
+                          context.read<WorkoutsCubit>().loadRoadmap();
+                        }
+                      } else if (value == 'delete') {
+                        _confirmDelete(context);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18, color: AppColors.textSecondary),
+                            SizedBox(width: 8),
+                            Text('Chỉnh sửa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                            SizedBox(width: 8),
+                            Text('Xóa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.redAccent)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Tags Row
+              Row(
+                children: [
+                  _buildTag(workout.visibility),
+                  const SizedBox(width: 6),
+                  _buildTag(
+                    workout.scheduleMode.isNotEmpty ? workout.scheduleMode : 'Manual',
+                    color: Colors.blue.shade600,
+                  ),
+                  if (workout.allowAiOptimization) ...[
+                    const SizedBox(width: 6),
+                    _buildTag('AI On', color: AppColors.primaryGreen),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Exercises count text
+              Text(
+                sessionsText,
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+
+              // Next Session Sub-Card
+              _buildSubCard(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTag(String label, {Color? color}) {
+    final displayColor = color ?? Colors.grey.shade600;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: displayColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: displayColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubCard(BuildContext context) {
+    if (sessions.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE9ECEF), style: BorderStyle.solid),
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'Chưa có buổi tập nào',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => context.push(AppRoutes.customWorkoutDetail(workout.id)),
+              child: const Text(
+                '+ Thêm session đầu tiên',
+                style: TextStyle(
+                  color: AppColors.primaryGreen,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                 ),
-            if (workout.blocks.length > 3)
-              Text('+ ${workout.blocks.length - 3} more', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+              ),
+            ),
           ],
-        ],
+        ),
+      );
+    }
+
+    final first = sessions.first;
+    final isFixed = workout.scheduleMode.toLowerCase() == 'fixed';
+
+    if (isFixed) {
+      final timeStr = first.scheduledTime.isNotEmpty ? first.scheduledTime : '19:00';
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            await context.push(AppRoutes.customSessionDetail(first.id));
+            if (context.mounted) {
+              context.read<WorkoutsCubit>().loadCustomWorkouts();
+              context.read<WorkoutsCubit>().loadRoadmap();
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGreen.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today_outlined, color: AppColors.primaryGreen, size: 16),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${first.sessionTitle} - Hôm nay $timeStr',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Cập nhật: 20/05/2026',
+                        style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 16),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Flexible / Manual schedule styling
+    final totalSets = first.executionBlocks.fold(0, (sum, b) => sum + b.targetSets);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () async {
+          await context.push(AppRoutes.customSessionDetail(first.id));
+          if (context.mounted) {
+            context.read<WorkoutsCubit>().loadCustomWorkouts();
+            context.read<WorkoutsCubit>().loadRoadmap();
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE9ECEF)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.timer_outlined, color: AppColors.primaryGreen, size: 16),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${first.sessionTitle} • $totalSets sets',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Start anytime',
+                      style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 16),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -33,7 +33,32 @@ class WorkoutsCubit extends Cubit<WorkoutsState> {
     emit(state.copyWith(customStatus: LoadStatus.loading, clearCustomError: true));
     try {
       final items = await _repository.loadCustomWorkouts();
-      emit(state.copyWith(customStatus: LoadStatus.success, customWorkouts: items));
+      final Map<String, List<RoadmapSession>> customSessions = {};
+      for (final item in items) {
+        try {
+          final sessions = await _repository.getSessionsByRoadmap(item.id);
+          customSessions[item.id] = sessions;
+        } catch (_) {
+          customSessions[item.id] = [];
+        }
+      }
+      emit(state.copyWith(
+        customStatus: LoadStatus.success,
+        customWorkouts: items,
+        customSessions: customSessions,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        customStatus: LoadStatus.failure,
+        customError: mapApiError(e),
+      ));
+    }
+  }
+
+  Future<void> deleteCustomWorkout(String id) async {
+    try {
+      await _repository.deleteCustomWorkout(id);
+      await loadCustomWorkouts();
     } catch (e) {
       emit(state.copyWith(
         customStatus: LoadStatus.failure,

@@ -54,6 +54,18 @@ public class UserCustomWorkoutController : ControllerBase
         return Ok(ApiResponse<UserCustomWorkoutDto>.SuccessResponse(result, "Custom workout retrieved successfully."));
     }
 
+    [HttpGet("{id:guid}/detail")]
+    [ProducesResponseType(typeof(ApiResponse<MyWorkoutDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<MyWorkoutDetailDto>>> GetDetailById(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.GetDetailByIdAsync(id, cancellationToken);
+        return Ok(ApiResponse<MyWorkoutDetailDto>.SuccessResponse(result, "Custom workout details retrieved successfully."));
+    }
+
     /// <summary>
     /// List the authenticated user's custom workouts. Admins may pass any userId; everyone else
     /// can only query their own templates (enforced server-side).
