@@ -8,6 +8,7 @@ class AppRoutes {
   static const social = '/social';
   static const profile = '/profile';
   static const notifications = '/notifications';
+
   static const achievements = '/achievements';
   static const shop = '/shop';
   static const subscription = '/subscription';
