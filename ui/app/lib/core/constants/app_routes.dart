@@ -9,10 +9,10 @@ class AppRoutes {
   static const profile = '/profile';
   static const notifications = '/notifications';
 
-static const achievements = '/achievements';
-static const shop = '/shop';
-static const subscription = '/subscription';
-static const createCustomWorkout = '/workouts/custom/create';
+  static const achievements = '/achievements';
+  static const shop = '/shop';
+  static const subscription = '/subscription';
+  static const createCustomWorkout = '/workouts/custom/create';
 
   static String socialUserProfile(String userId) => '/social/user/$userId';
 
