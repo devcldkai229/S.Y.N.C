@@ -74,7 +74,7 @@ public static class IamSeedData
         {
             Id = Guid.Parse("d1000001-0000-0000-0000-000000000002"),
             Code = "STREAK_7",
-            Name = "Week Warrior",
+            Name = "Week Warrior", 
             Description = "Duy trì streak tập luyện 7 ngày liên tiếp.",
             XPReward = 200,
             CoinReward = 50,
