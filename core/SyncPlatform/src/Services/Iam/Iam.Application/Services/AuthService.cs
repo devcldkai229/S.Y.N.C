@@ -6,6 +6,7 @@ using Iam.Domain.Enums;
 using Iam.Domain.Models;
 using Iam.Domain.Repositories;
 using Libs.Auth.Options;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 
@@ -20,6 +21,7 @@ public class AuthService : IAuthService
     private readonly IGoogleTokenValidator _googleValidator;
     private readonly IEmailSender _emailSender;
     private readonly JwtAuthSettings _jwtSettings;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUserRepository userRepository,
@@ -28,7 +30,8 @@ public class AuthService : IAuthService
         IJwtTokenService tokenService,
         IGoogleTokenValidator googleValidator,
         IEmailSender emailSender,
-        IOptions<JwtAuthSettings> jwtOptions)
+        IOptions<JwtAuthSettings> jwtOptions,
+        ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _deviceRepository = deviceRepository;
@@ -37,6 +40,7 @@ public class AuthService : IAuthService
         _googleValidator = googleValidator;
         _emailSender = emailSender;
         _jwtSettings = jwtOptions.Value;
+        _logger = logger;
     }
 
     // ── 1. Register ──────────────────────────────────────────────────────────
@@ -74,6 +78,118 @@ public class AuthService : IAuthService
             UserId = user.Id,
             Email = user.Email,
             Message = "Registration successful. Please check your email for the verification code."
+        };
+    }
+
+    public async Task<RegisterResponse> InitRegistrationAsync(InitRegistrationRequest request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var existing = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
+
+        if (existing is not null)
+        {
+            if (existing.EmailVerified)
+                throw new ConflictException($"An account with email '{normalizedEmail}' already exists.");
+
+            var verificationToken = await GenerateUniqueVerificationCodeAsync(cancellationToken);
+            existing.FullName = request.FullName.Trim();
+            existing.EmailVerificationToken = verificationToken;
+            existing.UpdatedAt = DateTimeOffset.UtcNow;
+            await _userRepository.SaveChangesAsync(cancellationToken);
+            await _emailSender.SendVerificationEmailAsync(existing.Email, verificationToken, cancellationToken);
+
+            return new RegisterResponse
+            {
+                UserId = existing.Id,
+                Email = existing.Email,
+                Message = "A verification code has been sent to your email."
+            };
+        }
+
+        var code = await GenerateUniqueVerificationCodeAsync(cancellationToken);
+        var user = new User
+        {
+            Email = normalizedEmail,
+            PasswordHash = string.Empty,
+            FullName = request.FullName.Trim(),
+            Role = UserRole.User,
+            Status = UserStatus.PendingVerification,
+            SubscriptionTier = SubscriptionTier.Free,
+            EmailVerified = false,
+            EmailVerificationToken = code,
+            PreferredLanguage = "vi",
+            TimeZone = "Asia/Ho_Chi_Minh"
+        };
+
+        await _userRepository.AddAsync(user, cancellationToken);
+        await _userRepository.SaveChangesAsync(cancellationToken);
+        await _emailSender.SendVerificationEmailAsync(user.Email, code, cancellationToken);
+
+        return new RegisterResponse
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            Message = "A verification code has been sent to your email."
+        };
+    }
+
+    public async Task<VerifyEmailResponse> CompleteRegistrationAsync(
+        CompleteRegistrationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var code = request.Code.Trim();
+
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken)
+            ?? throw new NotFoundException("Invalid or expired verification code.");
+
+        if (string.IsNullOrEmpty(user.EmailVerificationToken)
+            || !string.Equals(user.EmailVerificationToken, code, StringComparison.Ordinal))
+        {
+            throw new NotFoundException("Invalid or expired verification code.");
+        }
+
+        user.EmailVerified = true;
+        user.EmailVerificationToken = null;
+        user.Status = UserStatus.Active;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+            user.PasswordHash = _passwordHasher.Hash(request.Password);
+
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return new VerifyEmailResponse
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            EmailVerified = true
+        };
+    }
+
+    public async Task<RegisterResponse> FinishRegistrationAsync(
+        FinishRegistrationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken)
+            ?? throw new NotFoundException($"No account found with email '{normalizedEmail}'.");
+
+        if (!user.EmailVerified)
+            throw new BadRequestException("Email has not been verified yet.");
+
+        if (!string.IsNullOrEmpty(user.PasswordHash))
+            throw new ConflictException("Password has already been set for this account.");
+
+        user.PasswordHash = _passwordHasher.Hash(request.Password);
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return new RegisterResponse
+        {
+            UserId = user.Id,
+            Email = user.Email,
+            Message = "Registration completed. You can now sign in."
         };
     }
 
@@ -126,6 +242,73 @@ public class AuthService : IAuthService
         };
     }
 
+    // ── 2b. Forgot / reset password ──────────────────────────────────────────
+
+    public async Task<ForgotPasswordResponse> ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
+
+        // Always return a generic response to avoid leaking which emails are registered.
+        var response = new ForgotPasswordResponse
+        {
+            Email = normalizedEmail,
+            Message = "If an account exists for this email, a reset code has been sent."
+        };
+
+        // Only send a code to a usable local account.
+        if (user is null
+            || user.Status == UserStatus.Suspended
+            || user.Status == UserStatus.Deleted
+            || string.IsNullOrEmpty(user.PasswordHash))
+        {
+            return response;
+        }
+
+        var resetCode = GenerateResetCode();
+        user.PasswordResetToken = resetCode;
+        user.PasswordResetTokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15);
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        await _emailSender.SendPasswordResetEmailAsync(user.Email, resetCode, cancellationToken);
+
+        return response;
+    }
+
+    public async Task<ResetPasswordResponse> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var code = request.Code.Trim();
+
+        var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken)
+            ?? throw new BadRequestException("Invalid email or reset code.");
+
+        if (string.IsNullOrEmpty(user.PasswordResetToken)
+            || user.PasswordResetTokenExpiresAt is null)
+        {
+            throw new BadRequestException("No password reset was requested for this account.");
+        }
+
+        if (user.PasswordResetTokenExpiresAt <= DateTimeOffset.UtcNow)
+            throw new BadRequestException("Reset code has expired. Please request a new one.");
+
+        if (!string.Equals(user.PasswordResetToken, code, StringComparison.Ordinal))
+            throw new BadRequestException("Invalid email or reset code.");
+
+        user.PasswordHash = _passwordHasher.Hash(request.NewPassword);
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.UpdatedAt = DateTimeOffset.UtcNow;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return new ResetPasswordResponse
+        {
+            Email = user.Email,
+            Message = "Password has been reset successfully. Please login with your new password."
+        };
+    }
+
     // ── 3. Login ─────────────────────────────────────────────────────────────
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -140,6 +323,9 @@ public class AuthService : IAuthService
 
         if (!user.EmailVerified)
             throw new ForbiddenException("Email has not been verified.");
+
+        if (string.IsNullOrEmpty(user.PasswordHash))
+            throw new ForbiddenException("Please complete registration by setting a password.");
 
         if (!_passwordHasher.Verify(request.Password, user.PasswordHash))
             throw new UnauthorizedException("Invalid email or password.");
@@ -157,13 +343,29 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponse> GoogleLoginAsync(GoogleLoginRequest request, CancellationToken cancellationToken = default)
     {
-        var googleInfo = await _googleValidator.ValidateAsync(request.IdToken, cancellationToken);
+        _logger.LogInformation(
+            "Google sign-in attempt (device={DeviceId}, platform={Platform})",
+            request.DeviceId, request.Platform);
+
+        GoogleUserInfo googleInfo;
+        try
+        {
+            googleInfo = await _googleValidator.ValidateAsync(request.IdToken, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Google token validation failed (device={DeviceId})", request.DeviceId);
+            throw;
+        }
 
         var normalizedEmail = googleInfo.Email.Trim().ToLowerInvariant();
+        _logger.LogInformation("Google token valid for {Email} (sub={Subject})", normalizedEmail, googleInfo.Subject);
+
         var user = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
 
         if (user is null)
         {
+            _logger.LogInformation("Creating new user via Google sign-in: {Email}", normalizedEmail);
             user = new User
             {
                 Email = normalizedEmail,
@@ -182,10 +384,12 @@ public class AuthService : IAuthService
         }
         else if (user.Status == UserStatus.Suspended || user.Status == UserStatus.Deleted)
         {
+            _logger.LogWarning("Google sign-in blocked for inactive account {Email}", normalizedEmail);
             throw new ForbiddenException("This account is no longer active.");
         }
         else if (!user.EmailVerified)
         {
+            _logger.LogInformation("Marking email verified via Google sign-in: {Email}", normalizedEmail);
             // First successful Google sign-in verifies the email (Google already vouches for it).
             user.EmailVerified = true;
             user.EmailVerificationToken = null;
@@ -199,6 +403,7 @@ public class AuthService : IAuthService
         user.LastActiveAt = DateTimeOffset.UtcNow;
         await _userRepository.SaveChangesAsync(cancellationToken);
 
+        _logger.LogInformation("Google sign-in successful for {Email} (userId={UserId})", normalizedEmail, user.Id);
         return authResponse;
     }
 
@@ -338,5 +543,11 @@ public class AuthService : IAuthService
 
         // Fallback for extremely rare collisions.
         return Guid.NewGuid().ToString("N")[..6].ToUpperInvariant();
+    }
+
+    private static string GenerateResetCode()
+    {
+        // 6-digit OTP for password reset (looked up per-account, so no uniqueness needed).
+        return RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
     }
 }

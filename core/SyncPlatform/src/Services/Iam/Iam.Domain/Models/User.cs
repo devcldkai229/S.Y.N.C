@@ -33,6 +33,12 @@ public class User : BaseAuditableEntity
 
     public string? EmailVerificationToken { get; set; }
 
+    /// <summary>6-digit OTP code for password reset (null when no reset is pending).</summary>
+    public string? PasswordResetToken { get; set; }
+
+    /// <summary>Expiry time for <see cref="PasswordResetToken"/> (UTC).</summary>
+    public DateTimeOffset? PasswordResetTokenExpiresAt { get; set; }
+
     public bool PhoneVerified { get; set; }
 
     public string PreferredLanguage { get; set; } = string.Empty;

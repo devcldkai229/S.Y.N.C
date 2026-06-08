@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 
-enum SocialLoginType { google, apple }
+enum SocialLoginType { google }
 
 class SocialLoginButton extends StatelessWidget {
   const SocialLoginButton({
@@ -17,8 +17,6 @@ class SocialLoginButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGoogle = type == SocialLoginType.google;
-
     return SizedBox(
       height: 52,
       child: OutlinedButton(
@@ -36,16 +34,16 @@ class SocialLoginButton extends StatelessWidget {
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+                children: const [
                   Icon(
-                    isGoogle ? Icons.g_mobiledata_rounded : Icons.apple,
-                    size: isGoogle ? 28 : 22,
+                    Icons.g_mobiledata_rounded,
+                    size: 28,
                     color: AppColors.textPrimary,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Text(
-                    isGoogle ? 'Google' : 'Apple',
-                    style: const TextStyle(
+                    'Google',
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),

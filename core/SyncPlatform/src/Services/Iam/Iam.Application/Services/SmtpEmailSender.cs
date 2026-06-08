@@ -60,6 +60,42 @@ public class SmtpEmailSender : IEmailSender
         _logger.LogInformation("Verification email sent to {Email}", toEmail);
     }
 
+    public async Task SendPasswordResetEmailAsync(
+        string toEmail,
+        string resetCode,
+        CancellationToken cancellationToken = default)
+    {
+        var smtp = _settings.Smtp;
+        if (string.IsNullOrWhiteSpace(smtp.Host))
+            throw new InvalidOperationException("Email:Smtp:Host is not configured.");
+
+        if (string.IsNullOrWhiteSpace(smtp.FromEmail))
+            throw new InvalidOperationException("Email:Smtp:FromEmail is not configured.");
+
+        var htmlBody = VerificationEmailTemplate.BuildPasswordResetHtml(toEmail, resetCode);
+
+        var message = new MimeMessage();
+        message.From.Add(new MailboxAddress(smtp.FromName, smtp.FromEmail));
+        message.To.Add(MailboxAddress.Parse(toEmail));
+        message.Subject = "Đặt lại mật khẩu — Sync Lifestyle";
+        message.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+
+        using var client = new SmtpClient();
+        await client.ConnectAsync(
+            smtp.Host,
+            smtp.Port,
+            smtp.UseSsl ? SecureSocketOptions.StartTls : SecureSocketOptions.None,
+            cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(smtp.UserName))
+            await client.AuthenticateAsync(smtp.UserName, smtp.Password, cancellationToken);
+
+        await client.SendAsync(message, cancellationToken);
+        await client.DisconnectAsync(true, cancellationToken);
+
+        _logger.LogInformation("Password reset email sent to {Email}", toEmail);
+    }
+
     internal string BuildVerifyUrl(string verificationToken)
     {
         var baseUrl = _settings.VerificationBaseUrl.TrimEnd('/');
