@@ -3,9 +3,14 @@ abstract final class ApiPaths {
   // Auth (direct)
   static const authLogin = '/v1/auth/login';
   static const authRegister = '/v1/auth/register';
+  static const authInitRegistration = '/v1/auth/init-registration';
+  static const authCompleteRegistration = '/v1/auth/complete-registration';
+  static const authFinishRegistration = '/v1/auth/finish-registration';
   static const authResendVerification = '/v1/auth/resend-verification';
   static const authGoogle = '/v1/auth/google';
   static const authVerifyEmail = '/v1/auth/verify-email';
+  static const authForgotPassword = '/v1/auth/forgot-password';
+  static const authResetPassword = '/v1/auth/reset-password';
 
   // IAM (gateway prefix: /v1/iam → service /v1)
   static const meProfileSettings = '/v1/iam/me/profile-settings';

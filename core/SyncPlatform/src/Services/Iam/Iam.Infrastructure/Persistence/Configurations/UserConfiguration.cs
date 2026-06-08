@@ -21,6 +21,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .IsUnique()
                .HasFilter("email_verification_token IS NOT NULL");
 
+        builder.Property(u => u.PasswordResetToken).HasMaxLength(64);
+
         builder.Property(u => u.PhoneNumber).HasMaxLength(32);
         builder.HasIndex(u => u.PhoneNumber).IsUnique().HasFilter("phone_number IS NOT NULL");
 

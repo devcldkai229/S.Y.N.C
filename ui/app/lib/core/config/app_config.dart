@@ -5,14 +5,24 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   static const String appName = 'SYNC';
 
-  /// Override: `flutter run --dart-define=BASE_URL=http://10.0.2.2:5057/api`
+  /// LAN IP of the dev machine running the Gateway — required for a real phone
+  /// (the emulator-only alias 10.0.2.2 does NOT work on physical devices).
+  /// Phone and PC must be on the same Wi‑Fi/LAN.
+  /// PC Wi‑Fi IP on the same LAN as the phone (check: ipconfig → Wi‑Fi adapter).
+  static const String _devLanHost = '192.168.100.118';
+
+  /// Override: `flutter run --dart-define=BASE_URL=http://<your-ip>:5057/api`
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('BASE_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
     if (kIsWeb) return 'http://localhost:5057/api';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://10.0.2.2:5057/api';
+        // Physical Android device: reach the Gateway via the PC's LAN IP.
+        // For the Android emulator instead, pass --dart-define=BASE_URL=http://10.0.2.2:5057/api
+        return 'http://$_devLanHost:5057/api';
+      case TargetPlatform.iOS:
+        return 'http://$_devLanHost:5057/api';
       default:
         return 'http://localhost:5057/api';
     }
@@ -21,11 +31,18 @@ class AppConfig {
   static const bool isProduction = bool.fromEnvironment('dart.vm.product');
 
   /// Web OAuth 2.0 client (Google Cloud Console → **Web application**).
-  /// Must also appear in IAM `GoogleAuth:ClientIds` (see appsettings.Development.json).
+  /// Used as [googleServerClientId] on Android/iOS so Google returns an ID token for IAM.
   static const String defaultGoogleWebClientId =
       '366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com';
 
-  /// Override: `--dart-define=GOOGLE_CLIENT_ID=...` (required for Web if you change the default).
+  /// Android OAuth client (Google Cloud Console → **Android**).
+  /// Package: com.sync.sync_app + debug SHA-1 must be registered for this client.
+  static const String defaultGoogleAndroidClientId =
+      '366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com';
+
+  /// Platform OAuth client ID passed to GoogleSignIn.initialize(clientId: ...).
+  /// Android only needs [googleServerClientId] (Web client) + SHA-1 registered in Cloud Console.
+  /// Override: `--dart-define=GOOGLE_CLIENT_ID=...`
   static String get googleClientId {
     const fromEnv = String.fromEnvironment('GOOGLE_CLIENT_ID', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;

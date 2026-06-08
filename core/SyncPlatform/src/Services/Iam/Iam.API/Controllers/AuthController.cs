@@ -38,6 +38,58 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// POST /api/v1/auth/init-registration — Send verification code (email + full name only, no password yet).
+    /// </summary>
+    [HttpPost("init-registration")]
+    [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApiResponse<RegisterResponse>>> InitRegistration(
+        [FromBody] InitRegistrationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _authService.InitRegistrationAsync(request, cancellationToken);
+        var status = result.Message.Contains("sent", StringComparison.OrdinalIgnoreCase)
+            ? StatusCodes.Status200OK
+            : StatusCodes.Status201Created;
+        return StatusCode(
+            status,
+            ApiResponse<RegisterResponse>.SuccessResponse(result, result.Message));
+    }
+
+    /// <summary>
+    /// POST /api/v1/auth/complete-registration — Verify OTP; password is optional on this step.
+    /// </summary>
+    [HttpPost("complete-registration")]
+    [ProducesResponseType(typeof(ApiResponse<VerifyEmailResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<VerifyEmailResponse>>> CompleteRegistration(
+        [FromBody] CompleteRegistrationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _authService.CompleteRegistrationAsync(request, cancellationToken);
+        return Ok(ApiResponse<VerifyEmailResponse>.SuccessResponse(result, "Email verified successfully."));
+    }
+
+    /// <summary>
+    /// POST /api/v1/auth/finish-registration — Set password after email was verified without a password.
+    /// </summary>
+    [HttpPost("finish-registration")]
+    [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApiResponse<RegisterResponse>>> FinishRegistration(
+        [FromBody] FinishRegistrationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _authService.FinishRegistrationAsync(request, cancellationToken);
+        return Ok(ApiResponse<RegisterResponse>.SuccessResponse(result, result.Message));
+    }
+
+    /// <summary>
     /// POST /api/v1/auth/resend-verification — Resend verification code for an existing unverified account.
     /// </summary>
     [HttpPost("resend-verification")]
@@ -103,6 +155,35 @@ public class AuthController : ControllerBase
                 StatusCode = StatusCodes.Status404NotFound
             };
         }
+    }
+
+    /// <summary>
+    /// POST /api/v1/auth/forgot-password — Send a 6-digit reset code to the account email.
+    /// Always returns 200 with a generic message (does not reveal whether the email exists).
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(typeof(ApiResponse<ForgotPasswordResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<ForgotPasswordResponse>>> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _authService.ForgotPasswordAsync(request, cancellationToken);
+        return Ok(ApiResponse<ForgotPasswordResponse>.SuccessResponse(result, result.Message));
+    }
+
+    /// <summary>
+    /// POST /api/v1/auth/reset-password — Set a new password using the emailed reset code.
+    /// </summary>
+    [HttpPost("reset-password")]
+    [ProducesResponseType(typeof(ApiResponse<ResetPasswordResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<ResetPasswordResponse>>> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _authService.ResetPasswordAsync(request, cancellationToken);
+        return Ok(ApiResponse<ResetPasswordResponse>.SuccessResponse(result, result.Message));
     }
 
     /// <summary>
