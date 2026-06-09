@@ -16,6 +16,11 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Email).IsRequired().HasMaxLength(256);
         builder.HasIndex(u => u.Email).IsUnique();
 
+        builder.Property(u => u.EmailVerificationToken).HasMaxLength(64);
+        builder.HasIndex(u => u.EmailVerificationToken)
+               .IsUnique()
+               .HasFilter("email_verification_token IS NOT NULL");
+
         builder.Property(u => u.PhoneNumber).HasMaxLength(32);
         builder.HasIndex(u => u.PhoneNumber).IsUnique().HasFilter("phone_number IS NOT NULL");
 

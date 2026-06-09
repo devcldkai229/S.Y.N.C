@@ -222,6 +222,10 @@ namespace Payment.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("features_json");
 
+                    b.Property<string>("GooglePlayProductId")
+                        .HasColumnType("text")
+                        .HasColumnName("google_play_product_id");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
@@ -326,6 +330,10 @@ namespace Payment.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_ai_initiated");
 
+                    b.Property<long>("OrderCode")
+                        .HasColumnType("bigint")
+                        .HasColumnName("order_code");
+
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .HasMaxLength(32)
@@ -335,6 +343,16 @@ namespace Payment.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("ProcessedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("provider");
+
+                    b.Property<string>("RawProviderPayload")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("raw_provider_payload");
 
                     b.Property<Guid?>("RelatedEntityId")
                         .HasColumnType("uuid")
@@ -390,6 +408,9 @@ namespace Payment.Infrastructure.Persistence.Migrations
                     b.HasIndex("WalletId")
                         .HasDatabaseName("ix_transactions_wallet_id");
 
+                    b.HasIndex("Provider", "OrderCode")
+                        .HasDatabaseName("ix_transactions_provider_order_code");
+
                     b.ToTable("transactions", "payment");
                 });
 
@@ -424,9 +445,17 @@ namespace Payment.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expired_at");
 
+                    b.Property<string>("ExternalSubscriptionId")
+                        .HasColumnType("text")
+                        .HasColumnName("external_subscription_id");
+
                     b.Property<DateTimeOffset?>("LastBillingAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_billing_at");
+
+                    b.Property<int>("ManagedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("managed_by");
 
                     b.Property<DateTimeOffset?>("NextBillingAt")
                         .HasColumnType("timestamp with time zone")

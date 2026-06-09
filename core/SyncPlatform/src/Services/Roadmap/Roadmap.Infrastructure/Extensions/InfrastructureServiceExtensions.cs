@@ -3,7 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
+using Roadmap.Domain.Repositories;
 using Roadmap.Infrastructure.Persistence;
+using Roadmap.Infrastructure.Persistence.Repositories;
 
 namespace Roadmap.Infrastructure.Extensions;
 
@@ -34,6 +36,15 @@ public static class InfrastructureServiceExtensions
             sp.GetRequiredService<IMongoClient>().GetDatabase(databaseName));
 
         services.AddSingleton<RoadmapMongoContext>();
+
+        services.AddScoped<IUserCustomWorkoutRepository, UserCustomWorkoutRepository>();
+        services.AddScoped<IRoadmapSessionRepository, RoadmapSessionRepository>();
+        services.AddScoped<IScheduledWorkoutRepository, ScheduledWorkoutRepository>();
+        services.AddScoped<IWorkoutExecutionLogRepository, WorkoutExecutionLogRepository>();
+        services.AddScoped<IExerciseSetLogRepository, ExerciseSetLogRepository>();
+        services.AddScoped<IPersonalizedRoadmapRepository, PersonalizedRoadmapRepository>();
+        services.AddScoped<IRecoveryProfileRepository, RecoveryProfileRepository>();
+
 
         return services;
     }

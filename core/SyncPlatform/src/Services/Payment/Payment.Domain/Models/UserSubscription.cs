@@ -22,4 +22,8 @@ public class UserSubscription : BaseAuditableEntity
     public DateTimeOffset? NextBillingAt { get; set; }
 
     public string? CancellationReason { get; set; }
+
+    public PaymentProvider ManagedBy { get; set; }
+
+    public string? ExternalSubscriptionId { get; set; }
 }

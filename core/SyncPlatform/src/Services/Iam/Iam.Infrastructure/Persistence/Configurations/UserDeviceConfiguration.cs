@@ -20,8 +20,13 @@ public class UserDeviceConfiguration : IEntityTypeConfiguration<UserDevice>
         builder.Property(d => d.PushToken).HasMaxLength(512);
         builder.Property(d => d.AppVersion).IsRequired().HasMaxLength(32);
 
+        builder.Property(d => d.RefreshTokenHash).HasMaxLength(512);
+        builder.Property(d => d.IsRevoked).HasDefaultValue(false);
+
         // One physical device can only be registered once per user
         builder.HasIndex(d => new { d.UserId, d.DeviceId }).IsUnique();
+        // Lookup by DeviceId is common during refresh; help the planner
+        builder.HasIndex(d => d.DeviceId);
 
         builder.Property(d => d.CreatedAt).HasDefaultValueSql("now()");
     }

@@ -85,6 +85,8 @@ services:
       - "9001:9001" 
     volumes:
       - sync_minio_data:/data
+    networks:
+      - sync-network
     restart: unless-stopped
 
 networks:

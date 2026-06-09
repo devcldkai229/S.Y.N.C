@@ -21,6 +21,12 @@ public class Transaction : BaseAuditableEntity
 
     public string? ExternalReferenceId { get; set; }
 
+    public long OrderCode { get; set; }
+
+    public PaymentProvider Provider { get; set; }
+
+    public string? RawProviderPayload { get; set; }
+
     public string? RelatedEntityType { get; set; }
 
     public Guid? RelatedEntityId { get; set; }
