@@ -90,6 +90,8 @@ class _ExerciseDetailScreenState extends State<ExerciseDetailScreen> {
 
     try {
       await controller.initialize();
+      await controller.setLooping(true);
+      await controller.play();
       if (!mounted) return;
       setState(() => _inlineVideoReady = true);
     } catch (e) {

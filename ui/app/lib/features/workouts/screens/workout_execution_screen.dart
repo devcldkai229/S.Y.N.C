@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
@@ -6,6 +7,8 @@ import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/data/repositories/workout_repository.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
+import 'package:video_player/video_player.dart';
+import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
 
 class WorkoutExecutionScreen extends StatefulWidget {
   const WorkoutExecutionScreen({
@@ -48,6 +51,9 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
   // Exercise Detail Cache
   final Map<String, ExerciseCatalogDetail> _exerciseDetails = {};
   bool _loadingDetails = false;
+  VideoPlayerController? _videoController;
+  bool _videoReady = false;
+  String? _videoError;
 
   @override
   void initState() {
@@ -64,6 +70,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
   void dispose() {
     _workoutTimer?.cancel();
     _restTimer?.cancel();
+    _videoController?.dispose();
     super.dispose();
   }
 
@@ -126,7 +133,50 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
     final session = _session;
     if (session == null) return;
     final block = session.executionBlocks[_currentExerciseIndex];
-    _loadExerciseDetail(block.exerciseId);
+    _loadExerciseDetail(block.exerciseId).then((_) {
+      if (mounted) {
+        _initExerciseVideo(block.exerciseId);
+      }
+    });
+  }
+
+  Future<void> _initExerciseVideo(String exerciseId) async {
+    final oldController = _videoController;
+    _videoController = null;
+    _videoReady = false;
+    _videoError = null;
+    if (oldController != null) {
+      oldController.dispose();
+    }
+    if (mounted) {
+      setState(() {});
+    }
+
+    final detail = _exerciseDetails[exerciseId];
+    if (detail == null) return;
+
+    final videos = detail.videoAssets;
+    if (videos.isEmpty) return;
+
+    final url = videos.first.resourceUrl;
+    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+    _videoController = controller;
+
+    try {
+      await controller.initialize();
+      await controller.setLooping(true);
+      await controller.play();
+      if (!mounted) return;
+      setState(() {
+        _videoReady = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _videoError = e.toString();
+      });
+      debugPrint('Failed to initialize exercise video: $e');
+    }
   }
 
   Future<void> _loadExerciseDetail(String exerciseId) async {
@@ -244,14 +294,14 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF121212),
+        backgroundColor: AppColors.background,
         body: Center(child: CircularProgressIndicator(color: AppColors.primaryGreen)),
       );
     }
 
     if (_error != null || _session == null) {
       return Scaffold(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: AppColors.background,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -287,24 +337,24 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
     final detail = _exerciseDetails[block.exerciseId];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Deep premium dark background
+      backgroundColor: AppColors.background, // Light white-green premium background
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white, size: 24),
+          icon: const Icon(Icons.close, color: AppColors.textPrimary, size: 24),
           onPressed: () => _confirmExitWorkout(),
         ),
         title: Column(
           children: [
             Text(
               block.exerciseName,
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 2),
             Text(
               'Set ${_currentSetIndex + 1} of ${block.targetSets}',
-              style: const TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -314,10 +364,10 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
             children: [
               Text(
                 _formatDuration(_workoutDurationSeconds),
-                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.bold),
               ),
               IconButton(
-                icon: const Icon(Icons.pause, color: Colors.white, size: 20),
+                icon: const Icon(Icons.pause, color: AppColors.textPrimary, size: 20),
                 onPressed: () => _confirmExitWorkout(),
               ),
             ],
@@ -333,54 +383,20 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 8),
-                  // CARD 1: WHITE ILLUSTRATION CARD
+                  // CARD 1: PREMIUM VIDEO PLAYER CARD
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.border),
                     ),
-                    padding: const EdgeInsets.all(20),
-                    child: Row(
-                      children: [
-                        // Left illustration side
-                        Expanded(
-                          flex: 5,
-                          child: AspectRatio(
-                            aspectRatio: 1.1,
-                            child: _buildExerciseIllustration(detail),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Right targeted muscles side
-                        Expanded(
-                          flex: 4,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Small visual human silhouette placeholder
-                              CustomPaint(
-                                size: const Size(60, 90),
-                                painter: _MuscleSilhouettePainter(
-                                  highlightColors: const [Colors.redAccent, Colors.orangeAccent],
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                detail != null && detail.primaryMuscles.isNotEmpty
-                                    ? detail.primaryMuscles.join(', ')
-                                    : 'Quads, Glutes, Hamstrings',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Color(0xFF5A6A85),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    padding: const EdgeInsets.all(12),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: _buildActiveExerciseVideo(detail),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -388,9 +404,9 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                   // CARD 2: TARGET STATS (Weight, Reps, Rest)
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF2D2D2D)),
+                      border: Border.all(color: AppColors.border),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Row(
@@ -402,7 +418,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                             'kg',
                           ),
                         ),
-                        Container(width: 1, height: 40, color: const Color(0xFF2D2D2D)),
+                        Container(width: 1, height: 40, color: AppColors.border),
                         Expanded(
                           child: _buildTargetStatCell(
                             'Reps',
@@ -410,7 +426,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                             'reps',
                           ),
                         ),
-                        Container(width: 1, height: 40, color: const Color(0xFF2D2D2D)),
+                        Container(width: 1, height: 40, color: AppColors.border),
                         Expanded(
                           child: _buildTargetStatCell(
                             'Rest',
@@ -426,9 +442,9 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                   // CARD 3: SESSION HISTORY CARD
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF2D2D2D)),
+                      border: Border.all(color: AppColors.border),
                     ),
                     padding: const EdgeInsets.all(18),
                     child: Column(
@@ -437,7 +453,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                         const Text(
                           'History',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                           ),
@@ -461,8 +477,8 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             decoration: BoxDecoration(
-              color: const Color(0xFF121212),
-              border: Border(top: BorderSide(color: const Color(0xFF1E1E1E), width: 1)),
+              color: Colors.white,
+              border: Border(top: BorderSide(color: AppColors.border, width: 1)),
             ),
             child: SizedBox(
               width: double.infinity,
@@ -488,16 +504,38 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
     );
   }
 
-  Widget _buildExerciseIllustration(ExerciseCatalogDetail? detail) {
-    // If we have a video thumbnail or image asset from C#, load it. Otherwise show a placeholder icon.
-    final thumbnail = detail?.heroThumbnailUrl;
-    if (thumbnail != null && thumbnail.isNotEmpty) {
-      return Image.network(
-        thumbnail,
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stackTrace) => _buildIllustrationPlaceholder(),
+  Widget _buildActiveExerciseVideo(ExerciseCatalogDetail? detail) {
+    if (_loadingDetails) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryGreen),
       );
     }
+
+    final controller = _videoController;
+    final videos = detail?.videoAssets;
+    final heroThumb = detail?.heroThumbnailUrl;
+
+    if (videos != null && videos.isNotEmpty && controller != null) {
+      return _VideoHero(
+        controller: controller,
+        ready: _videoReady,
+        error: _videoError,
+        thumbnailUrl: heroThumb,
+        onFullscreen: () {
+          final rawUrl = videos.first.resourceUrl;
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => SocialVideoPlayerScreen(videoUrl: rawUrl),
+            ),
+          );
+        },
+      );
+    }
+
+    if (heroThumb != null && heroThumb.isNotEmpty) {
+      return _ImageHero(imageUrl: heroThumb);
+    }
+
     return _buildIllustrationPlaceholder();
   }
 
@@ -523,7 +561,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white54,
+            color: AppColors.textMuted,
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
@@ -532,7 +570,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontSize: 22,
             fontWeight: FontWeight.w900,
           ),
@@ -541,7 +579,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
         Text(
           unit,
           style: const TextStyle(
-            color: Colors.white38,
+            color: AppColors.textSecondary,
             fontSize: 10,
             fontWeight: FontWeight.bold,
           ),
@@ -564,7 +602,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
         padding: EdgeInsets.symmetric(vertical: 8),
         child: Text(
           'Chưa có set nào hoàn thành.',
-          style: TextStyle(color: Colors.white38, fontSize: 12),
+          style: TextStyle(color: AppColors.textMuted, fontSize: 12),
         ),
       );
     }
@@ -584,12 +622,12 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
               children: [
                 Text(
                   'Set ${realIndex + 1}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${block.targetWeightKg > 0 ? '${block.targetWeightKg.toStringAsFixed(0)} kg x ' : ''}${block.targetReps} reps',
-                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800),
+                  style: const TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -597,7 +635,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
               width: 22,
               height: 22,
               decoration: const BoxDecoration(
-                color: Color(0xFF1F3D27), // Deep green background
+                color: AppColors.lightGreen,
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.check, color: AppColors.primaryGreen, size: 14),
@@ -622,9 +660,9 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF2D2D2D)),
+        border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -636,7 +674,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
               const SizedBox(width: 8),
               const Text(
                 'Hướng dẫn thực hiện',
-                style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
+                style: TextStyle(color: AppColors.textPrimary, fontSize: 15, fontWeight: FontWeight.w800),
               ),
             ],
           ),
@@ -644,7 +682,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
           if (detail.aiCoachingCues.isEmpty)
             const Text(
               'Thực hiện đúng form, giữ thẳng lưng, điều hòa nhịp thở.',
-              style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
             )
           else
             ...detail.aiCoachingCues.asMap().entries.map((entry) {
@@ -662,7 +700,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                     Expanded(
                       child: Text(
                         cue,
-                        style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4),
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
                       ),
                     ),
                   ],
@@ -679,7 +717,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                 const SizedBox(width: 8),
                 const Text(
                   'Lỗi thường gặp',
-                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w800),
                 ),
               ],
             ),
@@ -690,11 +728,11 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('• ', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    const Text('• ', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
                     Expanded(
                       child: Text(
                         m,
-                        style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.4),
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.4),
                       ),
                     ),
                   ],
@@ -708,7 +746,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
             const SizedBox(height: 18),
             const Text(
               'Thiết bị cần thiết',
-              style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800),
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -718,12 +756,12 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                 return Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2D2D2D),
+                    color: AppColors.background,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     eq,
-                    style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold),
+                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 );
               }).toList(),
@@ -743,7 +781,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
     final progressRatio = _restSecondsTotal > 0 ? (_restSecondsLeft / _restSecondsTotal) : 0.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -753,7 +791,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
               const Text(
                 'THỜI GIAN NGHỈ',
                 style: TextStyle(
-                  color: Colors.white54,
+                  color: AppColors.textMuted,
                   fontSize: 12,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.5,
@@ -762,7 +800,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
               const SizedBox(height: 4),
               const Text(
                 'Hít thở sâu & Thư giãn',
-                style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500),
               ),
               const Spacer(),
 
@@ -780,7 +818,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                         child: CircularProgressIndicator(
                           value: progressRatio,
                           strokeWidth: 8,
-                          backgroundColor: Colors.white.withValues(alpha: 0.1),
+                          backgroundColor: Colors.black.withValues(alpha: 0.05),
                           color: AppColors.primaryGreen,
                         ),
                       ),
@@ -792,12 +830,12 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                             style: const TextStyle(
                               fontSize: 64,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           const Text(
                             'giây',
-                            style: TextStyle(fontSize: 13, color: Colors.white54, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 13, color: AppColors.textMuted, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
@@ -813,9 +851,9 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -832,12 +870,12 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                       const SizedBox(height: 6),
                       Text(
                         nextBlock.exerciseName,
-                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800),
+                        style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '${nextBlock.targetSets} sets x ${nextBlock.targetReps} reps • ${nextBlock.targetWeightKg}kg',
-                        style: const TextStyle(color: Colors.white54, fontSize: 12),
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                       ),
                     ],
                   ),
@@ -851,10 +889,10 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _addRest30s,
-                      icon: const Icon(Icons.add, color: Colors.white, size: 18),
-                      label: const Text('+30 giây', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      icon: const Icon(Icons.add, color: AppColors.primaryGreen, size: 18),
+                      label: const Text('+30 giây', style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold)),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                        side: const BorderSide(color: AppColors.primaryGreen),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
@@ -901,7 +939,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -925,13 +963,13 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
               const SizedBox(height: 24),
               const Text(
                 'Tuyệt vời!',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white),
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
               const Text(
                 'Bạn đã hoàn thành xuất sắc buổi tập của mình hôm nay.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.4),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
               ),
               const Spacer(),
 
@@ -939,9 +977,9 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF2D2D2D)),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -952,7 +990,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                         Icons.timer_outlined,
                       ),
                     ),
-                    Container(width: 1, height: 40, color: const Color(0xFF2D2D2D)),
+                    Container(width: 1, height: 40, color: AppColors.border),
                     Expanded(
                       child: _buildFinishedStatColumn(
                         'Set hoàn thành',
@@ -961,7 +999,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                       ),
                     ),
                     if (totalWeightLifted > 0) ...[
-                      Container(width: 1, height: 40, color: const Color(0xFF2D2D2D)),
+                      Container(width: 1, height: 40, color: AppColors.border),
                       Expanded(
                         child: _buildFinishedStatColumn(
                           'Tổng tạ',
@@ -1003,9 +1041,9 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
       children: [
         Icon(icon, size: 20, color: AppColors.primaryGreen),
         const SizedBox(height: 8),
-        Text(label, style: const TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.bold)),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
       ],
     );
   }
@@ -1014,16 +1052,16 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text('Thoát buổi tập?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        backgroundColor: Colors.white,
+        title: const Text('Thoát buổi tập?', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         content: const Text(
           'Quá trình tập luyện hiện tại sẽ không được lưu. Bạn có chắc chắn muốn thoát?',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tiếp tục tập', style: TextStyle(color: Colors.white60, fontWeight: FontWeight.bold)),
+            child: const Text('Tiếp tục tập', style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -1106,138 +1144,142 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
       debugPrint('Failed to cancel workout execution: $e');
     }
   }
+
 }
 
-// Custom Painter representing target muscle highlights
-class _MuscleSilhouettePainter extends CustomPainter {
-  _MuscleSilhouettePainter({required this.highlightColors});
+class _VideoHero extends StatefulWidget {
+  const _VideoHero({
+    required this.controller,
+    required this.ready,
+    required this.error,
+    required this.onFullscreen,
+    this.thumbnailUrl,
+  });
 
-  final List<Color> highlightColors;
+  final VideoPlayerController controller;
+  final bool ready;
+  final String? error;
+  final String? thumbnailUrl;
+  final VoidCallback onFullscreen;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFFCBD5E1) // Default silhouette color
-      ..style = PaintingStyle.fill;
+  State<_VideoHero> createState() => _VideoHeroState();
+}
 
-    // Draw simple humanoid shapes representing human body model (front and back silhouettes)
-    // Front Silhouette (Left side)
-    final frontLeft = size.width * 0.25;
-    // Draw head
-    canvas.drawCircle(Offset(frontLeft, size.height * 0.15), size.height * 0.08, paint);
-    // Draw torso
-    final torsoPath = Path()
-      ..moveTo(frontLeft - size.width * 0.08, size.height * 0.23)
-      ..lineTo(frontLeft + size.width * 0.08, size.height * 0.23)
-      ..lineTo(frontLeft + size.width * 0.06, size.height * 0.55)
-      ..lineTo(frontLeft - size.width * 0.06, size.height * 0.55)
-      ..close();
-    canvas.drawPath(torsoPath, paint);
-    // Draw arms
-    canvas.drawRect(
-      Rect.fromLTWH(frontLeft - size.width * 0.14, size.height * 0.23, size.width * 0.05, size.height * 0.32),
-      paint,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(frontLeft + size.width * 0.09, size.height * 0.23, size.width * 0.05, size.height * 0.32),
-      paint,
-    );
-
-    // Draw legs with Highlight for Quads (front thigh muscles)
-    final legPaint = Paint()
-      ..color = const Color(0xFFCBD5E1)
-      ..style = PaintingStyle.fill;
-    final quadHighlightPaint = Paint()
-      ..color = highlightColors[0]
-      ..style = PaintingStyle.fill;
-
-    // Left leg
-    canvas.drawRect(
-      Rect.fromLTWH(frontLeft - size.width * 0.06, size.height * 0.55, size.width * 0.05, size.height * 0.38),
-      legPaint,
-    );
-    // Right leg
-    canvas.drawRect(
-      Rect.fromLTWH(frontLeft + size.width * 0.01, size.height * 0.55, size.width * 0.05, size.height * 0.38),
-      legPaint,
-    );
-
-    // Quad highlight on thighs (front)
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(frontLeft - size.width * 0.055, size.height * 0.58, size.width * 0.04, size.height * 0.16),
-        const Radius.circular(2),
-      ),
-      quadHighlightPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(frontLeft + size.width * 0.015, size.height * 0.58, size.width * 0.04, size.height * 0.16),
-        const Radius.circular(2),
-      ),
-      quadHighlightPaint,
-    );
-
-    // Back Silhouette (Right side)
-    final backLeft = size.width * 0.75;
-    // Draw head
-    canvas.drawCircle(Offset(backLeft, size.height * 0.15), size.height * 0.08, paint);
-    // Draw torso
-    final backTorsoPath = Path()
-      ..moveTo(backLeft - size.width * 0.08, size.height * 0.23)
-      ..lineTo(backLeft + size.width * 0.08, size.height * 0.23)
-      ..lineTo(backLeft + size.width * 0.06, size.height * 0.55)
-      ..lineTo(backLeft - size.width * 0.06, size.height * 0.55)
-      ..close();
-    canvas.drawPath(backTorsoPath, paint);
-    // Draw arms
-    canvas.drawRect(
-      Rect.fromLTWH(backLeft - size.width * 0.14, size.height * 0.23, size.width * 0.05, size.height * 0.32),
-      paint,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(backLeft + size.width * 0.09, size.height * 0.23, size.width * 0.05, size.height * 0.32),
-      paint,
-    );
-
-    // Draw legs
-    canvas.drawRect(
-      Rect.fromLTWH(backLeft - size.width * 0.06, size.height * 0.55, size.width * 0.05, size.height * 0.38),
-      legPaint,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(backLeft + size.width * 0.01, size.height * 0.55, size.width * 0.05, size.height * 0.38),
-      legPaint,
-    );
-
-    // Draw Glutes and Hamstring Highlights (back)
-    final gluteHamHighlightPaint = Paint()
-      ..color = highlightColors.length > 1 ? highlightColors[1] : highlightColors[0]
-      ..style = PaintingStyle.fill;
-
-    // Glutes highlight (bottom torso / hips back)
-    canvas.drawOval(
-      Rect.fromLTWH(backLeft - size.width * 0.06, size.height * 0.50, size.width * 0.12, size.height * 0.08),
-      gluteHamHighlightPaint,
-    );
-
-    // Hamstrings highlights (back thighs)
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(backLeft - size.width * 0.055, size.height * 0.58, size.width * 0.04, size.height * 0.16),
-        const Radius.circular(2),
-      ),
-      gluteHamHighlightPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(backLeft + size.width * 0.015, size.height * 0.58, size.width * 0.04, size.height * 0.16),
-        const Radius.circular(2),
-      ),
-      gluteHamHighlightPaint,
-    );
+class _VideoHeroState extends State<_VideoHero> {
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_onTick);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  void dispose() {
+    widget.controller.removeListener(_onTick);
+    super.dispose();
+  }
+
+  void _onTick() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = widget.controller;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        AspectRatio(
+          aspectRatio: widget.ready && controller.value.aspectRatio > 0
+              ? controller.value.aspectRatio
+              : 16 / 9,
+          child: ColoredBox(
+            color: Colors.black,
+            child: widget.error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'Video unavailable.\nUse fullscreen to retry.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                  )
+                : !widget.ready
+                    ? widget.thumbnailUrl != null
+                        ? CachedNetworkImage(imageUrl: widget.thumbnailUrl!, fit: BoxFit.cover)
+                        : const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                    : VideoPlayer(controller),
+          ),
+        ),
+        if (widget.ready)
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: Row(
+              children: [
+                _OverlayButton(
+                  icon: controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                  onTap: () {
+                    controller.value.isPlaying ? controller.pause() : controller.play();
+                  },
+                ),
+                const SizedBox(width: 8),
+                _OverlayButton(icon: Icons.fullscreen, onTap: widget.onFullscreen),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 }
+
+class _ImageHero extends StatelessWidget {
+  const _ImageHero({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: CachedNetworkImage(
+        imageUrl: imageUrl,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => ColoredBox(
+          color: AppColors.lightGreen.withValues(alpha: 0.3),
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+        errorWidget: (context, url, error) => ColoredBox(
+          color: AppColors.backgroundAlt,
+          child: const Icon(Icons.broken_image_outlined, size: 48),
+        ),
+      ),
+    );
+  }
+}
+
+class _OverlayButton extends StatelessWidget {
+  const _OverlayButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black54,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
