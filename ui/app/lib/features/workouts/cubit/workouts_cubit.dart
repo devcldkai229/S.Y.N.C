@@ -67,6 +67,36 @@ class WorkoutsCubit extends Cubit<WorkoutsState> {
     }
   }
 
+  Future<void> loadPublicWorkouts({String? query, String? sortBy}) async {
+    emit(state.copyWith(exploreStatus: LoadStatus.loading, clearExploreError: true));
+    try {
+      final items = await _repository.loadPublicWorkouts(query: query, sortBy: sortBy);
+      emit(state.copyWith(
+        exploreStatus: LoadStatus.success,
+        exploreWorkouts: items,
+      ));
+    } catch (e) {
+      emit(state.copyWith(
+        exploreStatus: LoadStatus.failure,
+        exploreError: mapApiError(e),
+      ));
+    }
+  }
+
+  Future<bool> clonePublicWorkout(String id) async {
+    try {
+      await _repository.cloneWorkout(id);
+      await loadCustomWorkouts();
+      return true;
+    } catch (e) {
+      emit(state.copyWith(
+        exploreStatus: LoadStatus.failure,
+        exploreError: mapApiError(e),
+      ));
+      return false;
+    }
+  }
+
   Future<void> loadCatalog({String? query, String? category}) async {
     emit(state.copyWith(catalogStatus: LoadStatus.loading, clearCatalogError: true));
     try {

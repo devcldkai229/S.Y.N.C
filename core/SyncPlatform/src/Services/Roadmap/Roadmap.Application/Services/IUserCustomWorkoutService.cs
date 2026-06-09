@@ -14,6 +14,16 @@ public interface IUserCustomWorkoutService
         int pageSize,
         Guid? userId = null,
         CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<UserCustomWorkoutDto> Items, PaginationMetadata Metadata)> GetPublicWorkoutsAsync(
+        int pageNumber,
+        int pageSize,
+        string? search = null,
+        string? sortBy = null,
+        CancellationToken cancellationToken = default);
+    Task<UserCustomWorkoutDto> CloneWorkoutAsync(
+        Guid originalWorkoutId,
+        Guid targetUserId,
+        CancellationToken cancellationToken = default);
     Task<UserCustomWorkoutDto> UpdateAsync(Guid id, UpdateUserCustomWorkoutDto dto, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

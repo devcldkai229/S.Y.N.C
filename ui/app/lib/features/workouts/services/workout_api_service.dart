@@ -59,6 +59,38 @@ class WorkoutApiService {
     return _parsePagedList(response.data, UserCustomWorkout.fromJson);
   }
 
+  Future<List<UserCustomWorkout>> getPublicWorkouts({
+    String? query,
+    String? sortBy,
+    int pageNumber = 1,
+    int pageSize = 50,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/public',
+      queryParameters: {
+        'pageNumber': pageNumber,
+        'pageSize': pageSize,
+        if (query != null && query.isNotEmpty) 'search': query,
+        if (sortBy != null && sortBy.isNotEmpty) 'sortBy': sortBy,
+      },
+    );
+    return _parsePagedList(response.data, UserCustomWorkout.fromJson);
+  }
+
+  Future<UserCustomWorkout> cloneWorkout(String id) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/$id/clone',
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to clone workout').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return UserCustomWorkout.fromJson(raw);
+  }
+
   Future<UserCustomWorkout> createCustomWorkout(Map<String, dynamic> data) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '${ApiPaths.customWorkouts}/custom',

@@ -102,6 +102,34 @@ public class UserCustomWorkoutController : ControllerBase
         return Ok(PagedApiResponse<IReadOnlyList<UserCustomWorkoutDto>>.SuccessPagedResponse(items, metadata, "Custom workouts retrieved successfully."));
     }
 
+    [HttpGet("public")]
+    [ProducesResponseType(typeof(PagedApiResponse<IReadOnlyList<UserCustomWorkoutDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<UserCustomWorkoutDto>>>> GetPublic(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null,
+        [FromQuery] string? sortBy = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (items, metadata) = await _service.GetPublicWorkoutsAsync(pageNumber, pageSize, search, sortBy, cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<UserCustomWorkoutDto>>.SuccessPagedResponse(items, metadata, "Public custom workouts retrieved successfully."));
+    }
+
+    [HttpPost("{id:guid}/clone")]
+    [ProducesResponseType(typeof(ApiResponse<UserCustomWorkoutDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<UserCustomWorkoutDto>>> Clone(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var currentUserId = _currentUser.RequireUserId();
+        var result = await _service.CloneWorkoutAsync(id, currentUserId, cancellationToken);
+        var response = ApiResponse<UserCustomWorkoutDto>.SuccessResponse(result, "Custom workout cloned successfully.");
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
+    }
+
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<UserCustomWorkoutDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

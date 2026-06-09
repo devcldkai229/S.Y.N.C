@@ -160,6 +160,9 @@ class UserCustomWorkout {
     required this.allowAiOptimization,
     required this.blocks,
     required this.createdAt,
+    this.parentWorkoutId,
+    this.savesCount = 0,
+    this.sessions = const [],
   });
 
   final String id;
@@ -169,12 +172,16 @@ class UserCustomWorkout {
   final bool allowAiOptimization;
   final List<CustomWorkoutBlock> blocks;
   final DateTime createdAt;
+  final String? parentWorkoutId;
+  final int savesCount;
+  final List<WorkoutSessionDetail> sessions;
 
-  int get totalSets => blocks.fold(0, (sum, b) => sum + b.sets);
-  int get exerciseCount => blocks.length;
+  int get totalSets => sessions.fold(0, (sum, s) => sum + s.totalSetCount);
+  int get exerciseCount => sessions.fold(0, (sum, s) => sum + s.exerciseCount);
 
   factory UserCustomWorkout.fromJson(Map<String, dynamic> json) {
     final rawBlocks = json['customBlocks'];
+    final rawSessions = json['sessions'];
     return UserCustomWorkout(
       id: json['id']?.toString() ?? '',
       workoutName: (json['workoutName'] ?? 'Custom Workout').toString(),
@@ -188,6 +195,14 @@ class UserCustomWorkout {
               .toList()
           : const [],
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      parentWorkoutId: json['parentWorkoutId']?.toString(),
+      savesCount: _toInt(json['savesCount']),
+      sessions: rawSessions is List
+          ? rawSessions
+              .whereType<Map<String, dynamic>>()
+              .map(WorkoutSessionDetail.fromJson)
+              .toList()
+          : const [],
     );
   }
 }
@@ -456,6 +471,11 @@ double _toDouble(dynamic value) {
   return double.tryParse(value?.toString() ?? '') ?? 0;
 }
 
+int _toInt(dynamic value) {
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
 String _enumLabel(dynamic value) {
   if (value == null) return '';
   final s = value.toString();
@@ -485,6 +505,8 @@ class MyWorkoutDetail {
     required this.allowAiOptimization,
     required this.sessions,
     required this.weeklySchedules,
+    this.parentWorkoutId,
+    this.savesCount = 0,
   });
 
   final String id;
@@ -494,6 +516,8 @@ class MyWorkoutDetail {
   final bool allowAiOptimization;
   final List<WorkoutSessionDetail> sessions;
   final List<ScheduledWorkoutDetail> weeklySchedules;
+  final String? parentWorkoutId;
+  final int savesCount;
 
   factory MyWorkoutDetail.fromJson(Map<String, dynamic> json) {
     final rawSessions = json['sessions'];
@@ -516,6 +540,8 @@ class MyWorkoutDetail {
               .map(ScheduledWorkoutDetail.fromJson)
               .toList()
           : const [],
+      parentWorkoutId: json['parentWorkoutId']?.toString(),
+      savesCount: _toInt(json['savesCount']),
     );
   }
 }

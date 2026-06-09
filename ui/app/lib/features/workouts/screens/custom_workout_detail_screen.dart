@@ -584,10 +584,6 @@ class _CustomWorkoutDetailScreenState extends State<CustomWorkoutDetailScreen> {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.ios_share, color: AppColors.textPrimary, size: 20),
-            onPressed: () {},
-          ),
-          IconButton(
             icon: const Icon(Icons.more_vert, color: AppColors.textPrimary, size: 20),
             onPressed: () {},
           ),
@@ -639,8 +635,6 @@ class _CustomWorkoutDetailScreenState extends State<CustomWorkoutDetailScreen> {
                 // Tags row
                 Row(
                   children: [
-                    _buildTag(workout.visibility),
-                    const SizedBox(width: 8),
                     _buildTag(workout.scheduleMode == 'Fixed' ? 'Fixed Schedule' : 'Flexible Schedule', color: Colors.blue.shade600),
                     const SizedBox(width: 8),
                     _buildTag('AI Optimization: ${workout.allowAiOptimization ? 'On' : 'Off'}', color: AppColors.primaryGreen),
@@ -894,36 +888,19 @@ class _CustomWorkoutDetailScreenState extends State<CustomWorkoutDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.ios_share, size: 18, color: AppColors.textPrimary),
-                      label: const Text('Chia sẻ', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFCBD5E1)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        backgroundColor: Colors.white,
-                      ),
-                    ),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _showEditWorkoutModal,
+                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
+                  label: const Text('Chỉnh sửa', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    backgroundColor: Colors.white,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _showEditWorkoutModal,
-                      icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
-                      label: const Text('Chỉnh sửa', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFCBD5E1)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        backgroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 12),
               SizedBox(
