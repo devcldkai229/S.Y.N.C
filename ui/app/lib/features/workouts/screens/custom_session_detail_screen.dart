@@ -532,56 +532,64 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: const Color(0xFFE9ECEF)),
                       ),
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          // 1. Order circle badge
-                          Container(
-                            width: 24,
-                            height: 24,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primaryGreen,
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '${index + 1}',
-                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-
-                          // 2. Exercise Image/Icon placeholder
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F3F5),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.fitness_center, color: AppColors.textMuted, size: 22),
-                          ),
-                          const SizedBox(width: 12),
-
-                          // 3. Exercise metadata
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  block.exerciseName,
-                                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textPrimary),
+                      child: InkWell(
+                        onTap: () {
+                          context.push(AppRoutes.exerciseDetail(block.exerciseId));
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              // 1. Order circle badge
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.primaryGreen,
+                                  shape: BoxShape.circle,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${block.targetSets} sets × ${block.targetReps} reps  •  ${block.targetWeightKg.toStringAsFixed(block.targetWeightKg.truncateToDouble() == block.targetWeightKg ? 0 : 1)} kg  •  Rest ${block.restSeconds}s',
-                                  style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 10),
+
+                              // 2. Exercise Image/Icon placeholder
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F3F5),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.fitness_center, color: AppColors.textMuted, size: 22),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // 3. Exercise metadata
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      block.exerciseName,
+                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textPrimary),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${block.targetSets} sets × ${block.targetReps} reps  •  ${block.targetWeightKg.toStringAsFixed(block.targetWeightKg.truncateToDouble() == block.targetWeightKg ? 0 : 1)} kg  •  Rest ${block.restSeconds}s',
+                                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
+                            ],
                           ),
-                          const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
-                        ],
+                        ),
                       ),
                     );
                   },
