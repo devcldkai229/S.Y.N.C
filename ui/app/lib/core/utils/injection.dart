@@ -30,7 +30,6 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => ProfileApiService(getIt()));
   getIt.registerLazySingleton(() => SubscriptionApiService(getIt()));
   getIt.registerLazySingleton(() => WorkoutApiService(getIt()));
-  getIt.registerLazySingleton(() => SubscriptionApiService(getIt()));
   getIt.registerLazySingleton(() => NotificationRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => OnboardingRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => SocialRemoteDataSource(getIt()));
