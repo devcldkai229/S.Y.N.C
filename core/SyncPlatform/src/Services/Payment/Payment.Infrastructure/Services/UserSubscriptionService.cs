@@ -32,7 +32,16 @@ public class UserSubscriptionService : IUserSubscriptionService
 
     public async Task<UserSubscriptionDto?> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        var query = from sub in _db.UserSubscriptions.Where(s => s.UserId == userId && s.Status == SubscriptionStatus.Active)
+        var now = DateTimeOffset.UtcNow;
+
+        // Active = còn hạn (Active chưa expire) hoặc Cancelled nhưng chưa tới ExpiredAt
+        // (theo policy: huỷ giữ quyền Premium tới hết hạn)
+        var query = from sub in _db.UserSubscriptions.Where(s =>
+                        s.UserId == userId &&
+                        (
+                            (s.Status == SubscriptionStatus.Active && (s.ExpiredAt == null || s.ExpiredAt > now)) ||
+                            (s.Status == SubscriptionStatus.Cancelled && s.ExpiredAt != null && s.ExpiredAt > now)
+                        ))
                     join plan in _db.SubscriptionPlans on sub.SubscriptionPlanId equals plan.Id into planGroup
                     from plan in planGroup.DefaultIfEmpty()
                     orderby sub.StartedAt descending
@@ -159,10 +168,13 @@ public class UserSubscriptionService : IUserSubscriptionService
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == entity.SubscriptionPlanId, cancellationToken);
 
-        entity.Status = SubscriptionStatus.Cancelled;
-        entity.AutoRenew = false;
+        // Policy: giữ quyền Premium tới ExpiredAt, KHÔNG hạ tier ngay.
+        // Tier sẽ bị hạ về Free khi SubscriptionExpiryJob xử lý lúc ExpiredAt qua.
+        entity.Status             = SubscriptionStatus.Cancelled;
+        entity.AutoRenew          = false;
         entity.CancellationReason = request.CancellationReason;
-        entity.UpdatedAt = DateTimeOffset.UtcNow;
+        entity.UpdatedAt          = DateTimeOffset.UtcNow;
+        // ExpiredAt giữ nguyên — không xoá
 
         _db.UserSubscriptions.Update(entity);
         await _db.SaveChangesAsync(cancellationToken);

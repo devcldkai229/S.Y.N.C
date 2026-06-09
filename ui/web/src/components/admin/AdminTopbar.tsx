@@ -2,9 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Bell, ChevronRight } from "lucide-react";
 
 const BREADCRUMB_MAP: Record<string, string> = {
   "/admin/dashboard":           "Dashboard",
@@ -33,27 +31,31 @@ export function AdminTopbar() {
     ? user.fullName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
     : "AD";
 
+  const label = getLabel(pathname);
+
   return (
-    <header className="h-14 px-4 border-b border-border bg-card flex items-center justify-between shrink-0">
-      <div>
-        <h1 className="text-sm font-semibold text-foreground">{getLabel(pathname)}</h1>
-        <p className="text-xs text-muted-foreground">Admin Panel</p>
+    <header className="h-16 px-6 border-b border-gray-100 bg-white flex items-center justify-between shrink-0">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 text-sm">
+        <span className="text-gray-400 font-medium">Admin</span>
+        <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+        <span className="text-gray-900 font-semibold">{label}</span>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="text-muted-foreground relative">
+      {/* Right side */}
+      <div className="flex items-center gap-3">
+        <button className="relative w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
           <Bell className="w-4 h-4" />
-        </Button>
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
+        </button>
 
-        <div className="flex items-center gap-2">
-          <Avatar className="w-7 h-7">
-            <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+        <div className="flex items-center gap-2.5 pl-3 border-l border-gray-100">
+          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {initials}
+          </div>
           <div className="hidden sm:block">
-            <p className="text-xs font-medium leading-none">{user?.fullName ?? "Admin"}</p>
-            <p className="text-xs text-muted-foreground">{user?.email}</p>
+            <p className="text-xs font-semibold text-gray-800 leading-none">{user?.fullName ?? "Admin"}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{user?.email}</p>
           </div>
         </div>
       </div>

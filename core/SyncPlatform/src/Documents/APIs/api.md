@@ -1417,6 +1417,67 @@ sequenceDiagram
 
 ---
 
+---
+
+## Subscription (Payment service) — thêm 2026-06-09
+
+Tất cả gọi qua Gateway `/api/v1/payment/**` → Payment `:5084` `/api/v1/payments/**`.
+
+### Lấy danh sách gói đăng ký (public)
+```http
+GET /api/v1/payment/subscription-plans
+```
+Response: `ApiResponse<SubscriptionPlanDto[]>` — chỉ trả plan `IsActive=true`.
+
+### Tạo PayOS payment link
+```http
+POST /api/v1/payment/payos/create-link
+Authorization: Bearer <token>
+```
+```json
+{ "planId": "uuid", "billingCycle": 0, "couponCode": "PROMO20" }
+```
+`billingCycle`: `0`=Monthly (bỏ Yearly). `couponCode` optional — validate `PromotionCampaign`. Response: `{ transactionId, orderCode, checkoutUrl, qrCode, amount, currency }`.
+
+### Webhook PayOS (anonymous, server-to-server)
+```http
+POST /api/v1/payment/payments/payos/webhook
+```
+PayOS gọi sau khi user thanh toán. Verify HMAC checksum. Khi `Succeeded`: kích hoạt `UserSubscription`, tăng `PromotionCampaign.UsageCount`, sync `tier=Premium` sang IAM.
+
+### Tra trạng thái giao dịch (client poll)
+```http
+GET /api/v1/payment/transactions/{id}
+GET /api/v1/payment/transactions/by-order-code/{orderCode}
+Authorization: Bearer <token>
+```
+Chỉ owner xem. Response: `{ id, orderCode, status, amount, currency, couponCode, processedAt }`. `status`: `Pending | Succeeded | Failed | Cancelled`.
+
+### Subscription của user
+```http
+GET /api/v1/payment/user-subscriptions/me/active   # gói đang còn hiệu lực
+POST /api/v1/payment/user-subscriptions/me/cancel  # { "cancellationReason": "..." }
+```
+Cancel policy: set `Cancelled` + `AutoRenew=false`, giữ quyền Premium tới `ExpiredAt`. Tier hạ Free khi `SubscriptionExpiryJob` chạy.
+
+### IAM internal — set tier (Payment → IAM)
+```http
+POST /api/internal/subscriptions/tier
+X-Internal-Api-Key: <key>
+```
+```json
+{ "userId": "uuid", "tier": "Premium" }
+```
+Không exposed qua Gateway. Payment gọi sau khi activate/expire. `tier`: `Free | Premium | Ultra`.
+
+### DEV-ONLY — giả lập xác nhận thanh toán
+```http
+POST /api/v1/payment/dev/confirm/{orderCode}
+```
+Trả `404` ngoài `Development`. Không cần body. Chạy thẳng activation (bỏ qua verify PayOS). Dùng để test end-to-end trên máy dev không cần tiền thật.
+
+---
+
 ## Chưa có trong tài liệu này
 
 - **Notification API** — đã route qua Gateway (`/api/v1/notification/**` → `/api/v1/notifications/**`) nhưng chưa mô tả endpoint chi tiết.

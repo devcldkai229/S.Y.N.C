@@ -51,4 +51,12 @@ abstract final class ApiPaths {
 
   // Social (future service)
   static const socialPosts = '/v1/social/posts';
+
+  // Payment / Subscription
+  static const subscriptionPlans        = '/v1/payment/subscription-plans';
+  static const myActiveSubscription     = '/v1/payment/user-subscriptions/me/active';
+  static const cancelMySubscription     = '/v1/payment/user-subscriptions/me/cancel';
+  static const payosCreateLink          = '/v1/payment/payos/create-link';
+  static String transactionByOrderCode(int orderCode) =>
+      '/v1/payment/transactions/by-order-code/$orderCode';
 }
