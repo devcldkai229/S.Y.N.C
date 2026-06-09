@@ -8,9 +8,12 @@ public class UserCustomWorkoutDto
     public Guid UserId { get; set; }
     public string WorkoutName { get; set; } = string.Empty;
     public Visibility Visibility { get; set; }
+    public Guid? ParentWorkoutId { get; set; }
+    public int SavesCount { get; set; }
     public string ScheduleMode { get; set; } = string.Empty;
     public bool AllowAiOptimization { get; set; }
     public List<CustomBlockDto> CustomBlocks { get; set; } = [];
+    public List<WorkoutSessionDto> Sessions { get; set; } = [];
     public DateTimeOffset CreatedAt { get; set; }
 }
 
@@ -56,6 +59,8 @@ public class MyWorkoutDetailDto
     public Guid Id { get; set; }
     public string WorkoutName { get; set; } = string.Empty;
     public Visibility Visibility { get; set; }
+    public Guid? ParentWorkoutId { get; set; }
+    public int SavesCount { get; set; }
     public string ScheduleMode { get; set; } = string.Empty;
     public bool AllowAiOptimization { get; set; }
     public List<WorkoutSessionDto> Sessions { get; set; } = [];
