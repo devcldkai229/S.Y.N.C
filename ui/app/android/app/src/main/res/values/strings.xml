@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Web OAuth client ID — used by google_sign_in_android when serverClientId is set in Dart -->
+    <string name="default_web_client_id">366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com</string>
+</resources>

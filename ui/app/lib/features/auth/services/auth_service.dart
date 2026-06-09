@@ -54,6 +54,90 @@ class AuthService {
     return RegisterResult.fromEnvelope(envelope);
   }
 
+  /// Sends verification code using only full name + email (no password required).
+  Future<RegisterResult> initRegistration({
+    required String fullName,
+    required String email,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.authInitRegistration,
+      data: <String, dynamic>{
+        'email': email.trim(),
+        'fullName': fullName.trim(),
+      },
+    );
+    final envelope = ApiEnvelope<RegisterResult>.fromJson(
+      response.data ?? <String, dynamic>{},
+      RegisterResult.fromJson,
+    );
+    if (!envelope.success || envelope.data == null) {
+      throw Exception(
+        envelope.message.isEmpty
+            ? 'Init registration failed.'
+            : envelope.message,
+      );
+    }
+    return RegisterResult.fromEnvelope(envelope);
+  }
+
+  /// Verifies OTP; [password] is optional on this step.
+  Future<VerifyEmailResult> completeRegistration({
+    required String email,
+    required String code,
+    String? password,
+  }) async {
+    final data = <String, dynamic>{
+      'email': email.trim(),
+      'code': code.trim(),
+    };
+    final pwd = password?.trim();
+    if (pwd != null && pwd.isNotEmpty) {
+      data['password'] = pwd;
+    }
+
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.authCompleteRegistration,
+      data: data,
+    );
+    final envelope = ApiEnvelope<VerifyEmailResult>.fromJson(
+      response.data ?? <String, dynamic>{},
+      VerifyEmailResult.fromJson,
+    );
+    if (!envelope.success || envelope.data == null) {
+      throw Exception(
+        envelope.message.isEmpty
+            ? 'Complete registration failed.'
+            : envelope.message,
+      );
+    }
+    return envelope.data!;
+  }
+
+  Future<RegisterResult> finishRegistration({
+    required String email,
+    required String password,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.authFinishRegistration,
+      data: <String, dynamic>{
+        'email': email.trim(),
+        'password': password,
+      },
+    );
+    final envelope = ApiEnvelope<RegisterResult>.fromJson(
+      response.data ?? <String, dynamic>{},
+      RegisterResult.fromJson,
+    );
+    if (!envelope.success || envelope.data == null) {
+      throw Exception(
+        envelope.message.isEmpty
+            ? 'Finish registration failed.'
+            : envelope.message,
+      );
+    }
+    return RegisterResult.fromEnvelope(envelope);
+  }
+
   Future<RegisterResult> resendVerificationCode({required String email}) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.authResendVerification,
@@ -71,6 +155,48 @@ class AuthService {
       );
     }
     return RegisterResult.fromEnvelope(envelope);
+  }
+
+  /// Requests a 6-digit password reset code to be sent to [email].
+  Future<String> forgotPassword({required String email}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.authForgotPassword,
+      data: <String, dynamic>{'email': email.trim()},
+    );
+    return _readMessage(
+      response.data,
+      fallback: 'If an account exists, a reset code has been sent.',
+    );
+  }
+
+  /// Sets a new password using the emailed reset code.
+  Future<String> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.authResetPassword,
+      data: <String, dynamic>{
+        'email': email.trim(),
+        'code': code.trim(),
+        'newPassword': newPassword,
+      },
+    );
+    return _readMessage(
+      response.data,
+      fallback: 'Password reset successfully.',
+    );
+  }
+
+  String _readMessage(Map<String, dynamic>? data, {required String fallback}) {
+    final json = data ?? <String, dynamic>{};
+    final success = json['success'] == true;
+    final message = (json['message'] ?? '').toString();
+    if (!success) {
+      throw Exception(message.isEmpty ? fallback : message);
+    }
+    return message.isEmpty ? fallback : message;
   }
 
   /// Confirms email via token (same as opening the link in email / IAM log when SMTP is off).
@@ -133,19 +259,33 @@ class AuthService {
   }
 
   Future<AuthSession> loginWithGoogle() async {
+    _logger.i('Google sign-in started (platform=$_platformName)');
     await _ensureGoogleSignInInitialized();
 
     if (!GoogleSignIn.instance.supportsAuthenticate()) {
+      _logger.w('Google sign-in unsupported on this platform');
       throw Exception(
         'Google Sign-In chưa hỗ trợ trên platform này. '
         'Hãy chạy Web (Chrome), Android hoặc iOS.',
       );
     }
 
-    final googleUser = await GoogleSignIn.instance.authenticate();
+    GoogleSignInAccount googleUser;
+    try {
+      googleUser = await GoogleSignIn.instance.authenticate(
+        scopeHint: const <String>['email', 'profile', 'openid'],
+      );
+    } on GoogleSignInException catch (e) {
+      _logger.e(
+        'Google authenticate failed: code=${e.code.name} desc=${e.description}',
+      );
+      rethrow;
+    }
+    _logger.i('Google authenticate OK (email=${googleUser.email})');
     final auth = googleUser.authentication;
     final idToken = auth.idToken;
     if (idToken == null || idToken.isEmpty) {
+      _logger.e('Google ID token missing after authenticate');
       throw Exception(
         'Google ID token bị thiếu. Hãy cấu hình GOOGLE_SERVER_CLIENT_ID '
         '(hoặc google-services) rồi thử lại.',
@@ -153,6 +293,7 @@ class AuthService {
     }
 
     final deviceId = await _getOrCreateDeviceId();
+    _logger.i('Calling IAM Google login API...');
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.authGoogle,
       data: <String, dynamic>{
@@ -166,10 +307,12 @@ class AuthService {
       AuthSession.fromJson,
     );
     if (!envelope.success || envelope.data == null) {
+      _logger.e('IAM Google login failed: ${envelope.message}');
       throw Exception(
         envelope.message.isEmpty ? 'Google login failed.' : envelope.message,
       );
     }
+    _logger.i('Google sign-in successful (email=${envelope.data!.email})');
     await _saveSession(envelope.data!);
     return envelope.data!;
   }
@@ -205,11 +348,28 @@ class AuthService {
       );
     }
 
+    if (!kIsWeb && serverClientId.isEmpty) {
+      throw Exception(
+        'Thiếu GOOGLE_SERVER_CLIENT_ID (Web OAuth client). '
+        'Cần để Google trả ID token cho IAM xác minh.',
+      );
+    }
+
+    _logger.i(
+      'GoogleSignIn init: clientId=${_maskClientId(clientId)} '
+      'serverClientId=${_maskClientId(serverClientId)}',
+    );
+
     await GoogleSignIn.instance.initialize(
       clientId: clientId.isEmpty ? null : clientId,
       serverClientId: serverClientId.isEmpty ? null : serverClientId,
     );
     _googleInitialized = true;
+  }
+
+  String _maskClientId(String id) {
+    if (id.length <= 12) return id.isEmpty ? '(empty)' : '***';
+    return '${id.substring(0, 8)}...${id.substring(id.length - 6)}';
   }
 
   Future<String> _getOrCreateDeviceId() async {

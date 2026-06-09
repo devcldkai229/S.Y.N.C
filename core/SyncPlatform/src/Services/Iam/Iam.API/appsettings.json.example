@@ -24,7 +24,7 @@
   "Email": {
     "VerificationBaseUrl": "http://localhost:5288",
     "Smtp": {
-      "Enabled": false,
+      "Enabled": true,
       "Host": "smtp.gmail.com",
       "Port": 587,
       "UserName": "kag40222@gmail.com",

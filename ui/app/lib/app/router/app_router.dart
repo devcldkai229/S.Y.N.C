@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/features/auth/screens/login_screen.dart';
+import 'package:sync_app/features/auth/screens/forgot_password_screen.dart';
 import 'package:sync_app/features/auth/screens/register_step1_screen.dart';
-import 'package:sync_app/features/auth/screens/verify_email_screen.dart';
 import 'package:sync_app/features/home/screens/home_screen.dart';
 import 'package:sync_app/features/achievements/screens/achievements_screen.dart';
 import 'package:sync_app/features/shop/screens/shop_screen.dart';
@@ -38,11 +38,8 @@ abstract final class AppRouter {
         builder: (context, state) => const RegisterStep1Screen(),
       ),
       GoRoute(
-        path: AppRoutes.verifyEmail,
-        builder: (context, state) {
-          final token = state.uri.queryParameters['token'];
-          return VerifyEmailScreen(initialToken: token);
-        },
+        path: AppRoutes.forgotPassword,
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
         path: AppRoutes.onboarding,

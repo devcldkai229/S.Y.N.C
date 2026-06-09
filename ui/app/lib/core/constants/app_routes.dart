@@ -1,7 +1,7 @@
 class AppRoutes {
   static const login = '/login';
   static const register = '/register';
-  static const verifyEmail = '/verify-email';
+  static const forgotPassword = '/forgot-password';
   static const onboarding = '/onboarding';
   static const home = '/home';
   static const workouts = '/workouts';

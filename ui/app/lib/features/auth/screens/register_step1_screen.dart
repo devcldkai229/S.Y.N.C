@@ -28,6 +28,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   late final bool _isAuthEnabled;
   bool _isLoading = false;
   bool _isCodeSent = false;
+  bool _isEmailVerified = false;
   String _registeredEmail = '';
 
   @override
@@ -58,7 +59,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             ProgressHeader(
-              currentStep: _isCodeSent ? 2 : 1,
+              currentStep: _isEmailVerified ? 3 : (_isCodeSent ? 2 : 1),
               totalSteps: 3,
               onClose: () => context.go(AppRoutes.login),
             ),
@@ -76,9 +77,11 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _isCodeSent
-                          ? context.l10n.verifyEmailTitle
-                          : context.l10n.registerTitle,
+                      _isEmailVerified
+                          ? 'Hoàn tất đăng ký'
+                          : (_isCodeSent
+                              ? context.l10n.verifyEmailTitle
+                              : context.l10n.registerTitle),
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.w800,
@@ -87,9 +90,11 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      _isCodeSent
-                          ? 'Mã xác minh đã được gửi đến ${_registeredEmail.isEmpty ? _emailController.text.trim() : _registeredEmail}. Vui lòng nhập mã để hoàn tất.'
-                          : context.l10n.registerSubtitle,
+                      _isEmailVerified
+                          ? 'Email đã xác minh. Nhập mật khẩu và bấm Tiếp tục để hoàn tất đăng ký.'
+                          : (_isCodeSent
+                              ? 'Mã xác minh đã được gửi đến ${_registeredEmail.isEmpty ? _emailController.text.trim() : _registeredEmail}. Bạn có thể xác minh mã trước, chưa cần nhập mật khẩu.'
+                              : context.l10n.registerSubtitle),
                       style: const TextStyle(
                         fontSize: 15,
                         height: 1.5,
@@ -213,41 +218,80 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (username.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        confirmPassword.isEmpty) {
-      _showMessage('Please complete all fields.');
-      return;
-    }
-    if (password.length < 8) {
-      _showMessage('Password must be at least 8 characters.');
-      return;
-    }
-    if (password != confirmPassword) {
-      _showMessage('Confirm password does not match.');
-      return;
-    }
-
-    if (!_isCodeSent) {
-      _showMessage('Vui lòng nhấn "Verify email" để gửi mã xác minh trước.');
-      return;
-    }
-
-    final code = _verificationCodeController.text.trim();
-    if (code.isEmpty) {
-      _showMessage('Vui lòng nhập mã xác minh email.');
+    if (username.isEmpty || email.isEmpty) {
+      _showMessage('Vui lòng nhập họ tên và email.');
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      final result = await _authRepository.verifyEmail(_extractToken(code));
-      if (!mounted) return;
-      _showMessage(
-        'Email ${result.email} đã xác minh thành công. Mời bạn đăng nhập.',
+      if (_isEmailVerified) {
+        if (password.isEmpty || confirmPassword.isEmpty) {
+          _showMessage('Vui lòng nhập mật khẩu để hoàn tất đăng ký.');
+          return;
+        }
+        if (password.length < 8) {
+          _showMessage('Password must be at least 8 characters.');
+          return;
+        }
+        if (password != confirmPassword) {
+          _showMessage('Confirm password does not match.');
+          return;
+        }
+
+        await _authRepository.finishRegistration(
+          email: email,
+          password: password,
+        );
+        if (!mounted) return;
+        _showMessage('Đăng ký hoàn tất. Mời bạn đăng nhập.');
+        context.go(AppRoutes.login);
+        return;
+      }
+
+      if (!_isCodeSent) {
+        _showMessage('Vui lòng nhấn "Verify email" để gửi mã xác minh trước.');
+        return;
+      }
+
+      final code = _extractToken(_verificationCodeController.text.trim());
+      if (code.isEmpty) {
+        _showMessage('Vui lòng nhập mã xác minh email.');
+        return;
+      }
+
+      final hasPassword = password.isNotEmpty || confirmPassword.isNotEmpty;
+      if (hasPassword) {
+        if (password.isEmpty || confirmPassword.isEmpty) {
+          _showMessage('Vui lòng nhập và xác nhận mật khẩu.');
+          return;
+        }
+        if (password.length < 8) {
+          _showMessage('Password must be at least 8 characters.');
+          return;
+        }
+        if (password != confirmPassword) {
+          _showMessage('Confirm password does not match.');
+          return;
+        }
+      }
+
+      final result = await _authRepository.completeRegistration(
+        email: email,
+        code: code,
+        password: hasPassword ? password : null,
       );
-      context.go(AppRoutes.login);
+      if (!mounted) return;
+
+      if (hasPassword) {
+        _showMessage(
+          'Email ${result.email} đã xác minh và đăng ký hoàn tất. Mời bạn đăng nhập.',
+        );
+        context.go(AppRoutes.login);
+      } else {
+        _showMessage('Email ${result.email} đã xác minh. Nhập mật khẩu để hoàn tất.');
+        setState(() => _isEmailVerified = true);
+      }
     } catch (error) {
       _showMessage(mapAuthError(error, context.l10n));
     } finally {
@@ -261,23 +305,8 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     if (_isLoading) return;
     final username = _usernameController.text.trim();
     final email = _emailController.text.trim();
-    final password = _passwordController.text;
-    final confirmPassword = _confirmPasswordController.text;
-    if (username.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        confirmPassword.isEmpty) {
-      _showMessage(
-        'Vui lòng nhập đầy đủ họ tên, email và mật khẩu trước khi xác minh email.',
-      );
-      return;
-    }
-    if (password.length < 8) {
-      _showMessage('Password must be at least 8 characters.');
-      return;
-    }
-    if (password != confirmPassword) {
-      _showMessage('Confirm password does not match.');
+    if (username.isEmpty || email.isEmpty) {
+      _showMessage('Vui lòng nhập họ tên và email trước khi xác minh.');
       return;
     }
 
@@ -285,10 +314,9 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     try {
       final result = _isCodeSent
           ? await _authRepository.resendVerificationCode(email: email)
-          : await _authRepository.register(
+          : await _authRepository.initRegistration(
               fullName: username,
               email: email,
-              password: password,
             );
       if (!mounted) return;
       _showMessage(
@@ -298,6 +326,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
       );
       setState(() {
         _isCodeSent = true;
+        _isEmailVerified = false;
         _registeredEmail = result.email;
       });
     } catch (error) {
