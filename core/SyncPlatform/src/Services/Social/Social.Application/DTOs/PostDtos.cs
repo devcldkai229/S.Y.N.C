@@ -29,6 +29,7 @@ public class PostDto
     public PostMetricsDto Metrics { get; set; } = new();
     public bool IsPublic { get; set; }
     public string ShareCode { get; set; } = string.Empty;
+    public bool IsLikedByMe { get; set; }
 }
 
 public class CreatePostDto

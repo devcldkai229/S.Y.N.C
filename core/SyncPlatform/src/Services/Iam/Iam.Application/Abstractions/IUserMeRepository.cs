@@ -14,5 +14,18 @@ public interface IUserMeRepository
 
     Task<GamificationProfile?> GetGamificationAsync(Guid userId, CancellationToken cancellationToken = default);
 
+    // ── Achievement write support ──────────────────────────────────────────────
+
+    Task<IReadOnlyList<Achievement>> GetAllAchievementsAsync(CancellationToken cancellationToken = default);
+
+    Task<HashSet<Guid>> GetUnlockedAchievementIdsAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Returns a tracked (non-read-only) GamificationProfile for mutation.</summary>
+    Task<GamificationProfile?> GetGamificationForUpdateAsync(Guid userId, CancellationToken cancellationToken = default);
+
+    void AddUserAchievement(UserAchievement ua);
+
+    void AddVoucher(UserVoucher voucher);
+
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

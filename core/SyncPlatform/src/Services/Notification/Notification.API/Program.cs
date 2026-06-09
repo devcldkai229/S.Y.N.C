@@ -7,6 +7,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using Notification.API.Exceptions;
+using Notification.API.Middleware;
 using Notification.Application.Common;
 using Notification.Application.Extensions;
 using Notification.Infrastructure.Extensions;
@@ -73,6 +74,7 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();

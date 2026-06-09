@@ -37,7 +37,7 @@ public class PostController : ControllerBase
         var clampedLimit = limit < 1 ? DefaultFeedLimit : Math.Min(limit, MaxFeedLimit);
 
         var result = await _posts.GetPublicFeedCursorAsync(
-            new FeedCursorQuery { Cursor = cursor, Limit = clampedLimit },
+            new FeedCursorQuery { Cursor = cursor, Limit = clampedLimit, ViewerUserId = _currentUser.UserId },
             cancellationToken);
 
         return Ok(CursorApiResponse<IReadOnlyList<PostDto>>.SuccessResponse(
@@ -155,6 +155,15 @@ public class PostController : ControllerBase
     {
         var result = await _posts.LikePostAsync(_currentUser.RequireUserId(), postId, cancellationToken);
         return Ok(ApiResponse<LikePostResultDto>.SuccessResponse(result, "Post liked successfully."));
+    }
+
+    [HttpDelete("{postId:guid}/like")]
+    public async Task<ActionResult<ApiResponse<object?>>> Unlike(
+        Guid postId,
+        CancellationToken cancellationToken)
+    {
+        await _posts.UnlikePostAsync(_currentUser.RequireUserId(), postId, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Post unliked successfully."));
     }
 
     [HttpPost]

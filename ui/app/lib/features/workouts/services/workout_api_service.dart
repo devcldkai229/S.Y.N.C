@@ -35,7 +35,7 @@ class WorkoutApiService {
       queryParameters: {
         'pageNumber': 1,
         'pageSize': pageSize,
-        'roadmapId': ?roadmapId,
+        'roadmapId': roadmapId,
       },
     );
     return _parsePagedList(response.data, RoadmapSession.fromJson);
@@ -57,6 +57,156 @@ class WorkoutApiService {
       queryParameters: {'pageNumber': 1, 'pageSize': pageSize},
     );
     return _parsePagedList(response.data, UserCustomWorkout.fromJson);
+  }
+
+  Future<List<UserCustomWorkout>> getPublicWorkouts({
+    String? query,
+    String? sortBy,
+    int pageNumber = 1,
+    int pageSize = 50,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/public',
+      queryParameters: {
+        'pageNumber': pageNumber,
+        'pageSize': pageSize,
+        if (query != null && query.isNotEmpty) 'search': query,
+        if (sortBy != null && sortBy.isNotEmpty) 'sortBy': sortBy,
+      },
+    );
+    return _parsePagedList(response.data, UserCustomWorkout.fromJson);
+  }
+
+  Future<UserCustomWorkout> cloneWorkout(String id) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/$id/clone',
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to clone workout').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return UserCustomWorkout.fromJson(raw);
+  }
+
+  Future<UserCustomWorkout> createCustomWorkout(Map<String, dynamic> data) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/custom',
+      data: data,
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to create custom workout').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return UserCustomWorkout.fromJson(raw);
+  }
+
+  Future<UserCustomWorkout> updateCustomWorkout(String id, Map<String, dynamic> data) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/$id',
+      data: data,
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to update custom workout').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return UserCustomWorkout.fromJson(raw);
+  }
+
+  Future<void> deleteCustomWorkout(String id) async {
+    final response = await _dio.delete<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/$id',
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to delete custom workout').toString());
+    }
+  }
+
+  Future<UserCustomWorkout> getCustomWorkoutById(String id) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/$id',
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to load custom workout').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return UserCustomWorkout.fromJson(raw);
+  }
+
+  Future<MyWorkoutDetail> getCustomWorkoutDetail(String id) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.customWorkouts}/$id/detail',
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to load custom workout detail').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return MyWorkoutDetail.fromJson(raw);
+  }
+
+  Future<RoadmapSession> getSessionById(String id) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '${ApiPaths.sessions}/$id',
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to load session').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return RoadmapSession.fromJson(raw);
+  }
+
+  Future<Map<String, dynamic>> createRoadmapSession(Map<String, dynamic> data) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.sessions,
+      data: data,
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to create session').toString());
+    }
+    return response.data!['data'] as Map<String, dynamic>;
+  }
+
+  Future<RoadmapSession> updateRoadmapSession(String sessionId, Map<String, dynamic> data) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      '${ApiPaths.sessions}/$sessionId',
+      data: data,
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to update session').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return RoadmapSession.fromJson(raw);
+  }
+
+  Future<Map<String, dynamic>> createScheduledWorkout(Map<String, dynamic> data) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.scheduledWorkouts,
+      data: data,
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to create scheduled workout').toString());
+    }
+    return response.data!['data'] as Map<String, dynamic>;
   }
 
   Future<List<ExerciseCatalogItem>> searchExercises({
@@ -85,6 +235,94 @@ class WorkoutApiService {
     );
     if (!envelope.success) return null;
     return envelope.data;
+  }
+
+  Future<WorkoutExecutionDetail> startWorkout(String sessionId, {int? energyLevelBefore}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.workoutExecutions}/start',
+      data: {
+        'sessionId': sessionId,
+        if (energyLevelBefore != null) 'energyLevelBefore': energyLevelBefore,
+      },
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to start workout').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return WorkoutExecutionDetail.fromJson(raw);
+  }
+
+  Future<WorkoutExecutionSummary> finishWorkout(
+    String executionId, {
+    int? perceivedDifficulty,
+    int? energyLevelAfter,
+    String? sessionFeedback,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.workoutExecutions}/$executionId/finish',
+      data: {
+        if (perceivedDifficulty != null) 'perceivedDifficulty': perceivedDifficulty,
+        if (energyLevelAfter != null) 'energyLevelAfter': energyLevelAfter,
+        if (sessionFeedback != null) 'sessionFeedback': sessionFeedback,
+      },
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to finish workout').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return WorkoutExecutionSummary.fromJson(raw);
+  }
+
+  Future<void> cancelWorkout(String executionId) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '${ApiPaths.workoutExecutions}/$executionId/cancel',
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to cancel workout').toString());
+    }
+  }
+
+  Future<ExerciseSetLog> createExerciseSetLog({
+    required String executionId,
+    required String exerciseId,
+    required int setNumber,
+    required int targetReps,
+    required int actualReps,
+    required double weightKg,
+    required int rir,
+    required int restTakenSeconds,
+    required int formScore,
+    required bool completed,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.exerciseSetLogs,
+      data: {
+        'executionId': executionId,
+        'exerciseId': exerciseId,
+        'setNumber': setNumber,
+        'targetReps': targetReps,
+        'actualReps': actualReps,
+        'weightKg': weightKg,
+        'rir': rir,
+        'restTakenSeconds': restTakenSeconds,
+        'formScore': formScore,
+        'completed': completed,
+      },
+    );
+    if (response.data == null || response.data!['success'] != true) {
+      throw Exception((response.data?['message'] ?? 'Failed to create set log').toString());
+    }
+    final raw = response.data!['data'];
+    if (raw is! Map<String, dynamic>) {
+      throw Exception('Invalid response data structure');
+    }
+    return ExerciseSetLog.fromJson(raw);
   }
 
   List<T> _parsePagedList<T>(

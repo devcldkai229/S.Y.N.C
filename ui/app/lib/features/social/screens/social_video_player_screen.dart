@@ -22,6 +22,7 @@ class _SocialVideoPlayerScreenState extends State<SocialVideoPlayerScreen> {
     _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl))
       ..initialize().then((_) {
         if (!mounted) return;
+        _controller.setLooping(true);
         setState(() => _initialized = true);
         _controller.play();
       }).catchError((Object e) {

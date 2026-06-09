@@ -35,12 +35,12 @@ public static class BiometricTargetCalculator
 
         var multiplier = profile.ActivityLevel switch
         {
-            ActivityLevel.Sedentary => 1.2,
-            ActivityLevel.LightlyActive => 1.375,
+            ActivityLevel.Sedentary       => 1.2,
+            ActivityLevel.LightlyActive   => 1.375,
             ActivityLevel.ModeratelyActive => 1.55,
-            ActivityLevel.VeryActive => 1.725,
-            ActivityLevel.Athlete => 1.9,
-            _ => 1.2
+            ActivityLevel.VeryActive      => 1.725,
+            ActivityLevel.Athlete         => 1.9,
+            _                             => 1.2   // None or future values
         };
 
         profile.BaseTDEE = (int)Math.Round(profile.BMR * multiplier);

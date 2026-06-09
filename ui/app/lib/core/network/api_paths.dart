@@ -3,9 +3,14 @@ abstract final class ApiPaths {
   // Auth (direct)
   static const authLogin = '/v1/auth/login';
   static const authRegister = '/v1/auth/register';
+  static const authInitRegistration = '/v1/auth/init-registration';
+  static const authCompleteRegistration = '/v1/auth/complete-registration';
+  static const authFinishRegistration = '/v1/auth/finish-registration';
   static const authResendVerification = '/v1/auth/resend-verification';
   static const authGoogle = '/v1/auth/google';
   static const authVerifyEmail = '/v1/auth/verify-email';
+  static const authForgotPassword = '/v1/auth/forgot-password';
+  static const authResetPassword = '/v1/auth/reset-password';
 
   // IAM (gateway prefix: /v1/iam → service /v1)
   static const meProfileSettings = '/v1/iam/me/profile-settings';
@@ -35,8 +40,11 @@ abstract final class ApiPaths {
   static const sessions = '/v1/roadmap/sessions';
   static const recoveryProfiles = '/v1/roadmap/recovery-profiles';
   static const customWorkouts = '/v1/roadmap/workouts';
+  static const scheduledWorkouts = '/v1/roadmap/scheduled-workouts';
   static String sessionsByRoadmap(String roadmapId) =>
       '/v1/roadmap/sessions/roadmap/$roadmapId';
+  static const workoutExecutions = '/v1/roadmap/workout-executions';
+  static const exerciseSetLogs = '/v1/roadmap/exercise-set-logs';
 
   // Notification
   static const notifications = '/v1/notification/notifications';
@@ -48,6 +56,16 @@ abstract final class ApiPaths {
       '$notifications/users/$userId/$notificationId/read';
   static String notificationMarkAllRead(String userId) =>
       '$notifications/users/$userId/read-all';
+
+  // Payment  (gateway prefix /v1/payment → service /v1, service routes use /api/v1/payments/...)
+  static const subscriptionPlans = '/v1/payment/payments/subscription-plans';
+  static const myActiveSubscription = '/v1/payment/payments/user-subscriptions/me/active';
+  static const payosCreateLink = '/v1/payment/payments/payos/create-link';
+
+  // IAM – gamification / shop
+  static const meActivityLog = '/v1/iam/me/activity/log';
+  static const meShop = '/v1/iam/me/shop';
+  static const meShopPurchase = '/v1/iam/me/shop/purchase';
 
   // Social (future service)
   static const socialPosts = '/v1/social/posts';

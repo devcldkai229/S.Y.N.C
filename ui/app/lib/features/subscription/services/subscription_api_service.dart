@@ -23,8 +23,7 @@ class SubscriptionApiService {
 
   Future<ActiveSubscription?> getActiveSubscription() async {
     try {
-      final response =
-          await _dio.get<Map<String, dynamic>>(ApiPaths.myActiveSubscription);
+      final response = await _dio.get<Map<String, dynamic>>(ApiPaths.myActiveSubscription);
       final envelope = ApiEnvelope.fromJson(
         response.data ?? {},
         ActiveSubscription.fromJson,
@@ -36,12 +35,12 @@ class SubscriptionApiService {
     }
   }
 
-  Future<PaymentLink> createPaymentLink(String planId, {String? couponCode}) async {
+  Future<PaymentLink> createPaymentLink(String planId, {bool yearly = false, String? couponCode}) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.payosCreateLink,
       data: {
         'planId': planId,
-        'billingCycle': 0, // Monthly only
+        'billingCycle': yearly ? 1 : 0,
         if (couponCode != null && couponCode.isNotEmpty) 'couponCode': couponCode,
       },
     );

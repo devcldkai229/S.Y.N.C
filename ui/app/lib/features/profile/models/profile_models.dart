@@ -549,11 +549,50 @@ class AchievementItem {
   }
 }
 
+class AchievementProgressItem {
+  AchievementProgressItem({
+    required this.id,
+    required this.code,
+    required this.name,
+    required this.description,
+    required this.xpReward,
+    required this.coinReward,
+    required this.currentValue,
+    required this.requiredValue,
+  });
+
+  final String id;
+  final String code;
+  final String name;
+  final String description;
+  final int xpReward;
+  final int coinReward;
+  final int currentValue;
+  final int requiredValue;
+
+  double get progress =>
+      requiredValue > 0 ? (currentValue / requiredValue).clamp(0.0, 1.0) : 0.0;
+
+  factory AchievementProgressItem.fromJson(Map<String, dynamic> json) {
+    return AchievementProgressItem(
+      id: json['id']?.toString() ?? '',
+      code: (json['code'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      xpReward: _toInt(json['xpReward'] ?? json['XPReward']) ?? 0,
+      coinReward: _toInt(json['coinReward'] ?? json['CoinReward']) ?? 0,
+      currentValue: _toInt(json['currentValue']) ?? 0,
+      requiredValue: _toInt(json['requiredValue']) ?? 1,
+    );
+  }
+}
+
 class UserInventory {
   UserInventory({
     this.gamification,
     this.vouchers = const [],
     this.achievements = const [],
+    this.inProgressAchievements = const [],
     required this.totalVouchers,
     required this.totalAchievementsUnlocked,
   });
@@ -561,6 +600,7 @@ class UserInventory {
   final GamificationSummary? gamification;
   final List<VoucherItem> vouchers;
   final List<AchievementItem> achievements;
+  final List<AchievementProgressItem> inProgressAchievements;
   final int totalVouchers;
   final int totalAchievementsUnlocked;
 
@@ -576,8 +616,93 @@ class UserInventory {
           .whereType<Map<String, dynamic>>()
           .map(AchievementItem.fromJson)
           .toList(),
+      inProgressAchievements: (json['inProgressAchievements'] as List<dynamic>? ?? [])
+          .whereType<Map<String, dynamic>>()
+          .map(AchievementProgressItem.fromJson)
+          .toList(),
       totalVouchers: (json['totalVouchers'] ?? 0) as int,
       totalAchievementsUnlocked: (json['totalAchievementsUnlocked'] ?? 0) as int,
+    );
+  }
+}
+
+class LogActivityResult {
+  LogActivityResult({
+    required this.currentStreak,
+    required this.longestStreak,
+    required this.alreadyLoggedToday,
+    required this.newlyUnlockedAchievements,
+  });
+
+  final int currentStreak;
+  final int longestStreak;
+  final bool alreadyLoggedToday;
+  final List<String> newlyUnlockedAchievements;
+
+  factory LogActivityResult.fromJson(Map<String, dynamic> json) {
+    return LogActivityResult(
+      currentStreak: _jsonInt(json['currentStreak']),
+      longestStreak: _jsonInt(json['longestStreak']),
+      alreadyLoggedToday: json['alreadyLoggedToday'] == true,
+      newlyUnlockedAchievements: _stringList(json['newlyUnlockedAchievements']),
+    );
+  }
+}
+
+class ShopItem {
+  ShopItem({
+    required this.code,
+    required this.name,
+    required this.description,
+    required this.coinPrice,
+    required this.rewardType,
+    required this.rewardDetail,
+    required this.iconEmoji,
+  });
+
+  final String code;
+  final String name;
+  final String description;
+  final double coinPrice;
+  final String rewardType;
+  final String rewardDetail;
+  final String iconEmoji;
+
+  factory ShopItem.fromJson(Map<String, dynamic> json) {
+    return ShopItem(
+      code: (json['code'] ?? '').toString(),
+      name: (json['name'] ?? '').toString(),
+      description: (json['description'] ?? '').toString(),
+      coinPrice: _toDouble(json['coinPrice']) ?? 0,
+      rewardType: (json['rewardType'] ?? '').toString(),
+      rewardDetail: (json['rewardDetail'] ?? '').toString(),
+      iconEmoji: (json['iconEmoji'] ?? '🎁').toString(),
+    );
+  }
+}
+
+class PurchaseResult {
+  PurchaseResult({
+    required this.itemName,
+    required this.coinsSpent,
+    required this.coinsRemaining,
+    required this.rewardType,
+    required this.rewardDetail,
+  });
+
+  final String itemName;
+  final double coinsSpent;
+  final double coinsRemaining;
+  final String rewardType;
+  final String rewardDetail;
+
+  factory PurchaseResult.fromJson(Map<String, dynamic> json) {
+    return PurchaseResult(
+      itemName: (json['itemName'] ?? '').toString(),
+      coinsSpent: _toDouble(json['coinsSpent']) ?? 0,
+      coinsRemaining: _toDouble(json['coinsRemaining']) ?? 0,
+      rewardType: (json['rewardType'] ?? '').toString(),
+      rewardDetail: (json['rewardDetail'] ?? '').toString(),
     );
   }
 }

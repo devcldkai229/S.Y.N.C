@@ -10,6 +10,10 @@ public class UserCustomWorkout : BaseMongoEntity
 
     public Visibility Visibility { get; set; }
 
+    public Guid? ParentWorkoutId { get; set; }
+
+    public int SavesCount { get; set; }
+
     public string ScheduleMode { get; set; } = string.Empty;
 
     public bool AllowAiOptimization { get; set; }

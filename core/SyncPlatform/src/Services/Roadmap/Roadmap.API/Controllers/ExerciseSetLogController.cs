@@ -30,7 +30,8 @@ public class ExerciseSetLogController : ControllerBase
         [FromBody] CreateExerciseSetLogDto dto,
         CancellationToken cancellationToken)
     {
-        var result = await _service.CreateAsync(dto, cancellationToken);
+        var userId = _currentUser.RequireUserId();
+        var result = await _service.CreateAsync(userId, dto, cancellationToken);
         var response = ApiResponse<ExerciseSetLogDto>.SuccessResponse(result, "Exercise set log created successfully.");
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
     }
@@ -58,5 +59,19 @@ public class ExerciseSetLogController : ControllerBase
     {
         var (items, metadata) = await _service.GetPagedAsync(pageNumber, pageSize, executionId, cancellationToken);
         return Ok(PagedApiResponse<IReadOnlyList<ExerciseSetLogDto>>.SuccessPagedResponse(items, metadata, "Exercise set logs retrieved successfully."));
+    }
+
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<ExerciseSetLogDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<ExerciseSetLogDto>>> Update(
+        Guid id,
+        [FromBody] UpdateExerciseSetLogDto request,
+        CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.RequireUserId();
+        var result = await _service.UpdateAsync(userId, id, request, cancellationToken);
+        return Ok(ApiResponse<ExerciseSetLogDto>.SuccessResponse(result, "Exercise set log updated successfully."));
     }
 }

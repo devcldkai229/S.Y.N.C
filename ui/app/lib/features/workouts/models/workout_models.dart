@@ -55,6 +55,7 @@ class RoadmapSession {
     required this.aiGenerated,
     this.scheduledTime = '',
     this.exerciseCount = 0,
+    this.executionBlocks = const [],
   });
 
   final String id;
@@ -67,6 +68,7 @@ class RoadmapSession {
   final bool aiGenerated;
   final String scheduledTime;
   final int exerciseCount;
+  final List<SessionExecutionBlock> executionBlocks;
 
   bool get isCompleted => sessionStatus.toLowerCase().contains('completed');
   bool get isInProgress => sessionStatus.toLowerCase().contains('inprogress');
@@ -86,6 +88,12 @@ class RoadmapSession {
       aiGenerated: json['aiGenerated'] == true,
       scheduledTime: (json['scheduledTime'] ?? '').toString(),
       exerciseCount: blockCount,
+      executionBlocks: blocks is List
+          ? blocks
+              .whereType<Map<String, dynamic>>()
+              .map(SessionExecutionBlock.fromJson)
+              .toList()
+          : const [],
     );
   }
 
@@ -108,6 +116,41 @@ class RoadmapSession {
   }
 }
 
+class SessionExecutionBlock {
+  SessionExecutionBlock({
+    required this.order,
+    required this.exerciseId,
+    required this.exerciseName,
+    required this.targetSets,
+    required this.targetReps,
+    required this.targetWeightKg,
+    required this.restSeconds,
+    this.exerciseNotes,
+  });
+
+  final int order;
+  final String exerciseId;
+  final String exerciseName;
+  final int targetSets;
+  final int targetReps;
+  final double targetWeightKg;
+  final int restSeconds;
+  final String? exerciseNotes;
+
+  factory SessionExecutionBlock.fromJson(Map<String, dynamic> json) {
+    return SessionExecutionBlock(
+      order: (json['order'] ?? 0) as int,
+      exerciseId: json['exerciseId']?.toString() ?? '',
+      exerciseName: (json['exerciseName'] ?? '').toString(),
+      targetSets: (json['targetSets'] ?? 0) as int,
+      targetReps: (json['targetReps'] ?? 0) as int,
+      targetWeightKg: _toDouble(json['targetWeightKg']),
+      restSeconds: (json['restSeconds'] ?? 0) as int,
+      exerciseNotes: json['exerciseNotes']?.toString(),
+    );
+  }
+}
+
 class UserCustomWorkout {
   UserCustomWorkout({
     required this.id,
@@ -117,6 +160,9 @@ class UserCustomWorkout {
     required this.allowAiOptimization,
     required this.blocks,
     required this.createdAt,
+    this.parentWorkoutId,
+    this.savesCount = 0,
+    this.sessions = const [],
   });
 
   final String id;
@@ -126,12 +172,16 @@ class UserCustomWorkout {
   final bool allowAiOptimization;
   final List<CustomWorkoutBlock> blocks;
   final DateTime createdAt;
+  final String? parentWorkoutId;
+  final int savesCount;
+  final List<WorkoutSessionDetail> sessions;
 
-  int get totalSets => blocks.fold(0, (sum, b) => sum + b.sets);
-  int get exerciseCount => blocks.length;
+  int get totalSets => sessions.fold(0, (sum, s) => sum + s.totalSetCount);
+  int get exerciseCount => sessions.fold(0, (sum, s) => sum + s.exerciseCount);
 
   factory UserCustomWorkout.fromJson(Map<String, dynamic> json) {
     final rawBlocks = json['customBlocks'];
+    final rawSessions = json['sessions'];
     return UserCustomWorkout(
       id: json['id']?.toString() ?? '',
       workoutName: (json['workoutName'] ?? 'Custom Workout').toString(),
@@ -145,6 +195,14 @@ class UserCustomWorkout {
               .toList()
           : const [],
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      parentWorkoutId: json['parentWorkoutId']?.toString(),
+      savesCount: _toInt(json['savesCount']),
+      sessions: rawSessions is List
+          ? rawSessions
+              .whereType<Map<String, dynamic>>()
+              .map(WorkoutSessionDetail.fromJson)
+              .toList()
+          : const [],
     );
   }
 }
@@ -413,6 +471,11 @@ double _toDouble(dynamic value) {
   return double.tryParse(value?.toString() ?? '') ?? 0;
 }
 
+int _toInt(dynamic value) {
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
 String _enumLabel(dynamic value) {
   if (value == null) return '';
   final s = value.toString();
@@ -431,4 +494,279 @@ String _scoreToLabel(int score, {bool invert = false}) {
   if (s <= 6) return 'Mild';
   if (s <= 8) return 'Moderate';
   return 'High';
+}
+
+class MyWorkoutDetail {
+  MyWorkoutDetail({
+    required this.id,
+    required this.workoutName,
+    required this.visibility,
+    required this.scheduleMode,
+    required this.allowAiOptimization,
+    required this.sessions,
+    required this.weeklySchedules,
+    this.parentWorkoutId,
+    this.savesCount = 0,
+  });
+
+  final String id;
+  final String workoutName;
+  final String visibility;
+  final String scheduleMode;
+  final bool allowAiOptimization;
+  final List<WorkoutSessionDetail> sessions;
+  final List<ScheduledWorkoutDetail> weeklySchedules;
+  final String? parentWorkoutId;
+  final int savesCount;
+
+  factory MyWorkoutDetail.fromJson(Map<String, dynamic> json) {
+    final rawSessions = json['sessions'];
+    final rawSchedules = json['weeklySchedules'];
+    return MyWorkoutDetail(
+      id: json['id']?.toString() ?? '',
+      workoutName: (json['workoutName'] ?? '').toString(),
+      visibility: _enumLabel(json['visibility']),
+      scheduleMode: (json['scheduleMode'] ?? '').toString(),
+      allowAiOptimization: json['allowAiOptimization'] == true,
+      sessions: rawSessions is List
+          ? rawSessions
+              .whereType<Map<String, dynamic>>()
+              .map(WorkoutSessionDetail.fromJson)
+              .toList()
+          : const [],
+      weeklySchedules: rawSchedules is List
+          ? rawSchedules
+              .whereType<Map<String, dynamic>>()
+              .map(ScheduledWorkoutDetail.fromJson)
+              .toList()
+          : const [],
+      parentWorkoutId: json['parentWorkoutId']?.toString(),
+      savesCount: _toInt(json['savesCount']),
+    );
+  }
+}
+
+class WorkoutSessionDetail {
+  WorkoutSessionDetail({
+    required this.id,
+    required this.sessionTitle,
+    required this.exerciseCount,
+    required this.totalSetCount,
+  });
+
+  final String id;
+  final String sessionTitle;
+  final int exerciseCount;
+  final int totalSetCount;
+
+  factory WorkoutSessionDetail.fromJson(Map<String, dynamic> json) {
+    return WorkoutSessionDetail(
+      id: json['id']?.toString() ?? '',
+      sessionTitle: (json['sessionTitle'] ?? '').toString(),
+      exerciseCount: (json['exerciseCount'] ?? 0) as int,
+      totalSetCount: (json['totalSetCount'] ?? 0) as int,
+    );
+  }
+}
+
+class ScheduledWorkoutDetail {
+  ScheduledWorkoutDetail({
+    required this.id,
+    required this.sessionId,
+    required this.sessionTitle,
+    required this.scheduledStartTime,
+    required this.scheduledEndTime,
+    required this.repeatPattern,
+    required this.status,
+  });
+
+  final String id;
+  final String sessionId;
+  final String sessionTitle;
+  final DateTime scheduledStartTime;
+  final DateTime scheduledEndTime;
+  final String repeatPattern;
+  final String status;
+
+  factory ScheduledWorkoutDetail.fromJson(Map<String, dynamic> json) {
+    return ScheduledWorkoutDetail(
+      id: json['id']?.toString() ?? '',
+      sessionId: json['sessionId']?.toString() ?? '',
+      sessionTitle: (json['sessionTitle'] ?? '').toString(),
+      scheduledStartTime: DateTime.tryParse(json['scheduledStartTime']?.toString() ?? '') ?? DateTime.now(),
+      scheduledEndTime: DateTime.tryParse(json['scheduledEndTime']?.toString() ?? '') ?? DateTime.now(),
+      repeatPattern: (json['repeatPattern'] ?? '').toString(),
+      status: _enumLabel(json['status']),
+    );
+  }
+}
+
+class WorkoutExecutionDetail {
+  WorkoutExecutionDetail({
+    required this.executionId,
+    required this.sessionId,
+    required this.sessionTitle,
+    required this.startedAt,
+    this.energyLevelBefore,
+    required this.exercises,
+  });
+
+  final String executionId;
+  final String sessionId;
+  final String sessionTitle;
+  final DateTime startedAt;
+  final int? energyLevelBefore;
+  final List<ExecutionExercise> exercises;
+
+  factory WorkoutExecutionDetail.fromJson(Map<String, dynamic> json) {
+    final rawExercises = json['exercises'];
+    return WorkoutExecutionDetail(
+      executionId: json['executionId']?.toString() ?? '',
+      sessionId: json['sessionId']?.toString() ?? '',
+      sessionTitle: (json['sessionTitle'] ?? '').toString(),
+      startedAt: DateTime.tryParse(json['startedAt']?.toString() ?? '') ?? DateTime.now(),
+      energyLevelBefore: json['energyLevelBefore'] as int?,
+      exercises: rawExercises is List
+          ? rawExercises
+              .whereType<Map<String, dynamic>>()
+              .map(ExecutionExercise.fromJson)
+              .toList()
+          : const [],
+    );
+  }
+}
+
+class ExecutionExercise {
+  ExecutionExercise({
+    required this.exerciseId,
+    required this.exerciseName,
+    this.exerciseAssetId,
+    required this.order,
+    required this.sets,
+  });
+
+  final String exerciseId;
+  final String exerciseName;
+  final String? exerciseAssetId;
+  final int order;
+  final List<ExerciseSetLog> sets;
+
+  factory ExecutionExercise.fromJson(Map<String, dynamic> json) {
+    final rawSets = json['sets'];
+    return ExecutionExercise(
+      exerciseId: json['exerciseId']?.toString() ?? '',
+      exerciseName: (json['exerciseName'] ?? '').toString(),
+      exerciseAssetId: json['exerciseAssetId']?.toString(),
+      order: (json['order'] ?? 0) as int,
+      sets: rawSets is List
+          ? rawSets
+              .whereType<Map<String, dynamic>>()
+              .map(ExerciseSetLog.fromJson)
+              .toList()
+          : const [],
+    );
+  }
+}
+
+class ExerciseSetLog {
+  ExerciseSetLog({
+    required this.id,
+    required this.executionId,
+    required this.exerciseId,
+    required this.setNumber,
+    required this.targetReps,
+    required this.actualReps,
+    required this.weightKg,
+    required this.rir,
+    required this.restTakenSeconds,
+    required this.formScore,
+    required this.completed,
+  });
+
+  final String id;
+  final String executionId;
+  final String exerciseId;
+  final int setNumber;
+  final int targetReps;
+  final int actualReps;
+  final double weightKg;
+  final int rir;
+  final int restTakenSeconds;
+  final int formScore;
+  final bool completed;
+
+  factory ExerciseSetLog.fromJson(Map<String, dynamic> json) {
+    return ExerciseSetLog(
+      id: json['id']?.toString() ?? '',
+      executionId: json['executionId']?.toString() ?? '',
+      exerciseId: json['exerciseId']?.toString() ?? '',
+      setNumber: (json['setNumber'] ?? 0) as int,
+      targetReps: (json['targetReps'] ?? 0) as int,
+      actualReps: (json['actualReps'] ?? 0) as int,
+      weightKg: _toDouble(json['weightKg']),
+      rir: (json['rir'] ?? 0) as int,
+      restTakenSeconds: (json['restTakenSeconds'] ?? 0) as int,
+      formScore: (json['formScore'] ?? 0) as int,
+      completed: json['completed'] == true,
+    );
+  }
+}
+
+class WorkoutExecutionSummary {
+  WorkoutExecutionSummary({
+    required this.executionId,
+    required this.sessionId,
+    required this.sessionTitle,
+    required this.startedAt,
+    required this.completedAt,
+    required this.actualDurationMinutes,
+    required this.completionRate,
+    required this.completedSetCount,
+    required this.totalSetCount,
+    required this.skippedExerciseCount,
+    this.perceivedDifficulty,
+    this.energyLevelBefore,
+    this.energyLevelAfter,
+    required this.caloriesBurned,
+    required this.aiCoachFeedback,
+    this.sessionFeedback,
+  });
+
+  final String executionId;
+  final String sessionId;
+  final String sessionTitle;
+  final DateTime startedAt;
+  final DateTime completedAt;
+  final int actualDurationMinutes;
+  final double completionRate;
+  final int completedSetCount;
+  final int totalSetCount;
+  final int skippedExerciseCount;
+  final int? perceivedDifficulty;
+  final int? energyLevelBefore;
+  final int? energyLevelAfter;
+  final double caloriesBurned;
+  final String aiCoachFeedback;
+  final String? sessionFeedback;
+
+  factory WorkoutExecutionSummary.fromJson(Map<String, dynamic> json) {
+    return WorkoutExecutionSummary(
+      executionId: json['executionId']?.toString() ?? '',
+      sessionId: json['sessionId']?.toString() ?? '',
+      sessionTitle: (json['sessionTitle'] ?? '').toString(),
+      startedAt: DateTime.tryParse(json['startedAt']?.toString() ?? '') ?? DateTime.now(),
+      completedAt: DateTime.tryParse(json['completedAt']?.toString() ?? '') ?? DateTime.now(),
+      actualDurationMinutes: (json['actualDurationMinutes'] ?? 0) as int,
+      completionRate: _toDouble(json['completionRate']),
+      completedSetCount: (json['completedSetCount'] ?? 0) as int,
+      totalSetCount: (json['totalSetCount'] ?? 0) as int,
+      skippedExerciseCount: (json['skippedExerciseCount'] ?? 0) as int,
+      perceivedDifficulty: json['perceivedDifficulty'] as int?,
+      energyLevelBefore: json['energyLevelBefore'] as int?,
+      energyLevelAfter: json['energyLevelAfter'] as int?,
+      caloriesBurned: _toDouble(json['caloriesBurned']),
+      aiCoachFeedback: (json['aiCoachFeedback'] ?? '').toString(),
+      sessionFeedback: json['sessionFeedback']?.toString(),
+    );
+  }
 }

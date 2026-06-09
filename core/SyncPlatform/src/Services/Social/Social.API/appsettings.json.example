@@ -1,5 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1.",
+
+  "IamService": {
+    "BaseUrl": "http://localhost:5288"
+  },
   "ConnectionStrings": {
     "SocialDatabase": "mongodb://localhost:27018"
   },

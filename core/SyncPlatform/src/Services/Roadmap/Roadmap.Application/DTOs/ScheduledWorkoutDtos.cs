@@ -11,6 +11,7 @@ public class ScheduledWorkoutDto
     public DateTimeOffset ScheduledEndTime { get; set; }
     public SessionStatus Status { get; set; }
     public string RepeatPattern { get; set; } = string.Empty;
+    public string SessionTitle { get; set; } = string.Empty;
 }
 
 /// <summary>

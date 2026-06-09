@@ -367,6 +367,10 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
+                    b.Property<DateTimeOffset?>("LastActivityDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_activity_date");
+
                     b.Property<int>("LongestStreak")
                         .HasColumnType("integer")
                         .HasColumnName("longest_streak");
@@ -451,6 +455,15 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("PasswordResetToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("password_reset_token");
+
+                    b.Property<DateTimeOffset?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_token_expires_at");
 
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(32)

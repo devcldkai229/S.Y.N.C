@@ -13,3 +13,13 @@ public class CreateExerciseSetLogDto
     public int FormScore { get; set; }
     public bool Completed { get; set; }
 }
+
+public class UpdateExerciseSetLogDto
+{
+    public int ActualReps { get; set; }
+    public double WeightKg { get; set; }
+    public int Rir { get; set; }
+    public int RestTakenSeconds { get; set; }
+    public int FormScore { get; set; }
+    public bool Completed { get; set; }
+}

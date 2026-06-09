@@ -20,6 +20,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   ActiveSubscription? _activeSub;
   bool _loading = true;
   String? _error;
+  bool _yearly = false;
 
   final _couponController = TextEditingController();
   int? _pendingOrderCode;
@@ -75,7 +76,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     );
     try {
       final coupon = _couponController.text.trim();
-      final link   = await _api.createPaymentLink(plan.id, couponCode: coupon.isEmpty ? null : coupon);
+      final link   = await _api.createPaymentLink(
+        plan.id,
+        yearly: _yearly,
+        couponCode: coupon.isEmpty ? null : coupon,
+      );
       if (!mounted) return;
       Navigator.of(context).pop();
 
@@ -185,6 +190,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
                     children: [
                       const _Header(),
+                      const SizedBox(height: 24),
+                      _BillingToggle(
+                        yearly: _yearly,
+                        onChanged: (v) => setState(() => _yearly = v),
+                      ),
                       const SizedBox(height: 20),
 
                       // Hiển thị gói đang dùng nếu có
@@ -218,6 +228,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           padding: const EdgeInsets.only(bottom: 14),
                           child: _PaidPlanCard(
                             plan: plan,
+                            yearly: _yearly,
                             isCurrentPlan: _activeSub != null,
                             onSubscribe: _activeSub != null ? null : () => _subscribe(plan),
                           ),
@@ -225,7 +236,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       ),
 
                       if (_plans.isEmpty && _activeSub == null)
-                        _DefaultPremiumCard(onSubscribe: null),
+                        _DefaultPremiumCard(
+                          yearly: _yearly,
+                          onSubscribe: null,
+                        ),
                     ],
                   ),
                 ),
@@ -233,7 +247,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   }
 }
 
-// ─── Header ──────────────────────────────────────────────────────────────────
+// ─── Header ───────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
   const _Header();
@@ -243,11 +257,13 @@ class _Header extends StatelessWidget {
     return Column(
       children: [
         Container(
-          width: 72, height: 72,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.amber.shade400, Colors.orange.shade600],
-              begin: Alignment.topLeft, end: Alignment.bottomRight,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             shape: BoxShape.circle,
           ),
@@ -265,6 +281,70 @@ class _Header extends StatelessWidget {
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
         ),
       ],
+    );
+  }
+}
+
+// ─── Billing toggle ───────────────────────────────────────────────────────────
+
+class _BillingToggle extends StatelessWidget {
+  const _BillingToggle({required this.yearly, required this.onChanged});
+
+  final bool yearly;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.lightGreen,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          _Tab(label: 'Theo tháng', selected: !yearly, onTap: () => onChanged(false)),
+          _Tab(
+            label: 'Theo năm  🎁 -20%',
+            selected: yearly,
+            onTap: () => onChanged(true),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Tab extends StatelessWidget {
+  const _Tab({required this.label, required this.selected, required this.onTap});
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primaryGreen : Colors.transparent,
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: selected ? Colors.white : AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -408,13 +488,32 @@ class _FreePlanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _badge('FREE', AppColors.lightGreen, AppColors.primaryGreen),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              'FREE',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primaryGreen,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
           const SizedBox(height: 12),
-          const Text('0 đ', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.textPrimary)),
+          const Text(
+            '0 đ',
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+          ),
           const Text('mãi mãi', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
           const SizedBox(height: 16),
           ...[
             'Truy cập bài tập cơ bản',
+            'AI hỗ trợ 5 lần/tháng',
             'Theo dõi streak & thành tích',
             'Mạng xã hội cộng đồng',
           ].map((f) => _FeatureRow(text: f, included: true, muted: true)),
@@ -424,59 +523,78 @@ class _FreePlanCard extends StatelessWidget {
   }
 }
 
-// ─── Paid plan card ───────────────────────────────────────────────────────────
+// ─── Paid plan card (from backend) ───────────────────────────────────────────
 
 class _PaidPlanCard extends StatelessWidget {
   const _PaidPlanCard({
     required this.plan,
+    required this.yearly,
     required this.isCurrentPlan,
     required this.onSubscribe,
   });
 
   final SubscriptionPlan plan;
+  final bool yearly;
   final bool isCurrentPlan;
   final VoidCallback? onSubscribe;
 
   @override
   Widget build(BuildContext context) {
+    final price = yearly ? plan.yearlyPrice / 12 : plan.monthlyPrice;
+    final priceLabel = '${_formatPrice(price)} đ';
+    final period = yearly ? '/tháng (thanh toán năm)' : '/tháng';
+
     final features = plan.features.isNotEmpty
         ? plan.features
-        : _buildDefaultFeatures(plan);
+        : _defaultPremiumFeatures(plan);
 
     return _PremiumCardShell(
-      priceLabel: '${_fmt(plan.monthlyPrice)} đ',
-      period: '/tháng',
+      priceLabel: priceLabel,
+      period: period,
       features: features,
       isCurrentPlan: isCurrentPlan,
       onSubscribe: onSubscribe,
     );
   }
 
-  List<String> _buildDefaultFeatures(SubscriptionPlan p) => [
-    'Tất cả tính năng Free',
-    'Thông báo AI cá nhân hóa',
-    if (p.premiumWorkoutAccess) 'Bài tập nâng cao & video HD',
-    if (p.priorityAiResponses)  'AI phản hồi ưu tiên',
-    if (p.aiUsageLimitPerMonth == 0) 'AI không giới hạn',
-  ];
+  List<String> _defaultPremiumFeatures(SubscriptionPlan plan) {
+    return [
+      'Tất cả tính năng Free',
+      if (plan.premiumWorkoutAccess) 'Bài tập nâng cao & video HD',
+      if (plan.premiumMarketplaceAccess) 'Marketplace ưu đãi độc quyền',
+      if (plan.priorityAiResponses) 'AI phản hồi ưu tiên',
+      if (plan.aiUsageLimitPerMonth > 0) 'AI hỗ trợ ${plan.aiUsageLimitPerMonth} lần/tháng',
+      'Không giới hạn streak shield',
+    ];
+  }
 }
 
-// ─── Default premium card (fallback khi backend chưa seed) ───────────────────
+// ─── Default premium card (khi backend không có plan nào) ────────────────────
 
 class _DefaultPremiumCard extends StatelessWidget {
-  const _DefaultPremiumCard({required this.onSubscribe});
+  const _DefaultPremiumCard({
+    required this.yearly,
+    required this.onSubscribe,
+  });
 
+  final bool yearly;
   final VoidCallback? onSubscribe;
 
   @override
   Widget build(BuildContext context) {
+    final price = yearly ? 79167.0 : 99000.0;
+    final period = yearly ? '/tháng (thanh toán năm)' : '/tháng';
+
     return _PremiumCardShell(
-      priceLabel: '99.000 đ',
-      period: '/tháng',
+      priceLabel: '${_formatPrice(price)} đ',
+      period: period,
       features: const [
         'Tất cả tính năng Free',
-        'Thông báo AI cá nhân hóa',
+        'Bài tập nâng cao & video HD',
+        'AI hỗ trợ không giới hạn',
+        'Marketplace ưu đãi độc quyền',
         'AI phản hồi ưu tiên',
+        'Không giới hạn streak shield',
       ],
       isCurrentPlan: false,
       onSubscribe: onSubscribe,
@@ -507,30 +625,53 @@ class _PremiumCardShell extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primaryGreen, AppColors.primaryGreen.withValues(alpha: 0.8)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryGreen,
+            AppColors.primaryGreen.withValues(alpha: 0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(
-          color: AppColors.primaryGreen.withValues(alpha: 0.35),
-          blurRadius: 18, offset: const Offset(0, 8),
-        )],
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryGreen.withValues(alpha: 0.35),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              _badge('PREMIUM', Colors.white.withValues(alpha: 0.25), Colors.white),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'PREMIUM',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
               const Spacer(),
               const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 28),
             ],
           ),
           const SizedBox(height: 14),
-          Text(priceLabel,
-              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white)),
-          Text(period,
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.85))),
+          Text(
+            priceLabel,
+            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.white),
+          ),
+          Text(period, style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.85))),
           const SizedBox(height: 18),
           ...features.map((f) => _FeatureRow(text: f, included: true, onDark: true)),
           const SizedBox(height: 20),
@@ -546,7 +687,8 @@ class _PremiumCardShell extends StatelessWidget {
               child: Text(
                 isCurrentPlan ? 'Gói hiện tại' : 'Đăng ký ngay',
                 style: TextStyle(
-                  fontSize: 15, fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
                   color: onSubscribe == null ? Colors.white : AppColors.primaryGreen,
                 ),
               ),
@@ -581,10 +723,14 @@ class _FeatureRow extends StatelessWidget {
           Icon(
             included ? Icons.check_circle_rounded : Icons.cancel_rounded,
             size: 18,
-            color: included ? (onDark ? Colors.white : AppColors.primaryGreen) : AppColors.textMuted,
+            color: included
+                ? (onDark ? Colors.white : AppColors.primaryGreen)
+                : AppColors.textMuted,
           ),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: color, height: 1.4))),
+          Expanded(
+            child: Text(text, style: TextStyle(fontSize: 13, color: color, height: 1.4)),
+          ),
         ],
       ),
     );
@@ -609,8 +755,7 @@ class _ErrorView extends StatelessWidget {
           children: [
             const Icon(Icons.cloud_off_outlined, size: 56, color: AppColors.textMuted),
             const SizedBox(height: 16),
-            Text(error, textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textSecondary)),
+            Text(error, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 20),
             FilledButton(
               onPressed: onRetry,
@@ -624,18 +769,14 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-Widget _badge(String text, Color bg, Color fg) => Container(
-  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-  decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-  child: Text(text,
-      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: fg, letterSpacing: 1)),
-);
-
-String _fmt(double price) {
+String _formatPrice(double price) {
   if (price == 0) return '0';
-  return price
-      .toStringAsFixed(0)
-      .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+  if (price >= 1000) {
+    return price
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.');
+  }
+  return price.toStringAsFixed(0);
 }

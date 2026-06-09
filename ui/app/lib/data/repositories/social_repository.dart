@@ -22,7 +22,11 @@ class SocialRepository {
         onlyMedia: onlyMedia,
       );
 
+  Future<void> deletePost(String postId) => _remote.deletePost(postId);
+
   Future<void> likePost(String postId) => _remote.likePost(postId);
+
+  Future<void> unlikePost(String postId) => _remote.unlikePost(postId);
 
   Future<void> sharePost(String postId) => _remote.sharePost(postId);
 

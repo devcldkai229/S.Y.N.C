@@ -19,11 +19,44 @@ class AuthRepository {
     required String password,
   }) => _auth.register(fullName: fullName, email: email, password: password);
 
+  Future<RegisterResult> initRegistration({
+    required String fullName,
+    required String email,
+  }) => _auth.initRegistration(fullName: fullName, email: email);
+
   Future<RegisterResult> resendVerificationCode({required String email}) =>
       _auth.resendVerificationCode(email: email);
 
+  Future<VerifyEmailResult> completeRegistration({
+    required String email,
+    required String code,
+    String? password,
+  }) => _auth.completeRegistration(
+        email: email,
+        code: code,
+        password: password,
+      );
+
+  Future<RegisterResult> finishRegistration({
+    required String email,
+    required String password,
+  }) => _auth.finishRegistration(email: email, password: password);
+
   Future<VerifyEmailResult> verifyEmail(String token) =>
       _auth.verifyEmail(token);
+
+  Future<String> forgotPassword({required String email}) =>
+      _auth.forgotPassword(email: email);
+
+  Future<String> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) => _auth.resetPassword(
+        email: email,
+        code: code,
+        newPassword: newPassword,
+      );
 
   Future<AuthSession> signInWithGoogle() => _auth.loginWithGoogle();
 
@@ -35,10 +68,12 @@ class AuthRepository {
   Future<bool> needsOnboarding() async {
     try {
       final settings = await _profileApi.getProfileSettings();
+      final goal = settings.fitness.fitnessGoal ?? '';
+      final activity = settings.fitness.activityLevel ?? '';
       final fitnessReady =
           settings.fitness.isConfigured &&
-          (settings.fitness.fitnessGoal ?? '').isNotEmpty &&
-          (settings.fitness.activityLevel ?? '').isNotEmpty;
+          goal.isNotEmpty && goal != 'None' &&
+          activity.isNotEmpty && activity != 'None';
       final prefsReady = settings.preferences.isConfigured;
       return !fitnessReady || !prefsReady;
     } catch (_) {

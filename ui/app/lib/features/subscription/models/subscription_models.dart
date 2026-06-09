@@ -1,53 +1,99 @@
 class SubscriptionPlan {
+  SubscriptionPlan({
+    required this.id,
+    required this.name,
+    this.description,
+    required this.monthlyPrice,
+    required this.yearlyPrice,
+    required this.currency,
+    required this.features,
+    required this.aiUsageLimitPerMonth,
+    required this.premiumWorkoutAccess,
+    required this.premiumMarketplaceAccess,
+    required this.priorityAiResponses,
+    required this.isActive,
+  });
+
   final String id;
   final String name;
   final String? description;
   final double monthlyPrice;
+  final double yearlyPrice;
   final String currency;
   final List<String> features;
   final int aiUsageLimitPerMonth;
   final bool premiumWorkoutAccess;
+  final bool premiumMarketplaceAccess;
   final bool priorityAiResponses;
   final bool isActive;
 
   bool get isFree => monthlyPrice <= 0;
 
-  const SubscriptionPlan({
+  factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
+    return SubscriptionPlan(
+      id: json['id']?.toString() ?? '',
+      name: (json['name'] ?? '').toString(),
+      description: json['description']?.toString(),
+      monthlyPrice: _toDouble(json['monthlyPrice']) ?? 0,
+      yearlyPrice: _toDouble(json['yearlyPrice']) ?? 0,
+      currency: (json['currency'] ?? 'VND').toString(),
+      features: (json['features'] as List<dynamic>? ?? []).map((e) => e.toString()).toList(),
+      aiUsageLimitPerMonth: (json['aiUsageLimitPerMonth'] ?? 0) as int,
+      premiumWorkoutAccess: json['premiumWorkoutAccess'] == true,
+      premiumMarketplaceAccess: json['premiumMarketplaceAccess'] == true,
+      priorityAiResponses: json['priorityAiResponses'] == true,
+      isActive: json['isActive'] == true,
+    );
+  }
+}
+
+class ActiveSubscription {
+  ActiveSubscription({
     required this.id,
-    required this.name,
-    this.description,
-    required this.monthlyPrice,
-    required this.currency,
-    required this.features,
-    required this.aiUsageLimitPerMonth,
-    required this.premiumWorkoutAccess,
-    required this.priorityAiResponses,
-    required this.isActive,
+    required this.planName,
+    required this.subscriptionPlanName,
+    required this.status,
+    required this.startedAt,
+    this.expiresAt,
+    this.expiredAt,
   });
 
-  factory SubscriptionPlan.fromJson(Map<String, dynamic> json) => SubscriptionPlan(
-        id: json['id'] as String? ?? '',
-        name: json['name'] as String? ?? '',
-        description: json['description'] as String?,
-        monthlyPrice: (json['monthlyPrice'] as num? ?? 0).toDouble(),
-        currency: json['currency'] as String? ?? 'VND',
-        features: (json['features'] as List<dynamic>?)?.cast<String>() ?? [],
-        aiUsageLimitPerMonth: json['aiUsageLimitPerMonth'] as int? ?? 0,
-        premiumWorkoutAccess: json['premiumWorkoutAccess'] as bool? ?? false,
-        priorityAiResponses: json['priorityAiResponses'] as bool? ?? false,
-        isActive: json['isActive'] as bool? ?? false,
-      );
+  final String id;
+  final String planName;
+  final String subscriptionPlanName;
+  final String status;
+  final DateTime startedAt;
+  final String? expiresAt;
+  final DateTime? expiredAt;
+
+  bool get isActive => status.toLowerCase() == 'active';
+
+  factory ActiveSubscription.fromJson(Map<String, dynamic> json) {
+    final plan = json['plan'] as Map<String, dynamic>? ?? {};
+    final planNameVal = (plan['name'] ?? json['planName'] ?? json['subscriptionPlanName'] ?? '').toString();
+    final startedAtVal = DateTime.tryParse(json['startedAt']?.toString() ?? '') ?? DateTime.now();
+
+    DateTime? expiredAtVal;
+    if (json['expiredAt'] != null) {
+      expiredAtVal = DateTime.tryParse(json['expiredAt'].toString());
+    } else if (json['expiresAt'] != null) {
+      expiredAtVal = DateTime.tryParse(json['expiresAt'].toString());
+    }
+
+    return ActiveSubscription(
+      id: json['id']?.toString() ?? '',
+      planName: planNameVal,
+      subscriptionPlanName: planNameVal,
+      status: (json['status'] ?? '').toString(),
+      startedAt: startedAtVal,
+      expiresAt: json['expiresAt']?.toString() ?? json['expiredAt']?.toString(),
+      expiredAt: expiredAtVal,
+    );
+  }
 }
 
 class PaymentLink {
-  final String transactionId;
-  final int orderCode;
-  final String checkoutUrl;
-  final String qrCode;
-  final int amount;
-  final String currency;
-
-  const PaymentLink({
+  PaymentLink({
     required this.transactionId,
     required this.orderCode,
     required this.checkoutUrl,
@@ -56,56 +102,45 @@ class PaymentLink {
     required this.currency,
   });
 
-  factory PaymentLink.fromJson(Map<String, dynamic> json) => PaymentLink(
-        transactionId: json['transactionId'] as String? ?? '',
-        orderCode: json['orderCode'] as int? ?? 0,
-        checkoutUrl: json['checkoutUrl'] as String? ?? '',
-        qrCode: json['qrCode'] as String? ?? '',
-        amount: json['amount'] as int? ?? 0,
-        currency: json['currency'] as String? ?? 'VND',
-      );
-}
+  final String transactionId;
+  final int orderCode;
+  final String checkoutUrl;
+  final String qrCode;
+  final int amount;
+  final String currency;
 
-class ActiveSubscription {
-  final String id;
-  final String subscriptionPlanName;
-  final String status;
-  final DateTime startedAt;
-  final DateTime? expiredAt;
-
-  const ActiveSubscription({
-    required this.id,
-    required this.subscriptionPlanName,
-    required this.status,
-    required this.startedAt,
-    this.expiredAt,
-  });
-
-  factory ActiveSubscription.fromJson(Map<String, dynamic> json) => ActiveSubscription(
-        id: json['id'] as String? ?? '',
-        subscriptionPlanName: json['subscriptionPlanName'] as String? ?? '',
-        status: json['status'] as String? ?? '',
-        startedAt: DateTime.tryParse(json['startedAt'] as String? ?? '') ?? DateTime.now(),
-        expiredAt: json['expiredAt'] != null
-            ? DateTime.tryParse(json['expiredAt'] as String)
-            : null,
-      );
+  factory PaymentLink.fromJson(Map<String, dynamic> json) {
+    return PaymentLink(
+      transactionId: (json['transactionId'] ?? json['transactionId'] ?? '').toString(),
+      orderCode: (json['orderCode'] ?? 0) as int,
+      checkoutUrl: (json['checkoutUrl'] ?? '').toString(),
+      qrCode: (json['qrCode'] ?? '').toString(),
+      amount: (json['amount'] ?? 0) as int,
+      currency: (json['currency'] ?? 'VND').toString(),
+    );
+  }
 }
 
 class TransactionStatus {
-  final String id;
-  final int orderCode;
-  final String status;
-
   const TransactionStatus({
     required this.id,
     required this.orderCode,
     required this.status,
   });
 
+  final String id;
+  final int orderCode;
+  final String status;
+
   factory TransactionStatus.fromJson(Map<String, dynamic> json) => TransactionStatus(
         id: json['id'] as String? ?? '',
         orderCode: json['orderCode'] as int? ?? 0,
         status: json['status'] as String? ?? '',
       );
+}
+
+double? _toDouble(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString());
 }

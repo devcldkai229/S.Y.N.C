@@ -16,6 +16,7 @@ class WorkoutsScreen extends StatelessWidget {
       create: (_) => WorkoutsCubit(getIt())
         ..loadRoadmap()
         ..loadCustomWorkouts()
+        ..loadPublicWorkouts()
         ..loadCatalog(),
       child: const _WorkoutsView(),
     );
@@ -35,11 +36,33 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    if (!_tabController.indexIsChanging) {
+      final cubit = context.read<WorkoutsCubit>();
+      switch (_tabController.index) {
+        case 0:
+          cubit.loadRoadmap();
+          break;
+        case 1:
+          cubit.loadCustomWorkouts();
+          break;
+        case 2:
+          cubit.loadPublicWorkouts();
+          break;
+        case 3:
+          cubit.loadCatalog();
+          break;
+      }
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     super.dispose();
   }
@@ -114,6 +137,7 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
                 tabs: const [
                   Tab(text: 'AI Roadmap'),
                   Tab(text: 'My Workouts'),
+                  Tab(text: 'Explore'),
                   Tab(text: 'Catalog'),
                 ],
               ),
@@ -125,6 +149,7 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
               children: const [
                 _AiRoadmapTab(),
                 _CustomWorkoutsTab(),
+                _ExploreTab(),
                 _CatalogTab(),
               ],
             ),
@@ -214,6 +239,7 @@ class _AiRoadmapTab extends StatelessWidget {
           onRefresh: () => context.read<WorkoutsCubit>().loadRoadmap(),
           color: AppColors.primaryGreen,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
             children: [
               const _AiManagedBanner(),
@@ -328,47 +354,88 @@ class _CustomWorkoutsTab extends StatelessWidget {
 
         final workouts = state.customWorkouts;
 
-        return RefreshIndicator(
-          onRefresh: () => context.read<WorkoutsCubit>().loadCustomWorkouts(),
-          color: AppColors.primaryGreen,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-            children: [
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: FloatingActionButton(
+            heroTag: 'add_custom_workout_fab',
+            onPressed: () async {
+              final result = await context.push(AppRoutes.createCustomWorkout);
+              if (context.mounted && result == true) {
+                context.read<WorkoutsCubit>().loadCustomWorkouts();
+              }
+            },
+            backgroundColor: AppColors.primaryGreen,
+            child: const Icon(Icons.add, color: Colors.white),
+          ),
+          body: RefreshIndicator(
+            onRefresh: () => context.read<WorkoutsCubit>().loadCustomWorkouts(),
+            color: AppColors.primaryGreen,
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.edit_note_rounded, color: AppColors.primaryGreen),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Templates you create. Schedule them into your calendar from the web or future mobile flow.',
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.edit_note_rounded, color: AppColors.primaryGreen),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Templates you create. Schedule them into your calendar from the web or future mobile flow.',
-                        style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
+                const SizedBox(height: 16),
+                if (workouts.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'No custom workouts yet.\nCreate one now!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final result = await context.push(AppRoutes.createCustomWorkout);
+                              if (context.mounted && result == true) {
+                                context.read<WorkoutsCubit>().loadCustomWorkouts();
+                              }
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('Create Custom Workout'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryGreen,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              if (workouts.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 32),
-                  child: Center(
-                    child: Text(
-                      'No custom workouts yet.\nCreate one via POST /workouts/custom.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.textMuted),
-                    ),
-                  ),
-                )
-              else
-                ...workouts.map((w) => _CustomWorkoutCard(workout: w)),
-            ],
+                  )
+                else
+                  ...workouts.map((w) => _CustomWorkoutCard(
+                        workout: w,
+                        sessions: state.customSessions[w.id] ?? const [],
+                      )),
+              ],
+            ),
           ),
         );
       },
@@ -434,10 +501,6 @@ class _CatalogTabState extends State<_CatalogTab> {
                 decoration: InputDecoration(
                   hintText: 'Search exercises...',
                   prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.tune, color: AppColors.textMuted),
-                    onPressed: () => _load(context),
-                  ),
                   filled: true,
                   fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
@@ -493,6 +556,7 @@ class _CatalogTabState extends State<_CatalogTab> {
                           onRefresh: () async => _load(context),
                           color: AppColors.primaryGreen,
                           child: ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
                             children: [
                               if (featured != null)
@@ -678,152 +742,450 @@ class _SessionTile extends StatelessWidget {
     final day = days[session.scheduledDate.toLocal().weekday - 1];
     final completed = session.isCompleted;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isNextUp ? AppColors.primaryGreen.withValues(alpha: 0.08) : AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isNextUp ? AppColors.primaryGreen.withValues(alpha: 0.4) : AppColors.border,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            completed
-                ? Icons.check_circle_outline
-                : isNextUp
-                    ? Icons.play_circle_fill
-                    : Icons.calendar_today_outlined,
-            color: completed
-                ? AppColors.textMuted
-                : isNextUp
-                    ? AppColors.primaryGreen
-                    : AppColors.textSecondary,
+    return InkWell(
+      onTap: () async {
+        await context.push(AppRoutes.customSessionDetail(session.id));
+        if (context.mounted) {
+          context.read<WorkoutsCubit>().loadRoadmap();
+        }
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isNextUp ? AppColors.primaryGreen.withValues(alpha: 0.08) : AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isNextUp ? AppColors.primaryGreen.withValues(alpha: 0.4) : AppColors.border,
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (isNextUp)
-                      const Padding(
-                        padding: EdgeInsets.only(right: 8),
-                        child: Text(
-                          'NEXT UP',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryGreen,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              completed
+                  ? Icons.check_circle_outline
+                  : isNextUp
+                      ? Icons.play_circle_fill
+                      : Icons.calendar_today_outlined,
+              color: completed
+                  ? AppColors.textMuted
+                  : isNextUp
+                      ? AppColors.primaryGreen
+                      : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      if (isNextUp)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Text(
+                            'NEXT UP',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryGreen,
+                            ),
                           ),
                         ),
-                      ),
-                    if (session.aiGenerated)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightGreen,
-                          borderRadius: BorderRadius.circular(4),
+                      if (session.aiGenerated)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightGreen,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            'AI',
+                            style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+                          ),
                         ),
-                        child: const Text(
-                          'AI',
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
-                        ),
-                      ),
-                  ],
-                ),
-                Text(
-                  session.sessionTitle,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    decoration: completed ? TextDecoration.lineThrough : null,
-                    color: completed ? AppColors.textMuted : AppColors.textPrimary,
+                    ],
                   ),
-                ),
-                Text(
-                  session.subtitleLine,
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          if (isNextUp)
-            FilledButton(
-              onPressed: () {},
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primaryGreen,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: const Text('Start'),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.border.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                completed ? 'Done $day' : day,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                  Text(
+                    session.sessionTitle,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      decoration: completed ? TextDecoration.lineThrough : null,
+                      color: completed ? AppColors.textMuted : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    session.subtitleLine,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  ),
+                ],
               ),
             ),
-        ],
+            if (isNextUp)
+              FilledButton(
+                onPressed: () async {
+                  await context.push(AppRoutes.customSessionDetail(session.id));
+                  if (context.mounted) {
+                    context.read<WorkoutsCubit>().loadRoadmap();
+                  }
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primaryGreen,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                child: const Text('Start'),
+              )
+            else
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.border.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  completed ? 'Done $day' : day,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _CustomWorkoutCard extends StatelessWidget {
-  const _CustomWorkoutCard({required this.workout});
+  const _CustomWorkoutCard({
+    required this.workout,
+    required this.sessions,
+  });
 
   final UserCustomWorkout workout;
+  final List<RoadmapSession> sessions;
+
+  void _confirmDelete(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Xóa lộ trình tập?',
+          style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.textPrimary),
+        ),
+        content: Text(
+          'Bạn có chắc chắn muốn xóa lộ trình "${workout.workoutName}"? Hành động này không thể hoàn tác.',
+          style: const TextStyle(color: AppColors.textSecondary, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.read<WorkoutsCubit>().deleteCustomWorkout(workout.id);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text(
+              'Xóa',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
+    final name = workout.workoutName;
+    final isAllForOne = name.toLowerCase().contains('all for one');
+    final isPushOnly = name.toLowerCase() == 'push';
+
+    // Determine card icon based on workout type
+    IconData cardIcon = Icons.fitness_center;
+    if (isAllForOne) cardIcon = Icons.person;
+    if (isPushOnly) cardIcon = Icons.bolt;
+
+    final totalExercises = sessions.fold(0, (sum, s) => sum + s.exerciseCount);
+    final sessionsText = '${sessions.length} session${sessions.length == 1 ? '' : 's'} • $totalExercises exercises';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        side: const BorderSide(color: Color(0xFFF1F3F5)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: InkWell(
+        onTap: () async {
+          await context.push(AppRoutes.customWorkoutDetail(workout.id));
+          if (context.mounted) {
+            context.read<WorkoutsCubit>().loadCustomWorkouts();
+            context.read<WorkoutsCubit>().loadRoadmap();
+          }
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(workout.workoutName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ),
-              if (workout.allowAiOptimization)
-                const Icon(Icons.auto_awesome, size: 18, color: AppColors.primaryGreen),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${workout.exerciseCount} exercises • ${workout.totalSets} sets • ${workout.scheduleMode.isNotEmpty ? workout.scheduleMode : workout.visibility}',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
-          if (workout.blocks.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            ...workout.blocks.take(3).map(
-                  (b) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+              // Header Row: Icon + Title + Menu
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(cardIcon, color: AppColors.primaryGreen, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Text(
-                      '• ${b.summary} (${b.restSeconds}s rest)',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
                   ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: AppColors.textMuted, size: 20),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        await context.push(AppRoutes.customWorkoutDetail(workout.id));
+                        if (context.mounted) {
+                          context.read<WorkoutsCubit>().loadCustomWorkouts();
+                          context.read<WorkoutsCubit>().loadRoadmap();
+                        }
+                      } else if (value == 'delete') {
+                        _confirmDelete(context);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18, color: AppColors.textSecondary),
+                            SizedBox(width: 8),
+                            Text('Chỉnh sửa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                            SizedBox(width: 8),
+                            Text('Xóa', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.redAccent)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Tags Row
+              Row(
+                children: [
+                  _buildTag(
+                    workout.scheduleMode.isNotEmpty ? workout.scheduleMode : 'Manual',
+                    color: Colors.blue.shade600,
+                  ),
+                  if (workout.allowAiOptimization) ...[
+                    const SizedBox(width: 6),
+                    _buildTag('AI On', color: AppColors.primaryGreen),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Exercises count text
+              Text(
+                sessionsText,
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 12),
+
+              // Next Session Sub-Card
+              _buildSubCard(context),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTag(String label, {Color? color}) {
+    final displayColor = color ?? Colors.grey.shade600;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: displayColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: displayColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSubCard(BuildContext context) {
+    if (sessions.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE9ECEF), style: BorderStyle.solid),
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'Chưa có buổi tập nào',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            InkWell(
+              onTap: () => context.push(AppRoutes.customWorkoutDetail(workout.id)),
+              child: const Text(
+                '+ Thêm session đầu tiên',
+                style: TextStyle(
+                  color: AppColors.primaryGreen,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
                 ),
-            if (workout.blocks.length > 3)
-              Text('+ ${workout.blocks.length - 3} more', style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+              ),
+            ),
           ],
-        ],
+        ),
+      );
+    }
+
+    final first = sessions.first;
+    final isFixed = workout.scheduleMode.toLowerCase() == 'fixed';
+
+    if (isFixed) {
+      final timeStr = first.scheduledTime.isNotEmpty ? first.scheduledTime : '19:00';
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () async {
+            await context.push(AppRoutes.customSessionDetail(first.id));
+            if (context.mounted) {
+              context.read<WorkoutsCubit>().loadCustomWorkouts();
+              context.read<WorkoutsCubit>().loadRoadmap();
+            }
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.primaryGreen.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.calendar_today_outlined, color: AppColors.primaryGreen, size: 16),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${first.sessionTitle} - Hôm nay $timeStr',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Cập nhật: 20/05/2026',
+                        style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 16),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Flexible / Manual schedule styling
+    final totalSets = first.executionBlocks.fold(0, (sum, b) => sum + b.targetSets);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () async {
+          await context.push(AppRoutes.customSessionDetail(first.id));
+          if (context.mounted) {
+            context.read<WorkoutsCubit>().loadCustomWorkouts();
+            context.read<WorkoutsCubit>().loadRoadmap();
+          }
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8F9FA),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE9ECEF)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.timer_outlined, color: AppColors.primaryGreen, size: 16),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${first.sessionTitle} • $totalSets sets',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Start anytime',
+                      style: TextStyle(fontSize: 10, color: AppColors.textMuted),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 16),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1040,6 +1402,265 @@ class _Tag extends StatelessWidget {
       child: Text(
         label,
         style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+}
+
+class _ExploreTab extends StatefulWidget {
+  const _ExploreTab();
+
+  @override
+  State<_ExploreTab> createState() => _ExploreTabState();
+}
+
+class _ExploreTabState extends State<_ExploreTab> {
+  final _searchController = TextEditingController();
+  String _sortBy = 'newest';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _search() {
+    context.read<WorkoutsCubit>().loadPublicWorkouts(
+          query: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
+          sortBy: _sortBy == 'newest' ? null : _sortBy,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<WorkoutsCubit, WorkoutsState>(
+      builder: (context, state) {
+        final workouts = state.exploreWorkouts;
+        final loading = state.exploreStatus == LoadStatus.loading;
+        final error = state.exploreError;
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: TextField(
+                controller: _searchController,
+                onSubmitted: (_) => _search(),
+                decoration: InputDecoration(
+                  hintText: 'Search community workouts...',
+                  prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.arrow_forward, color: AppColors.primaryGreen),
+                    onPressed: _search,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.cardBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  FilterChip(
+                    label: const Text('Mới nhất'),
+                    selected: _sortBy == 'newest',
+                    onSelected: (_) {
+                      setState(() => _sortBy = 'newest');
+                      _search();
+                    },
+                    selectedColor: AppColors.primaryGreen,
+                    labelStyle: TextStyle(
+                      color: _sortBy == 'newest' ? Colors.white : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    backgroundColor: AppColors.border.withValues(alpha: 0.4),
+                    showCheckmark: false,
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Lưu nhiều nhất'),
+                    selected: _sortBy == 'saves',
+                    onSelected: (_) {
+                      setState(() => _sortBy = 'saves');
+                      _search();
+                    },
+                    selectedColor: AppColors.primaryGreen,
+                    labelStyle: TextStyle(
+                      color: _sortBy == 'saves' ? Colors.white : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    backgroundColor: AppColors.border.withValues(alpha: 0.4),
+                    showCheckmark: false,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: loading && workouts.isEmpty
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                  : error != null && workouts.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(error, textAlign: TextAlign.center),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: _search,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () async => _search(),
+                          color: AppColors.primaryGreen,
+                          child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                            itemCount: workouts.length,
+                            itemBuilder: (context, index) {
+                              final w = workouts[index];
+                              return _PublicWorkoutCard(
+                                workout: w,
+                                onClone: () async {
+                                  return await context.read<WorkoutsCubit>().clonePublicWorkout(w.id);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PublicWorkoutCard extends StatefulWidget {
+  const _PublicWorkoutCard({required this.workout, required this.onClone});
+
+  final UserCustomWorkout workout;
+  final Future<bool> Function() onClone;
+
+  @override
+  State<_PublicWorkoutCard> createState() => _PublicWorkoutCardState();
+}
+
+class _PublicWorkoutCardState extends State<_PublicWorkoutCard> {
+  bool _isSaving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: InkWell(
+        onTap: () async {
+          await context.push(AppRoutes.customWorkoutDetail(widget.workout.id));
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.workout.workoutName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.fitness_center_outlined, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${widget.workout.exerciseCount} exercises',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.repeat_outlined, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${widget.workout.totalSets} sets',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.bookmark_add_outlined, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${widget.workout.savesCount} saves',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                    if (widget.workout.scheduleMode.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Schedule: ${widget.workout.scheduleMode}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _isSaving
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGreen),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: () async {
+                        setState(() => _isSaving = true);
+                        final success = await widget.onClone();
+                        if (mounted) {
+                          setState(() => _isSaving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success
+                                  ? 'Successfully saved "${widget.workout.workoutName}" to your workouts!'
+                                  : 'Failed to save workout.'),
+                              backgroundColor: success ? AppColors.primaryGreen : Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.12),
+                        foregroundColor: AppColors.primaryGreen,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                      label: const Text('Save', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+            ],
+          ),
+        ),
       ),
     );
   }

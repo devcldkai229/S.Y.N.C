@@ -110,9 +110,9 @@ public class ExerciseMotionAssetController : ControllerBase
                 AnimationDurationSeconds = request.AnimationDurationSeconds
             };
 
-            var result = await _service.CreateWithUploadAsync(uploadDto, cancellationToken);
-            var response = ApiResponse<ExerciseMotionAssetDto>.SuccessResponse(result, "Motion asset uploaded and created successfully.");
-            return CreatedAtAction(nameof(GetById), new { id = result.Id }, response);
+            var result = await _service.UpdateWithUploadAsync(uploadDto, cancellationToken);
+            var response = ApiResponse<ExerciseMotionAssetDto>.SuccessResponse(result, "Motion asset uploaded and updated successfully.");
+            return Ok(response);
         }
         finally
         {

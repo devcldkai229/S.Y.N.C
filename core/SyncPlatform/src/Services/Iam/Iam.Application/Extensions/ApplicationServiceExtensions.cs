@@ -15,6 +15,9 @@ public static class ApplicationServiceExtensions
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
         services.AddScoped<IBiometricProfileService, BiometricProfileService>();
         services.AddScoped<UserMeService>();
+        services.AddScoped<IAchievementService, AchievementService>();
+        services.AddScoped<IGamificationService, GamificationService>();
+        services.AddScoped<IShopService, ShopService>();
         services.AddScoped<IInternalSmartPushService, InternalSmartPushService>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();

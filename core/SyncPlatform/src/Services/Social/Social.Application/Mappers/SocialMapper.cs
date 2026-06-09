@@ -5,7 +5,7 @@ namespace Social.Application.Mappers;
 
 public static class SocialMapper
 {
-    public static PostDto ToDto(this Post entity) =>
+    public static PostDto ToDto(this Post entity, bool isLikedByMe = false) =>
         new()
         {
             Id = entity.Id,
@@ -29,6 +29,7 @@ public static class SocialMapper
             },
             IsPublic = entity.IsPublic,
             ShareCode = entity.ShareCode,
+            IsLikedByMe = isLikedByMe,
         };
 
     public static InteractionDto ToDto(this Interaction entity) =>

@@ -28,4 +28,12 @@ public class ConsoleEmailSender : IEmailSender
             toEmail, verificationToken, link);
         return Task.CompletedTask;
     }
+
+    public Task SendPasswordResetEmailAsync(string toEmail, string resetCode, CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning(
+            "[EMAIL DISABLED] SMTP off — password reset code for {Email}: {Code}",
+            toEmail, resetCode);
+        return Task.CompletedTask;
+    }
 }

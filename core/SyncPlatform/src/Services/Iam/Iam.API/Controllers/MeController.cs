@@ -1,3 +1,4 @@
+using Iam.Application.Abstractions;
 using Iam.Application.Common;
 using Iam.Application.DTOs;
 using Iam.Application.Services;
@@ -13,10 +14,14 @@ namespace Iam.API.Controllers;
 public class MeController : ControllerBase
 {
     private readonly UserMeService _userMeService;
+    private readonly IGamificationService _gamification;
+    private readonly IShopService _shop;
 
-    public MeController(UserMeService userMeService)
+    public MeController(UserMeService userMeService, IGamificationService gamification, IShopService shop)
     {
         _userMeService = userMeService;
+        _gamification = gamification;
+        _shop = shop;
     }
 
     /// <summary>
@@ -100,5 +105,49 @@ public class MeController : ControllerBase
         return Ok(ApiResponse<ProfileSettingsResponse>.SuccessResponse(
             result,
             "Account preferences updated successfully."));
+    }
+
+    // ── Gamification ──────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// POST /api/v1/me/activity/log — Log today's activity to update the streak.
+    /// Idempotent: calling multiple times on the same day is safe.
+    /// </summary>
+    [HttpPost("activity/log")]
+    [ProducesResponseType(typeof(ApiResponse<LogActivityResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<LogActivityResponse>>> LogActivity(CancellationToken cancellationToken)
+    {
+        var result = await _gamification.LogActivityAsync(cancellationToken);
+        var msg = result.AlreadyLoggedToday
+            ? "Activity already logged for today."
+            : $"Activity logged! Streak is now {result.CurrentStreak} day(s).";
+        return Ok(ApiResponse<LogActivityResponse>.SuccessResponse(result, msg));
+    }
+
+    // ── Shop ──────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// GET /api/v1/me/shop — Get the SyncCoins shop catalog.
+    /// </summary>
+    [HttpGet("shop")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ShopItemDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<ShopItemDto>>>> GetShop(CancellationToken cancellationToken)
+    {
+        var items = await _shop.GetCatalogAsync(cancellationToken);
+        return Ok(ApiResponse<IReadOnlyList<ShopItemDto>>.SuccessResponse(items, "Shop catalog retrieved."));
+    }
+
+    /// <summary>
+    /// POST /api/v1/me/shop/purchase — Purchase a shop item using SyncCoins.
+    /// </summary>
+    [HttpPost("shop/purchase")]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<ApiResponse<PurchaseResultDto>>> PurchaseShopItem(
+        [FromBody] PurchaseRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _shop.PurchaseAsync(request.ItemCode, cancellationToken);
+        return Ok(ApiResponse<PurchaseResultDto>.SuccessResponse(result, $"'{result.ItemName}' purchased successfully!"));
     }
 }

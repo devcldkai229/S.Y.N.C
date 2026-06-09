@@ -12,6 +12,8 @@ class SocialState extends Equatable {
     this.isLoadingMore = false,
     this.likedPostIds = const [],
     this.sharedPostIds = const [],
+    this.currentUserId = '',
+    this.hiddenPostIds = const [],
   });
 
   const SocialState.initial() : this(status: SocialStatus.initial);
@@ -24,6 +26,12 @@ class SocialState extends Equatable {
   final bool isLoadingMore;
   final List<String> likedPostIds;
   final List<String> sharedPostIds;
+  final String currentUserId;
+  final List<String> hiddenPostIds;
+
+  /// Posts visible to the user (excludes locally hidden posts).
+  List<SocialPost> get visiblePosts =>
+      hiddenPostIds.isEmpty ? posts : posts.where((p) => !hiddenPostIds.contains(p.id)).toList();
 
   SocialState copyWith({
     SocialStatus? status,
@@ -35,6 +43,8 @@ class SocialState extends Equatable {
     bool? isLoadingMore,
     List<String>? likedPostIds,
     List<String>? sharedPostIds,
+    String? currentUserId,
+    List<String>? hiddenPostIds,
   }) {
     return SocialState(
       status: status ?? this.status,
@@ -45,6 +55,8 @@ class SocialState extends Equatable {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       likedPostIds: likedPostIds ?? this.likedPostIds,
       sharedPostIds: sharedPostIds ?? this.sharedPostIds,
+      currentUserId: currentUserId ?? this.currentUserId,
+      hiddenPostIds: hiddenPostIds ?? this.hiddenPostIds,
     );
   }
 
@@ -58,5 +70,7 @@ class SocialState extends Equatable {
         isLoadingMore,
         likedPostIds,
         sharedPostIds,
+        currentUserId,
+        hiddenPostIds,
       ];
 }

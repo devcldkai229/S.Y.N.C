@@ -7,10 +7,14 @@ param(
 $Host.UI.RawUI.WindowTitle = "Sync - $Name (:$Port)"
 Set-Location $ProjectDir
 $env:ASPNETCORE_ENVIRONMENT = "Development"
+if ($Name -eq "Gateway") {
+    # 0.0.0.0 so physical phones on the same LAN can reach the API (not just localhost).
+    $env:ASPNETCORE_URLS = "http://0.0.0.0:$Port"
+}
 
 Write-Host ">>> $Name API - http://localhost:$Port" -ForegroundColor Green
 if ($Name -eq "Gateway") {
-    Write-Host "    Entry point (YARP) - http://localhost:$Port/health" -ForegroundColor DarkGray
+    Write-Host "    Entry point (YARP) - LAN: http://<your-pc-ip>:$Port/health" -ForegroundColor DarkGray
 }
 elseif ($Name -eq "Marketplace") {
     Write-Host "    OpenAPI: http://localhost:$Port/openapi/v1.json" -ForegroundColor DarkGray

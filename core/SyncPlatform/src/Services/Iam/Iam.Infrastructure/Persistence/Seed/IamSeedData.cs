@@ -23,6 +23,7 @@ public static class IamSeedData
 
     public static IReadOnlyList<Achievement> GetAchievements() =>
     [
+        // ── Event-based ────────────────────────────────────────────────────────
         new Achievement
         {
             Id = Guid.Parse("d1000001-0000-0000-0000-000000000001"),
@@ -33,28 +34,6 @@ public static class IamSeedData
             CoinReward = 10,
             IconUrl = "https://cdn.sync.local/achievements/first-login.png",
             RequirementJson = """{"type":"event","event":"user.login","count":1}""",
-        },
-        new Achievement
-        {
-            Id = Guid.Parse("d1000001-0000-0000-0000-000000000002"),
-            Code = "STREAK_7",
-            Name = "Chuỗi 7 ngày",
-            Description = "Duy trì streak tập luyện 7 ngày liên tiếp.",
-            XPReward = 200,
-            CoinReward = 50,
-            IconUrl = "https://cdn.sync.local/achievements/streak-7.png",
-            RequirementJson = """{"type":"streak","days":7}""",
-        },
-        new Achievement
-        {
-            Id = Guid.Parse("d1000001-0000-0000-0000-000000000003"),
-            Code = "STREAK_30",
-            Name = "Chuỗi 30 ngày",
-            Description = "Duy trì streak 30 ngày — thói quen đã hình thành.",
-            XPReward = 1000,
-            CoinReward = 250,
-            IconUrl = "https://cdn.sync.local/achievements/streak-30.png",
-            RequirementJson = """{"type":"streak","days":30}""",
         },
         new Achievement
         {
@@ -88,6 +67,111 @@ public static class IamSeedData
             CoinReward = 20,
             IconUrl = "https://cdn.sync.local/achievements/social-post.png",
             RequirementJson = """{"type":"event","event":"social.post.created","count":1}""",
+        },
+
+        // ── Streak ────────────────────────────────────────────────────────────
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000002"),
+            Code = "STREAK_7",
+            Name = "Week Warrior", 
+            Description = "Duy trì streak tập luyện 7 ngày liên tiếp.",
+            XPReward = 200,
+            CoinReward = 50,
+            IconUrl = "https://cdn.sync.local/achievements/streak-7.png",
+            RequirementJson = """{"type":"streak","days":7}""",
+        },
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000003"),
+            Code = "STREAK_30",
+            Name = "Monthly Machine",
+            Description = "Duy trì streak 30 ngày — thói quen đã hình thành.",
+            XPReward = 1000,
+            CoinReward = 250,
+            IconUrl = "https://cdn.sync.local/achievements/streak-30.png",
+            RequirementJson = """{"type":"streak","days":30}""",
+        },
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000007"),
+            Code = "STREAK_100",
+            Name = "Streak Legend",
+            Description = "100 ngày không ngừng nghỉ — bạn là huyền thoại.",
+            XPReward = 3000,
+            CoinReward = 1000,
+            IconUrl = "https://cdn.sync.local/achievements/streak-100.png",
+            RequirementJson = """{"type":"streak","days":100}""",
+        },
+
+        // ── Perfect Days ──────────────────────────────────────────────────────
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000008"),
+            Code = "PERFECT_3",
+            Name = "Triple Threat",
+            Description = "Hoàn thành 100% mục tiêu cả ăn lẫn tập 3 ngày liên tiếp.",
+            XPReward = 150,
+            CoinReward = 40,
+            IconUrl = "https://cdn.sync.local/achievements/perfect-3.png",
+            RequirementJson = """{"type":"perfect_days","days":3}""",
+        },
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000009"),
+            Code = "PERFECT_7",
+            Name = "Perfect Week",
+            Description = "Một tuần hoàn hảo — tập đủ, ăn đúng, không bỏ ngày nào.",
+            XPReward = 500,
+            CoinReward = 120,
+            IconUrl = "https://cdn.sync.local/achievements/perfect-7.png",
+            RequirementJson = """{"type":"perfect_days","days":7}""",
+        },
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000010"),
+            Code = "PERFECT_30",
+            Name = "Flawless Month",
+            Description = "30 ngày hoàn hảo liên tiếp — kỷ luật tuyệt đối.",
+            XPReward = 2000,
+            CoinReward = 600,
+            IconUrl = "https://cdn.sync.local/achievements/perfect-30.png",
+            RequirementJson = """{"type":"perfect_days","days":30}""",
+        },
+
+        // ── Level Milestones ──────────────────────────────────────────────────
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000011"),
+            Code = "LEVEL_5",
+            Name = "Rising Star",
+            Description = "Đạt cấp độ 5 — bạn đang tiến bộ thấy rõ.",
+            XPReward = 0,
+            CoinReward = 100,
+            IconUrl = "https://cdn.sync.local/achievements/level-5.png",
+            RequirementJson = """{"type":"level","level":5}""",
+        },
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000012"),
+            Code = "LEVEL_10",
+            Name = "Dedicated Athlete",
+            Description = "Đạt cấp độ 10 — sự kiên trì của bạn đáng ngưỡng mộ.",
+            XPReward = 0,
+            CoinReward = 300,
+            IconUrl = "https://cdn.sync.local/achievements/level-10.png",
+            RequirementJson = """{"type":"level","level":10}""",
+        },
+        new Achievement
+        {
+            Id = Guid.Parse("d1000001-0000-0000-0000-000000000013"),
+            Code = "LEVEL_25",
+            Name = "Elite Athlete",
+            Description = "Đạt cấp độ 25 — bạn thuộc tầng lớp elite.",
+            XPReward = 0,
+            CoinReward = 1000,
+            IconUrl = "https://cdn.sync.local/achievements/level-25.png",
+            RequirementJson = """{"type":"level","level":25}""",
         },
     ];
 
