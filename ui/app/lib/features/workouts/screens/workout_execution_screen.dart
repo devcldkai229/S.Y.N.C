@@ -9,6 +9,7 @@ import 'package:sync_app/data/repositories/workout_repository.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 import 'package:video_player/video_player.dart';
 import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
+import 'package:sync_app/features/profile/services/profile_api_service.dart';
 
 class WorkoutExecutionScreen extends StatefulWidget {
   const WorkoutExecutionScreen({
@@ -47,6 +48,7 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
 
   // Completion states
   bool _isFinished = false;
+  int? _newStreak;
 
   // Exercise Detail Cache
   final Map<String, ExerciseCatalogDetail> _exerciseDetails = {};
@@ -966,6 +968,24 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 8),
+              if (_newStreak != null) ...[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 24),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Streak: $_newStreak ngày',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
               const Text(
                 'Bạn đã hoàn thành xuất sắc buổi tập của mình hôm nay.',
                 textAlign: TextAlign.center,
@@ -1130,6 +1150,19 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
         energyLevelAfter: 4,
         sessionFeedback: 'Tập luyện hoàn tất trên thiết bị di động',
       );
+      
+      // Auto log activity to increment streak on workout completion
+      try {
+        final activityResult = await getIt<ProfileApiService>().logActivity();
+        if (mounted) {
+          setState(() {
+            _newStreak = activityResult.currentStreak;
+          });
+        }
+        debugPrint('Auto logged activity! Current streak: ${activityResult.currentStreak}');
+      } catch (activityError) {
+        debugPrint('Failed to auto log activity after finishing workout: $activityError');
+      }
     } catch (e) {
       debugPrint('Failed to finish workout: $e');
     }
