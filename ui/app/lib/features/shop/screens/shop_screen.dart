@@ -46,6 +46,7 @@ class _ShopView extends StatelessWidget {
         listener: (context, state) {
           if (state.lastPurchase != null && state.purchasing.isEmpty) {
             _showPurchaseSuccess(context, state.lastPurchase!);
+            context.read<ShopCubit>().clearPurchaseStatus();
           }
           if (state.purchaseError != null && state.purchasing.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -54,6 +55,7 @@ class _ShopView extends StatelessWidget {
                 backgroundColor: Colors.red.shade700,
               ),
             );
+            context.read<ShopCubit>().clearPurchaseStatus();
           }
         },
         builder: (context, state) {
@@ -96,7 +98,7 @@ class _ShopView extends StatelessWidget {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
               children: [
-                _ShopBanner(),
+                _ShopBanner(coins: state.syncCoins),
                 const SizedBox(height: 24),
                 if (state.items.isEmpty)
                   const Center(
@@ -183,6 +185,9 @@ class _ResultRow extends StatelessWidget {
 }
 
 class _ShopBanner extends StatelessWidget {
+  const _ShopBanner({required this.coins});
+  final double coins;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -209,11 +214,11 @@ class _ShopBanner extends StatelessWidget {
         children: [
           const Text('💰', style: TextStyle(fontSize: 40)),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'SyncCoins Shop',
                   style: TextStyle(
                     color: Colors.white,
@@ -221,13 +226,29 @@ class _ShopBanner extends StatelessWidget {
                     fontSize: 18,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
+                const SizedBox(height: 4),
+                const Text(
                   'Dùng SyncCoins để đổi XP, voucher giảm giá và nhiều hơn nữa!',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                     height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    'Số dư: ${coins.toInt()} coins',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ],
