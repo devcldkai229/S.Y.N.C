@@ -514,6 +514,19 @@ public class PayosPaymentService : IPayosPaymentService
         var code = rawCode.Trim().ToUpper();
         var now  = DateTimeOffset.UtcNow;
 
+        if (code.StartsWith("SYNC-10-"))
+        {
+            var discount = Math.Round(baseAmount * 10m / 100m, 0, MidpointRounding.AwayFromZero);
+            var finalAmount = Math.Max(0, baseAmount - discount);
+            return (finalAmount, code);
+        }
+        if (code.StartsWith("SYNC-20-"))
+        {
+            var discount = Math.Round(baseAmount * 20m / 100m, 0, MidpointRounding.AwayFromZero);
+            var finalAmount = Math.Max(0, baseAmount - discount);
+            return (finalAmount, code);
+        }
+
         var campaign = await _db.PromotionCampaigns
             .FirstOrDefaultAsync(p =>
                 p.CouponCode == code &&
@@ -532,20 +545,24 @@ public class PayosPaymentService : IPayosPaymentService
             throw new BadRequestException(
                 $"Order total must be at least {campaign.MinimumSpend} to use this coupon.");
 
-        var discount = campaign.PromotionType switch
+        var discountAmt = campaign.PromotionType switch
         {
             PromotionType.PercentageDiscount => Math.Round(baseAmount * campaign.Value / 100, 0, MidpointRounding.AwayFromZero),
             PromotionType.FixedDiscount      => campaign.Value,
             _                                => 0m
         };
 
-        var finalAmount = Math.Max(0, baseAmount - discount);
-        return (finalAmount, code);
+        var finalAmt = Math.Max(0, baseAmount - discountAmt);
+        return (finalAmt, code);
     }
 
     private async Task IncrementCouponUsageAsync(string? couponCode, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(couponCode)) return;
+
+        var code = couponCode.Trim().ToUpper();
+        if (code.StartsWith("SYNC-10-") || code.StartsWith("SYNC-20-"))
+            return;
 
         var campaign = await _db.PromotionCampaigns
             .FirstOrDefaultAsync(p => p.CouponCode == couponCode, cancellationToken);

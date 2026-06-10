@@ -44,7 +44,7 @@ public sealed class ShopService : IShopService
             Code: "VOUCHER_10PCT",
             Name: "Thẻ Giảm Giá 10%",
             Description: "Voucher giảm 10% cho bất kỳ đơn hàng nào trên SYNC. Có hiệu lực 30 ngày.",
-            CoinPrice: 150,
+            CoinPrice: 300,
             RewardType: "voucher",
             RewardDetail: "10% off",
             IconEmoji: "🎟️"),
@@ -52,7 +52,7 @@ public sealed class ShopService : IShopService
             Code: "VOUCHER_20PCT",
             Name: "Thẻ Giảm Giá 20%",
             Description: "Voucher giảm 20% — tiết kiệm nhiều hơn cho đơn hàng lớn. Có hiệu lực 30 ngày.",
-            CoinPrice: 300,
+            CoinPrice: 500,
             RewardType: "voucher",
             RewardDetail: "20% off",
             IconEmoji: "💎"),
@@ -85,7 +85,7 @@ public sealed class ShopService : IShopService
         profile.SyncCoins -= item.CoinPrice;
         profile.UpdatedAt = DateTimeOffset.UtcNow;
 
-        await ApplyRewardAsync(item, userId, profile, cancellationToken);
+        var rewardDetail = await ApplyRewardAsync(item, userId, profile, cancellationToken);
 
         await _repo.SaveChangesAsync(cancellationToken);
 
@@ -93,12 +93,12 @@ public sealed class ShopService : IShopService
         if (item.RewardType == "xp")
             await _achievements.CheckAndUnlockAsync(userId, cancellationToken);
 
-        return new PurchaseResultDto(item.Name, item.CoinPrice, profile.SyncCoins, item.RewardType, item.RewardDetail);
+        return new PurchaseResultDto(item.Name, item.CoinPrice, profile.SyncCoins, item.RewardType, rewardDetail);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    private async Task ApplyRewardAsync(
+    private async Task<string> ApplyRewardAsync(
         ShopItemDto item,
         Guid userId,
         GamificationProfile profile,
@@ -109,23 +109,25 @@ public sealed class ShopService : IShopService
             var xp = item.Code == "XP_BOOST_100" ? 100 : 500;
             profile.CurrentXP += xp;
             AchievementService.CheckLevelUpStatic(profile);
-            return;
+            return item.RewardDetail;
         }
 
         if (item.RewardType == "voucher")
         {
-            var (promotionType, value, name) = item.Code switch
+            var (promotionType, value, name, codePrefix) = item.Code switch
             {
-                "VOUCHER_10PCT" => ("Percentage", 10m, "Giảm 10% đơn hàng SYNC"),
-                "VOUCHER_20PCT" => ("Percentage", 20m, "Giảm 20% đơn hàng SYNC"),
-                "STREAK_SHIELD" => ("StreakShield", 1m, "Streak Shield – bảo vệ chuỗi tập luyện"),
-                _ => ("General", 0m, item.Name),
+                "VOUCHER_10PCT" => ("Percentage", 10m, "Giảm 10% đơn hàng SYNC", "SYNC-10"),
+                "VOUCHER_20PCT" => ("Percentage", 20m, "Giảm 20% đơn hàng SYNC", "SYNC-20"),
+                "STREAK_SHIELD" => ("StreakShield", 1m, "Streak Shield – bảo vệ chuỗi tập luyện", "SYNC-SHIELD"),
+                _ => ("General", 0m, item.Name, "SYNC"),
             };
+
+            var code = GenerateVoucherCode(codePrefix);
 
             var voucher = new UserVoucher
             {
                 UserId = userId,
-                VoucherCode = GenerateVoucherCode(),
+                VoucherCode = code,
                 Name = name,
                 PromotionType = promotionType,
                 Value = value,
@@ -138,15 +140,19 @@ public sealed class ShopService : IShopService
 
             _repo.AddVoucher(voucher);
             await Task.CompletedTask;
+
+            return code;
         }
+
+        return item.RewardDetail;
     }
 
-    private static string GenerateVoucherCode()
+    private static string GenerateVoucherCode(string prefix)
     {
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         var rng = new Random();
         var part1 = new string(Enumerable.Range(0, 4).Select(_ => chars[rng.Next(chars.Length)]).ToArray());
         var part2 = new string(Enumerable.Range(0, 4).Select(_ => chars[rng.Next(chars.Length)]).ToArray());
-        return $"SYNC-{part1}-{part2}";
+        return $"{prefix}-{part1}-{part2}";
     }
 }
