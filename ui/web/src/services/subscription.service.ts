@@ -45,15 +45,20 @@ export interface ActiveSubscription {
 interface ApiEnvelope<T> { success: boolean; message: string; data: T | null }
 
 export const subscriptionService = {
+  // NOTE: Gateway strips /api/v1/payment → adds /api/v1, so Payment service routes (/api/v1/payments/...)
+  // require the extra /payments/ segment in the Gateway-facing URL.
+
   async getPlans(): Promise<SubscriptionPlan[]> {
-    const res = await userApi.get<ApiEnvelope<SubscriptionPlan[]>>("/api/v1/payment/subscription-plans");
+    const res = await userApi.get<ApiEnvelope<SubscriptionPlan[]>>(
+      "/api/v1/payment/payments/subscription-plans"
+    );
     return res.data ?? [];
   },
 
   async getActiveSubscription(): Promise<ActiveSubscription | null> {
     try {
       const res = await userApi.get<ApiEnvelope<ActiveSubscription>>(
-        "/api/v1/payment/user-subscriptions/me/active"
+        "/api/v1/payment/payments/user-subscriptions/me/active"
       );
       return res.data ?? null;
     } catch {
@@ -62,11 +67,10 @@ export const subscriptionService = {
   },
 
   async createPaymentLink(planId: string, couponCode?: string): Promise<PaymentLink> {
-    const res = await userApi.post<ApiEnvelope<PaymentLink>>("/api/v1/payment/payos/create-link", {
-      planId,
-      billingCycle: 0,
-      couponCode: couponCode || undefined,
-    });
+    const res = await userApi.post<ApiEnvelope<PaymentLink>>(
+      "/api/v1/payment/payments/payos/create-link",
+      { planId, billingCycle: 0, couponCode: couponCode || undefined }
+    );
     if (!res.data) throw new Error(res.message || "Không thể tạo link thanh toán.");
     return res.data;
   },
@@ -74,7 +78,7 @@ export const subscriptionService = {
   async getTransactionByOrderCode(orderCode: number): Promise<TransactionStatus | null> {
     try {
       const res = await userApi.get<ApiEnvelope<TransactionStatus>>(
-        `/api/v1/payment/transactions/by-order-code/${orderCode}`
+        `/api/v1/payment/payments/transactions/by-order-code/${orderCode}`
       );
       return res.data ?? null;
     } catch {
@@ -83,7 +87,7 @@ export const subscriptionService = {
   },
 
   async cancelSubscription(reason?: string): Promise<void> {
-    await userApi.post("/api/v1/payment/user-subscriptions/me/cancel", {
+    await userApi.post("/api/v1/payment/payments/user-subscriptions/me/cancel", {
       cancellationReason: reason,
     });
   },

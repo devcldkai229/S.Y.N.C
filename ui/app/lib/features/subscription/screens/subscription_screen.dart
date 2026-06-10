@@ -20,7 +20,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   ActiveSubscription? _activeSub;
   bool _loading = true;
   String? _error;
-  bool _yearly = false;
 
   final _couponController = TextEditingController();
   int? _pendingOrderCode;
@@ -78,7 +77,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       final coupon = _couponController.text.trim();
       final link   = await _api.createPaymentLink(
         plan.id,
-        yearly: _yearly,
         couponCode: coupon.isEmpty ? null : coupon,
       );
       if (!mounted) return;
@@ -191,11 +189,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                     children: [
                       const _Header(),
                       const SizedBox(height: 24),
-                      _BillingToggle(
-                        yearly: _yearly,
-                        onChanged: (v) => setState(() => _yearly = v),
-                      ),
-                      const SizedBox(height: 20),
 
                       // Hiển thị gói đang dùng nếu có
                       if (_activeSub != null) ...[
@@ -228,7 +221,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           padding: const EdgeInsets.only(bottom: 14),
                           child: _PaidPlanCard(
                             plan: plan,
-                            yearly: _yearly,
                             isCurrentPlan: _activeSub != null,
                             onSubscribe: _activeSub != null ? null : () => _subscribe(plan),
                           ),
@@ -236,10 +228,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       ),
 
                       if (_plans.isEmpty && _activeSub == null)
-                        _DefaultPremiumCard(
-                          yearly: _yearly,
-                          onSubscribe: null,
-                        ),
+                        const _DefaultPremiumCard(onSubscribe: null),
                     ],
                   ),
                 ),
@@ -281,70 +270,6 @@ class _Header extends StatelessWidget {
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
         ),
       ],
-    );
-  }
-}
-
-// ─── Billing toggle ───────────────────────────────────────────────────────────
-
-class _BillingToggle extends StatelessWidget {
-  const _BillingToggle({required this.yearly, required this.onChanged});
-
-  final bool yearly;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.lightGreen,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          _Tab(label: 'Theo tháng', selected: !yearly, onTap: () => onChanged(false)),
-          _Tab(
-            label: 'Theo năm  🎁 -20%',
-            selected: yearly,
-            onTap: () => onChanged(true),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Tab extends StatelessWidget {
-  const _Tab({required this.label, required this.selected, required this.onTap});
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: selected ? AppColors.primaryGreen : Colors.transparent,
-            borderRadius: BorderRadius.circular(11),
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: selected ? Colors.white : AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -528,21 +453,18 @@ class _FreePlanCard extends StatelessWidget {
 class _PaidPlanCard extends StatelessWidget {
   const _PaidPlanCard({
     required this.plan,
-    required this.yearly,
     required this.isCurrentPlan,
     required this.onSubscribe,
   });
 
   final SubscriptionPlan plan;
-  final bool yearly;
   final bool isCurrentPlan;
   final VoidCallback? onSubscribe;
 
   @override
   Widget build(BuildContext context) {
-    final price = yearly ? plan.yearlyPrice / 12 : plan.monthlyPrice;
-    final priceLabel = '${_formatPrice(price)} đ';
-    final period = yearly ? '/tháng (thanh toán năm)' : '/tháng';
+    final priceLabel = '${_formatPrice(plan.monthlyPrice)} đ';
+    const period = '/tháng';
 
     final features = plan.features.isNotEmpty
         ? plan.features
@@ -572,18 +494,14 @@ class _PaidPlanCard extends StatelessWidget {
 // ─── Default premium card (khi backend không có plan nào) ────────────────────
 
 class _DefaultPremiumCard extends StatelessWidget {
-  const _DefaultPremiumCard({
-    required this.yearly,
-    required this.onSubscribe,
-  });
+  const _DefaultPremiumCard({required this.onSubscribe});
 
-  final bool yearly;
   final VoidCallback? onSubscribe;
 
   @override
   Widget build(BuildContext context) {
-    final price = yearly ? 79167.0 : 99000.0;
-    final period = yearly ? '/tháng (thanh toán năm)' : '/tháng';
+    const price = 99000.0;
+    const period = '/tháng';
 
     return _PremiumCardShell(
       priceLabel: '${_formatPrice(price)} đ',

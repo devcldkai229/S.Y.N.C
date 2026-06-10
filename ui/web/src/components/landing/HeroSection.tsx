@@ -1,11 +1,17 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Sparkles, Send } from "lucide-react";
 import { HeroEntrance } from "@/components/ui/motion";
 import ParticleCursor from "@/components/ui/ParticleCursor";
 
 export default function HeroSection() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("sync_token"));
+  }, []);
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center pt-16 px-4 bg-white overflow-hidden">
       {/* Interactive particle field — z-[5], below content z-[10] */}
@@ -53,10 +59,10 @@ export default function HeroSection() {
         <HeroEntrance delay={0.48}>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
             <Link
-              href="/register"
+              href={isLoggedIn ? "/subscription" : "/register"}
               className="group flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-full text-base font-medium hover:bg-primary-dark transition-all hover:scale-[1.03] shadow-lg shadow-primary/25"
             >
-              Bắt đầu miễn phí
+              {isLoggedIn ? "Bắt đầu ngay" : "Bắt đầu miễn phí"}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
