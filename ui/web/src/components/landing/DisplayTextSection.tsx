@@ -19,13 +19,13 @@ export default function DisplayTextSection() {
         </motion.p>
         <div className="flex gap-8 text-sm">
           {[
-              { label: "Tính năng", href: "#features" },
+              { label: "Tính năng", href: "/#features" },
               { label: "Bảng giá", href: "/subscription" },
               { label: "Blog", href: "#" },
               { label: "Liên hệ", href: "#" },
             ].map((item, i) => (
             <motion.div
-              key={item}
+              key={item.label}
               initial={{ opacity: 0, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
