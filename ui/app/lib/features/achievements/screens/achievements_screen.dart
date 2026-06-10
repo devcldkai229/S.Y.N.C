@@ -53,7 +53,12 @@ class _AchievementsViewState extends State<_AchievementsView> {
         centerTitle: false,
         actions: [
           IconButton(
-            onPressed: () => context.push(AppRoutes.shop),
+            onPressed: () async {
+              await context.push(AppRoutes.shop);
+              if (context.mounted) {
+                context.read<AchievementsCubit>().load();
+              }
+            },
             icon: const Icon(Icons.storefront_rounded),
             color: Colors.amber.shade700,
             tooltip: 'SyncCoins Shop',
