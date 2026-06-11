@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
@@ -42,6 +43,10 @@ public class InternalApiKeyMiddleware
                 await WriteUnauthorizedAsync(context, "Unauthorized access.");
                 return;
             }
+
+            context.User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim(ClaimTypes.NameIdentifier, "internal-service")],
+                authenticationType: "InternalApiKey"));
         }
 
         await _next(context);

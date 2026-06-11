@@ -46,16 +46,12 @@ abstract final class ApiPaths {
   static const workoutExecutions = '/v1/roadmap/workout-executions';
   static const exerciseSetLogs = '/v1/roadmap/exercise-set-logs';
 
-  // Notification
-  static const notifications = '/v1/notification/notifications';
-  static String notificationUserInbox(String userId) =>
-      '$notifications/users/$userId';
-  static String notificationUnreadCount(String userId) =>
-      '$notifications/users/$userId/unread-count';
-  static String notificationMarkRead(String userId, String notificationId) =>
-      '$notifications/users/$userId/$notificationId/read';
-  static String notificationMarkAllRead(String userId) =>
-      '$notifications/users/$userId/read-all';
+  // Notification (gateway: /api/v1/notifications → Notification service :5106)
+  static const notificationsMe = '/v1/notifications/me';
+  static const notificationsMeUnreadCount = '/v1/notifications/me/unread-count';
+  static const notificationsMeReadAll = '/v1/notifications/me/read-all';
+  static String notificationMarkReadMe(String notificationId) =>
+      '/v1/notifications/me/$notificationId/read';
 
   // Payment  (gateway prefix /v1/payment → service /v1, service routes use /api/v1/payments/...)
   static const subscriptionPlans = '/v1/payment/payments/subscription-plans';
@@ -67,6 +63,56 @@ abstract final class ApiPaths {
   static const meShop = '/v1/iam/me/shop';
   static const meShopPurchase = '/v1/iam/me/shop/purchase';
 
-  // Social (future service)
-  static const socialPosts = '/v1/social/posts';
+  // Social service (via Gateway :5057 → Social :5120)
+  static const socialPosts = '/v1/posts';
+  static const socialStories = '/v1/social/stories';
+  static const socialStoriesFeed = '/v1/social/stories/feed';
+  static const socialStoriesMe = '/v1/social/stories/me';
+  static String socialCommentReplies(String commentId) =>
+      '/v1/comments/$commentId/replies';
+
+  // Community challenges (Social via Gateway)
+  static const challenges = '/v1/challenges';
+  static String challengeById(String id) => '/v1/challenges/$id';
+  static String challengeJoin(String id) => '/v1/challenges/$id/join';
+  static String challengeLeave(String id) => '/v1/challenges/$id/leave';
+  static String challengeParticipationStatus(String id) =>
+      '/v1/challenges/$id/participation-status';
+  static String challengeRoute(String id) => '/v1/challenges/$id/route';
+
+  // Social — user follow graph
+  static String socialUserFollowCounts(String userId) =>
+      '/v1/social/users/$userId/follow-counts';
+  static String socialUserFollowStatus(String userId) =>
+      '/v1/social/users/$userId/follow-status';
+  static String socialUserFollow(String userId) => '/v1/social/users/$userId/follow';
+
+  // Nutrition (gateway → /api/v1/nutrition/*)
+  static const nutritionFoods = '/v1/nutrition/foods';
+  static String nutritionFoodById(String id) => '/v1/nutrition/foods/$id';
+  static String nutritionFoodByBarcode(String barcode) =>
+      '/v1/nutrition/foods/barcode/$barcode';
+  static const nutritionMealLogs = '/v1/nutrition/meal-logs';
+  static String nutritionMealLogById(String id) => '/v1/nutrition/meal-logs/$id';
+  static const nutritionDailySummary = '/v1/nutrition/daily-summary';
+  static const nutritionDailySummaryWater = '/v1/nutrition/daily-summary/water';
+
+  // Marketplace
+  static const marketplacePartners = '/v1/marketplace/partners';
+  static String marketplacePartnerById(String id) => '/v1/marketplace/partners/$id';
+  static const marketplaceFoodMenu = '/v1/marketplace/food-menu-items';
+  static String marketplaceFoodMenuById(String id) =>
+      '/v1/marketplace/food-menu-items/$id';
+  static const marketplaceAffiliateProducts = '/v1/marketplace/affiliate-products';
+  static String marketplaceAffiliateProductById(String id) =>
+      '/v1/marketplace/affiliate-products/$id';
+  static String marketplaceAffiliateClick(String id) =>
+      '/v1/marketplace/affiliate-products/$id/click';
+  static const marketplaceReviews = '/v1/marketplace/reviews';
+
+  // Order
+  static const orderOrders = '/v1/order/orders';
+  static String orderById(String id) => '/v1/order/orders/$id';
+  static String orderTracking(String id) => '/v1/order/orders/$id/tracking';
+  static String orderCancel(String id) => '/v1/order/orders/$id/cancel';
 }

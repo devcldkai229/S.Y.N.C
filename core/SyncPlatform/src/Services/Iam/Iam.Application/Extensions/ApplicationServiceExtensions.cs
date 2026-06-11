@@ -19,6 +19,8 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IGamificationService, GamificationService>();
         services.AddScoped<IShopService, ShopService>();
         services.AddScoped<IInternalSmartPushService, InternalSmartPushService>();
+        services.AddScoped<IInternalBiometricService, InternalBiometricService>();
+        services.AddScoped<IInternalUserService, InternalUserService>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();

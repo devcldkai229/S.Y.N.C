@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
-import 'package:sync_app/features/social/cubit/social_cubit.dart';
+import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
-import 'package:sync_app/features/social/models/social_models.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
+import 'package:sync_app/features/social/cubit/social_cubit.dart';
+import 'package:sync_app/features/social/models/social_models.dart';
+import 'package:sync_app/features/social/utils/comment_thread_utils.dart';
+import 'package:sync_app/features/social/widgets/social_comment_thread_widgets.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/shared/widgets/sync_avatar.dart';
 
 class SocialCommentsSheet extends StatefulWidget {
   const SocialCommentsSheet({super.key, required this.postId, this.onCommentCreated});
@@ -42,6 +46,8 @@ class SocialCommentsSheet extends StatefulWidget {
 
 class _SocialCommentsSheetState extends State<SocialCommentsSheet> {
   final _controller = TextEditingController();
+  final _inputFocus = FocusNode();
+
   bool _sending = false;
 
   final _repo = getIt<SocialRepository>();
@@ -53,6 +59,11 @@ class _SocialCommentsSheetState extends State<SocialCommentsSheet> {
   int _totalPages = 1;
   bool _isLoading = false;
 
+  String? _replyToCommentId;
+  String? _replyToUsername;
+
+  List<CommentThread> get _threads => CommentThreadUtils.groupComments(_comments);
+
   @override
   void initState() {
     super.initState();
@@ -63,11 +74,11 @@ class _SocialCommentsSheetState extends State<SocialCommentsSheet> {
     try {
       final settings = await _profileApi.getProfileSettings();
       _authorSnapshot = SocialAuthorSnapshot(
-        fullName: settings.basic.fullName,
+        fullName: settings.basic.fullName.isNotEmpty ? settings.basic.fullName : 'You',
         avatarUrl: settings.basic.avatarUrl,
       );
     } catch (_) {
-      _authorSnapshot = null;
+      _authorSnapshot = const SocialAuthorSnapshot(fullName: 'You');
     }
     await _loadComments(reset: true);
   }
@@ -78,45 +89,95 @@ class _SocialCommentsSheetState extends State<SocialCommentsSheet> {
 
     final pageNumber = reset ? 1 : _pageNumber + 1;
     try {
-      final page = await _repo.fetchComments(widget.postId, pageNumber: pageNumber, pageSize: 20);
+      final page = await _repo.fetchComments(widget.postId, pageNumber: pageNumber, pageSize: 50);
       setState(() {
         _comments = reset ? page.items : [..._comments, ...page.items];
         _pageNumber = page.pageNumber;
         _totalPages = page.totalPages;
       });
-    } catch (_) {
-      // ignore for now
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(mapApiError(e))),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _startReply(SocialComment comment) {
+    final username = comment.authorSnapshot?.fullName ?? 'người dùng';
+    setState(() {
+      _replyToCommentId = comment.id;
+      _replyToUsername = username;
+      _controller.clear();
+    });
+    _inputFocus.requestFocus();
+  }
+
+  void _cancelReply() {
+    setState(() {
+      _replyToCommentId = null;
+      _replyToUsername = null;
+    });
   }
 
   Future<void> _send() async {
     if (_sending) return;
     final trimmed = _controller.text.trim();
     if (trimmed.isEmpty) return;
-    if (_authorSnapshot == null) return;
 
     setState(() => _sending = true);
+    final isReply = _replyToCommentId != null;
     try {
-      final comment = await _repo.createComment(
-        postId: widget.postId,
-        content: trimmed,
-        authorFullName: _authorSnapshot!.fullName,
-        authorAvatarUrl: _authorSnapshot!.avatarUrl,
-      );
+      final authorName = _authorSnapshot?.fullName;
+      final authorAvatar = _authorSnapshot?.avatarUrl;
+
+      if (isReply) {
+        await _repo.createReply(
+          commentId: _replyToCommentId!,
+          content: trimmed,
+          parentCommentId: _replyToCommentId!,
+          authorFullName: authorName,
+          authorAvatarUrl: authorAvatar,
+        );
+      } else {
+        await _repo.createComment(
+          postId: widget.postId,
+          content: trimmed,
+          authorFullName: authorName,
+          authorAvatarUrl: authorAvatar,
+        );
+      }
 
       setState(() {
-        _comments = [comment, ..._comments];
         _controller.clear();
+        _replyToCommentId = null;
+        _replyToUsername = null;
       });
 
       if (mounted) {
         context.read<SocialCubit>().bumpCommentCount(widget.postId);
       }
       widget.onCommentCreated?.call(widget.postId);
-    } catch (_) {
-      // ignore
+      await _loadComments(reset: true);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isReply ? 'Đã gửi trả lời.' : 'Đã gửi bình luận.'),
+            backgroundColor: AppColors.primaryGreen,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(mapApiError(e))),
+        );
+      }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -125,12 +186,14 @@ class _SocialCommentsSheetState extends State<SocialCommentsSheet> {
   @override
   void dispose() {
     _controller.dispose();
+    _inputFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.viewInsetsOf(context).bottom;
+    final composerAuthor = _authorSnapshot?.fullName ?? 'You';
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottom),
@@ -139,7 +202,7 @@ class _SocialCommentsSheetState extends State<SocialCommentsSheet> {
         initialChildSize: 0.65,
         minChildSize: 0.4,
         maxChildSize: 0.92,
-        builder: (context, scrollController) {
+        builder: (context, sheetScrollController) {
           return Column(
             children: [
               const SizedBox(height: 8),
@@ -151,161 +214,169 @@ class _SocialCommentsSheetState extends State<SocialCommentsSheet> {
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Row(
-                  children: const [
-                    Text(
-                      'Comments',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-                    ),
-                  ],
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Bình luận',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
                 ),
               ),
+              const Divider(height: 1),
               Expanded(
-                child: _isLoading && _comments.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : _comments.isEmpty
-                        ? const Center(
-                            child: Text(
-                              'Be the first to comment.',
-                              style: TextStyle(color: AppColors.textMuted),
-                            ),
-                          )
-                        : ListView.separated(
-                            controller: scrollController,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: _comments.length + (_pageNumber < _totalPages ? 1 : 0),
-                            separatorBuilder: (_, _) => const Divider(height: 20),
-                            itemBuilder: (context, index) {
-                              if (index >= _comments.length) {
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
-                                  child: Center(
-                                    child: OutlinedButton(
-                                      onPressed: _isLoading
-                                          ? null
-                                          : () => _loadComments(reset: false),
-                                      child: const Text('View more'),
-                                    ),
-                                  ),
-                                );
-                              }
-
-                              final c = _comments[index];
-                              final authorName = c.authorSnapshot?.fullName ?? 'You';
-                              final avatarUrl = c.authorSnapshot?.avatarUrl;
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 18,
-                                    backgroundColor: AppColors.lightGreen,
-                                    backgroundImage: avatarUrl != null && avatarUrl.isNotEmpty
-                                        ? NetworkImage(avatarUrl)
-                                        : null,
-                                    child: avatarUrl == null || avatarUrl.isEmpty
-                                        ? Text(
-                                            authorName.isNotEmpty ? authorName[0] : '?',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.primaryGreen,
-                                            ),
-                                          )
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Text(
-                                              authorName,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            Text(
-                                              c.timeAgo,
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: AppColors.textMuted,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          c.content,
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            height: 1.4,
-                                            color: AppColors.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
+                child: _buildCommentList(sheetScrollController),
               ),
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBackground,
-                  border: Border(top: BorderSide(color: AppColors.border)),
+              if (_replyToUsername != null)
+                SocialReplyingBanner(
+                  username: _replyToUsername!,
+                  onCancel: _cancelReply,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _controller,
-                        decoration: InputDecoration(
-                          hintText: 'Add a comment...',
-                          filled: true,
-                          fillColor: AppColors.background,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _send(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton.filled(
-                      onPressed: _sending || _authorSnapshot == null ? null : _send,
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.primaryGreen,
-                      ),
-                      icon: _sending
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.send_rounded, color: Colors.white),
-                    ),
-                  ],
-                ),
+              _CommentComposer(
+                authorName: composerAuthor,
+                avatarUrl: _authorSnapshot?.avatarUrl,
+                controller: _controller,
+                focusNode: _inputFocus,
+                sending: _sending,
+                hintText: _replyToUsername != null
+                    ? 'Viết trả lời...'
+                    : 'Viết bình luận...',
+                onSend: _send,
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCommentList(ScrollController sheetScrollController) {
+    if (_isLoading && _comments.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_threads.isEmpty) {
+      return const Center(
+        child: Text(
+          'Hãy là người bình luận đầu tiên.',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      controller: sheetScrollController,
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      itemCount: _threads.length + (_pageNumber < _totalPages ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _threads.length) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: OutlinedButton(
+                onPressed: _isLoading ? null : () => _loadComments(reset: false),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Xem thêm bình luận'),
+              ),
+            ),
+          );
+        }
+
+        final thread = _threads[index];
+        return SocialCommentThreadTile(
+          thread: thread,
+          onReply: _startReply,
+        );
+      },
+    );
+  }
+}
+
+class _CommentComposer extends StatelessWidget {
+  const _CommentComposer({
+    required this.authorName,
+    required this.avatarUrl,
+    required this.controller,
+    required this.focusNode,
+    required this.sending,
+    required this.hintText,
+    required this.onSend,
+  });
+
+  final String authorName;
+  final String? avatarUrl;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool sending;
+  final String hintText;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        border: Border(top: BorderSide(color: AppColors.border.withValues(alpha: 0.8))),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            SyncAvatar(name: authorName, imageUrl: avatarUrl, radius: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: controller,
+                focusNode: focusNode,
+                minLines: 1,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  filled: true,
+                  fillColor: isDark ? const Color(0xFF3A3B3C) : const Color(0xFFF0F2F5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                ),
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => onSend(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton.filled(
+              onPressed: sending ? null : onSend,
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                minimumSize: const Size(40, 40),
+              ),
+              icon: sending
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+            ),
+          ],
+        ),
       ),
     );
   }

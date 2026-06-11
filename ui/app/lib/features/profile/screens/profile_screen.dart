@@ -11,6 +11,7 @@ import 'package:sync_app/features/profile/cubit/profile_cubit.dart';
 import 'package:sync_app/features/profile/models/profile_models.dart';
 import 'package:sync_app/features/profile/widgets/profile_edit_sheets.dart';
 import 'package:sync_app/shared/widgets/language_switcher.dart';
+import 'package:sync_app/shared/widgets/sync_app_bar.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -47,18 +48,25 @@ class _ProfileScreenBody extends StatelessWidget {
       },
       builder: (context, state) {
         if (state.isLoading) {
-          return const SafeArea(
-            child: Center(
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: SyncAppBar(),
+            body: Center(
               child: CircularProgressIndicator(color: AppColors.primaryGreen),
             ),
           );
         }
 
         if (state.settings == null) {
-          return SafeArea(
-            child: _ErrorView(
-              message: state.error ?? context.l10n.loadProfileFailed,
-              onRetry: () => context.read<ProfileCubit>().load(),
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: const SyncAppBar(),
+            body: SafeArea(
+              top: false,
+              child: _ErrorView(
+                message: state.error ?? context.l10n.loadProfileFailed,
+                onRetry: () => context.read<ProfileCubit>().load(),
+              ),
             ),
           );
         }
@@ -71,10 +79,14 @@ class _ProfileScreenBody extends StatelessWidget {
         final streak = g?.currentStreak ?? 0;
         final coins = g?.syncCoins.toInt() ?? 0;
 
-        return SafeArea(
-          child: Column(
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: const SyncAppBar(),
+          body: SafeArea(
+            top: false,
+            bottom: false,
+            child: Column(
             children: [
-              _TopBar(onRefresh: () => context.read<ProfileCubit>().load()),
               if (!s.fitness.isConfigured || !s.preferences.isConfigured)
                 _SetupBanner(
                   onSetup: () => context.push(AppRoutes.onboarding),
@@ -254,6 +266,7 @@ class _ProfileScreenBody extends StatelessWidget {
                 ),
               ),
             ],
+            ),
           ),
         );
       },
@@ -355,42 +368,6 @@ class _ProfileScreenBody extends StatelessWidget {
     if (confirmed != true || !context.mounted) return;
     await getIt<AuthService>().logout();
     if (context.mounted) context.go(AppRoutes.login);
-  }
-}
-
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onRefresh});
-
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 12, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            context.l10n.profileTitle,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-          ),
-          Row(
-            children: [
-              const LanguageIconToggle(),
-              IconButton(
-                onPressed: onRefresh,
-                icon: const Icon(Icons.refresh_rounded),
-                tooltip: context.l10n.refreshTooltip,
-              ),
-              IconButton(
-                onPressed: () => context.push(AppRoutes.notifications),
-                icon: const Icon(Icons.notifications_none_rounded),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 }
 

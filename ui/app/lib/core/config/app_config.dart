@@ -28,6 +28,37 @@ class AppConfig {
     }
   }
 
+  /// SignalR hub on Notification service (not via Gateway). Override:
+  /// `--dart-define=NOTIFICATION_HUB_URL=http://<host>:5106/hubs/notifications`
+  /// Order tracking SignalR hub (Order service :5123). Override:
+  /// `--dart-define=ORDER_TRACKING_HUB_URL=http://<host>:5123/hubs/tracking`
+  static String get orderTrackingHubUrl {
+    const fromEnv = String.fromEnvironment('ORDER_TRACKING_HUB_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (kIsWeb) return 'http://localhost:5123/hubs/tracking';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+        return 'http://$_devLanHost:5123/hubs/tracking';
+      default:
+        return 'http://localhost:5123/hubs/tracking';
+    }
+  }
+
+  static String get notificationHubUrl {
+    const fromEnv = String.fromEnvironment('NOTIFICATION_HUB_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (kIsWeb) return 'http://localhost:5106/hubs/notifications';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'http://$_devLanHost:5106/hubs/notifications';
+      case TargetPlatform.iOS:
+        return 'http://$_devLanHost:5106/hubs/notifications';
+      default:
+        return 'http://localhost:5106/hubs/notifications';
+    }
+  }
+
   static const bool isProduction = bool.fromEnvironment('dart.vm.product');
 
   /// Web OAuth 2.0 client (Google Cloud Console → **Web application**).

@@ -6,10 +6,10 @@ import '../config/app_config.dart';
 
 final _logger = Logger();
 
-Dio createDio({FlutterSecureStorage? storage}) {
+Dio createDio({FlutterSecureStorage? storage, String? baseUrl}) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: AppConfig.baseUrl,
+      baseUrl: baseUrl ?? AppConfig.baseUrl,
       connectTimeout: const Duration(seconds: 15),
       receiveTimeout: const Duration(seconds: 15),
       headers: {'Content-Type': 'application/json'},

@@ -73,6 +73,13 @@ public static class JwtAuthenticationExtensions
 
             o.Events = new JwtBearerEvents
             {
+                OnMessageReceived = ctx =>
+                {
+                    // Browsers send OPTIONS preflight without Authorization — skip JWT for CORS.
+                    if (HttpMethods.IsOptions(ctx.Request.Method))
+                        ctx.NoResult();
+                    return Task.CompletedTask;
+                },
                 OnChallenge = async ctx =>
                 {
                     if (ctx.Response.HasStarted) return;
@@ -107,6 +114,9 @@ public static class JwtAuthenticationExtensions
 
             options.AddPolicy(AuthPolicies.AdminOnly, p =>
                 p.RequireAuthenticatedUser().RequireRole("SystemAdmin"));
+
+            options.AddPolicy(AuthPolicies.PartnerOnly, p =>
+                p.RequireAuthenticatedUser().RequireRole("Partner"));
         });
 
         services.AddHttpContextAccessor();

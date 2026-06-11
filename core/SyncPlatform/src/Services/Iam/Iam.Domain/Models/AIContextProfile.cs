@@ -21,10 +21,6 @@ public class AIContextProfile : BaseAuditableEntity
 
     public decimal RecoveryScore { get; set; }
 
-    public decimal StressScore { get; set; }
-
-    public decimal SleepQualityScore { get; set; }
-
     public decimal NutritionComplianceScore { get; set; }
 
     public decimal WorkoutComplianceScore { get; set; }

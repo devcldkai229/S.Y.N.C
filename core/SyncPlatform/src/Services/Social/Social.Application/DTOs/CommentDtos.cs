@@ -8,11 +8,22 @@ public class CommentDto
     public Guid UserId { get; set; }
     public string Content { get; set; } = string.Empty;
     public AuthorSnapshotDto? AuthorSnapshot { get; set; }
+
+    public Guid? ParentCommentId { get; set; }
 }
 
 public class CreateCommentDto
 {
     public string Content { get; set; } = string.Empty;
+
+    public AuthorSnapshotDto? AuthorSnapshot { get; set; }
+}
+
+public class CreateReplyDto
+{
+    public string Content { get; set; } = string.Empty;
+
+    public Guid? ParentCommentId { get; set; }
 
     public AuthorSnapshotDto? AuthorSnapshot { get; set; }
 }

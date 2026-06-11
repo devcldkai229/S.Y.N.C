@@ -1,6 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
   "_readme": "Copy to appsettings.Development.json (gitignored). Local dev overrides for Payment.",
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
 
   "Logging": {
     "LogLevel": {

@@ -3,9 +3,12 @@ using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using Payment.API.Exceptions;
+using Payment.API.Middleware;
 using Payment.Application.Common;
 using Payment.Application.Extensions;
 using Payment.Infrastructure.Extensions;
+using Payment.Infrastructure.Persistence;
+using Payment.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,6 +58,12 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<PaymentDbContext>();
+    await PaymentSeedData.PaymentDbSeeder.SeedAsync(db);
+}
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -68,6 +77,7 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 
 app.MapSyncHealthChecks();

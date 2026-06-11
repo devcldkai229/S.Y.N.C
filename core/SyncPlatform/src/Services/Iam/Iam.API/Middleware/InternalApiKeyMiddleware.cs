@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using System.Text.Json;
 using Iam.Application.Common;
 using Microsoft.AspNetCore.Http;
@@ -44,6 +45,11 @@ public class InternalApiKeyMiddleware
                 await WriteUnauthorizedResponseAsync(context, "Unauthorized access.");
                 return;
             }
+
+            // Satisfy JWT FallbackPolicy for service-to-service calls (no Bearer token).
+            context.User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim(ClaimTypes.NameIdentifier, "internal-service")],
+                authenticationType: "InternalApiKey"));
         }
 
         await _next(context);

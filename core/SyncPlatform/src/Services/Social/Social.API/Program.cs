@@ -39,6 +39,14 @@ builder.Services.Configure<SocialMaintenanceOptions>(
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSyncHealthChecks();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DevCors", policy =>
+        policy.SetIsOriginAllowed(_ => true)
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
+
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -74,10 +82,23 @@ else
     app.UseHttpsRedirection();
 }
 
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("DevCors");
+}
+
 app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
+
+using (var minioScope = app.Services.CreateScope())
+{
+    await minioScope.ServiceProvider
+        .GetRequiredService<Social.Infrastructure.Persistence.Seed.MinioDevAssetSeeder>()
+        .SeedPlaceholdersAsync();
+}
+
 await app.Services.InitializeSocialDatabaseAsync();
 
 var maintenanceOptions = app.Configuration

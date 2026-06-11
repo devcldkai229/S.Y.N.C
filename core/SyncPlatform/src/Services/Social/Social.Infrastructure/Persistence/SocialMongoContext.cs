@@ -17,4 +17,25 @@ public sealed class SocialMongoContext
 
     public IMongoCollection<CommunityChallenge> CommunityChallenges =>
         _db.GetCollection<CommunityChallenge>("CommunityChallenges");
+
+    public IMongoCollection<ChallengeParticipant> ChallengeParticipants =>
+        _db.GetCollection<ChallengeParticipant>("ChallengeParticipants");
+
+    public IMongoCollection<UserFollow> UserFollows =>
+        _db.GetCollection<UserFollow>("UserFollows");
+
+    public IMongoCollection<Story> Stories =>
+        _db.GetCollection<Story>("Stories");
+
+    public IMongoCollection<Blog> Blogs =>
+        _db.GetCollection<Blog>("Blogs");
+
+    public IMongoCollection<UserSocialSettings> UserSocialSettings =>
+        _db.GetCollection<UserSocialSettings>("UserSocialSettings");
+
+    public IMongoCollection<StoryInteraction> StoryInteractions =>
+        _db.GetCollection<StoryInteraction>("StoryInteractions");
+
+    public IMongoCollection<StoryView> StoryViews =>
+        _db.GetCollection<StoryView>("StoryViews");
 }

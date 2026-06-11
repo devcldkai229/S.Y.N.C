@@ -3,9 +3,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Social.Domain\Social.Domain.csproj" />
     <ProjectReference Include="..\Social.Application\Social.Application.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Shared\Libs.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.LocationService" Version="3.7.400.52" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.8" />

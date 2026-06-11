@@ -2,6 +2,7 @@ using Iam.Application.Abstractions;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
 using Iam.Infrastructure.Persistence;
+using Libs.Shared.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace Iam.Infrastructure.Persistence.Seed;
@@ -21,6 +22,19 @@ public static class IamSeedData
     public const string PartnerUserEmail = "partner@sync.local";
     public const string DevSeedUserEmail = "dev.seed@sync.local";
 
+    // Social Service cross-reference IDs (must match SocialSeedUserIds)
+    public static readonly Guid SocialAdminUserId = Guid.Parse("d3b07384-d9a4-4a5c-9742-832103328ce1");
+    public static readonly Guid SocialProAthleteUserId = Guid.Parse("8f3a5595-6b58-450e-8fb8-228bc7f59041");
+    public static readonly Guid SocialBeginnerUserId = Guid.Parse("114ab811-1a3f-4e0d-b4f0-b8d9eb93cd84");
+    public static readonly Guid SocialNutritionistUserId = Guid.Parse("c55ef9c8-251c-4cf2-8cb2-e3e8f85cb159");
+    public static readonly Guid SocialActiveMemberUserId = Guid.Parse("9081db2b-f3b3-4610-85f4-3d601d51a6fb");
+
+    public const string SocialAdminEmail = "coach@sync.local";
+    public const string SocialProAthleteEmail = "khai@sync.local";
+    public const string SocialBeginnerEmail = "tran@sync.local";
+    public const string SocialNutritionistEmail = "le@sync.local";
+    public const string SocialActiveMemberEmail = "pham@sync.local";
+
     public static IReadOnlyList<Achievement> GetAchievements() =>
     [
         // ── Event-based ────────────────────────────────────────────────────────
@@ -32,7 +46,7 @@ public static class IamSeedData
             Description = "Đăng nhập lần đầu vào ứng dụng.",
             XPReward = 50,
             CoinReward = 10,
-            IconUrl = "https://cdn.sync.local/achievements/first-login.png",
+            IconUrl = DevSeedMediaUrls.Achievement("first-login.png"),
             RequirementJson = """{"type":"event","event":"user.login","count":1}""",
         },
         new Achievement
@@ -43,7 +57,7 @@ public static class IamSeedData
             Description = "Hoàn thành buổi tập đầu tiên trên SYNC.",
             XPReward = 100,
             CoinReward = 25,
-            IconUrl = "https://cdn.sync.local/achievements/first-workout.png",
+            IconUrl = DevSeedMediaUrls.Achievement("first-workout.png"),
             RequirementJson = """{"type":"event","event":"workout.completed","count":1}""",
         },
         new Achievement
@@ -54,7 +68,7 @@ public static class IamSeedData
             Description = "Hoàn thành một mốc quan trọng trên lộ trình cá nhân.",
             XPReward = 300,
             CoinReward = 75,
-            IconUrl = "https://cdn.sync.local/achievements/roadmap.png",
+            IconUrl = DevSeedMediaUrls.Achievement("roadmap.png"),
             RequirementJson = """{"type":"event","event":"roadmap.milestone.completed","count":1}""",
         },
         new Achievement
@@ -65,7 +79,7 @@ public static class IamSeedData
             Description = "Đăng bài viết đầu tiên lên cộng đồng SYNC.",
             XPReward = 75,
             CoinReward = 20,
-            IconUrl = "https://cdn.sync.local/achievements/social-post.png",
+            IconUrl = DevSeedMediaUrls.Achievement("social-post.png"),
             RequirementJson = """{"type":"event","event":"social.post.created","count":1}""",
         },
 
@@ -78,7 +92,7 @@ public static class IamSeedData
             Description = "Duy trì streak tập luyện 7 ngày liên tiếp.",
             XPReward = 200,
             CoinReward = 50,
-            IconUrl = "https://cdn.sync.local/achievements/streak-7.png",
+            IconUrl = DevSeedMediaUrls.Achievement("streak-7.png"),
             RequirementJson = """{"type":"streak","days":7}""",
         },
         new Achievement
@@ -89,7 +103,7 @@ public static class IamSeedData
             Description = "Duy trì streak 30 ngày — thói quen đã hình thành.",
             XPReward = 1000,
             CoinReward = 250,
-            IconUrl = "https://cdn.sync.local/achievements/streak-30.png",
+            IconUrl = DevSeedMediaUrls.Achievement("streak-30.png"),
             RequirementJson = """{"type":"streak","days":30}""",
         },
         new Achievement
@@ -100,7 +114,7 @@ public static class IamSeedData
             Description = "100 ngày không ngừng nghỉ — bạn là huyền thoại.",
             XPReward = 3000,
             CoinReward = 1000,
-            IconUrl = "https://cdn.sync.local/achievements/streak-100.png",
+            IconUrl = DevSeedMediaUrls.Achievement("streak-100.png"),
             RequirementJson = """{"type":"streak","days":100}""",
         },
 
@@ -113,7 +127,7 @@ public static class IamSeedData
             Description = "Hoàn thành 100% mục tiêu cả ăn lẫn tập 3 ngày liên tiếp.",
             XPReward = 150,
             CoinReward = 40,
-            IconUrl = "https://cdn.sync.local/achievements/perfect-3.png",
+            IconUrl = DevSeedMediaUrls.Achievement("perfect-3.png"),
             RequirementJson = """{"type":"perfect_days","days":3}""",
         },
         new Achievement
@@ -124,7 +138,7 @@ public static class IamSeedData
             Description = "Một tuần hoàn hảo — tập đủ, ăn đúng, không bỏ ngày nào.",
             XPReward = 500,
             CoinReward = 120,
-            IconUrl = "https://cdn.sync.local/achievements/perfect-7.png",
+            IconUrl = DevSeedMediaUrls.Achievement("perfect-7.png"),
             RequirementJson = """{"type":"perfect_days","days":7}""",
         },
         new Achievement
@@ -135,7 +149,7 @@ public static class IamSeedData
             Description = "30 ngày hoàn hảo liên tiếp — kỷ luật tuyệt đối.",
             XPReward = 2000,
             CoinReward = 600,
-            IconUrl = "https://cdn.sync.local/achievements/perfect-30.png",
+            IconUrl = DevSeedMediaUrls.Achievement("perfect-30.png"),
             RequirementJson = """{"type":"perfect_days","days":30}""",
         },
 
@@ -148,7 +162,7 @@ public static class IamSeedData
             Description = "Đạt cấp độ 5 — bạn đang tiến bộ thấy rõ.",
             XPReward = 0,
             CoinReward = 100,
-            IconUrl = "https://cdn.sync.local/achievements/level-5.png",
+            IconUrl = DevSeedMediaUrls.Achievement("level-5.png"),
             RequirementJson = """{"type":"level","level":5}""",
         },
         new Achievement
@@ -159,7 +173,7 @@ public static class IamSeedData
             Description = "Đạt cấp độ 10 — sự kiên trì của bạn đáng ngưỡng mộ.",
             XPReward = 0,
             CoinReward = 300,
-            IconUrl = "https://cdn.sync.local/achievements/level-10.png",
+            IconUrl = DevSeedMediaUrls.Achievement("level-10.png"),
             RequirementJson = """{"type":"level","level":10}""",
         },
         new Achievement
@@ -170,7 +184,7 @@ public static class IamSeedData
             Description = "Đạt cấp độ 25 — bạn thuộc tầng lớp elite.",
             XPReward = 0,
             CoinReward = 1000,
-            IconUrl = "https://cdn.sync.local/achievements/level-25.png",
+            IconUrl = DevSeedMediaUrls.Achievement("level-25.png"),
             RequirementJson = """{"type":"level","level":25}""",
         },
     ];
@@ -181,7 +195,7 @@ public static class IamSeedData
         Email = DemoUserEmail,
         PasswordHash = passwordHash,
         FullName = "Nguyễn Demo SYNC",
-        AvatarUrl = "https://cdn.sync.local/avatars/demo-user.png",
+        AvatarUrl = DevSeedMediaUrls.Avatar("demo-user.png"),
         Role = UserRole.User,
         Status = UserStatus.Active,
         SubscriptionTier = SubscriptionTier.Free,
@@ -209,7 +223,7 @@ public static class IamSeedData
         Email = AdminUserEmail,
         PasswordHash = passwordHash,
         FullName = "SYNC Admin",
-        AvatarUrl = "https://cdn.sync.local/avatars/admin.png",
+        AvatarUrl = DevSeedMediaUrls.Avatar("admin.png"),
         Role = UserRole.SystemAdmin,
         Status = UserStatus.Active,
         SubscriptionTier = SubscriptionTier.Ultra,
@@ -236,7 +250,7 @@ public static class IamSeedData
         Email = PartnerUserEmail,
         PasswordHash = passwordHash,
         FullName = "SYNC Partner",
-        AvatarUrl = "https://cdn.sync.local/avatars/partner.png",
+        AvatarUrl = DevSeedMediaUrls.Avatar("partner.png"),
         Role = UserRole.Partner,
         Status = UserStatus.Active,
         SubscriptionTier = SubscriptionTier.Premium,
@@ -272,12 +286,97 @@ public static class IamSeedData
         TimeZone = "Asia/Ho_Chi_Minh",
     };
 
+    public static User CreateSocialAdminUser(string passwordHash) => new()
+    {
+        Id = SocialAdminUserId,
+        Email = SocialAdminEmail,
+        PasswordHash = passwordHash,
+        FullName = "SYNC Admin",
+        AvatarUrl = "https://i.pravatar.cc/150?u=admin",
+        Role = UserRole.SystemAdmin,
+        Status = UserStatus.Active,
+        SubscriptionTier = SubscriptionTier.Ultra,
+        EmailVerified = true,
+        PhoneVerified = false,
+        PreferredLanguage = "vi",
+        TimeZone = "Asia/Ho_Chi_Minh",
+    };
+
+    public static User CreateSocialProAthleteUser(string passwordHash) => new()
+    {
+        Id = SocialProAthleteUserId,
+        Email = SocialProAthleteEmail,
+        PasswordHash = passwordHash,
+        FullName = "Khải Nguyễn",
+        AvatarUrl = "https://i.pravatar.cc/150?u=khai",
+        Role = UserRole.User,
+        Status = UserStatus.Active,
+        SubscriptionTier = SubscriptionTier.Premium,
+        EmailVerified = true,
+        PhoneVerified = false,
+        PreferredLanguage = "vi",
+        TimeZone = "Asia/Ho_Chi_Minh",
+    };
+
+    public static User CreateSocialBeginnerUser(string passwordHash) => new()
+    {
+        Id = SocialBeginnerUserId,
+        Email = SocialBeginnerEmail,
+        PasswordHash = passwordHash,
+        FullName = "Trần Thể Lực",
+        AvatarUrl = "https://i.pravatar.cc/150?u=tran",
+        Role = UserRole.User,
+        Status = UserStatus.Active,
+        SubscriptionTier = SubscriptionTier.Free,
+        EmailVerified = true,
+        PhoneVerified = false,
+        PreferredLanguage = "vi",
+        TimeZone = "Asia/Ho_Chi_Minh",
+    };
+
+    public static User CreateSocialNutritionistUser(string passwordHash) => new()
+    {
+        Id = SocialNutritionistUserId,
+        Email = SocialNutritionistEmail,
+        PasswordHash = passwordHash,
+        FullName = "Lê Dinh Dưỡng",
+        AvatarUrl = "https://i.pravatar.cc/150?u=le",
+        Role = UserRole.Partner,
+        Status = UserStatus.Active,
+        SubscriptionTier = SubscriptionTier.Premium,
+        EmailVerified = true,
+        PhoneVerified = false,
+        PreferredLanguage = "vi",
+        TimeZone = "Asia/Ho_Chi_Minh",
+    };
+
+    public static User CreateSocialActiveMemberUser(string passwordHash) => new()
+    {
+        Id = SocialActiveMemberUserId,
+        Email = SocialActiveMemberEmail,
+        PasswordHash = passwordHash,
+        FullName = "Phạm Cardio",
+        AvatarUrl = "https://i.pravatar.cc/150?u=pham",
+        Role = UserRole.User,
+        Status = UserStatus.Active,
+        SubscriptionTier = SubscriptionTier.Premium,
+        EmailVerified = true,
+        PhoneVerified = false,
+        PreferredLanguage = "vi",
+        TimeZone = "Asia/Ho_Chi_Minh",
+    };
+
     public static IReadOnlyList<User> GetSeedUsers(string passwordHash) =>
     [
         CreateDemoUser(passwordHash),
         CreateAdminUser(passwordHash),
         CreatePartnerUser(passwordHash),
         CreateDevSeedUser(passwordHash),
+        CreateSocialAdminUser(passwordHash),
+        CreateSocialProAthleteUser(passwordHash),
+        CreateSocialBeginnerUser(passwordHash),
+        CreateSocialNutritionistUser(passwordHash),
+        CreateSocialActiveMemberUser(passwordHash),
     ];
 
     /// <summary>Applies EF migrations and idempotent dev seed (run once at IAM.API startup).</summary>
@@ -304,19 +403,38 @@ public static class IamSeedData
                 .Select(a => a.Code)
                 .ToListAsync(cancellationToken);
 
-            var missing = seeds.Where(a => !existingCodes.Contains(a.Code)).ToList();
-            if (missing.Count == 0)
-                return;
-
             var now = DateTimeOffset.UtcNow;
+            var missing = seeds.Where(a => !existingCodes.Contains(a.Code)).ToList();
             foreach (var achievement in missing)
             {
                 achievement.CreatedAt = now;
                 achievement.UpdatedAt = now;
             }
 
-            await db.Achievements.AddRangeAsync(missing, cancellationToken);
-            await db.SaveChangesAsync(cancellationToken);
+            if (missing.Count > 0)
+            {
+                await db.Achievements.AddRangeAsync(missing, cancellationToken);
+            }
+
+            var existing = await db.Achievements
+                .Where(a => codes.Contains(a.Code))
+                .ToListAsync(cancellationToken);
+            var seedByCode = seeds.ToDictionary(a => a.Code, StringComparer.OrdinalIgnoreCase);
+            foreach (var achievement in existing)
+            {
+                if (!seedByCode.TryGetValue(achievement.Code, out var seed))
+                    continue;
+
+                var migrated = DevSeedMediaUrls.MigrateLegacyUrl(seed.IconUrl);
+                if (!string.Equals(achievement.IconUrl, migrated, StringComparison.Ordinal))
+                {
+                    achievement.IconUrl = migrated;
+                    achievement.UpdatedAt = now;
+                }
+            }
+
+            if (missing.Count > 0 || existing.Count > 0)
+                await db.SaveChangesAsync(cancellationToken);
         }
 
         private static async Task SeedUsersAsync(
@@ -335,12 +453,23 @@ public static class IamSeedData
             var existingEmails = existingUsers.Select(u => u.Email).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var now = DateTimeOffset.UtcNow;
 
+            var seedByEmail = candidates.ToDictionary(u => u.Email, StringComparer.OrdinalIgnoreCase);
+
             foreach (var user in existingUsers)
             {
                 user.PasswordHash = passwordHash;
                 user.EmailVerified = true;
                 if (user.Status == UserStatus.PendingVerification)
                     user.Status = UserStatus.Active;
+                if (seedByEmail.TryGetValue(user.Email, out var seedUser) &&
+                    !string.IsNullOrWhiteSpace(seedUser.AvatarUrl))
+                {
+                    user.AvatarUrl = DevSeedMediaUrls.MigrateLegacyUrl(seedUser.AvatarUrl);
+                }
+                else if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+                {
+                    user.AvatarUrl = DevSeedMediaUrls.MigrateLegacyUrl(user.AvatarUrl);
+                }
                 user.UpdatedAt = now;
             }
 

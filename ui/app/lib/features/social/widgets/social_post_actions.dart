@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
+import 'package:sync_app/features/social/utils/social_share_link.dart';
 
 /// Bottom sheet with contextual actions for a social post.
 ///
@@ -218,9 +219,9 @@ class SocialPostActionsSheet extends StatelessWidget {
 
   void _copyLink(BuildContext context) {
     Navigator.pop(context);
-    Clipboard.setData(ClipboardData(text: 'sync://social/share/${post.shareCode}'));
+    Clipboard.setData(ClipboardData(text: SocialShareLink.forPost(post)));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Link copied to clipboard.')),
+      const SnackBar(content: Text('Đã sao chép liên kết.')),
     );
   }
 
