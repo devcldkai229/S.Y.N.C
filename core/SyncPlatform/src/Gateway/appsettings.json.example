@@ -106,6 +106,17 @@
           "Path": "/api/v1/users/me/challenges/{**catch-all}"
         }
       },
+      "payment-subscription-plans-public-route": {
+        "ClusterId": "payment-cluster",
+        "Match": {
+          "Path": "/api/v1/payment/payments/subscription-plans",
+          "Methods": [ "GET" ]
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/payment" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
       "payment-payos-webhook-route": {
         "ClusterId": "payment-cluster",
         "Match": {

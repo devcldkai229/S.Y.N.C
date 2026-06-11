@@ -1,5 +1,6 @@
 import Navbar from "@/components/landing/Navbar";
 import PricingSection from "@/components/landing/PricingSection";
+import MySubscriptionStatus from "@/components/landing/MySubscriptionStatus";
 import CTASection from "@/components/landing/CTASection";
 import DisplayTextSection from "@/components/landing/DisplayTextSection";
 import ParticleCursor from "@/components/ui/ParticleCursor";
@@ -94,6 +95,9 @@ export default function SubscriptionPage() {
             </p>
           </FadeUp>
         </section>
+
+        {/* Gói hiện tại của user (chỉ hiện khi đã login) */}
+        <MySubscriptionStatus />
 
         {/* Pricing cards */}
         <PricingSection />

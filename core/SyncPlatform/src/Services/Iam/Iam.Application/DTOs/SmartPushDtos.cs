@@ -23,5 +23,6 @@ public sealed record IamSmartPushContextDto(
     bool SmartPushEnabled,
     bool AllowAiGeneratedNotification,
     string TimeZoneId,
-    string AgentPersona = "FriendlyBuddy"
+    string AgentPersona = "FriendlyBuddy",
+    string SubscriptionTier = "Free"
 );

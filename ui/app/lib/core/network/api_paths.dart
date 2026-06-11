@@ -56,7 +56,10 @@ abstract final class ApiPaths {
   // Payment  (gateway prefix /v1/payment → service /v1, service routes use /api/v1/payments/...)
   static const subscriptionPlans = '/v1/payment/payments/subscription-plans';
   static const myActiveSubscription = '/v1/payment/payments/user-subscriptions/me/active';
+  static const cancelMySubscription = '/v1/payment/payments/user-subscriptions/me/cancel';
   static const payosCreateLink = '/v1/payment/payments/payos/create-link';
+  static String transactionByOrderCode(int orderCode) =>
+      '/v1/payment/payments/transactions/by-order-code/$orderCode';
 
   // IAM – gamification / shop
   static const meActivityLog = '/v1/iam/me/activity/log';

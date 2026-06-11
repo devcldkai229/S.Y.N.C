@@ -3,8 +3,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Net.payOS;
+using Payment.Application.Clients;
 using Payment.Application.Options;
 using Payment.Application.Services;
+using Payment.Infrastructure.Clients;
+using Payment.Infrastructure.Jobs;
 using Payment.Infrastructure.Persistence;
 using Payment.Infrastructure.Services;
 
@@ -52,6 +55,22 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
         services.AddScoped<IPromotionCampaignService, PromotionCampaignService>();
         services.AddScoped<IInternalWalletService, InternalWalletService>();
+
+        // ── Background jobs ──────────────────────────────────────────────────
+        services.AddHostedService<SubscriptionExpiryJob>();
+
+        // ── IAM internal client (tier sync after activation/expiry) ─────────
+        services.AddHttpClient<IIamSubscriptionClient, IamSubscriptionClient>((sp, client) =>
+        {
+            var config  = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["Services:IamBaseUrl"] ?? "http://localhost:5288";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout     = TimeSpan.FromSeconds(10);
+
+            var apiKey = config["InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
 
         return services;
     }

@@ -22,6 +22,7 @@ public class PromotionCampaignConfiguration : IEntityTypeConfiguration<Promotion
 
         builder.Property(p => p.Value).HasPrecision(18, 2);
         builder.Property(p => p.MinimumSpend).HasPrecision(18, 2);
+        builder.Property(p => p.UsageCount).HasDefaultValue(0);
 
         // JSON array of product category strings this campaign applies to
         builder.Property(p => p.ApplicableProductTypesJson).HasColumnType("jsonb");

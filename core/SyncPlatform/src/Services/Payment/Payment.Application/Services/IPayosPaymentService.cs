@@ -21,4 +21,13 @@ public interface IPayosPaymentService
     Task<PayosWebhookProcessResult> ProcessWebhookAsync(
         string rawJsonBody,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// DEV-ONLY: simulate a successful payment for the given orderCode without PayOS.
+    /// Skips signature verification and directly activates the subscription.
+    /// Must never be called in production — gate with IWebHostEnvironment.IsDevelopment().
+    /// </summary>
+    Task<PayosWebhookProcessResult> ActivateForDevAsync(
+        long orderCode,
+        CancellationToken cancellationToken = default);
 }

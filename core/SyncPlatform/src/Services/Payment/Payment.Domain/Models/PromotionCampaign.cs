@@ -19,6 +19,8 @@ public class PromotionCampaign : BaseAuditableEntity
 
     public int UsageLimit { get; set; }
 
+    public int UsageCount { get; set; }
+
     public DateTimeOffset StartsAt { get; set; }
 
     public DateTimeOffset EndsAt { get; set; }

@@ -25,6 +25,7 @@ public class TransactionConfiguration : IEntityTypeConfiguration<Transaction>
         builder.Property(t => t.RelatedEntityType).HasMaxLength(64);
         builder.Property(t => t.Description).HasMaxLength(1024);
         builder.Property(t => t.FailedReason).HasMaxLength(1024);
+        builder.Property(t => t.CouponCode).HasMaxLength(64);
 
         // AI reasoning context snapshot — stored as jsonb for auditability
         builder.Property(t => t.AIReasoningSnapshotJson).HasColumnType("jsonb");

@@ -35,12 +35,13 @@ class SubscriptionApiService {
     }
   }
 
-  Future<PaymentLink> createPaymentLink(String planId, {bool yearly = false}) async {
+  Future<PaymentLink> createPaymentLink(String planId, {bool yearly = false, String? couponCode}) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.payosCreateLink,
       data: {
         'planId': planId,
         'billingCycle': yearly ? 1 : 0,
+        if (couponCode != null && couponCode.isNotEmpty) 'couponCode': couponCode,
       },
     );
     final envelope = ApiEnvelope.fromJson(
@@ -48,8 +49,32 @@ class SubscriptionApiService {
       PaymentLink.fromJson,
     );
     if (envelope.data == null) {
-      throw Exception(envelope.message.isEmpty ? 'Failed to create payment link.' : envelope.message);
+      throw Exception(
+          envelope.message.isEmpty ? 'Failed to create payment link.' : envelope.message);
     }
     return envelope.data!;
+  }
+
+  Future<TransactionStatus?> getTransactionStatus(int orderCode) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.transactionByOrderCode(orderCode),
+      );
+      final envelope = ApiEnvelope.fromJson(
+        response.data ?? {},
+        TransactionStatus.fromJson,
+      );
+      return envelope.data;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      rethrow;
+    }
+  }
+
+  Future<void> cancelSubscription({String? reason}) async {
+    await _dio.post<void>(
+      ApiPaths.cancelMySubscription,
+      data: {'cancellationReason': reason},
+    );
   }
 }

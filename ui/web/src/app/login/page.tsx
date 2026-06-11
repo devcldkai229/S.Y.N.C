@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, Loader2, Zap, Check, ArrowLeft, Mail } from "lucide-react";
 import ParticleCursor from "@/components/ui/ParticleCursor";
 import GoogleSignInButton from "@/components/ui/GoogleSignInButton";
+import { useUserAuthStore } from "@/stores/user-auth.store";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5057";
 
@@ -45,7 +46,10 @@ const highlights = [
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const justVerified = searchParams.get("verified") === "1";
+  const redirect = searchParams?.get("redirect") ?? "/subscription";
+  const justVerified = searchParams?.get("verified") === "1";
+  const { login, isAuthenticated, loadFromStorage } = useUserAuthStore();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -54,11 +58,19 @@ function LoginForm() {
   const [unverified, setUnverified] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  useEffect(() => {
+    loadFromStorage();
+  }, [loadFromStorage]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.replace(redirect);
+    }
+  }, [isAuthenticated, redirect, router]);
+
   const saveAndRedirect = (data: AuthResponse) => {
-    localStorage.setItem("sync_token", data.accessToken);
-    localStorage.setItem("sync_refresh_token", data.refreshToken);
-    localStorage.setItem("sync_user", JSON.stringify({ id: data.userId, email: data.email, fullName: data.fullName }));
-    router.push("/");
+    login(data.accessToken, { id: data.userId, email: data.email, fullName: data.fullName });
+    router.push(redirect);
   };
 
   const handleGoogleLogin = async (idToken: string) => {

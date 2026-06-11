@@ -87,8 +87,8 @@ function OtpInput({ value, onChange }: { value: string; onChange: (v: string) =>
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const planParam = searchParams.get("plan") ?? "";
-  const resendEmail = searchParams.get("resend") ?? "";
+  const planParam = searchParams?.get("plan") ?? "";
+  const resendEmail = searchParams?.get("resend") ?? "";
 
   const isPro = planParam === "pro";
 
@@ -228,8 +228,30 @@ function RegisterForm() {
         return;
       }
 
-      // Verified → redirect to login with success hint
-      router.push("/login?verified=1");
+      // Verified → auto-login then redirect to landing page
+      try {
+        const loginRes = await fetch(`${API_BASE}/api/v1/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: registeredEmail,
+            password,
+            deviceId: getDeviceId(),
+            platform: 2,
+          }),
+        });
+        const loginJson: ApiEnvelope<AuthResponse> = await loginRes.json();
+        if (loginJson.success && loginJson.data) {
+          const { accessToken, refreshToken, userId, email: userEmail, fullName: userFullName } = loginJson.data;
+          localStorage.setItem("sync_token", accessToken);
+          localStorage.setItem("sync_refresh_token", refreshToken);
+          localStorage.setItem("sync_user", JSON.stringify({ id: userId, email: userEmail, fullName: userFullName }));
+        }
+      } catch {
+        // Auto-login failed silently — user will be redirected to landing page unauthenticated
+      }
+
+      router.push("/");
     } catch {
       setVerifyError("Không thể kết nối đến máy chủ. Vui lòng thử lại.");
     } finally {
