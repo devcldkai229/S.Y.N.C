@@ -150,10 +150,8 @@ public class BiometricProfileService : IBiometricProfileService
                 WorkoutComplianceScore = 1.0m,
                 BurnoutRiskScore = 0m,
                 ChurnRiskScore = 0m,
-                StressScore = 0m,
                 MotivationScore = 1.0m,
                 RecoveryScore = 1.0m,
-                SleepQualityScore = 1.0m,
             };
             aiCreated = true;
         }

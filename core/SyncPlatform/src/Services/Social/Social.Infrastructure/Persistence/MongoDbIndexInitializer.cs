@@ -11,6 +11,14 @@ public static class MongoDbIndexInitializer
         await ConfigureInteractionIndexesAsync(database);
         await ConfigureCommentIndexesAsync(database);
         await ConfigureCommunityChallengeIndexesAsync(database);
+        await ConfigureChallengeParticipantIndexesAsync(database);
+        await ConfigureUserFollowIndexesAsync(database);
+        await ConfigureStoryIndexesAsync(database);
+        await ConfigureBlogIndexesAsync(database);
+        await ConfigureBlogInteractionIndexesAsync(database);
+        await ConfigureUserSocialSettingsIndexesAsync(database);
+        await ConfigureStoryInteractionIndexesAsync(database);
+        await ConfigureStoryViewIndexesAsync(database);
     }
 
     private static async Task ConfigurePostIndexesAsync(IMongoDatabase database)
@@ -88,6 +96,141 @@ public static class MongoDbIndexInitializer
             ix.Ascending(x => x.CreatorId).Descending(x => x.CreatedAt),
             new CreateIndexOptions { Name = "IX_CreatorId_CreatedAt_Desc" });
 
-        await collection.Indexes.CreateManyAsync([statusDatesIndex, creatorIndex]);
+        var locationIndex = new CreateIndexModel<CommunityChallenge>(
+            Builders<CommunityChallenge>.IndexKeys.Geo2DSphere(x => x.Location),
+            new CreateIndexOptions<CommunityChallenge>
+            {
+                Name = "IX_Location_2dsphere",
+                PartialFilterExpression = Builders<CommunityChallenge>.Filter.Exists(x => x.Location, true),
+            });
+
+        await collection.Indexes.CreateManyAsync([statusDatesIndex, creatorIndex, locationIndex]);
+    }
+
+    private static async Task ConfigureChallengeParticipantIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<ChallengeParticipant>("ChallengeParticipants");
+        var ix = Builders<ChallengeParticipant>.IndexKeys;
+
+        var uniqueJoin = new CreateIndexModel<ChallengeParticipant>(
+            ix.Ascending(x => x.ChallengeId).Ascending(x => x.UserId),
+            new CreateIndexOptions { Unique = true, Name = "UIX_ChallengeId_UserId" });
+
+        var challengeIndex = new CreateIndexModel<ChallengeParticipant>(
+            ix.Ascending(x => x.ChallengeId).Ascending(x => x.Status),
+            new CreateIndexOptions { Name = "IX_ChallengeId_Status" });
+
+        var userActiveIndex = new CreateIndexModel<ChallengeParticipant>(
+            ix.Ascending(x => x.UserId).Ascending(x => x.IsActive).Descending(x => x.JoinedAt),
+            new CreateIndexOptions { Name = "IX_UserId_IsActive_JoinedAt_Desc" });
+
+        await collection.Indexes.CreateManyAsync([uniqueJoin, challengeIndex, userActiveIndex]);
+    }
+
+    private static async Task ConfigureUserFollowIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<UserFollow>("UserFollows");
+        var ix = Builders<UserFollow>.IndexKeys;
+
+        var uniqueFollow = new CreateIndexModel<UserFollow>(
+            ix.Ascending(x => x.FollowerId).Ascending(x => x.FolloweeId),
+            new CreateIndexOptions { Unique = true, Name = "UIX_FollowerId_FolloweeId" });
+
+        var followeeIndex = new CreateIndexModel<UserFollow>(
+            ix.Ascending(x => x.FolloweeId).Ascending(x => x.Status),
+            new CreateIndexOptions { Name = "IX_FolloweeId_Status" });
+
+        var followerIndex = new CreateIndexModel<UserFollow>(
+            ix.Ascending(x => x.FollowerId).Ascending(x => x.Status),
+            new CreateIndexOptions { Name = "IX_FollowerId_Status" });
+
+        await collection.Indexes.CreateManyAsync([uniqueFollow, followeeIndex, followerIndex]);
+    }
+
+    private static async Task ConfigureUserSocialSettingsIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<UserSocialSettings>("UserSocialSettings");
+
+        var userIdIndex = new CreateIndexModel<UserSocialSettings>(
+            Builders<UserSocialSettings>.IndexKeys.Ascending(x => x.UserId),
+            new CreateIndexOptions { Unique = true, Name = "UIX_UserId" });
+
+        await collection.Indexes.CreateManyAsync([userIdIndex]);
+    }
+
+    private static async Task ConfigureStoryIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<Story>("Stories");
+        var ix = Builders<Story>.IndexKeys;
+
+        var activeExpiryIndex = new CreateIndexModel<Story>(
+            ix.Ascending(x => x.IsActive).Ascending(x => x.ExpiresAt),
+            new CreateIndexOptions { Name = "IX_IsActive_ExpiresAt" });
+
+        var authorIndex = new CreateIndexModel<Story>(
+            ix.Ascending(x => x.AuthorId).Descending(x => x.CreatedAt),
+            new CreateIndexOptions { Name = "IX_AuthorId_CreatedAt_Desc" });
+
+        await collection.Indexes.CreateManyAsync([activeExpiryIndex, authorIndex]);
+    }
+
+    private static async Task ConfigureBlogIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<Blog>("Blogs");
+        var ix = Builders<Blog>.IndexKeys;
+
+        var slugIndex = new CreateIndexModel<Blog>(
+            ix.Ascending(x => x.Slug),
+            new CreateIndexOptions { Unique = true, Name = "UIX_Slug" });
+
+        var statusPublishedIndex = new CreateIndexModel<Blog>(
+            ix.Ascending(x => x.Status).Descending(x => x.PublishedAt),
+            new CreateIndexOptions { Name = "IX_Status_PublishedAt_Desc" });
+
+        var tagsIndex = new CreateIndexModel<Blog>(
+            ix.Ascending(x => x.Tags),
+            new CreateIndexOptions { Name = "IX_Tags" });
+
+        var authorCreatedIndex = new CreateIndexModel<Blog>(
+            ix.Ascending(x => x.AuthorId).Descending(x => x.CreatedAt),
+            new CreateIndexOptions { Name = "IX_AuthorId_CreatedAt_Desc" });
+
+        await collection.Indexes.CreateManyAsync([slugIndex, statusPublishedIndex, tagsIndex, authorCreatedIndex]);
+    }
+
+    private static async Task ConfigureBlogInteractionIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<BlogInteraction>("BlogInteractions");
+        var ix = Builders<BlogInteraction>.IndexKeys;
+
+        var uniqueInteraction = new CreateIndexModel<BlogInteraction>(
+            ix.Ascending(x => x.BlogId).Ascending(x => x.UserId).Ascending(x => x.InteractionType),
+            new CreateIndexOptions { Unique = true, Name = "UIX_BlogId_UserId_InteractionType" });
+
+        await collection.Indexes.CreateManyAsync([uniqueInteraction]);
+    }
+
+    private static async Task ConfigureStoryInteractionIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<StoryInteraction>("StoryInteractions");
+        var ix = Builders<StoryInteraction>.IndexKeys;
+
+        var uniqueLike = new CreateIndexModel<StoryInteraction>(
+            ix.Ascending(x => x.StoryId).Ascending(x => x.UserId).Ascending(x => x.InteractionType),
+            new CreateIndexOptions { Unique = true, Name = "UIX_StoryId_UserId_InteractionType" });
+
+        await collection.Indexes.CreateManyAsync([uniqueLike]);
+    }
+
+    private static async Task ConfigureStoryViewIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<StoryView>("StoryViews");
+        var ix = Builders<StoryView>.IndexKeys;
+
+        var uniqueView = new CreateIndexModel<StoryView>(
+            ix.Ascending(x => x.StoryId).Ascending(x => x.ViewerId),
+            new CreateIndexOptions { Unique = true, Name = "UIX_StoryId_ViewerId" });
+
+        await collection.Indexes.CreateManyAsync([uniqueView]);
     }
 }

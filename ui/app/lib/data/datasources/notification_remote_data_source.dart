@@ -8,13 +8,12 @@ class NotificationRemoteDataSource {
 
   final Dio _dio;
 
-  Future<NotificationsPage> fetchNotificationsForUser({
-    required String userId,
+  Future<NotificationsPage> fetchMyNotifications({
     int pageNumber = 1,
     int pageSize = 20,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.notificationUserInbox(userId),
+      ApiPaths.notificationsMe,
       queryParameters: <String, dynamic>{
         'pageNumber': pageNumber,
         'pageSize': pageSize,
@@ -42,9 +41,9 @@ class NotificationRemoteDataSource {
     );
   }
 
-  Future<int> fetchUnreadCount(String userId) async {
+  Future<int> fetchMyUnreadCount() async {
     final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.notificationUnreadCount(userId),
+      ApiPaths.notificationsMeUnreadCount,
     );
     final envelope = ApiEnvelope<int>.fromJson(
       response.data ?? {},
@@ -56,11 +55,11 @@ class NotificationRemoteDataSource {
     return envelope.data!;
   }
 
-  Future<void> markAsRead({required String userId, required String notificationId}) async {
-    await _dio.patch<void>(ApiPaths.notificationMarkRead(userId, notificationId));
+  Future<void> markAsRead(String notificationId) async {
+    await _dio.patch<void>(ApiPaths.notificationMarkReadMe(notificationId));
   }
 
-  Future<void> markAllAsRead(String userId) async {
-    await _dio.post<void>(ApiPaths.notificationMarkAllRead(userId));
+  Future<void> markAllAsRead() async {
+    await _dio.post<void>(ApiPaths.notificationsMeReadAll);
   }
 }

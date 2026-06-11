@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Social.Application.Common;
 using Social.Application.Configuration;
+using Social.Application.Exceptions;
+using Social.Application.Helpers;
 using Social.Application.Services;
 
 namespace Social.API.Controllers;
@@ -39,6 +41,10 @@ public class PostMediaController : ControllerBase
         if (files is null || files.Count == 0)
             return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse("At least one file is required."));
 
+        if (files.Count > PostMediaRules.MaxImages + PostMediaRules.MaxVideos)
+            return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse(
+                $"A post can have at most {PostMediaRules.MaxImages} images and {PostMediaRules.MaxVideos} video."));
+
         // Basic pre-validation to fail fast before streaming to MinIO.
         foreach (var f in files)
         {
@@ -49,6 +55,25 @@ public class PostMediaController : ControllerBase
             if (f.Length > maxBytes)
                 return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse(
                     $"File '{f.FileName}' is too large. Max allowed: {_minioOptions.MaxFileSizeMb}MB."));
+
+            try
+            {
+                PostMediaRules.ValidateContentTypeAllowed(f.ContentType, _minioOptions);
+            }
+            catch (BadRequestException ex)
+            {
+                return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse(ex.Message));
+            }
+        }
+
+        var (imageCount, videoCount) = PostMediaRules.CountByContentTypes(files.Select(f => f.ContentType));
+        try
+        {
+            PostMediaRules.ValidateCounts(imageCount, videoCount);
+        }
+        catch (BadRequestException ex)
+        {
+            return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse(ex.Message));
         }
 
         var urls = new List<string>(files.Count);

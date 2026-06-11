@@ -29,5 +29,12 @@ public class MinioOptions
         "image/gif",
         "image/webp"
     };
+
+    public List<string> AllowedVideoContentTypes { get; set; } = new()
+    {
+        "video/mp4",
+        "video/webm",
+        "video/quicktime",
+    };
 }
 

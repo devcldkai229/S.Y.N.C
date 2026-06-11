@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
-import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/achievements/cubit/achievements_cubit.dart';
-import 'package:sync_app/features/profile/models/profile_models.dart';
-import 'package:sync_app/features/profile/services/profile_api_service.dart';
+import 'package:sync_app/features/achievements/models/achievement_display_data.dart';
+import 'package:sync_app/features/achievements/widgets/achievements_stats_panel.dart';
+import 'package:sync_app/features/achievements/widgets/achievements_theme.dart';
+import 'package:sync_app/features/achievements/widgets/in_progress_achievement_card.dart';
+import 'package:sync_app/features/achievements/widgets/section_header.dart';
+import 'package:sync_app/features/achievements/widgets/unlocked_achievement_card.dart';
+import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
 
 class AchievementsScreen extends StatelessWidget {
   const AchievementsScreen({super.key});
+
+  static const _previewUnlockedCount = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -223,16 +229,15 @@ class _AchievementsViewState extends State<_AchievementsView> {
 }
 
 // ─── Progress Card (Quest list) ────────────────────────────────────────────
+  bool _statsPanelOpen = false;
 
-class _ProgressCard extends StatelessWidget {
-  const _ProgressCard({required this.item});
+  void _toggleStatsPanel() {
+    setState(() => _statsPanelOpen = !_statsPanelOpen);
+  }
 
-  final AchievementProgressItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final pct = (item.progress * 100).round();
-    final color = _colorForCode(item.code);
+  void _closeStatsPanel() {
+    if (_statsPanelOpen) setState(() => _statsPanelOpen = false);
+  }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -253,38 +258,50 @@ class _ProgressCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+  void _showAllUnlocked(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.35,
+        maxChildSize: 0.9,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: AchievementsTheme.card,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
             children: [
+              const SizedBox(height: 10),
               Container(
                 width: 40,
-                height: 40,
+                height: 4,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFE2E8F0),
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                child: Icon(_iconForCode(item.code), color: color, size: 22),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                child: Row(
                   children: [
-                    Text(
-                      item.name,
-                      style: const TextStyle(
+                    const Text(
+                      'Đã mở khóa',
+                      style: TextStyle(
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        fontSize: 14,
-                        color: AppColors.textPrimary,
+                        color: AchievementsTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const Spacer(),
                     Text(
-                      item.description,
+                      '${AchievementDisplayData.unlocked.length} thành tựu',
                       style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        color: AchievementsTheme.textMuted,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -558,34 +575,41 @@ class _LogActivityButton extends StatefulWidget {
   const _LogActivityButton({required this.onLogged});
   final VoidCallback onLogged;
 
-  @override
-  State<_LogActivityButton> createState() => _LogActivityButtonState();
-}
-
-class _LogActivityButtonState extends State<_LogActivityButton> {
-  bool _loading = false;
-
-  Future<void> _log() async {
-    setState(() => _loading = true);
-    try {
-      final result = await getIt<ProfileApiService>().logActivity();
-      if (!mounted) return;
-      if (result.alreadyLoggedToday) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Hôm nay bạn đã ghi nhận rồi! Streak: ${result.currentStreak} ngày 🔥'),
-            backgroundColor: Colors.orange.shade700,
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                  children: AchievementDisplayData.unlocked
+                      .map((item) => UnlockedAchievementCard(achievement: item))
+                      .toList(),
+                ),
+              ),
+            ],
           ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result.newlyUnlockedAchievements.isEmpty
-                  ? 'Đã ghi nhận! Streak: ${result.currentStreak} ngày 🔥'
-                  : 'Streak: ${result.currentStreak} ngày 🔥  Mở khóa: ${result.newlyUnlockedAchievements.join(', ')}',
-            ),
-            backgroundColor: AppColors.primaryGreen,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const panelWidth = AchievementsTheme.statsPanelWidth;
+    const animDuration = Duration(milliseconds: AchievementsTheme.panelAnimationMs);
+
+    return AppShellOverlayScaffold(
+      child: Scaffold(
+      backgroundColor: AchievementsTheme.background,
+      appBar: AppBar(
+        backgroundColor: AchievementsTheme.background,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: _toggleStatsPanel,
+          icon: Icon(
+            _statsPanelOpen ? Icons.menu_open_rounded : Icons.menu_rounded,
+            color: AchievementsTheme.textPrimary,
           ),
         );
         widget.onLogged();
@@ -610,18 +634,12 @@ class _LogActivityButtonState extends State<_LogActivityButton> {
           backgroundColor: const Color(0xFFE65100),
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          tooltip: 'Your stats',
         ),
-        icon: _loading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : const Icon(Icons.local_fire_department_rounded, color: Colors.white),
-        label: Text(
-          _loading ? 'Đang ghi nhận...' : 'Ghi nhận hoạt động hôm nay',
-          style: const TextStyle(
-            color: Colors.white,
+        title: const Text(
+          'Achievements',
+          style: TextStyle(
+            fontSize: 20,
             fontWeight: FontWeight.w800,
             fontSize: 14,
           ),
@@ -657,10 +675,21 @@ class _GamificationHeader extends StatelessWidget {
             color: AppColors.primaryGreen.withValues(alpha: 0.25),
             blurRadius: 12,
             offset: const Offset(0, 4),
+            color: AchievementsTheme.textPrimary,
+            letterSpacing: -0.3,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () => context.push(AppRoutes.shop),
+            icon: const Icon(Icons.storefront_outlined),
+            color: AchievementsTheme.textSecondary,
+            tooltip: 'SyncCoins Shop',
           ),
         ],
       ),
-      child: Column(
+      body: Stack(
+        clipBehavior: Clip.none,
         children: [
           // Level progress row
           Row(
@@ -685,6 +714,50 @@ class _GamificationHeader extends StatelessWidget {
                         color: Colors.white,
                         fontWeight: FontWeight.w900,
                         fontSize: 16,
+          // ── Main scroll content ───────────────────────────────────────
+          BlocBuilder<AchievementsCubit, AchievementsState>(
+            builder: (context, state) {
+              if (state.isLoading && state.inventory == null) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AchievementsTheme.progress),
+                );
+              }
+
+              final previewUnlocked = AchievementDisplayData.unlocked
+                  .take(AchievementsScreen._previewUnlockedCount)
+                  .toList();
+
+              return RefreshIndicator(
+                color: AchievementsTheme.progress,
+                onRefresh: () => context.read<AchievementsCubit>().load(),
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          const AchievementsSectionHeader(title: 'Đang tiến tới'),
+                          ...AchievementDisplayData.inProgress.asMap().entries.map(
+                                (e) => InProgressAchievementCard(
+                                  achievement: e.value,
+                                  gradientIndex: e.key,
+                                ),
+                              ),
+                          const SizedBox(height: 8),
+                          AchievementsSectionHeader(
+                            title: 'Đã mở khóa',
+                            onSeeMore: AchievementDisplayData.unlocked.length >
+                                    AchievementsScreen._previewUnlockedCount
+                                ? () => _showAllUnlocked(context)
+                                : null,
+                          ),
+                          ...previewUnlocked.map(
+                            (item) => UnlockedAchievementCard(achievement: item),
+                          ),
+                        ]),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -709,6 +782,20 @@ class _GamificationHeader extends StatelessWidget {
                     ),
                   ],
                 ),
+              );
+            },
+          ),
+
+          // ── Dim backdrop when panel open ──────────────────────────────
+          AnimatedOpacity(
+            opacity: _statsPanelOpen ? 1 : 0,
+            duration: animDuration,
+            curve: Curves.easeOut,
+            child: IgnorePointer(
+              ignoring: !_statsPanelOpen,
+              child: GestureDetector(
+                onTap: _closeStatsPanel,
+                child: Container(color: Colors.black.withValues(alpha: 0.35)),
               ),
             ],
           ),
@@ -836,6 +923,21 @@ class _EmptyTabState extends StatelessWidget {
             ),
           ),
         ],
+            ),
+          ),
+
+          // ── Slide-in stats panel ──────────────────────────────────────
+          AnimatedPositioned(
+            duration: animDuration,
+            curve: Curves.easeOutCubic,
+            left: _statsPanelOpen ? 0 : -panelWidth,
+            top: 0,
+            bottom: 0,
+            width: panelWidth,
+            child: AchievementsStatsPanel(onClose: _closeStatsPanel),
+          ),
+        ],
+      ),
       ),
     );
   }

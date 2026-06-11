@@ -32,7 +32,10 @@ public class CommentController : ControllerBase
             postId,
             dto,
             cancellationToken);
-        return Ok(ApiResponse<CommentDto>.SuccessResponse(comment, "Comment created successfully."));
+        return CreatedAtAction(
+            nameof(GetByPost),
+            new { postId },
+            ApiResponse<CommentDto>.SuccessResponse(comment, "Comment created successfully."));
     }
 
     [HttpGet]

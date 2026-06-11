@@ -5,7 +5,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MongoDB.Bson" Version="3.4.0" />
+    <!-- GeoJsonPoint / 2dsphere support (aligned with Social.Infrastructure driver version). -->
+    <PackageReference Include="MongoDB.Driver" Version="3.8.1" />
   </ItemGroup>
 
   <PropertyGroup>

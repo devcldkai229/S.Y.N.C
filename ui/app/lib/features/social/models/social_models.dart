@@ -127,12 +127,128 @@ class SocialPost {
     );
   }
 
+  String get timeAgoVi => formatRelativeTimeVi(createdAt);
+
+  /// English fallback used by legacy [SocialPostCard].
   String get timeAgo {
     final diff = DateTime.now().difference(createdAt);
     if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     if (diff.inDays == 1) return 'Yesterday';
     return '${diff.inDays}d ago';
+  }
+
+  String? get badgeLabel => switch (postType) {
+        'AchievementShare' => 'Chia sẻ thành tích',
+        'StreakShare' => 'Chuỗi ngày tập',
+        'ChallengeCreation' => 'Thử thách mới',
+        _ => null,
+      };
+
+  String? get badgeEmoji => switch (postType) {
+        'AchievementShare' => '🏆',
+        'StreakShare' => '🔥',
+        'ChallengeCreation' => '⚡',
+        _ => null,
+      };
+}
+
+String formatRelativeTimeVi(DateTime createdAt) {
+  final diff = DateTime.now().difference(createdAt);
+  if (diff.inMinutes < 1) return 'Vừa xong';
+  if (diff.inMinutes < 60) return '${diff.inMinutes} phút';
+  if (diff.inHours < 24) return '${diff.inHours} giờ';
+  if (diff.inDays == 1) return 'Hôm qua';
+  return '${diff.inDays} ngày';
+}
+
+class SocialStory {
+  const SocialStory({
+    required this.id,
+    required this.authorId,
+    required this.authorSnapshot,
+    required this.mediaUrl,
+    required this.mediaType,
+    this.caption,
+    required this.createdAt,
+    required this.expiresAt,
+    this.isLikedByMe = false,
+  });
+
+  final String id;
+  final String authorId;
+  final SocialAuthorSnapshot authorSnapshot;
+  final String mediaUrl;
+  final String mediaType;
+  final String? caption;
+  final DateTime createdAt;
+  final DateTime expiresAt;
+  final bool isLikedByMe;
+
+  bool get isTextOnly => mediaType == 'TextOnly' || mediaUrl.isEmpty;
+
+  factory SocialStory.fromJson(Map<String, dynamic> json) {
+    final authorSnapshotJson = json['authorSnapshot'] as Map<String, dynamic>? ?? const {};
+    return SocialStory(
+      id: json['id']?.toString() ?? '',
+      authorId: json['authorId']?.toString() ?? '',
+      authorSnapshot: SocialAuthorSnapshot.fromJson(authorSnapshotJson),
+      mediaUrl: (json['mediaUrl'] ?? '').toString(),
+      mediaType: (json['mediaType'] ?? '').toString(),
+      caption: json['caption']?.toString(),
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      expiresAt: DateTime.tryParse(json['expiresAt']?.toString() ?? '') ?? DateTime.now(),
+      isLikedByMe: json['isLikedByMe'] == true,
+    );
+  }
+
+  SocialStory copyWith({bool? isLikedByMe}) {
+    return SocialStory(
+      id: id,
+      authorId: authorId,
+      authorSnapshot: authorSnapshot,
+      mediaUrl: mediaUrl,
+      mediaType: mediaType,
+      caption: caption,
+      createdAt: createdAt,
+      expiresAt: expiresAt,
+      isLikedByMe: isLikedByMe ?? this.isLikedByMe,
+    );
+  }
+}
+
+class SocialStoryFeedGroup {
+  const SocialStoryFeedGroup({
+    required this.authorId,
+    required this.authorSnapshot,
+    required this.stories,
+  });
+
+  final String authorId;
+  final SocialAuthorSnapshot authorSnapshot;
+  final List<SocialStory> stories;
+
+  SocialStory? get previewStory =>
+      stories.isNotEmpty ? stories.reduce((a, b) => a.createdAt.isAfter(b.createdAt) ? a : b) : null;
+
+  String get firstName {
+    final parts = authorSnapshot.fullName.trim().split(RegExp(r'\s+'));
+    return parts.isNotEmpty ? parts.last : authorSnapshot.fullName;
+  }
+
+  factory SocialStoryFeedGroup.fromJson(Map<String, dynamic> json) {
+    final authorSnapshotJson = json['authorSnapshot'] as Map<String, dynamic>? ?? const {};
+    final rawStories = json['stories'];
+    return SocialStoryFeedGroup(
+      authorId: json['authorId']?.toString() ?? '',
+      authorSnapshot: SocialAuthorSnapshot.fromJson(authorSnapshotJson),
+      stories: rawStories is List
+          ? rawStories
+              .whereType<Map<String, dynamic>>()
+              .map(SocialStory.fromJson)
+              .toList()
+          : const [],
+    );
   }
 }
 
@@ -144,6 +260,7 @@ class SocialComment {
     required this.content,
     required this.createdAt,
     this.authorSnapshot,
+    this.parentCommentId,
   });
 
   final String id;
@@ -152,6 +269,7 @@ class SocialComment {
   final String content;
   final DateTime createdAt;
   final SocialAuthorSnapshot? authorSnapshot;
+  final String? parentCommentId;
 
   factory SocialComment.fromJson(Map<String, dynamic> json) {
     return SocialComment(
@@ -163,6 +281,7 @@ class SocialComment {
       authorSnapshot: json['authorSnapshot'] is Map<String, dynamic>
           ? SocialAuthorSnapshot.fromJson(json['authorSnapshot'] as Map<String, dynamic>)
           : null,
+      parentCommentId: json['parentCommentId']?.toString(),
     );
   }
 

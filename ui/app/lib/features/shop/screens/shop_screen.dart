@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/utils/context_navigation.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/profile/models/profile_models.dart';
 import 'package:sync_app/features/shop/cubit/shop_cubit.dart';
@@ -28,7 +29,7 @@ class _ShopView extends StatelessWidget {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => context.popOrGoHome(),
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           color: AppColors.textPrimary,
         ),

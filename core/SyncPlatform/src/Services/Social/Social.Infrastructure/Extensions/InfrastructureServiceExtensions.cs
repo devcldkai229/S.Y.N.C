@@ -1,3 +1,4 @@
+using Amazon.LocationService;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -30,6 +31,20 @@ public static class InfrastructureServiceExtensions
         RegisterBsonConventions();
 
         services.Configure<MinioOptions>(configuration.GetSection(MinioOptions.SectionName));
+        services.Configure<AwsLocationOptions>(configuration.GetSection(AwsLocationOptions.SectionName));
+
+        var awsLocation = configuration.GetSection(AwsLocationOptions.SectionName).Get<AwsLocationOptions>()
+            ?? new AwsLocationOptions();
+        if (awsLocation.IsConfigured)
+        {
+            services.AddSingleton<IAmazonLocationService>(_ =>
+                AwsLocationChallengeRouteCalculator.CreateClient(awsLocation));
+            services.AddScoped<IChallengeRouteCalculator, AwsLocationChallengeRouteCalculator>();
+        }
+        else
+        {
+            services.AddScoped<IChallengeRouteCalculator, HaversineChallengeRouteCalculator>();
+        }
 
         services.AddSingleton<IMinioClient>(sp =>
         {
@@ -64,9 +79,19 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IPostEngagementRepository, PostEngagementRepository>();
         services.AddScoped<ICommunityChallengeRepository, CommunityChallengeRepository>();
+        services.AddScoped<IChallengeParticipantRepository, ChallengeParticipantRepository>();
+        services.AddScoped<IChallengeParticipationRepository, ChallengeParticipationRepository>();
+        services.AddScoped<IUserFollowRepository, UserFollowRepository>();
+        services.AddScoped<IUserSocialSettingsRepository, UserSocialSettingsRepository>();
+        services.AddScoped<IStoryRepository, StoryRepository>();
+        services.AddScoped<IStoryInteractionRepository, StoryInteractionRepository>();
+        services.AddScoped<IStoryViewRepository, StoryViewRepository>();
+        services.AddScoped<IBlogRepository, BlogRepository>();
+        services.AddScoped<IBlogInteractionRepository, BlogInteractionRepository>();
 
         services.Configure<SocialSeedOptions>(configuration.GetSection(SocialSeedOptions.SectionName));
         services.AddScoped<ISocialDatabaseSeeder, SocialDatabaseSeeder>();
+        services.AddScoped<MinioDevAssetSeeder>();
 
         // Inter-service: IAM gamification (grant XP after social events)
         services.AddHttpClient<IIamGamificationClient, IamGamificationClient>((sp, client) =>
@@ -75,6 +100,22 @@ public static class InfrastructureServiceExtensions
             var baseUrl = config["IamService:BaseUrl"] ?? "http://localhost:5288";
             client.BaseAddress = new Uri(baseUrl);
             client.Timeout = TimeSpan.FromSeconds(5);
+
+            var apiKey = config["IamService:InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
+
+        services.AddHttpClient<ISocialNotificationClient, SocialNotificationClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["NotificationService:BaseUrl"] ?? "http://localhost:5106";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
+
+            var apiKey = config["NotificationService:InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
         });
 
         return services;

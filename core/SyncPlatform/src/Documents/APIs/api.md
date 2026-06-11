@@ -46,6 +46,11 @@ Client **luôn** gọi qua Gateway (`http://localhost:5057`). Hai loại route:
 | `/api/v1/roadmap/{**}` | Có → `/api/v1/{**}` | Roadmap `:5118` | `/api/v1/sessions/...` |
 | `/api/v1/exercise/{**}` | Có → `/api/v1/{**}` | Exercise `:5187` | `/api/v1/exercises/...` |
 | `/api/v1/notification/{**}` | Có → `/api/v1/{**}` | Notification `:5106` | `/api/v1/notifications/...` |
+| `/api/v1/social/{**}` | Có → `/api/v1/{**}` | Social `:5120` | `/api/v1/social/stories/...` |
+| `/api/v1/challenges/{**}` | Không | Social `:5120` | `/api/v1/challenges/...` |
+| `/api/v1/posts/{**}` | Không | Social `:5120` | `/api/v1/posts/...` |
+| `/api/v1/comments/{**}` | Không | Social `:5120` | `/api/v1/comments/...` |
+| `/api/v1/users/me/challenges/{**}` | Không | Social `:5120` | `/api/v1/users/me/challenges/...` |
 
 **Ví dụ:**
 
@@ -58,6 +63,9 @@ Client **luôn** gọi qua Gateway (`http://localhost:5057`). Hai loại route:
 | `POST http://localhost:5057/api/v1/roadmap/sessions/schedule` | `POST http://localhost:5118/api/v1/sessions/schedule` |
 | `POST http://localhost:5057/api/v1/payment/payments/payos/create-link` | `POST http://localhost:5084/api/v1/payments/payos/create-link` |
 | `GET http://localhost:5057/api/v1/notification/notifications/user/{userId}` | `GET http://localhost:5106/api/v1/notifications/user/{userId}` |
+| `GET http://localhost:5057/api/v1/challenges` | `GET http://localhost:5120/api/v1/challenges` |
+| `GET http://localhost:5057/api/v1/posts/feed` | `GET http://localhost:5120/api/v1/posts/feed` |
+| `GET http://localhost:5057/api/v1/challenges/{id}/route` | `GET http://localhost:5120/api/v1/challenges/{id}/route` |
 
 ### JWT qua Gateway
 

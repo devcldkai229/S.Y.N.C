@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Notification.Application.Common;
 using Notification.Application.DTOs;
@@ -7,6 +8,7 @@ namespace Notification.API.Controllers;
 
 [ApiController]
 [Route("api/internal/notifications")]
+[AllowAnonymous]
 public class InternalNotificationController : ControllerBase
 {
     private readonly INotificationService _service;

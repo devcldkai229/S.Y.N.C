@@ -1,13 +1,14 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sync_app/core/permissions/media_permissions.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/core/utils/local_file_image.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/features/social/cubit/social_cubit.dart';
+import 'package:sync_app/features/social/utils/social_media_utils.dart';
 
 class SocialCreatePostSheet extends StatefulWidget {
   const SocialCreatePostSheet({super.key});
@@ -49,23 +50,53 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
 
   bool get _canPost => _contentCtrl.text.trim().isNotEmpty || _media.isNotEmpty;
 
+  int get _imageCount => _media.where((m) => !m.isVideo).length;
+  int get _videoCount => _media.where((m) => m.isVideo).length;
+
+  void _showLimitSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  bool _canAddImages(int count) {
+    if (_imageCount + count > SocialMediaUtils.maxPostImages) {
+      _showLimitSnack('Tối đa ${SocialMediaUtils.maxPostImages} ảnh mỗi bài viết');
+      return false;
+    }
+    return true;
+  }
+
+  bool _canAddVideo() {
+    if (_videoCount >= SocialMediaUtils.maxPostVideos) {
+      _showLimitSnack('Tối đa ${SocialMediaUtils.maxPostVideos} video mỗi bài viết');
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _pickImages() async {
+    if (!await MediaPermissions.ensurePhotos(context)) return;
     final picked = await _picker.pickMultiImage(imageQuality: 85);
     if (picked.isEmpty) return;
+    if (!_canAddImages(picked.length)) return;
     setState(() {
       for (final f in picked) {
+        if (_imageCount >= SocialMediaUtils.maxPostImages) break;
         _media.add(_MediaItem(path: f.path, isVideo: false));
       }
     });
   }
 
   Future<void> _pickVideo() async {
+    if (!await MediaPermissions.ensureVideoLibrary(context)) return;
+    if (!_canAddVideo()) return;
     final picked = await _picker.pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
     setState(() => _media.add(_MediaItem(path: picked.path, isVideo: true)));
   }
 
   Future<void> _takePhoto() async {
+    if (!await MediaPermissions.ensureCamera(context)) return;
+    if (!_canAddImages(1)) return;
     final picked = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
     if (picked == null) return;
     setState(() => _media.add(_MediaItem(path: picked.path, isVideo: false)));
@@ -132,7 +163,7 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
               child: Row(
                 children: [
                   const Text(
-                    'New Post',
+                    'Bài viết mới',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                   ),
                   const Spacer(),
@@ -151,7 +182,7 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Text(
-                            'Post',
+                            'Đăng',
                             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                           ),
                   ),
@@ -176,7 +207,7 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
                       minLines: 5,
                       style: const TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.5),
                       decoration: InputDecoration(
-                        hintText: "What's on your mind?",
+                        hintText: 'Bạn đang nghĩ gì thế?',
                         hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 15),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
@@ -242,7 +273,7 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
                   const Spacer(),
                   if (_media.isNotEmpty)
                     Text(
-                      '${_media.length} file${_media.length > 1 ? 's' : ''}',
+                      '$_imageCount ảnh · $_videoCount video',
                       style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                 ],
@@ -295,7 +326,7 @@ class _Thumbnail extends StatelessWidget {
                     ),
                   ],
                 )
-              : Image.file(File(item.path), fit: BoxFit.cover),
+              : buildLocalFileImage(item.path, fit: BoxFit.cover),
         ),
         Positioned(
           top: -6,

@@ -93,6 +93,7 @@ public class PostEngagementRepository : IPostEngagementRepository
         Guid userId,
         string content,
         AuthorSnapshot? authorSnapshot,
+        Guid? parentCommentId = null,
         CancellationToken cancellationToken = default)
     {
         var comment = new Comment
@@ -101,6 +102,7 @@ public class PostEngagementRepository : IPostEngagementRepository
             UserId = userId,
             Content = content,
             AuthorSnapshot = authorSnapshot,
+            ParentCommentId = parentCommentId,
             CreatedAt = DateTimeOffset.UtcNow,
         };
 

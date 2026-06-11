@@ -1,94 +1,90 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/utils/api_error_mapper.dart';
+import 'package:sync_app/core/utils/context_navigation.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
+import 'package:sync_app/features/achievements/models/achievement_display_data.dart';
+import 'package:sync_app/features/achievements/widgets/in_progress_achievement_card.dart';
+import 'package:sync_app/features/achievements/widgets/unlocked_achievement_card.dart';
 import 'package:sync_app/features/profile/models/profile_models.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
+import 'package:sync_app/features/social/models/follow_models.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
-import 'package:sync_app/features/social/screens/social_image_viewer_screen.dart';
-import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
-import 'package:sync_app/features/social/utils/social_media_utils.dart';
 import 'package:sync_app/features/social/widgets/social_comments_sheet.dart';
+import 'package:sync_app/features/social/widgets/social_feed_post_card.dart';
 import 'package:sync_app/features/social/widgets/social_post_actions.dart';
-import 'package:sync_app/features/social/widgets/social_post_card.dart';
+import 'package:sync_app/features/social/widgets/social_post_share_sheet.dart';
+import 'package:sync_app/shared/widgets/sync_avatar.dart';
 
-class SocialOtherUserProfileScreen extends StatefulWidget {
+const _coverHeight = 200.0;
+const _avatarRadius = 45.0;
+const _coverImageUrl = 'https://picsum.photos/seed/sync-gym-cover/1200/600';
+
+/// Premium Facebook/Instagram-style profile for another user.
+class SocialOtherUserProfileScreen extends StatelessWidget {
   const SocialOtherUserProfileScreen({super.key, required this.userId});
 
   final String userId;
 
   @override
-  State<SocialOtherUserProfileScreen> createState() =>
-      _SocialOtherUserProfileScreenState();
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 3,
+      child: _OtherUserProfileBody(userId: userId),
+    );
+  }
 }
 
-class _SocialOtherUserProfileScreenState extends State<SocialOtherUserProfileScreen>
-    with SingleTickerProviderStateMixin {
+class _OtherUserProfileBody extends StatefulWidget {
+  const _OtherUserProfileBody({required this.userId});
+
+  final String userId;
+
+  @override
+  State<_OtherUserProfileBody> createState() => _OtherUserProfileBodyState();
+}
+
+class _OtherUserProfileBodyState extends State<_OtherUserProfileBody> {
   final SocialRepository _socialRepo = getIt<SocialRepository>();
   final ProfileApiService _profileApi = getIt<ProfileApiService>();
 
   static const _pageLimit = 20;
 
-  late final TabController _tabController;
-
   PublicProfile? _profile;
   bool _profileLoading = true;
-  String? _profileError;
 
-  final List<SocialPost> _feedPosts = [];
-  final List<SocialPost> _mediaPosts = [];
-  bool _feedLoading = false;
-  bool _mediaLoading = false;
-  bool _feedLoadingMore = false;
-  bool _mediaLoadingMore = false;
-  String? _feedCursor;
-  String? _mediaCursor;
-  bool _feedHasMore = false;
-  bool _mediaHasMore = false;
+  FollowCounts _followCounts = FollowCounts.empty;
+  FollowStatus _followStatus = FollowStatus.none;
+  bool _followLoading = false;
+  bool _followActionLoading = false;
+
+  final List<SocialPost> _posts = [];
+  bool _postsLoading = false;
+  bool _postsLoadingMore = false;
+  String? _postsCursor;
+  bool _postsHasMore = false;
 
   final Set<String> _likedPostIds = {};
-  final Set<String> _sharedPostIds = {};
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _tabController.addListener(_onTabChanged);
-    _loadProfile();
-    _loadFeed(refresh: true);
+    _loadAll();
   }
 
-  @override
-  void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
-    super.dispose();
-  }
-
-  void _onTabChanged() {
-    if (_tabController.indexIsChanging) return;
-    final index = _tabController.index;
-    if ((index == 1 || index == 2) && _mediaPosts.isEmpty) {
-      _loadMedia(refresh: true);
-    }
+  Future<void> _loadAll() async {
+    await Future.wait([
+      _loadProfile(),
+      _loadFollowData(),
+      _loadPosts(refresh: true),
+    ]);
   }
 
   Future<void> _loadProfile() async {
-    if (widget.userId.isEmpty) {
-      setState(() {
-        _profileLoading = false;
-        _profileError = 'Invalid user id.';
-      });
-      return;
-    }
-
-    setState(() {
-      _profileLoading = true;
-      _profileError = null;
-    });
+    if (widget.userId.isEmpty) return;
+    setState(() => _profileLoading = true);
     try {
       final profile = await _profileApi.getPublicProfile(widget.userId);
       if (!mounted) return;
@@ -96,151 +92,157 @@ class _SocialOtherUserProfileScreenState extends State<SocialOtherUserProfileScr
         _profile = profile;
         _profileLoading = false;
       });
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      // IAM public profile is optional — wall posts can still load.
-      setState(() {
-        _profileLoading = false;
-        _profileError = e.toString();
-      });
+      setState(() => _profileLoading = false);
     }
   }
 
-  Future<void> _loadFeed({required bool refresh}) async {
+  Future<void> _loadFollowData() async {
+    if (widget.userId.isEmpty) return;
+    setState(() => _followLoading = true);
+    try {
+      final results = await Future.wait([
+        _socialRepo.loadFollowCounts(widget.userId),
+        _socialRepo.loadFollowStatus(widget.userId),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _followCounts = results[0] as FollowCounts;
+        _followStatus = results[1] as FollowStatus;
+        _followLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _followLoading = false);
+    }
+  }
+
+  Future<void> _loadPosts({required bool refresh}) async {
     if (!mounted) return;
     setState(() {
-      _feedLoading = refresh;
+      _postsLoading = refresh;
       if (refresh) {
-        _feedPosts.clear();
-        _feedCursor = null;
-        _feedHasMore = false;
+        _posts.clear();
+        _postsCursor = null;
+        _postsHasMore = false;
       }
     });
 
     try {
       final page = await _socialRepo.loadUserWall(
         userId: widget.userId,
-        cursor: refresh ? null : _feedCursor,
+        cursor: refresh ? null : _postsCursor,
         limit: _pageLimit,
-        onlyMedia: false,
       );
       if (!mounted) return;
       setState(() {
         if (refresh) {
-          _feedPosts
+          _posts
             ..clear()
             ..addAll(page.items);
         } else {
-          _feedPosts.addAll(page.items);
+          _posts.addAll(page.items);
         }
-        _feedCursor = page.nextCursor;
-        _feedHasMore = page.nextCursor != null && page.nextCursor!.isNotEmpty;
-        _feedLoading = false;
-        _feedLoadingMore = false;
+        for (final p in page.items) {
+          if (p.isLikedByMe) _likedPostIds.add(p.id);
+        }
+        _postsCursor = page.nextCursor;
+        _postsHasMore = page.nextCursor != null && page.nextCursor!.isNotEmpty;
+        _postsLoading = false;
+        _postsLoadingMore = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _feedLoading = false;
-        _feedLoadingMore = false;
+        _postsLoading = false;
+        _postsLoadingMore = false;
       });
     }
   }
 
-  Future<void> _loadFeedMore() async {
-    if (_feedLoadingMore || !_feedHasMore) return;
-    setState(() => _feedLoadingMore = true);
-    await _loadFeed(refresh: false);
-  }
-
-  Future<void> _loadMedia({required bool refresh}) async {
-    if (!mounted) return;
-    setState(() {
-      _mediaLoading = refresh;
-      if (refresh) {
-        _mediaPosts.clear();
-        _mediaCursor = null;
-        _mediaHasMore = false;
-      }
-    });
-
-    try {
-      final page = await _socialRepo.loadUserWall(
-        userId: widget.userId,
-        cursor: refresh ? null : _mediaCursor,
-        limit: _pageLimit,
-        onlyMedia: true,
-      );
-      if (!mounted) return;
-      setState(() {
-        if (refresh) {
-          _mediaPosts
-            ..clear()
-            ..addAll(page.items);
-        } else {
-          _mediaPosts.addAll(page.items);
-        }
-        _mediaCursor = page.nextCursor;
-        _mediaHasMore = page.nextCursor != null && page.nextCursor!.isNotEmpty;
-        _mediaLoading = false;
-        _mediaLoadingMore = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _mediaLoading = false;
-        _mediaLoadingMore = false;
-      });
-    }
-  }
-
-  Future<void> _loadMediaMore() async {
-    if (_mediaLoadingMore || !_mediaHasMore) return;
-    setState(() => _mediaLoadingMore = true);
-    await _loadMedia(refresh: false);
-  }
-
-  Future<void> _refreshAll() async {
-    await Future.wait([
-      _loadProfile(),
-      _loadFeed(refresh: true),
-      _loadMedia(refresh: true),
-    ]);
+  Future<void> _loadPostsMore() async {
+    if (_postsLoadingMore || !_postsHasMore) return;
+    setState(() => _postsLoadingMore = true);
+    await _loadPosts(refresh: false);
   }
 
   String get _displayName {
     if (_profile != null && _profile!.fullName.isNotEmpty) return _profile!.fullName;
-    if (_feedPosts.isNotEmpty) return _feedPosts.first.authorSnapshot.fullName;
-    return 'User Profile';
+    if (_posts.isNotEmpty) return _posts.first.authorSnapshot.fullName;
+    return 'Người dùng SYNC';
   }
 
   String? get _avatarUrl {
     if (_profile?.avatarUrl != null && _profile!.avatarUrl!.isNotEmpty) {
       return _profile!.avatarUrl;
     }
-    if (_feedPosts.isNotEmpty) return _feedPosts.first.authorSnapshot.avatarUrl;
+    if (_posts.isNotEmpty) return _posts.first.authorSnapshot.avatarUrl;
     return null;
   }
 
-  void _openProfile(String otherUserId) {
-    if (otherUserId.isEmpty || otherUserId == widget.userId) return;
-    context.push(AppRoutes.socialUserProfile(otherUserId));
+  int get _level => _profile?.currentLevel ?? 10;
+  int get _streak => _profile?.currentStreak ?? 14;
+
+  Future<void> _toggleFollow() async {
+    if (_followActionLoading) return;
+    setState(() => _followActionLoading = true);
+    try {
+      if (_followStatus.isFollowing || _followStatus.isPending) {
+        await _socialRepo.unfollowUser(widget.userId);
+        if (!mounted) return;
+        setState(() {
+          _followStatus = const FollowStatus();
+          if (_followCounts.followerCount > 0) {
+            _followCounts = FollowCounts(
+              followerCount: _followCounts.followerCount - 1,
+              followingCount: _followCounts.followingCount,
+            );
+          }
+        });
+      } else {
+        await _socialRepo.followUser(widget.userId);
+        if (!mounted) return;
+        setState(() {
+          _followStatus = const FollowStatus(outgoingStatus: 'Accepted');
+          _followCounts = FollowCounts(
+            followerCount: _followCounts.followerCount + 1,
+            followingCount: _followCounts.followingCount,
+          );
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mapApiError(e)), behavior: SnackBarBehavior.floating),
+      );
+    } finally {
+      if (mounted) setState(() => _followActionLoading = false);
+    }
   }
 
-  Future<void> _handleLike(String postId, List<SocialPost> target) async {
-    if (_likedPostIds.contains(postId)) return;
+  Future<void> _toggleLike(String postId) async {
+    final liked = _likedPostIds.contains(postId);
     try {
-      await _socialRepo.likePost(postId);
+      if (liked) {
+        await _socialRepo.unlikePost(postId);
+      } else {
+        await _socialRepo.likePost(postId);
+      }
       if (!mounted) return;
-      final idx = target.indexWhere((p) => p.id == postId);
+      final idx = _posts.indexWhere((p) => p.id == postId);
       if (idx < 0) return;
-      final post = target[idx];
+      final post = _posts[idx];
       setState(() {
-        _likedPostIds.add(postId);
-        target[idx] = post.copyWith(
-          isLikedByMe: true,
+        if (liked) {
+          _likedPostIds.remove(postId);
+        } else {
+          _likedPostIds.add(postId);
+        }
+        _posts[idx] = post.copyWith(
+          isLikedByMe: !liked,
           metrics: SocialPostMetrics(
-            likeCount: post.metrics.likeCount + 1,
+            likeCount: post.metrics.likeCount + (liked ? -1 : 1),
             commentCount: post.metrics.commentCount,
             shareCount: post.metrics.shareCount,
           ),
@@ -249,34 +251,12 @@ class _SocialOtherUserProfileScreenState extends State<SocialOtherUserProfileScr
     } catch (_) {}
   }
 
-  Future<void> _handleShare(String postId, List<SocialPost> target) async {
-    if (_sharedPostIds.contains(postId)) return;
-    try {
-      await _socialRepo.sharePost(postId);
-      if (!mounted) return;
-      final idx = target.indexWhere((p) => p.id == postId);
-      if (idx < 0) return;
-      final post = target[idx];
-      setState(() {
-        _sharedPostIds.add(postId);
-        target[idx] = post.copyWith(
-          isSharedByMe: true,
-          metrics: SocialPostMetrics(
-            likeCount: post.metrics.likeCount,
-            commentCount: post.metrics.commentCount,
-            shareCount: post.metrics.shareCount + 1,
-          ),
-        );
-      });
-    } catch (_) {}
-  }
-
-  void _incrementCommentCount(String postId, List<SocialPost> target) {
-    final idx = target.indexWhere((p) => p.id == postId);
+  void _incrementCommentCount(String postId) {
+    final idx = _posts.indexWhere((p) => p.id == postId);
     if (idx < 0) return;
-    final post = target[idx];
+    final post = _posts[idx];
     setState(() {
-      target[idx] = post.copyWith(
+      _posts[idx] = post.copyWith(
         metrics: SocialPostMetrics(
           likeCount: post.metrics.likeCount,
           commentCount: post.metrics.commentCount + 1,
@@ -290,86 +270,258 @@ class _SocialOtherUserProfileScreenState extends State<SocialOtherUserProfileScr
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.textPrimary,
-        title: Text(_displayName),
-      ),
-      body: Column(
-        children: [
-          _ProfileHeader(
-            displayName: _displayName,
-            avatarUrl: _avatarUrl,
-            profile: _profile,
-            loading: _profileLoading,
-            postCount: _feedPosts.length,
-          ),
-          Material(
-            color: AppColors.background,
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: AppColors.primaryGreen,
-              unselectedLabelColor: AppColors.textMuted,
-              indicatorColor: AppColors.primaryGreen,
-              tabs: const [
-                Tab(text: 'Posts'),
-                Tab(text: 'Photos'),
-                Tab(text: 'Videos'),
-                Tab(text: 'About'),
-              ],
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverToBoxAdapter(
+            child: _ProfileHeader(
+              displayName: _displayName,
+              avatarUrl: _avatarUrl,
+              tagline: 'Fitness Enthusiast',
+              coverUrl: _coverImageUrl,
+              onBack: () => context.popOrGoHome(),
+              followCounts: _followCounts,
+              level: _level,
+              streak: _streak,
+              followStatus: _followStatus,
+              followLoading: _followLoading || _followActionLoading,
+              onFollow: _toggleFollow,
+              onMessage: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tính năng nhắn tin đang phát triển'),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
             ),
           ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _PostsTab(
-                  posts: _feedPosts,
-                  loading: _feedLoading,
-                  loadingMore: _feedLoadingMore,
-                  hasMore: _feedHasMore,
-                  onRefresh: () => _refreshAll(),
-                  onLoadMore: _loadFeedMore,
-                  likedIds: _likedPostIds,
-                  sharedIds: _sharedPostIds,
-                  onLike: (id) => _handleLike(id, _feedPosts),
-                  onShare: (id) => _handleShare(id, _feedPosts),
-                  onComment: (id) => SocialCommentsSheet.show(
-                    context,
-                    postId: id,
-                    onCommentCreated: (pid) => _incrementCommentCount(pid, _feedPosts),
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _StickyTabBarDelegate(
+              TabBar(
+                labelColor: AppColors.textPrimary,
+                unselectedLabelColor: AppColors.textMuted,
+                indicatorColor: AppColors.textPrimary,
+                indicatorWeight: 2.5,
+                labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                tabs: const [
+                  Tab(text: 'Bài viết'),
+                  Tab(text: 'Thành tựu'),
+                  Tab(text: 'Giới thiệu'),
+                ],
+              ),
+            ),
+          ),
+        ],
+        body: TabBarView(
+          children: [
+            _PostsTab(
+              posts: _posts,
+              loading: _postsLoading,
+              loadingMore: _postsLoadingMore,
+              hasMore: _postsHasMore,
+              likedIds: _likedPostIds,
+              onRefresh: _loadAll,
+              onLoadMore: _loadPostsMore,
+              onLike: _toggleLike,
+              onComment: (id) => SocialCommentsSheet.show(
+                context,
+                postId: id,
+                onCommentCreated: _incrementCommentCount,
+              ),
+              onShare: (id) {
+                final idx = _posts.indexWhere((p) => p.id == id);
+                if (idx >= 0) {
+                  SocialPostShareSheet.show(context, post: _posts[idx]);
+                }
+              },
+              onMore: (id) {
+                final post = _posts.firstWhere((p) => p.id == id, orElse: () => _posts.first);
+                SocialPostActionsSheet.show(
+                  context,
+                  post: post,
+                  isOwnPost: false,
+                  onHide: () => setState(() => _posts.removeWhere((p) => p.id == id)),
+                );
+              },
+            ),
+            _AchievementsTab(level: _level, streak: _streak),
+            _AboutTab(
+              profile: _profile,
+              loading: _profileLoading,
+              followCounts: _followCounts,
+              onRetry: _loadProfile,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.displayName,
+    required this.avatarUrl,
+    required this.tagline,
+    required this.coverUrl,
+    required this.onBack,
+    required this.followCounts,
+    required this.level,
+    required this.streak,
+    required this.followStatus,
+    required this.followLoading,
+    required this.onFollow,
+    required this.onMessage,
+  });
+
+  final String displayName;
+  final String? avatarUrl;
+  final String tagline;
+  final String coverUrl;
+  final VoidCallback onBack;
+  final FollowCounts followCounts;
+  final int level;
+  final int streak;
+  final FollowStatus followStatus;
+  final bool followLoading;
+  final VoidCallback onFollow;
+  final VoidCallback onMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final topPad = MediaQuery.paddingOf(context).top;
+
+    return ColoredBox(
+      color: AppColors.cardBackground,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              SizedBox(
+                height: _coverHeight + topPad,
+                width: double.infinity,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Positioned(
+                      top: topPad,
+                      left: 0,
+                      right: 0,
+                      height: _coverHeight,
+                      child: CachedNetworkImage(
+                        imageUrl: coverUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => Container(
+                          color: AppColors.primaryGreen.withValues(alpha: 0.25),
+                        ),
+                        errorWidget: (_, __, ___) => Container(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [AppColors.primaryGreen, AppColors.lightGreen],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: topPad + 8,
+                      left: 4,
+                      child: IconButton(
+                        onPressed: onBack,
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.black.withValues(alpha: 0.35),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Positioned(
+                left: 20,
+                bottom: -_avatarRadius,
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.12),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  onOpenProfile: _openProfile,
-                  onMoreTap: (id) {
-                    final post = _feedPosts.firstWhere((p) => p.id == id, orElse: () => _feedPosts.first);
-                    SocialPostActionsSheet.show(
-                      context,
-                      post: post,
-                      isOwnPost: false,
-                      onHide: () => setState(() => _feedPosts.removeWhere((p) => p.id == id)),
-                    );
-                  },
+                  child: SyncAvatar(
+                    name: displayName,
+                    imageUrl: avatarUrl,
+                    radius: _avatarRadius,
+                  ),
                 ),
-                _PhotosTab(
-                  posts: _mediaPosts,
-                  loading: _mediaLoading,
-                  loadingMore: _mediaLoadingMore,
-                  hasMore: _mediaHasMore,
-                  onRefresh: () => _loadMedia(refresh: true),
-                  onLoadMore: _loadMediaMore,
+              ),
+            ],
+          ),
+          SizedBox(height: _avatarRadius + 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  displayName,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    letterSpacing: -0.3,
+                  ),
                 ),
-                _VideosTab(
-                  posts: videoPostsFrom(_mediaPosts.isNotEmpty ? _mediaPosts : _feedPosts),
-                  loading: _mediaLoading && _mediaPosts.isEmpty,
-                  onRefresh: () => _loadMedia(refresh: true),
+                const SizedBox(height: 4),
+                Text(
+                  tagline,
+                  style: const TextStyle(fontSize: 14, color: AppColors.textMuted),
                 ),
-                _AboutTab(
-                  profile: _profile,
-                  loading: _profileLoading,
-                  error: _profileError,
-                  onRetry: _loadProfile,
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _FollowButton(
+                        status: followStatus,
+                        loading: followLoading,
+                        onPressed: onFollow,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.tonal(
+                        onPressed: onMessage,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.backgroundAlt,
+                          foregroundColor: AppColors.textPrimary,
+                          minimumSize: const Size.fromHeight(44),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                        ),
+                        child: const Text('Nhắn tin', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 18),
+                _MetricsRow(
+                  followers: followCounts.followerCount,
+                  following: followCounts.followingCount,
+                  level: level,
+                  streak: streak,
+                ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
@@ -379,106 +531,172 @@ class _SocialOtherUserProfileScreenState extends State<SocialOtherUserProfileScr
   }
 }
 
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({
-    required this.displayName,
-    required this.avatarUrl,
-    required this.profile,
+class _FollowButton extends StatelessWidget {
+  const _FollowButton({
+    required this.status,
     required this.loading,
-    required this.postCount,
+    required this.onPressed,
   });
 
-  final String displayName;
-  final String? avatarUrl;
-  final PublicProfile? profile;
+  final FollowStatus status;
   final bool loading;
-  final int postCount;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading) {
+      return const SizedBox(
+        height: 44,
+        child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))),
+      );
+    }
+
+    if (status.isFollowing) {
+      return OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textSecondary,
+          side: const BorderSide(color: AppColors.borderLight),
+          minimumSize: const Size.fromHeight(44),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        child: const Text('Đang theo dõi', style: TextStyle(fontWeight: FontWeight.w700)),
+      );
+    }
+
+    if (status.isPending) {
+      return OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.textMuted,
+          minimumSize: const Size.fromHeight(44),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        ),
+        child: const Text('Đã gửi yêu cầu', style: TextStyle(fontWeight: FontWeight.w700)),
+      );
+    }
+
+    return FilledButton(
+      onPressed: onPressed,
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.primaryGreen,
+        minimumSize: const Size.fromHeight(44),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        elevation: 0,
+      ),
+      child: const Text('Theo dõi', style: TextStyle(fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _MetricsRow extends StatelessWidget {
+  const _MetricsRow({
+    required this.followers,
+    required this.following,
+    required this.level,
+    required this.streak,
+  });
+
+  final int followers;
+  final int following;
+  final int level;
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: AppColors.borderLight.withValues(alpha: 0.8)),
+          bottom: BorderSide(color: AppColors.borderLight.withValues(alpha: 0.8)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _MetricCell(value: _formatCount(followers), label: 'Followers')),
+          _divider(),
+          Expanded(child: _MetricCell(value: _formatCount(following), label: 'Đang theo dõi')),
+          _divider(),
+          Expanded(child: _MetricCell(value: 'Lvl $level', label: 'Cấp độ')),
+          _divider(),
+          Expanded(child: _MetricCell(value: '$streak', label: 'Chuỗi ngày')),
+        ],
+      ),
+    );
+  }
+
+  Widget _divider() => Container(
+        width: 1,
+        height: 36,
+        color: AppColors.borderLight,
+      );
+}
+
+class _MetricCell extends StatelessWidget {
+  const _MetricCell({required this.value, required this.label});
+
+  final String value;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          height: 120,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primaryGreen, AppColors.lightGreen],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
           ),
         ),
-        Transform.translate(
-          offset: const Offset(0, -40),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                CircleAvatar(
-                  radius: 44,
-                  backgroundColor: AppColors.lightGreen,
-                  backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
-                      ? CachedNetworkImageProvider(avatarUrl!)
-                      : null,
-                  child: avatarUrl == null || avatarUrl!.isEmpty
-                      ? Text(
-                          displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-                          style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.primaryGreen,
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayName,
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      if (loading)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 6),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      else if (profile != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          'Level ${profile!.currentLevel} · ${profile!.currentXp} XP · ${profile!.currentStreak} day streak',
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                        ),
-                      ],
-                      const SizedBox(height: 4),
-                      Text(
-                        '$postCount public posts',
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w500),
         ),
-        const SizedBox(height: 8),
       ],
     );
   }
 }
+
+String _formatCount(int n) {
+  if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
+  if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
+  return '$n';
+}
+
+// ─── Sticky TabBar ──────────────────────────────────────────────────────────────
+
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  _StickyTabBarDelegate(this.tabBar);
+
+  final TabBar tabBar;
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Material(
+      color: AppColors.cardBackground,
+      elevation: overlapsContent ? 1 : 0,
+      shadowColor: Colors.black.withValues(alpha: 0.08),
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _StickyTabBarDelegate oldDelegate) =>
+      tabBar != oldDelegate.tabBar;
+}
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
 
 class _PostsTab extends StatelessWidget {
   const _PostsTab({
@@ -486,36 +704,33 @@ class _PostsTab extends StatelessWidget {
     required this.loading,
     required this.loadingMore,
     required this.hasMore,
+    required this.likedIds,
     required this.onRefresh,
     required this.onLoadMore,
-    required this.likedIds,
-    required this.sharedIds,
     required this.onLike,
-    required this.onShare,
     required this.onComment,
-    required this.onOpenProfile,
-    required this.onMoreTap,
+    required this.onShare,
+    required this.onMore,
   });
 
   final List<SocialPost> posts;
   final bool loading;
   final bool loadingMore;
   final bool hasMore;
+  final Set<String> likedIds;
   final Future<void> Function() onRefresh;
   final VoidCallback onLoadMore;
-  final Set<String> likedIds;
-  final Set<String> sharedIds;
   final void Function(String) onLike;
-  final void Function(String) onShare;
   final void Function(String) onComment;
-  final void Function(String) onOpenProfile;
-  final void Function(String) onMoreTap;
+  final void Function(String) onShare;
+  final void Function(String) onMore;
 
   @override
   Widget build(BuildContext context) {
     if (loading && posts.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
     }
+
     if (posts.isEmpty) {
       return RefreshIndicator(
         color: AppColors.primaryGreen,
@@ -523,8 +738,8 @@ class _PostsTab extends StatelessWidget {
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           children: const [
-            SizedBox(height: 120),
-            Center(child: Text('No posts yet.', style: TextStyle(color: AppColors.textMuted))),
+            SizedBox(height: 80),
+            Center(child: Text('Chưa có bài viết nào.', style: TextStyle(color: AppColors.textMuted))),
           ],
         ),
       );
@@ -535,29 +750,28 @@ class _PostsTab extends StatelessWidget {
       onRefresh: onRefresh,
       child: NotificationListener<ScrollNotification>(
         onNotification: (scroll) {
-          if (scroll.metrics.extentAfter < 300) onLoadMore();
+          if (hasMore && scroll.metrics.extentAfter < 320) onLoadMore();
           return false;
         },
-        child: ListView.builder(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+        child: ListView.separated(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 32),
           itemCount: posts.length + (loadingMore ? 1 : 0),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
           itemBuilder: (context, index) {
             if (index >= posts.length) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
               );
             }
             final post = posts[index];
-            return SocialPostCard(
+            return SocialFeedPostCard(
               post: post,
-              isLikedByMe: likedIds.contains(post.id),
-              isSharedByMe: sharedIds.contains(post.id),
+              isLiked: likedIds.contains(post.id),
               onLike: () => onLike(post.id),
-              onShare: () => onShare(post.id),
               onComment: () => onComment(post.id),
-              onOpenProfile: onOpenProfile,
-              onMoreTap: () => onMoreTap(post.id),
+              onShare: () => onShare(post.id),
+              onDismiss: () => onMore(post.id),
             );
           },
         ),
@@ -566,174 +780,90 @@ class _PostsTab extends StatelessWidget {
   }
 }
 
-class _PhotosTab extends StatelessWidget {
-  const _PhotosTab({
-    required this.posts,
-    required this.loading,
-    required this.loadingMore,
-    required this.hasMore,
-    required this.onRefresh,
-    required this.onLoadMore,
-  });
+class _AchievementsTab extends StatelessWidget {
+  const _AchievementsTab({required this.level, required this.streak});
 
-  final List<SocialPost> posts;
-  final bool loading;
-  final bool loadingMore;
-  final bool hasMore;
-  final Future<void> Function() onRefresh;
-  final VoidCallback onLoadMore;
+  final int level;
+  final int streak;
 
   @override
   Widget build(BuildContext context) {
-    final images = imageUrlsFromPosts(posts);
-
-    if (loading && images.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
-    }
-
-    if (images.isEmpty) {
-      return RefreshIndicator(
-        color: AppColors.primaryGreen,
-        onRefresh: onRefresh,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 120),
-            Center(child: Text('No photos yet.', style: TextStyle(color: AppColors.textMuted))),
-          ],
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        _HighlightBanner(level: level, streak: streak),
+        const SizedBox(height: 20),
+        const Text(
+          'Đang tiến hành',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
         ),
-      );
-    }
+        const SizedBox(height: 12),
+        ...AchievementDisplayData.inProgress.map(
+          (a) => InProgressAchievementCard(achievement: a),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Đã mở khóa',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+        ),
+        const SizedBox(height: 12),
+        ...AchievementDisplayData.unlocked.map(
+          (a) => UnlockedAchievementCard(achievement: a),
+        ),
+      ],
+    );
+  }
+}
 
-    return RefreshIndicator(
-      color: AppColors.primaryGreen,
-      onRefresh: onRefresh,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (scroll) {
-          if (hasMore && scroll.metrics.extentAfter < 300) onLoadMore();
-          return false;
-        },
-        child: GridView.builder(
-          padding: const EdgeInsets.all(12),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            crossAxisSpacing: 4,
-            mainAxisSpacing: 4,
+class _HighlightBanner extends StatelessWidget {
+  const _HighlightBanner({required this.level, required this.streak});
+
+  final int level;
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [AppColors.primaryGreen, Color(0xFF22C55E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryGreen.withValues(alpha: 0.28),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
-          itemCount: images.length + (loadingMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index >= images.length) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final url = images[index];
-            return GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => SocialImageViewerScreen(
-                    imageUrls: images,
-                    initialIndex: index,
-                  ),
-                ),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: CachedNetworkImage(
-                  imageUrl: url,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => ColoredBox(
-                    color: AppColors.lightGreen.withValues(alpha: 0.3),
-                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                  ),
-                  errorWidget: (context, url, error) => const ColoredBox(
-                    color: AppColors.backgroundAlt,
-                    child: Icon(Icons.broken_image_outlined),
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+        ],
       ),
-    );
-  }
-}
-
-class _VideosTab extends StatelessWidget {
-  const _VideosTab({
-    required this.posts,
-    required this.loading,
-    required this.onRefresh,
-  });
-
-  final List<SocialPost> posts;
-  final bool loading;
-  final Future<void> Function() onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    if (loading && posts.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
-    }
-
-    if (posts.isEmpty) {
-      return RefreshIndicator(
-        color: AppColors.primaryGreen,
-        onRefresh: onRefresh,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: const [
-            SizedBox(height: 120),
-            Center(child: Text('No videos yet.', style: TextStyle(color: AppColors.textMuted))),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      color: AppColors.primaryGreen,
-      onRefresh: onRefresh,
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          final post = posts[index];
-          final videoUrl = post.mediaUrls.firstWhere(socialUrlIsVideo, orElse: () => '');
-          if (videoUrl.isEmpty) return const SizedBox.shrink();
-
-          return Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => SocialVideoPlayerScreen(videoUrl: videoUrl),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        ColoredBox(color: Colors.black.withValues(alpha: 0.85)),
-                        const Center(
-                          child: Icon(Icons.play_circle_fill, size: 56, color: Colors.white70),
-                        ),
-                      ],
-                    ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Cấp $level · $streak ngày streak',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
                   ),
-                  if (post.content.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Text(post.content, maxLines: 2, overflow: TextOverflow.ellipsis),
-                    ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Tiếp tục tập luyện để mở khóa huy hiệu mới',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13),
+                ),
+              ],
             ),
-          );
-        },
+          ),
+          const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 40),
+        ],
       ),
     );
   }
@@ -743,13 +873,13 @@ class _AboutTab extends StatelessWidget {
   const _AboutTab({
     required this.profile,
     required this.loading,
-    required this.error,
+    required this.followCounts,
     required this.onRetry,
   });
 
   final PublicProfile? profile;
   final bool loading;
-  final String? error;
+  final FollowCounts followCounts;
   final VoidCallback onRetry;
 
   @override
@@ -757,59 +887,95 @@ class _AboutTab extends StatelessWidget {
     if (loading) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
     }
-    if (error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Could not load profile info.', style: TextStyle(color: AppColors.textMuted)),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      );
-    }
-    if (profile == null) {
-      return const Center(child: Text('No profile details.', style: TextStyle(color: AppColors.textMuted)));
-    }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
-        _AboutTile(icon: Icons.person_outline, label: 'Name', value: profile!.fullName),
-        _AboutTile(icon: Icons.military_tech_outlined, label: 'Level', value: '${profile!.currentLevel}'),
-        _AboutTile(icon: Icons.star_outline, label: 'Experience', value: '${profile!.currentXp} XP'),
-        _AboutTile(icon: Icons.local_fire_department_outlined, label: 'Current streak', value: '${profile!.currentStreak} days'),
-        const SizedBox(height: 16),
-        const Text(
-          'Public gamification stats from Sync IAM. More profile fields (bio, location) can be added when the API exposes them.',
-          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+        _AboutCard(
+          icon: Icons.person_outline_rounded,
+          title: 'Họ tên',
+          value: profile?.fullName.isNotEmpty == true ? profile!.fullName : '—',
+        ),
+        _AboutCard(
+          icon: Icons.military_tech_outlined,
+          title: 'Cấp độ gamification',
+          value: profile != null ? 'Level ${profile!.currentLevel}' : 'Level 10',
+        ),
+        _AboutCard(
+          icon: Icons.bolt_outlined,
+          title: 'Kinh nghiệm (XP)',
+          value: profile != null ? '${profile!.currentXp} XP' : '2.450 XP',
+        ),
+        _AboutCard(
+          icon: Icons.local_fire_department_outlined,
+          title: 'Chuỗi tập luyện',
+          value: profile != null ? '${profile!.currentStreak} ngày' : '14 ngày',
+        ),
+        _AboutCard(
+          icon: Icons.people_outline_rounded,
+          title: 'Cộng đồng',
+          value: '${_formatCount(followCounts.followerCount)} followers · ${_formatCount(followCounts.followingCount)} đang theo dõi',
+        ),
+        const SizedBox(height: 12),
+        TextButton.icon(
+          onPressed: onRetry,
+          icon: const Icon(Icons.refresh_rounded, size: 18),
+          label: const Text('Làm mới hồ sơ'),
         ),
       ],
     );
   }
 }
 
-class _AboutTile extends StatelessWidget {
-  const _AboutTile({required this.icon, required this.label, required this.value});
+class _AboutCard extends StatelessWidget {
+  const _AboutCard({
+    required this.icon,
+    required this.title,
+    required this.value,
+  });
 
   final IconData icon;
-  final String label;
+  final String title;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          Icon(icon, color: AppColors.primaryGreen),
-          const SizedBox(width: 12),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.primaryGreen, size: 22),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-                Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                Text(title, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                ),
               ],
             ),
           ),

@@ -1,3 +1,4 @@
+using Social.Application.Clients;
 using Social.Application.DTOs;
 using Social.Application.Exceptions;
 using Social.Application.Mappers;
@@ -11,15 +12,18 @@ public class CommentService : ICommentService
     private readonly IPostRepository _posts;
     private readonly IPostEngagementRepository _engagement;
     private readonly ICommentRepository _comments;
+    private readonly ISocialNotificationClient _notifications;
 
     public CommentService(
         IPostRepository posts,
         IPostEngagementRepository engagement,
-        ICommentRepository comments)
+        ICommentRepository comments,
+        ISocialNotificationClient notifications)
     {
         _posts = posts;
         _engagement = engagement;
         _comments = comments;
+        _notifications = notifications;
     }
 
     public async Task<CommentDto> CreateAsync(
@@ -31,27 +35,61 @@ public class CommentService : ICommentService
         if (string.IsNullOrWhiteSpace(dto.Content))
             throw new BadRequestException("Comment content is required.");
 
-        if (!await _posts.ExistsAsync(postId, cancellationToken))
-            throw new NotFoundException($"Post {postId} was not found.");
+        var post = await _posts.GetByIdAsync(postId, cancellationToken)
+            ?? throw new NotFoundException($"Post {postId} was not found.");
 
-        AuthorSnapshot? snapshot = null;
-        if (dto.AuthorSnapshot is not null && !string.IsNullOrWhiteSpace(dto.AuthorSnapshot.FullName))
-        {
-            snapshot = new AuthorSnapshot
-            {
-                FullName = dto.AuthorSnapshot.FullName.Trim(),
-                AvatarUrl = dto.AuthorSnapshot.AvatarUrl,
-            };
-        }
+        var snapshot = BuildAuthorSnapshot(dto.AuthorSnapshot);
 
         var comment = await _engagement.AddCommentAsync(
             postId,
             userId,
             dto.Content.Trim(),
             snapshot,
+            cancellationToken: cancellationToken);
+
+        _ = _notifications.NotifyPostCommentedAsync(
+            userId,
+            post.AuthorId,
+            postId,
+            comment.Id,
             cancellationToken);
 
         return comment.ToDto();
+    }
+
+    public async Task<CommentDto> CreateReplyAsync(
+        Guid userId,
+        Guid commentId,
+        CreateReplyDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Content))
+            throw new BadRequestException("Reply content is required.");
+
+        var parent = await _comments.GetByIdAsync(commentId, cancellationToken)
+            ?? throw new NotFoundException($"Comment {commentId} was not found.");
+
+        if (!await _posts.ExistsAsync(parent.PostId, cancellationToken))
+            throw new NotFoundException($"Post {parent.PostId} was not found.");
+
+        var snapshot = BuildAuthorSnapshot(dto.AuthorSnapshot);
+
+        var reply = await _engagement.AddCommentAsync(
+            parent.PostId,
+            userId,
+            dto.Content.Trim(),
+            snapshot,
+            parentCommentId: commentId,
+            cancellationToken: cancellationToken);
+
+        _ = _notifications.NotifyCommentRepliedAsync(
+            userId,
+            parent.UserId,
+            parent.PostId,
+            reply.Id,
+            cancellationToken);
+
+        return reply.ToDto();
     }
 
     public async Task<PagedResult<CommentDto>> GetByPostIdAsync(
@@ -85,6 +123,18 @@ public class CommentService : ICommentService
                 PageSize = pageSize,
                 TotalRecords = total,
             },
+        };
+    }
+
+    private static AuthorSnapshot? BuildAuthorSnapshot(AuthorSnapshotDto? dto)
+    {
+        if (dto is null || string.IsNullOrWhiteSpace(dto.FullName))
+            return null;
+
+        return new AuthorSnapshot
+        {
+            FullName = dto.FullName.Trim(),
+            AvatarUrl = dto.AvatarUrl,
         };
     }
 }

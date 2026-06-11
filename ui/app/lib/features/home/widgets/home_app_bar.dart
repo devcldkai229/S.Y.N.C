@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/shared/widgets/notification_bell_button.dart';
 
 class HomeAppBar extends StatelessWidget {
   const HomeAppBar({super.key});
@@ -39,10 +38,7 @@ class HomeAppBar extends StatelessWidget {
             onPressed: () {},
             icon: const Icon(Icons.smart_toy_outlined, color: AppColors.textPrimary),
           ),
-          IconButton(
-            onPressed: () => context.push(AppRoutes.notifications),
-            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary),
-          ),
+          const NotificationBellButton(),
         ],
       ),
     );

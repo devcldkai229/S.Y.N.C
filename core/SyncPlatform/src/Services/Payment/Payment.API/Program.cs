@@ -3,6 +3,7 @@ using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using Payment.API.Exceptions;
+using Payment.API.Middleware;
 using Payment.Application.Common;
 using Payment.Application.Extensions;
 using Payment.Infrastructure.Extensions;
@@ -80,6 +81,7 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 
 app.MapSyncHealthChecks();

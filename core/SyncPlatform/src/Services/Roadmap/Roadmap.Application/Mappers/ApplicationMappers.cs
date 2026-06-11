@@ -328,7 +328,6 @@ public static class ApplicationMappers
             UserId = entity.UserId,
             CurrentRecoveryScore = entity.CurrentRecoveryScore,
             FatigueLevel = entity.FatigueLevel,
-            SleepRecoveryScore = entity.SleepRecoveryScore,
             MuscleSorenessScore = entity.MuscleSorenessScore,
             CnsFatigueScore = entity.CnsFatigueScore,
             RecommendedTrainingIntensity = entity.RecommendedTrainingIntensity,
@@ -345,7 +344,6 @@ public static class ApplicationMappers
             UserId = dto.UserId,
             CurrentRecoveryScore = dto.CurrentRecoveryScore,
             FatigueLevel = dto.FatigueLevel,
-            SleepRecoveryScore = dto.SleepRecoveryScore,
             MuscleSorenessScore = dto.MuscleSorenessScore,
             CnsFatigueScore = dto.CnsFatigueScore,
             RecommendedTrainingIntensity = dto.RecommendedTrainingIntensity,
@@ -357,7 +355,6 @@ public static class ApplicationMappers
     {
         entity.CurrentRecoveryScore = dto.CurrentRecoveryScore;
         entity.FatigueLevel = dto.FatigueLevel;
-        entity.SleepRecoveryScore = dto.SleepRecoveryScore;
         entity.MuscleSorenessScore = dto.MuscleSorenessScore;
         entity.CnsFatigueScore = dto.CnsFatigueScore;
         entity.RecommendedTrainingIntensity = dto.RecommendedTrainingIntensity;

@@ -6,6 +6,7 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/workouts/cubit/workouts_cubit.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
+import 'package:sync_app/shared/widgets/sync_app_bar.dart';
 
 class WorkoutsScreen extends StatelessWidget {
   const WorkoutsScreen({super.key});
@@ -69,39 +70,15 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: const SyncAppBar(),
+      body: SafeArea(
+        top: false,
+        bottom: false,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppColors.border,
-                  child: Icon(Icons.person, size: 20, color: AppColors.textMuted),
-                ),
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'SYNC',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryGreen,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.smart_toy_outlined, color: AppColors.primaryGreen),
-                ),
-              ],
-            ),
-          ),
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
             child: Align(
@@ -155,6 +132,7 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -196,17 +174,9 @@ class _AiRoadmapTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
         }
         if (state.roadmapStatus == LoadStatus.failure && state.roadmap == null) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(state.roadmapError ?? 'Error', textAlign: TextAlign.center),
-                TextButton(
-                  onPressed: () => context.read<WorkoutsCubit>().loadRoadmap(),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          return _WorkoutLoadError(
+            message: state.roadmapError ?? 'Không thể tải dữ liệu. Thử lại?',
+            onRetry: () => context.read<WorkoutsCubit>().loadRoadmap(),
           );
         }
 
@@ -338,17 +308,9 @@ class _CustomWorkoutsTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
         }
         if (state.customStatus == LoadStatus.failure && state.customWorkouts.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(state.customError ?? 'Error', textAlign: TextAlign.center),
-                TextButton(
-                  onPressed: () => context.read<WorkoutsCubit>().loadCustomWorkouts(),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+          return _WorkoutLoadError(
+            message: state.customError ?? 'Không thể tải dữ liệu. Thử lại?',
+            onRetry: () => context.read<WorkoutsCubit>().loadCustomWorkouts(),
           );
         }
 
@@ -1407,6 +1369,37 @@ class _Tag extends StatelessWidget {
   }
 }
 
+class _WorkoutLoadError extends StatelessWidget {
+  const _WorkoutLoadError({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_off, size: 48, color: AppColors.textSecondary.withValues(alpha: 0.7)),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.95)),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: onRetry,
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primaryGreen),
+              child: const Text('Thử lại'),
+            ),
+          ],
 class _ExploreTab extends StatefulWidget {
   const _ExploreTab();
 

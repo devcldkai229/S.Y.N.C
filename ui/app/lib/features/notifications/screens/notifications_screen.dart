@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sync_app/core/notifications/notification_deep_link.dart';
+import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
+import 'package:sync_app/core/notifications/notification_ui.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/models/notification_models.dart';
 import 'package:sync_app/features/notifications/cubit/notifications_cubit.dart';
-import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/shared/widgets/notification_card.dart';
 
 class NotificationsScreen extends StatelessWidget {
@@ -14,7 +16,7 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NotificationsCubit(getIt(), getIt<ProfileApiService>())..load(),
+      create: (_) => NotificationsCubit(getIt())..load(),
       child: Scaffold(
         backgroundColor: AppColors.backgroundAlt,
         appBar: AppBar(
@@ -22,7 +24,7 @@ class NotificationsScreen extends StatelessWidget {
             icon: const Icon(Icons.arrow_back_ios_new, size: 20),
             onPressed: () => context.pop(),
           ),
-          title: const Text('Notifications'),
+          title: const Text('Thông báo'),
           actions: [
             BlocBuilder<NotificationsCubit, NotificationsState>(
               buildWhen: (prev, next) => prev.unreadCount != next.unreadCount,
@@ -30,7 +32,7 @@ class NotificationsScreen extends StatelessWidget {
                 if (state.unreadCount == 0) return const SizedBox.shrink();
                 return TextButton(
                   onPressed: () => context.read<NotificationsCubit>().markAllAsRead(),
-                  child: const Text('Mark all read'),
+                  child: const Text('Đọc tất cả'),
                 );
               },
             ),
@@ -59,7 +61,10 @@ class NotificationsScreen extends StatelessWidget {
             }
             if (state.items.isEmpty) {
               return const Center(
-                child: Text('No notifications yet.', style: TextStyle(color: AppColors.textMuted)),
+                child: Text(
+                  'Không có thông báo',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 15),
+                ),
               );
             }
 
@@ -82,7 +87,7 @@ class NotificationsScreen extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: Text(
-                          '${state.unreadCount} unread',
+                          '${state.unreadCount} chưa đọc',
                           style: const TextStyle(
                             color: AppColors.primaryGreen,
                             fontWeight: FontWeight.w700,
@@ -143,21 +148,25 @@ class NotificationsScreen extends StatelessWidget {
   }
 
   Widget _notificationTile(BuildContext context, AppNotification n) {
+    final visual = notificationVisualFor(n);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
+          onTap: () async {
             if (!n.isRead) {
-              context.read<NotificationsCubit>().markAsRead(n.id);
+              await context.read<NotificationsCubit>().markAsRead(n.id);
+              getIt<NotificationInboxNotifier>().decrementUnread();
             }
+            if (context.mounted) NotificationDeepLink.open(context, n);
           },
           child: NotificationCard(
             accentBar: !n.isRead,
-            icon: _iconForType(n.type),
-            iconBackground: AppColors.lightGreen,
+            icon: visual.icon,
+            iconBackground: visual.background,
             title: n.title,
             time: n.timeAgoLabel,
             body: n.body,
@@ -165,14 +174,6 @@ class NotificationsScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _iconForType(String type) {
-    final t = type.toLowerCase();
-    if (t.contains('reward') || t.contains('achievement')) return Icons.emoji_events_outlined;
-    if (t.contains('session') || t.contains('workout')) return Icons.timer_outlined;
-    if (t.contains('ai') || t.contains('coach')) return Icons.smart_toy_outlined;
-    return Icons.notifications_outlined;
   }
 }
 

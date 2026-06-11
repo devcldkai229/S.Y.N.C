@@ -14,16 +14,22 @@ public class PostService : IPostService
 {
     private readonly IPostRepository _posts;
     private readonly IPostEngagementRepository _engagement;
+    private readonly IUserFollowRepository _follows;
     private readonly IIamGamificationClient _gamification;
+    private readonly ISocialNotificationClient _notifications;
 
     public PostService(
         IPostRepository posts,
         IPostEngagementRepository engagement,
-        IIamGamificationClient gamification)
+        IUserFollowRepository follows,
+        IIamGamificationClient gamification,
+        ISocialNotificationClient notifications)
     {
         _posts = posts;
         _engagement = engagement;
+        _follows = follows;
         _gamification = gamification;
+        _notifications = notifications;
     }
 
     public async Task<PostDto> CreateAsync(
@@ -33,6 +39,12 @@ public class PostService : IPostService
     {
         if (string.IsNullOrWhiteSpace(dto.Content) && dto.MediaUrls.Count == 0)
             throw new BadRequestException("Post must have content or at least one media URL.");
+
+        if (dto.MediaUrls.Count > 0)
+        {
+            var (imageCount, videoCount) = PostMediaRules.CountByUrls(dto.MediaUrls);
+            PostMediaRules.ValidateCounts(imageCount, videoCount);
+        }
 
         if (string.IsNullOrWhiteSpace(dto.AuthorSnapshot.FullName))
             throw new BadRequestException("AuthorSnapshot.FullName is required.");
@@ -59,7 +71,38 @@ public class PostService : IPostService
         // Grant XP for posting (fire-and-forget, error swallowed in client)
         _ = _gamification.GrantXpAsync(authorId, 75, 20, "social.post.created", cancellationToken);
 
+        if (entity.IsPublic)
+        {
+            _ = NotifyFollowersAboutNewPostAsync(
+                authorId,
+                entity.AuthorSnapshot.FullName,
+                entity.Id,
+                cancellationToken);
+        }
+
         return entity.ToDto();
+    }
+
+    private async Task NotifyFollowersAboutNewPostAsync(
+        Guid authorId,
+        string authorDisplayName,
+        Guid postId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var followerIds = await _follows.GetAcceptedFollowerIdsAsync(authorId, cancellationToken);
+            await _notifications.NotifyNewPostToFollowersAsync(
+                authorId,
+                authorDisplayName,
+                postId,
+                followerIds,
+                cancellationToken);
+        }
+        catch
+        {
+            // best-effort fan-out
+        }
     }
 
     public async Task<PostDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -168,6 +211,11 @@ public class PostService : IPostService
         {
             var interaction = await _engagement.LikePostAsync(postId, userId, cancellationToken);
             var post = await _posts.GetByIdAsync(postId, cancellationToken);
+
+            if (post is not null)
+            {
+                _ = _notifications.NotifyPostLikedAsync(userId, post.AuthorId, postId, cancellationToken);
+            }
 
             return new LikePostResultDto
             {

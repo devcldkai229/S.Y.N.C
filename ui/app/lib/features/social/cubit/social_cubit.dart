@@ -16,9 +16,63 @@ class SocialCubit extends Cubit<SocialState> {
   final ProfileApiService _profileApi;
 
   static const _feedLimit = 20;
+  static const _likeDebounceMs = 300;
+
+  final Map<String, Timer> _likeDebounceTimers = {};
+  final Map<String, bool> _pendingLikeTarget = {};
+
+  Future<void> loadAll({bool refresh = true}) async {
+    await Future.wait([
+      _loadCurrentUser(),
+      loadStories(),
+      loadFeed(refresh: refresh),
+    ]);
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      final settings = await _profileApi.getProfileSettings();
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          currentUserId: settings.userId,
+          currentUser: SocialAuthorSnapshot(
+            fullName: settings.basic.fullName.isNotEmpty ? settings.basic.fullName : 'Bạn',
+            avatarUrl: settings.basic.avatarUrl,
+          ),
+        ),
+      );
+      await _loadMyStories();
+    } catch (_) {}
+  }
+
+  Future<void> _loadMyStories() async {
+    try {
+      final stories = await _repository.loadMyStories();
+      if (!isClosed) emit(state.copyWith(myStories: stories));
+    } catch (_) {}
+  }
+
+  Future<void> loadStories() async {
+    try {
+      final groups = await _repository.loadStoriesFeed();
+      if (!isClosed) {
+        emit(state.copyWith(storyGroups: groups, showStoriesRow: true));
+      }
+    } catch (_) {
+      // Keep the row visible so "Tạo tin" still works when feed API fails.
+      if (!isClosed) {
+        emit(state.copyWith(storyGroups: const [], showStoriesRow: true));
+      }
+    }
+  }
+
+  Future<void> refreshStories() async {
+    await Future.wait([loadStories(), _loadMyStories()]);
+  }
 
   Future<void> loadFeed({bool refresh = true}) async {
-    if (state.currentUserId.isEmpty) unawaited(_fetchCurrentUserId());
+    if (state.currentUserId.isEmpty) unawaited(_loadCurrentUser());
 
     if (refresh) {
       emit(
@@ -33,7 +87,7 @@ class SocialCubit extends Cubit<SocialState> {
           sharedPostIds: const [],
         ),
       );
-    } else {
+    } else if (state.status == SocialStatus.initial) {
       emit(state.copyWith(status: SocialStatus.loading, clearError: true));
     }
 
@@ -78,19 +132,80 @@ class SocialCubit extends Cubit<SocialState> {
         ),
       );
     } catch (e) {
-      emit(state.copyWith(
-        status: SocialStatus.failure,
-        error: mapApiError(e),
-        isLoadingMore: false,
-      ));
+      emit(
+        state.copyWith(
+          status: SocialStatus.failure,
+          error: mapApiError(e),
+          isLoadingMore: false,
+        ),
+      );
     }
   }
 
-  Future<void> likePost(String postId) async {
-    if (state.likedPostIds.contains(postId)) {
-      await _unlikePost(postId);
-    } else {
-      await _doLikePost(postId);
+  void toggleLike(String postId) {
+    final currentlyLiked = state.likedPostIds.contains(postId);
+    final targetLiked = !currentlyLiked;
+    _pendingLikeTarget[postId] = targetLiked;
+
+    _applyLikeLocally(postId, liked: targetLiked);
+
+    _likeDebounceTimers[postId]?.cancel();
+    _likeDebounceTimers[postId] = Timer(
+      const Duration(milliseconds: _likeDebounceMs),
+      () => _flushLike(postId),
+    );
+  }
+
+  void _applyLikeLocally(String postId, {required bool liked}) {
+    final posts = [...state.posts];
+    final idx = posts.indexWhere((p) => p.id == postId);
+    if (idx < 0) return;
+
+    final post = posts[idx];
+    final delta = liked ? 1 : -1;
+    final newCount = (post.metrics.likeCount + delta).clamp(0, 1 << 30);
+
+    posts[idx] = post.copyWith(
+      isLikedByMe: liked,
+      metrics: SocialPostMetrics(
+        likeCount: newCount,
+        commentCount: post.metrics.commentCount,
+        shareCount: post.metrics.shareCount,
+      ),
+    );
+
+    final likedIds = liked
+        ? [...state.likedPostIds, postId]
+        : state.likedPostIds.where((id) => id != postId).toList();
+
+    emit(state.copyWith(posts: posts, likedPostIds: likedIds));
+  }
+
+  Future<void> _flushLike(String postId) async {
+    final targetLiked = _pendingLikeTarget.remove(postId);
+    _likeDebounceTimers.remove(postId);
+    if (targetLiked == null) return;
+
+    final snapshotLiked = state.likedPostIds.contains(postId);
+    if (snapshotLiked != targetLiked) return;
+
+    try {
+      if (targetLiked) {
+        await _repository.likePost(postId);
+      } else {
+        await _repository.unlikePost(postId);
+      }
+    } catch (e) {
+      _applyLikeLocally(postId, liked: !targetLiked);
+      if (!isClosed) {
+        emit(state.copyWith(snackbarError: mapApiError(e)));
+      }
+    }
+  }
+
+  void clearSnackbarError() {
+    if (state.snackbarError != null) {
+      emit(state.copyWith(clearSnackbarError: true));
     }
   }
 
@@ -117,30 +232,55 @@ class SocialCubit extends Cubit<SocialState> {
     ));
   }
 
-  Future<void> sharePost(String postId) async {
-    if (state.sharedPostIds.contains(postId)) return;
+  Future<bool> sharePost(String postId) async {
+    if (state.sharedPostIds.contains(postId)) return true;
+
+    final posts = [...state.posts];
+    final idx = posts.indexWhere((p) => p.id == postId);
+    if (idx < 0) return false;
+
+    final post = posts[idx];
+    posts[idx] = post.copyWith(
+      isSharedByMe: true,
+      metrics: SocialPostMetrics(
+        likeCount: post.metrics.likeCount,
+        commentCount: post.metrics.commentCount,
+        shareCount: post.metrics.shareCount + 1,
+      ),
+    );
+    emit(
+      state.copyWith(
+        posts: posts,
+        sharedPostIds: [...state.sharedPostIds, postId],
+      ),
+    );
 
     try {
       await _repository.sharePost(postId);
-      final posts = [...state.posts];
-      final idx = posts.indexWhere((p) => p.id == postId);
-      if (idx < 0) return;
-      final post = posts[idx];
-      posts[idx] = post.copyWith(
-        isSharedByMe: true,
-        metrics: SocialPostMetrics(
-          likeCount: post.metrics.likeCount,
-          commentCount: post.metrics.commentCount,
-          shareCount: post.metrics.shareCount + 1,
-        ),
-      );
+      return true;
+    } catch (e) {
+      final revertPosts = [...state.posts];
+      final revertIdx = revertPosts.indexWhere((p) => p.id == postId);
+      if (revertIdx >= 0) {
+        final original = revertPosts[revertIdx];
+        revertPosts[revertIdx] = original.copyWith(
+          isSharedByMe: false,
+          metrics: SocialPostMetrics(
+            likeCount: original.metrics.likeCount,
+            commentCount: original.metrics.commentCount,
+            shareCount: original.metrics.shareCount > 0 ? original.metrics.shareCount - 1 : 0,
+          ),
+        );
+      }
       emit(
         state.copyWith(
-          posts: posts,
-          sharedPostIds: [...state.sharedPostIds, postId],
+          posts: revertPosts,
+          sharedPostIds: state.sharedPostIds.where((id) => id != postId).toList(),
+          snackbarError: mapApiError(e),
         ),
       );
-    } catch (_) {}
+      return false;
+    }
   }
 
   void bumpCommentCount(String postId) {
@@ -158,54 +298,34 @@ class SocialCubit extends Cubit<SocialState> {
     emit(state.copyWith(posts: posts));
   }
 
-  // ─── Private helpers ──────────────────────────────────────────────────────
-
-  Future<void> _fetchCurrentUserId() async {
+  Future<void> viewStory(SocialStory story, {required String authorId}) async {
     try {
-      final settings = await _profileApi.getProfileSettings();
-      if (!isClosed) emit(state.copyWith(currentUserId: settings.userId));
-    } catch (_) {}
-  }
-
-  Future<void> _doLikePost(String postId) async {
-    try {
-      await _repository.likePost(postId);
-      final posts = [...state.posts];
-      final idx = posts.indexWhere((p) => p.id == postId);
-      if (idx < 0) return;
-      final post = posts[idx];
-      posts[idx] = post.copyWith(
-        isLikedByMe: true,
-        metrics: SocialPostMetrics(
-          likeCount: post.metrics.likeCount + 1,
-          commentCount: post.metrics.commentCount,
-          shareCount: post.metrics.shareCount,
-        ),
-      );
-      emit(state.copyWith(posts: posts, likedPostIds: [...state.likedPostIds, postId]));
-    } catch (_) {}
-  }
-
-  Future<void> _unlikePost(String postId) async {
-    try {
-      await _repository.unlikePost(postId);
-      final posts = [...state.posts];
-      final idx = posts.indexWhere((p) => p.id == postId);
-      if (idx >= 0) {
-        final post = posts[idx];
-        posts[idx] = post.copyWith(
-          isLikedByMe: false,
-          metrics: SocialPostMetrics(
-            likeCount: post.metrics.likeCount > 0 ? post.metrics.likeCount - 1 : 0,
-            commentCount: post.metrics.commentCount,
-            shareCount: post.metrics.shareCount,
+      await _repository.viewStory(story.id);
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            seenStoryAuthorIds: {...state.seenStoryAuthorIds, authorId},
           ),
         );
       }
-      emit(state.copyWith(
-        posts: posts,
-        likedPostIds: state.likedPostIds.where((id) => id != postId).toList(),
-      ));
     } catch (_) {}
+  }
+
+  Future<bool> likeStory(String storyId) async {
+    try {
+      await _repository.likeStory(storyId);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> close() {
+    for (final timer in _likeDebounceTimers.values) {
+      timer.cancel();
+    }
+    _likeDebounceTimers.clear();
+    return super.close();
   }
 }

@@ -1,4 +1,5 @@
 import 'package:sync_app/features/social/data/social_remote_data_source.dart';
+import 'package:sync_app/features/social/models/follow_models.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
 
 class SocialRepository {
@@ -36,7 +37,7 @@ class SocialRepository {
   Future<SocialComment> createComment({
     required String postId,
     required String content,
-    required String authorFullName,
+    String? authorFullName,
     String? authorAvatarUrl,
   }) =>
       _remote.createComment(
@@ -46,8 +47,52 @@ class SocialRepository {
         authorAvatarUrl: authorAvatarUrl,
       );
 
+  Future<SocialComment> createReply({
+    required String commentId,
+    required String content,
+    required String parentCommentId,
+    String? authorFullName,
+    String? authorAvatarUrl,
+  }) =>
+      _remote.createReply(
+        commentId: commentId,
+        content: content,
+        parentCommentId: parentCommentId,
+        authorFullName: authorFullName,
+        authorAvatarUrl: authorAvatarUrl,
+      );
+
   Future<List<String>> uploadMediaFiles(List<String> filePaths) =>
       _remote.uploadMediaFiles(filePaths);
+
+  Future<List<SocialStoryFeedGroup>> loadStoriesFeed() => _remote.fetchStoriesFeed();
+
+  Future<List<SocialStory>> loadMyStories() => _remote.fetchMyStories();
+
+  Future<void> viewStory(String storyId) => _remote.viewStory(storyId);
+
+  Future<void> likeStory(String storyId) => _remote.likeStory(storyId);
+
+  Future<SocialStory> createStory({
+    required String filePath,
+    String? caption,
+    required String authorFullName,
+    String? authorAvatarUrl,
+  }) =>
+      _remote.createStory(
+        filePath: filePath,
+        caption: caption,
+        authorFullName: authorFullName,
+        authorAvatarUrl: authorAvatarUrl,
+      );
+
+  Future<FollowCounts> loadFollowCounts(String userId) => _remote.fetchFollowCounts(userId);
+
+  Future<FollowStatus> loadFollowStatus(String userId) => _remote.fetchFollowStatus(userId);
+
+  Future<void> followUser(String userId) => _remote.followUser(userId);
+
+  Future<void> unfollowUser(String userId) => _remote.unfollowUser(userId);
 
   Future<SocialPost> createPost({
     required String content,
