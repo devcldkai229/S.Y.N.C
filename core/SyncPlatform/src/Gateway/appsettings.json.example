@@ -57,6 +57,13 @@
           { "PathPrefix": "/api/v1" }
         ]
       },
+      "notifications-direct-route": {
+        "ClusterId": "notification-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/notifications/{**catch-all}"
+        }
+      },
       "notification-route": {
         "ClusterId": "notification-cluster",
         "AuthorizationPolicy": "AuthenticatedUser",
@@ -72,11 +79,32 @@
         "ClusterId": "social-cluster",
         "Match": {
           "Path": "/api/v1/social/{**catch-all}"
-        },
-        "Transforms": [
-          { "PathRemovePrefix": "/api/v1/social" },
-          { "PathPrefix": "/api/v1" }
-        ]
+        }
+      },
+      "social-challenges-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/challenges/{**catch-all}"
+        }
+      },
+      "social-posts-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/posts/{**catch-all}"
+        }
+      },
+      "social-comments-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/comments/{**catch-all}"
+        }
+      },
+      "social-users-me-challenges-route": {
+        "ClusterId": "social-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/users/me/challenges/{**catch-all}"
+        }
       },
       "payment-payos-webhook-route": {
         "ClusterId": "payment-cluster",
@@ -96,6 +124,39 @@
         },
         "Transforms": [
           { "PathRemovePrefix": "/api/v1/payment" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "nutrition-route": {
+        "ClusterId": "nutrition-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/nutrition/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/nutrition" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "marketplace-route": {
+        "ClusterId": "marketplace-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/marketplace/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/marketplace" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "order-route": {
+        "ClusterId": "order-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/order/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/order" },
           { "PathPrefix": "/api/v1" }
         ]
       }
@@ -198,6 +259,57 @@
         "Destinations": {
           "payment/primary": {
             "Address": "http://localhost:5084"
+          }
+        }
+      },
+      "nutrition-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "nutrition/primary": {
+            "Address": "http://localhost:5122"
+          }
+        }
+      },
+      "marketplace-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "marketplace/primary": {
+            "Address": "http://localhost:5119"
+          }
+        }
+      },
+      "order-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "order/primary": {
+            "Address": "http://localhost:5123"
           }
         }
       }

@@ -51,6 +51,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
         services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
         services.AddScoped<IPromotionCampaignService, PromotionCampaignService>();
+        services.AddScoped<IInternalWalletService, InternalWalletService>();
 
         return services;
     }

@@ -103,14 +103,6 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(6,4)")
                         .HasColumnName("recovery_score");
 
-                    b.Property<decimal>("SleepQualityScore")
-                        .HasColumnType("numeric(6,4)")
-                        .HasColumnName("sleep_quality_score");
-
-                    b.Property<decimal>("StressScore")
-                        .HasColumnType("numeric(6,4)")
-                        .HasColumnName("stress_score");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");

@@ -10,6 +10,12 @@ public interface ICommentService
         CreateCommentDto dto,
         CancellationToken cancellationToken = default);
 
+    Task<CommentDto> CreateReplyAsync(
+        Guid userId,
+        Guid commentId,
+        CreateReplyDto dto,
+        CancellationToken cancellationToken = default);
+
     Task<PagedResult<CommentDto>> GetByPostIdAsync(
         Guid postId,
         CommentListQuery query,

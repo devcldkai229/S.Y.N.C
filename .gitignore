@@ -481,6 +481,9 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
+# Local service run logs (run-all.ps1)
+core/SyncPlatform/scripts/_run-logs/
+
 # ── Sync Platform: per-dev appsettings (NEVER commit) ───────────────────────
 # Templates on Git: *.example.json — run core/SyncPlatform/scripts/setup-appsettings.ps1
 core/SyncPlatform/**/appsettings.json

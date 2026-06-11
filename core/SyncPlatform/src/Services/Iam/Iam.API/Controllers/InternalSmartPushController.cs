@@ -1,12 +1,14 @@
 using Iam.Application.Common;
 using Iam.Application.DTOs;
 using Iam.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Iam.API.Controllers;
 
 [ApiController]
 [Route("api/internal/smart-push")]
+[AllowAnonymous]
 public class InternalSmartPushController : ControllerBase
 {
     private readonly IInternalSmartPushService _service;

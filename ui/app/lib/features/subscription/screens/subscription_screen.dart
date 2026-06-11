@@ -4,6 +4,7 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/subscription/models/subscription_models.dart';
 import 'package:sync_app/features/subscription/services/subscription_api_service.dart';
+import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -38,16 +39,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return AppShellOverlayScaffold(
+      child: Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          color: AppColors.textPrimary,
-        ),
+        automaticallyImplyLeading: false,
         title: const Text(
           'Subscription',
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
@@ -88,6 +86,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                     ],
                   ),
                 ),
+      ),
     );
   }
 

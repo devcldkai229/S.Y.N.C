@@ -13,6 +13,9 @@ public class CommentRepository : ICommentRepository
         _collection = database.GetCollection<Comment>("Comments");
     }
 
+    public async Task<Comment?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        await _collection.Find(x => x.Id == id).FirstOrDefaultAsync(cancellationToken);
+
     public async Task<Comment> CreateAsync(Comment comment, CancellationToken cancellationToken = default)
     {
         comment.CreatedAt = DateTimeOffset.UtcNow;

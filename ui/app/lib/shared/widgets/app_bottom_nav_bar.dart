@@ -4,18 +4,20 @@ import 'package:sync_app/core/theme/app_colors.dart';
 
 enum AppNavTab { home, workouts, social, profile }
 
+/// Visible nav row height (excludes device safe-area inset).
+const double kAppBottomNavBarHeight = 72;
+
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({
     super.key,
-    required this.currentTab,
+    this.currentTab,
     required this.onTabSelected,
-    this.onCenterTap,
     this.showProfileBadge = false,
   });
 
-  final AppNavTab currentTab;
+  /// When null, no tab is highlighted (overlay screens outside the shell).
+  final AppNavTab? currentTab;
   final ValueChanged<AppNavTab> onTabSelected;
-  final VoidCallback? onCenterTap;
   final bool showProfileBadge;
 
   @override
@@ -36,7 +38,7 @@ class AppBottomNavBar extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 72,
+          height: kAppBottomNavBarHeight,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -52,7 +54,7 @@ class AppBottomNavBar extends StatelessWidget {
                 selected: currentTab == AppNavTab.workouts,
                 onTap: () => onTabSelected(AppNavTab.workouts),
               ),
-              _CenterFab(onTap: onCenterTap),
+              const _CenterFabPlaceholder(),
               _NavItem(
                 icon: Icons.groups_outlined,
                 label: l10n.navSocial,
@@ -131,30 +133,12 @@ class _NavItem extends StatelessWidget {
   }
 }
 
-class _CenterFab extends StatelessWidget {
-  const _CenterFab({this.onTap});
-
-  final VoidCallback? onTap;
+/// Reserves horizontal space for the docked center FAB in [DraggableRadialFab].
+class _CenterFabPlaceholder extends StatelessWidget {
+  const _CenterFabPlaceholder();
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: const Offset(0, -18),
-      child: Material(
-        elevation: 6,
-        shadowColor: AppColors.primaryGreen.withValues(alpha: 0.4),
-        shape: const CircleBorder(),
-        color: AppColors.primaryGreen,
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: const SizedBox(
-            width: 56,
-            height: 56,
-            child: Icon(Icons.add, color: Colors.white, size: 30),
-          ),
-        ),
-      ),
-    );
+    return const SizedBox(width: 72);
   }
 }

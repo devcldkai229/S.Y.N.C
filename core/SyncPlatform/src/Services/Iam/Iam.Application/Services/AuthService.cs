@@ -1,6 +1,7 @@
 using Iam.Application.Abstractions;
 using Iam.Application.DTOs;
 using Iam.Application.Exceptions;
+using Iam.Application.Helpers;
 using Iam.Application.Options;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
@@ -59,6 +60,7 @@ public class AuthService : IAuthService
             Email = normalizedEmail,
             PasswordHash = _passwordHasher.Hash(request.Password),
             FullName = request.FullName,
+            AvatarUrl = RandomAvatarUrl.ForRegistration(normalizedEmail, request.FullName),
             Role = UserRole.User,
             Status = UserStatus.PendingVerification,
             SubscriptionTier = SubscriptionTier.Free,
@@ -94,6 +96,8 @@ public class AuthService : IAuthService
             var verificationToken = await GenerateUniqueVerificationCodeAsync(cancellationToken);
             existing.FullName = request.FullName.Trim();
             existing.EmailVerificationToken = verificationToken;
+            if (string.IsNullOrWhiteSpace(existing.AvatarUrl))
+                existing.AvatarUrl = RandomAvatarUrl.ForRegistration(normalizedEmail, existing.FullName);
             existing.UpdatedAt = DateTimeOffset.UtcNow;
             await _userRepository.SaveChangesAsync(cancellationToken);
             await _emailSender.SendVerificationEmailAsync(existing.Email, verificationToken, cancellationToken);
@@ -112,6 +116,7 @@ public class AuthService : IAuthService
             Email = normalizedEmail,
             PasswordHash = string.Empty,
             FullName = request.FullName.Trim(),
+            AvatarUrl = RandomAvatarUrl.ForRegistration(normalizedEmail, request.FullName),
             Role = UserRole.User,
             Status = UserStatus.PendingVerification,
             SubscriptionTier = SubscriptionTier.Free,
@@ -156,6 +161,9 @@ public class AuthService : IAuthService
 
         if (!string.IsNullOrWhiteSpace(request.Password))
             user.PasswordHash = _passwordHasher.Hash(request.Password);
+
+        if (string.IsNullOrWhiteSpace(user.AvatarUrl))
+            user.AvatarUrl = RandomAvatarUrl.ForRegistration(user.Email, user.FullName);
 
         await _userRepository.SaveChangesAsync(cancellationToken);
 
@@ -371,7 +379,9 @@ public class AuthService : IAuthService
                 Email = normalizedEmail,
                 PasswordHash = string.Empty, // Google-only account — no local password
                 FullName = googleInfo.Name,
-                AvatarUrl = googleInfo.Picture,
+                AvatarUrl = !string.IsNullOrWhiteSpace(googleInfo.Picture)
+                    ? googleInfo.Picture
+                    : RandomAvatarUrl.ForRegistration(normalizedEmail, googleInfo.Name),
                 Role = UserRole.User,
                 Status = UserStatus.Active,
                 SubscriptionTier = SubscriptionTier.Free,

@@ -31,5 +31,6 @@ public interface IPostEngagementRepository
         Guid userId,
         string content,
         AuthorSnapshot? authorSnapshot,
+        Guid? parentCommentId = null,
         CancellationToken cancellationToken = default);
 }

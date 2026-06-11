@@ -23,8 +23,6 @@ public class AIContextProfileConfiguration : IEntityTypeConfiguration<AIContextP
             nameof(AIContextProfile.ChurnRiskScore),
             nameof(AIContextProfile.MotivationScore),
             nameof(AIContextProfile.RecoveryScore),
-            nameof(AIContextProfile.StressScore),
-            nameof(AIContextProfile.SleepQualityScore),
             nameof(AIContextProfile.NutritionComplianceScore),
             nameof(AIContextProfile.WorkoutComplianceScore),
             nameof(AIContextProfile.AIConfidenceScore),

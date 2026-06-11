@@ -5,7 +5,7 @@ foreach ($port in $ports) {
     $conns = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
     foreach ($conn in $conns) {
         $proc = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue
-        if ($proc -and $proc.ProcessName -match "dotnet|Gateway|Iam|Payment|Roadmap|Exercise|Notification|Social|Marketplace") {
+        if ($proc) {
             Write-Host "Stopping PID $($proc.Id) on port $port ($($proc.ProcessName))" -ForegroundColor Yellow
             Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
         }

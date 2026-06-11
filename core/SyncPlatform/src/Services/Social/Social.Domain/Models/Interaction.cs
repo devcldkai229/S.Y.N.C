@@ -2,7 +2,7 @@ using Social.Domain.Enums;
 
 namespace Social.Domain.Models;
 
-public class Interaction : InteractionEntity
+public class Interaction : BaseMongoEntity
 {
     public Guid PostId { get; set; }
 

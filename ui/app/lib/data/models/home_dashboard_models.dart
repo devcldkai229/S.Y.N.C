@@ -19,6 +19,9 @@ class HomeDashboardData {
     this.syncCoins = 0,
     this.subscriptionTier = 'Free',
     this.walletHint,
+    this.currentLevel = 1,
+    this.currentXp = 0,
+    this.currentStreak = 0,
   });
 
   final String greetingName;
@@ -37,6 +40,9 @@ class HomeDashboardData {
   final double syncCoins;
   final String subscriptionTier;
   final String? walletHint;
+  final int currentLevel;
+  final int currentXp;
+  final int currentStreak;
 
   factory HomeDashboardData.fromApi({
     required ProfileSettings settings,
@@ -83,7 +89,8 @@ class HomeDashboardData {
                 : 'Listen to your body today.')
         : null;
 
-    final coins = inventory?.gamification?.syncCoins ?? 0;
+    final gamification = inventory?.gamification;
+    final coins = gamification?.syncCoins ?? 0;
     final tier = settings.basic.subscriptionTier;
 
     return HomeDashboardData(
@@ -109,6 +116,9 @@ class HomeDashboardData {
       walletHint: todaySession != null
           ? "Earn coins upon completing today's session."
           : 'Complete workouts to earn Sync Coins.',
+      currentLevel: gamification?.currentLevel ?? 1,
+      currentXp: gamification?.currentXp ?? 0,
+      currentStreak: gamification?.currentStreak ?? 0,
     );
   }
 

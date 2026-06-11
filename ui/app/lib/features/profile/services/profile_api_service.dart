@@ -9,8 +9,17 @@ class ProfileApiService {
   final Dio _dio;
 
   Future<ProfileSettings> getProfileSettings() async {
-    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.meProfileSettings);
-    return _parseSettings(response.data);
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(ApiPaths.meProfileSettings);
+      return _parseSettings(response.data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw Exception(
+          'Không tìm thấy cài đặt hồ sơ. Hãy hoàn tất onboarding hoặc kiểm tra Gateway IAM.',
+        );
+      }
+      rethrow;
+    }
   }
 
   Future<UserInventory> getInventory() async {

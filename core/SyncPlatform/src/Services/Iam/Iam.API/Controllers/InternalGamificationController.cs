@@ -1,12 +1,14 @@
 using Iam.Application.Abstractions;
 using Iam.Application.Common;
 using Iam.Application.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Iam.API.Controllers;
 
 [ApiController]
 [Route("api/internal/gamification")]
+[AllowAnonymous]
 public class InternalGamificationController : ControllerBase
 {
     private readonly IAchievementService _achievementService;
