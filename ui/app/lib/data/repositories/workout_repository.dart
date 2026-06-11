@@ -38,6 +38,11 @@ class WorkoutRepository {
 
   Future<List<UserCustomWorkout>> loadCustomWorkouts() => _api.getCustomWorkouts();
 
+  Future<List<UserCustomWorkout>> loadPublicWorkouts({String? query, String? sortBy}) =>
+      _api.getPublicWorkouts(query: query, sortBy: sortBy);
+
+  Future<UserCustomWorkout> cloneWorkout(String id) => _api.cloneWorkout(id);
+
   Future<UserCustomWorkout> createCustomWorkout(Map<String, dynamic> data) =>
       _api.createCustomWorkout(data);
 

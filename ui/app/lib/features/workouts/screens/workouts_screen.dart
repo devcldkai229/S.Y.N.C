@@ -17,6 +17,7 @@ class WorkoutsScreen extends StatelessWidget {
       create: (_) => WorkoutsCubit(getIt())
         ..loadRoadmap()
         ..loadCustomWorkouts()
+        ..loadPublicWorkouts()
         ..loadCatalog(),
       child: const _WorkoutsView(),
     );
@@ -36,11 +37,33 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(_handleTabSelection);
+  }
+
+  void _handleTabSelection() {
+    if (!_tabController.indexIsChanging) {
+      final cubit = context.read<WorkoutsCubit>();
+      switch (_tabController.index) {
+        case 0:
+          cubit.loadRoadmap();
+          break;
+        case 1:
+          cubit.loadCustomWorkouts();
+          break;
+        case 2:
+          cubit.loadPublicWorkouts();
+          break;
+        case 3:
+          cubit.loadCatalog();
+          break;
+      }
+    }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabSelection);
     _tabController.dispose();
     super.dispose();
   }
@@ -91,6 +114,7 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
                 tabs: const [
                   Tab(text: 'AI Roadmap'),
                   Tab(text: 'My Workouts'),
+                  Tab(text: 'Explore'),
                   Tab(text: 'Catalog'),
                 ],
               ),
@@ -102,6 +126,7 @@ class _WorkoutsViewState extends State<_WorkoutsView> with SingleTickerProviderS
               children: const [
                 _AiRoadmapTab(),
                 _CustomWorkoutsTab(),
+                _ExploreTab(),
                 _CatalogTab(),
               ],
             ),
@@ -438,10 +463,6 @@ class _CatalogTabState extends State<_CatalogTab> {
                 decoration: InputDecoration(
                   hintText: 'Search exercises...',
                   prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.tune, color: AppColors.textMuted),
-                    onPressed: () => _load(context),
-                  ),
                   filled: true,
                   fillColor: AppColors.cardBackground,
                   border: OutlineInputBorder(
@@ -951,8 +972,6 @@ class _CustomWorkoutCard extends StatelessWidget {
               // Tags Row
               Row(
                 children: [
-                  _buildTag(workout.visibility),
-                  const SizedBox(width: 6),
                   _buildTag(
                     workout.scheduleMode.isNotEmpty ? workout.scheduleMode : 'Manual',
                     color: Colors.blue.shade600,
@@ -1381,6 +1400,259 @@ class _WorkoutLoadError extends StatelessWidget {
               child: const Text('Thử lại'),
             ),
           ],
+class _ExploreTab extends StatefulWidget {
+  const _ExploreTab();
+
+  @override
+  State<_ExploreTab> createState() => _ExploreTabState();
+}
+
+class _ExploreTabState extends State<_ExploreTab> {
+  final _searchController = TextEditingController();
+  String _sortBy = 'newest';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _search() {
+    context.read<WorkoutsCubit>().loadPublicWorkouts(
+          query: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
+          sortBy: _sortBy == 'newest' ? null : _sortBy,
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<WorkoutsCubit, WorkoutsState>(
+      builder: (context, state) {
+        final workouts = state.exploreWorkouts;
+        final loading = state.exploreStatus == LoadStatus.loading;
+        final error = state.exploreError;
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: TextField(
+                controller: _searchController,
+                onSubmitted: (_) => _search(),
+                decoration: InputDecoration(
+                  hintText: 'Search community workouts...',
+                  prefixIcon: const Icon(Icons.search, color: AppColors.textMuted),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.arrow_forward, color: AppColors.primaryGreen),
+                    onPressed: _search,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.cardBackground,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              height: 40,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                children: [
+                  FilterChip(
+                    label: const Text('Mới nhất'),
+                    selected: _sortBy == 'newest',
+                    onSelected: (_) {
+                      setState(() => _sortBy = 'newest');
+                      _search();
+                    },
+                    selectedColor: AppColors.primaryGreen,
+                    labelStyle: TextStyle(
+                      color: _sortBy == 'newest' ? Colors.white : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    backgroundColor: AppColors.border.withValues(alpha: 0.4),
+                    showCheckmark: false,
+                  ),
+                  const SizedBox(width: 8),
+                  FilterChip(
+                    label: const Text('Lưu nhiều nhất'),
+                    selected: _sortBy == 'saves',
+                    onSelected: (_) {
+                      setState(() => _sortBy = 'saves');
+                      _search();
+                    },
+                    selectedColor: AppColors.primaryGreen,
+                    labelStyle: TextStyle(
+                      color: _sortBy == 'saves' ? Colors.white : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                    backgroundColor: AppColors.border.withValues(alpha: 0.4),
+                    showCheckmark: false,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: loading && workouts.isEmpty
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen))
+                  : error != null && workouts.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(error, textAlign: TextAlign.center),
+                              const SizedBox(height: 8),
+                              TextButton(
+                                onPressed: _search,
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: () async => _search(),
+                          color: AppColors.primaryGreen,
+                          child: ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(20, 12, 20, 100),
+                            itemCount: workouts.length,
+                            itemBuilder: (context, index) {
+                              final w = workouts[index];
+                              return _PublicWorkoutCard(
+                                workout: w,
+                                onClone: () async {
+                                  return await context.read<WorkoutsCubit>().clonePublicWorkout(w.id);
+                                },
+                              );
+                            },
+                          ),
+                        ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PublicWorkoutCard extends StatefulWidget {
+  const _PublicWorkoutCard({required this.workout, required this.onClone});
+
+  final UserCustomWorkout workout;
+  final Future<bool> Function() onClone;
+
+  @override
+  State<_PublicWorkoutCard> createState() => _PublicWorkoutCardState();
+}
+
+class _PublicWorkoutCardState extends State<_PublicWorkoutCard> {
+  bool _isSaving = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: InkWell(
+        onTap: () async {
+          await context.push(AppRoutes.customWorkoutDetail(widget.workout.id));
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.workout.workoutName,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        const Icon(Icons.fitness_center_outlined, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${widget.workout.exerciseCount} exercises',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.repeat_outlined, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${widget.workout.totalSets} sets',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(Icons.bookmark_add_outlined, size: 14, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${widget.workout.savesCount} saves',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                    if (widget.workout.scheduleMode.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Schedule: ${widget.workout.scheduleMode}',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _isSaving
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryGreen),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: () async {
+                        setState(() => _isSaving = true);
+                        final success = await widget.onClone();
+                        if (mounted) {
+                          setState(() => _isSaving = false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(success
+                                  ? 'Successfully saved "${widget.workout.workoutName}" to your workouts!'
+                                  : 'Failed to save workout.'),
+                              backgroundColor: success ? AppColors.primaryGreen : Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.12),
+                        foregroundColor: AppColors.primaryGreen,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.bookmark_add_outlined, size: 16),
+                      label: const Text('Save', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+            ],
+          ),
         ),
       ),
     );

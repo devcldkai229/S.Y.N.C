@@ -15,6 +15,8 @@ public static class ApplicationMappers
             UserId = entity.UserId,
             WorkoutName = entity.WorkoutName,
             Visibility = entity.Visibility,
+            ParentWorkoutId = entity.ParentWorkoutId,
+            SavesCount = entity.SavesCount,
             ScheduleMode = entity.ScheduleMode,
             AllowAiOptimization = entity.AllowAiOptimization,
             CreatedAt = entity.CreatedAt,
@@ -474,6 +476,8 @@ public static class ApplicationMappers
             Id = entity.Id,
             WorkoutName = entity.WorkoutName,
             Visibility = entity.Visibility,
+            ParentWorkoutId = entity.ParentWorkoutId,
+            SavesCount = entity.SavesCount,
             ScheduleMode = entity.ScheduleMode,
             AllowAiOptimization = entity.AllowAiOptimization,
             Sessions = sessions.Select(s => new WorkoutSessionDto

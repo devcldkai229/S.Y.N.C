@@ -714,10 +714,6 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildActionIconButton(Icons.share, 'Chia sẻ'),
-                const SizedBox(width: 20),
-                _buildActionIconButton(Icons.link, 'Sao chép'),
-                const SizedBox(width: 20),
                 _buildActionIconButton(Icons.remove_red_eye_outlined, 'Xem trước'),
               ],
             ),
