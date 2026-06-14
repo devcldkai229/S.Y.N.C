@@ -1,7 +1,7 @@
 # Domain Model — Sync Lifestyle Automation Platform
 
 > Trích xuất toàn bộ entities và enums từ tất cả services.  
-> Storage: **PostgreSQL** (IAM, Payment) · **MongoDB** (Exercise, Roadmap, Notification) · **Go** (Biometric)
+> Storage: **PostgreSQL** (IAM, Payment) · **MongoDB** (Exercise, Roadmap, Notification, Social) · **Go** (Biometric)
 
 ---
 
@@ -18,7 +18,7 @@
 | UpdatedAt | DateTimeOffset? |
 | DeletedAt | DateTimeOffset? |
 
-**`BaseMongoEntity`** — dùng cho các service MongoDB (Exercise, Roadmap, Notification)
+**`BaseMongoEntity`** — dùng cho các service MongoDB (Exercise, Roadmap, Notification, Social)
 
 | Property | Type |
 |----------|------|
@@ -114,6 +114,9 @@
 | MaxAutoOrderLimitPerOrder | decimal? |
 | DataSharingConsent | bool |
 | MarketingConsent | bool |
+| SmartPushEnabled | bool |
+| AllowAiGeneratedNotification | bool |
+| PreferredReminderTime | TimeSpan? |
 
 **`AIContextProfile`**
 
@@ -150,6 +153,7 @@
 | SyncCoins | decimal |
 | AchievementPoints | long |
 | ConsecutivePerfectDays | int |
+| LastActivityDate | DateTimeOffset? |
 
 **`Achievement`**
 
@@ -649,7 +653,180 @@
 | **NotificationChannel** | Push=0, InApp=1, Email=2, Sms=3 |
 | **NotificationStatus** | Pending=0, Sent=1, Delivered=2, Read=3, Failed=4, Cancelled=5 |
 | **NotificationPriority** | Low=0, Normal=1, High=2, Urgent=3 |
-| **NotificationType** | WorkoutReminder=0, MealAutoOrder=1, AiIntervention=2, Motivational=3, SystemAlert=4, RewardMinted=5, Promotion=6 |
+| **NotificationType** | WorkoutReminder=0, MealAutoOrder=1, AiIntervention=2, Motivational=3, SystemAlert=4, RewardMinted=5, Promotion=6, PostLiked=7, PostCommented=8, CommentReplied=9, FollowAccepted=10, StoryViewed=11, StoryLiked=12, ChallengeCompleted=13, ChallengeRewardEarned=14, NewFollower=15, FollowRequested=16, NewPostFromFollowing=17 |
+
+---
+
+## Service: Social
+
+> MongoDB · `BaseMongoEntity`
+
+### Entities
+
+**`CommunityChallenge`**
+
+| Property | Type |
+|----------|------|
+| CreatorId | Guid |
+| Title | string |
+| Description | string |
+| RegistrationDeadline | DateTimeOffset |
+| StartDate | DateTimeOffset |
+| EndDate | DateTimeOffset |
+| GoalType | ChallengeGoalType? |
+| PointRewards | decimal? |
+| Gifts | string[]? |
+| TargetValue | decimal? |
+| ParticipantCount | int |
+| Address | string? |
+| Location | GeoJsonPoint\<GeoJson2DGeographicCoordinates\>? |
+| Status | ChallengeStatus |
+
+**`ChallengeParticipant`**
+
+| Property | Type |
+|----------|------|
+| ChallengeId | Guid |
+| UserId | Guid |
+| Status | ParticipantStatus |
+| JoinedAt | DateTimeOffset |
+| CompletedAt | DateTimeOffset? |
+| IsActive | bool |
+
+**`Post`**
+
+| Property | Type |
+|----------|------|
+| AuthorId | Guid |
+| AuthorSnapshot | AuthorSnapshot |
+| PostType | PostType |
+| Content | string |
+| MediaUrls | List\<string\> |
+| ReferenceId | Guid? |
+| Metrics | PostMetrics |
+| IsPublic | bool |
+| ShareCode | string |
+
+**`Comment`**
+
+| Property | Type |
+|----------|------|
+| PostId | Guid |
+| UserId | Guid |
+| Content | string |
+| AuthorSnapshot | AuthorSnapshot? |
+| ParentCommentId | Guid? |
+
+**`Interaction`**
+
+| Property | Type |
+|----------|------|
+| PostId | Guid |
+| UserId | Guid |
+| InteractionType | InteractionType |
+
+**`Story`**
+
+| Property | Type |
+|----------|------|
+| AuthorId | Guid |
+| AuthorSnapshot | AuthorSnapshot |
+| MediaUrl | string |
+| MediaType | StoryMediaType |
+| Caption | string? |
+| ExpiresAt | DateTimeOffset |
+| ViewCount | int |
+| LikeCount | int |
+| IsActive | bool |
+| Privacy | PrivacyType |
+
+**`StoryView`**
+
+| Property | Type |
+|----------|------|
+| StoryId | Guid |
+| ViewerId | Guid |
+| ViewedAt | DateTimeOffset |
+
+**`StoryInteraction`**
+
+| Property | Type |
+|----------|------|
+| StoryId | Guid |
+| UserId | Guid |
+| InteractionType | InteractionType |
+
+**`UserFollow`**
+
+| Property | Type |
+|----------|------|
+| FollowerId | Guid |
+| FolloweeId | Guid |
+| FollowedAt | DateTimeOffset |
+| Status | FollowStatus |
+
+**`UserSocialSettings`**
+
+| Property | Type |
+|----------|------|
+| UserId | Guid |
+| ProfilePrivacy | PrivacyType |
+
+**`Blog`**
+
+| Property | Type |
+|----------|------|
+| AuthorId | Guid |
+| AuthorSnapshot | AuthorSnapshot |
+| Title | string |
+| Slug | string |
+| CoverImageUrl | string |
+| MediaUrls | string[]? |
+| Content | string |
+| Tags | List\<string\> |
+| Status | BlogStatus |
+| PublishedAt | DateTimeOffset? |
+| LikeCount | int |
+| ShareCount | int |
+
+**`BlogInteraction`**
+
+| Property | Type |
+|----------|------|
+| BlogId | Guid |
+| UserId | Guid |
+| InteractionType | InteractionType |
+
+### Nested types
+
+**`AuthorSnapshot`** — denormalized author display data (tránh join IAM khi load feed)
+
+| Property | Type |
+|----------|------|
+| FullName | string |
+| AvatarUrl | string? |
+
+**`PostMetrics`** — embedded counters trên Post
+
+| Property | Type |
+|----------|------|
+| LikeCount | int |
+| CommentCount | int |
+| ShareCount | int |
+
+### Enums
+
+| Enum | Values |
+|------|--------|
+| **ChallengeGoalType** | TotalDistance=0, TotalWorkouts=1, TotalCaloriesBurned=2 |
+| **ChallengeStatus** | Upcoming=0, Active=1, InProgress=2, Completed=3 |
+| **ParticipantStatus** | Joined=0, InProgress=1, Completed=2, Dropped=3 |
+| **PostType** | Standard=0, AchievementShare=1, StreakShare=2, ChallengeCreation=3 |
+| **InteractionType** | Like=0, Share=1 |
+| **FollowStatus** | Pending=0, Accepted=1, Blocked=2 |
+| **PrivacyType** | Public=0, Followers=1, Private=2 |
+| **StoryMediaType** | Image=0, Video=1, TextOnly=2 |
+| **BlogStatus** | Draft=0, Published=1, Archived=2 |
 
 ---
 
@@ -675,4 +852,5 @@
 | Exercise | 3 | 1 | 0 (dùng Shared) |
 | Roadmap | 7 | 2 | 0 (dùng Shared) |
 | Notification | 2 | — | 4 |
-| **Total** | **31** | **3** | **32** |
+| Social | 12 | 2 | 9 |
+| **Total** | **43** | **5** | **41** |

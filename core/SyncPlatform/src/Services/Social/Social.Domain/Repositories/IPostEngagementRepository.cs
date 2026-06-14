@@ -14,6 +14,16 @@ public interface IPostEngagementRepository
     Task<Interaction> LikePostAsync(Guid postId, Guid userId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Removes a Like interaction and decrements <see cref="Post.Metrics.LikeCount"/>. Idempotent — no-op if not liked.
+    /// </summary>
+    Task UnlikePostAsync(Guid postId, Guid userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the subset of <paramref name="postIds"/> that <paramref name="userId"/> has liked.
+    /// </summary>
+    Task<HashSet<Guid>> GetLikedPostIdsAsync(Guid userId, IEnumerable<Guid> postIds, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Inserts a comment and increments <see cref="Post.Metrics.CommentCount"/> atomically.
     /// </summary>
     Task<Comment> AddCommentAsync(
@@ -21,5 +31,6 @@ public interface IPostEngagementRepository
         Guid userId,
         string content,
         AuthorSnapshot? authorSnapshot,
+        Guid? parentCommentId = null,
         CancellationToken cancellationToken = default);
 }

@@ -1,35 +1,11 @@
 {
-  "$schema": "https://json.schemastore.org/appsettings.json",
-
-  "ConnectionStrings": {
-    "ExerciseDatabase": "mongodb://localhost:27018"
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
   },
-
-  "MongoDB": {
-    "ExerciseDatabaseName": "sync_exercise"
-  },
-
-  "Minio": {
-    "Endpoint": "localhost:9000",
-    "AccessKey": "minioadmin",
-    "SecretKey": "minioadmin123",
-    "BucketName": "exercise-assets",
-    "UseSsl": false,
-    "PublicUrl": "http://localhost:9000",
-    "AutoCreateBucket": true,
-    "MaxFileSizeMb": 50,
-    "MaxThumbnailSizeMb": 5,
-    "AllowedImageContentTypes": [
-      "image/jpeg",
-      "image/png",
-      "image/gif",
-      "image/webp"
-    ],
-    "AllowedVideoContentTypes": [
-      "video/mp4",
-      "video/mpeg",
-      "video/quicktime",
-      "video/webm"
-    ]
+  "Storage": {
+    "Bucket": "sync-objs",
+    "KeyPrefix": "exercises_catalog/",
+    "PublicRead": false
   }
 }

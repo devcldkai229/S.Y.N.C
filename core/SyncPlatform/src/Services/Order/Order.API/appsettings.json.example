@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1.",
+
+  "InternalApiKey": "dev-internal-key-change-me",
+  "ConnectionStrings": {
+    "OrderDatabase": "Host=localhost;Port=5434;Database=sync_order;Username=postgres;Password=postgres",
+    "Redis": "localhost:6379"
+  },
+  "Order": {
+    "DefaultDeliveryFee": 25000,
+    "LocationPersistIntervalSeconds": 30,
+    "LocationPollIntervalSeconds": 8,
+    "SimulateDeliveryProgress": true,
+    "SandboxSimulationIntervalSeconds": 10,
+    "PublicBaseUrl": "https://frictional-delisa-squeakingly.ngrok-free.dev"
+  },
+  "AwsLocation": {
+    "Region": "ap-southeast-1",
+    "PlaceIndexName": "sync-place-index",
+    "_note": "Create an Amazon Location Place Index (Esri or HERE) named sync-place-index in ap-southeast-1."
+  },
+  "Ahamove": {
+    "Enabled": true,
+    "UseSandboxSimulation": true,
+    "ApiKey": "your-ahamove-sandbox-api-key",
+    "BaseUrl": "https://partner-apistg.ahamove.com/v3",
+    "Mobile": "849xxxxxxxx",
+    "ServiceId": "SGN-BIKE",
+    "PaymentMethod": "CASH",
+    "WebhookApiKey": ""
+  },
+  "MarketplaceService": {
+    "BaseUrl": "http://localhost:5119",
+    "InternalApiKey": "dev-internal-key-change-me"
+  },
+  "PaymentService": {
+    "BaseUrl": "http://localhost:5084",
+    "InternalApiKey": "dev-internal-key-change-me"
+  },
+  "NotificationService": {
+    "BaseUrl": "http://localhost:5106",
+    "InternalApiKey": "dev-internal-key-change-me"
+  },
+  "NutritionService": {
+    "BaseUrl": "http://localhost:5122"
+  }
+}

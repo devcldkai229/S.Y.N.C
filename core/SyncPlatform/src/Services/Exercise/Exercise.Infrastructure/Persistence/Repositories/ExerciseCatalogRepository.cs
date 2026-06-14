@@ -103,4 +103,70 @@ public class ExerciseCatalogRepository : GenericRepository<ExerciseCatalog>, IEx
 
         return (items, totalRecords);
     }
+
+    public async Task<IReadOnlyList<ExerciseCatalog>> GetForEnrichmentAsync(
+        bool force,
+        int? limit,
+        CancellationToken cancellationToken = default)
+    {
+        var builder = Builders<ExerciseCatalog>.Filter;
+        var filter = builder.Eq(x => x.IsActive, true);
+
+        if (!force)
+        {
+            // Match null AND missing field (imported docs omit AiEnrichedAt via BsonIgnoreIfNull).
+            var notEnriched = builder.Or(
+                builder.Eq(x => x.AiEnrichedAt, (DateTimeOffset?)null),
+                builder.Exists(x => x.AiEnrichedAt, false));
+            filter = builder.And(filter, notEnriched);
+        }
+
+        IFindFluent<ExerciseCatalog, ExerciseCatalog> query = Collection.Find(filter);
+        query = query.SortBy(x => x.ExerciseCode);
+        if (limit.HasValue)
+        {
+            query = query.Limit(limit.Value);
+        }
+
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    public async Task<int> ApproveEnrichmentAsync(int? limit, CancellationToken cancellationToken = default)
+    {
+        var builder = Builders<ExerciseCatalog>.Filter;
+        var filter = builder.And(
+            builder.Eq(x => x.NeedsReview, true),
+            builder.Ne(x => x.AiEnrichedAt, null));
+
+        IFindFluent<ExerciseCatalog, ExerciseCatalog> query = Collection.Find(filter);
+        query = query.SortBy(x => x.ExerciseCode);
+        if (limit.HasValue)
+        {
+            query = query.Limit(limit.Value);
+        }
+
+        var items = await query.ToListAsync(cancellationToken);
+        foreach (var item in items)
+        {
+            item.NeedsReview = false;
+            item.UpdatedAt = DateTimeOffset.UtcNow;
+            await Collection.ReplaceOneAsync(x => x.Id == item.Id, item, cancellationToken: cancellationToken);
+        }
+
+        return items.Count;
+    }
+
+    public async Task<IReadOnlyList<ExerciseCatalog>> GetAllActiveAsync(
+        int? limit,
+        CancellationToken cancellationToken = default)
+    {
+        IFindFluent<ExerciseCatalog, ExerciseCatalog> query = Collection
+            .Find(x => x.IsActive)
+            .SortBy(x => x.ExerciseCode);
+
+        if (limit.HasValue)
+            query = query.Limit(limit.Value);
+
+        return await query.ToListAsync(cancellationToken);
+    }
 }

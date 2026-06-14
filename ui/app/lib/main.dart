@@ -14,6 +14,7 @@ import 'package:sync_app/data/repositories/onboarding_repository.dart';
 import 'package:sync_app/data/repositories/profile_repository.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/data/repositories/workout_repository.dart';
+import 'package:sync_app/features/marketplace/cubit/marketplace_cart_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,8 +45,11 @@ class SyncApp extends StatelessWidget {
         RepositoryProvider.value(value: getIt<OnboardingRepository>()),
         RepositoryProvider.value(value: getIt<SocialRepository>()),
       ],
-      child: BlocProvider.value(
-        value: localeCubit,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: localeCubit),
+          BlocProvider.value(value: getIt<MarketplaceCartCubit>()),
+        ],
         child: BlocBuilder<LocaleCubit, Locale>(
           builder: (context, locale) {
             return MaterialApp.router(

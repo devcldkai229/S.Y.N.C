@@ -97,7 +97,8 @@ public class InternalSmartPushService : IInternalSmartPushService
             pref?.SmartPushEnabled ?? false,
             pref?.AllowAiGeneratedNotification ?? false,
             tzId,
-            pref?.AgentPersona.ToString() ?? "FriendlyBuddy"
+            pref?.AgentPersona.ToString() ?? "FriendlyBuddy",
+            user.SubscriptionTier.ToString()
         );
     }
 }

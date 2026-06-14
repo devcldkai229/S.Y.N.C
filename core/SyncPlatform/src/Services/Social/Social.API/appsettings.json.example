@@ -1,5 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1.",
+
+  "IamService": {
+    "BaseUrl": "http://localhost:5288"
+  },
   "ConnectionStrings": {
     "SocialDatabase": "mongodb://localhost:27018"
   },
@@ -19,11 +24,17 @@
   "Minio": {
     "Endpoint": "localhost:9000",
     "AccessKey": "minioadmin",
-    "SecretKey": "minioadmin",
+    "SecretKey": "minioadmin123",
     "BucketName": "social-assets",
     "UseSsl": false,
     "PublicUrl": "http://localhost:9000",
     "AutoCreateBucket": true,
     "MaxFileSizeMb": 50
+  },
+  "AwsLocation": {
+    "Region": "ap-southeast-1",
+    "RouteCalculatorName": "sync-route-calculator",
+    "DataProvider": "Grab",
+    "Profile": "default"
   }
 }

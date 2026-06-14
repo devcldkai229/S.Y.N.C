@@ -1,12 +1,15 @@
-using Exercise.Application.Services;
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.S3;
 using Exercise.Application.Configuration;
+using Exercise.Application.Services;
 using Exercise.Infrastructure.Persistence;
 using Exercise.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Minio;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 
 namespace Exercise.Infrastructure.Extensions;
@@ -22,22 +25,24 @@ public static class InfrastructureServiceExtensions
     {
         RegisterBsonConventions();
 
-        services.Configure<MinioOptions>(configuration.GetSection(MinioOptions.SectionName));
+        services.Configure<StorageOptions>(configuration.GetSection(StorageOptions.SectionName));
+        services.Configure<FreeExerciseDbOptions>(configuration.GetSection(FreeExerciseDbOptions.SectionName));
+        services.Configure<TranslateOptions>(configuration.GetSection(TranslateOptions.SectionName));
+        services.Configure<EnrichmentOptions>(configuration.GetSection(EnrichmentOptions.SectionName));
 
-        services.AddSingleton<IMinioClient>(sp =>
+        var awsOptions = configuration.GetAWSOptions();
+        services.AddDefaultAWSOptions(awsOptions);
+        services.AddAWSService<IAmazonS3>();
+        services.AddSingleton<IStorageService, S3StorageService>();
+
+        var connectionString = configuration.GetConnectionString("ExerciseDatabase");
+        if (string.IsNullOrWhiteSpace(connectionString))
         {
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MinioOptions>>().Value;
-            return new MinioClient()
-                .WithEndpoint(options.Endpoint)
-                .WithCredentials(options.AccessKey, options.SecretKey)
-                .WithSSL(options.UseSsl)
-                .Build();
-        });
-
-        services.AddSingleton<IStorageService, MinioStorageService>();
-
-        var connectionString = configuration.GetConnectionString("ExerciseDatabase")
-            ?? throw new InvalidOperationException("Connection string 'ExerciseDatabase' is not configured.");
+            throw new InvalidOperationException(
+                "Connection string 'ExerciseDatabase' is not configured. " +
+                "Set ConnectionStrings:ExerciseDatabase in appsettings.Import.json, Exercise.API/appsettings.json, " +
+                "or environment variable ConnectionStrings__ExerciseDatabase.");
+        }
 
         var databaseName = configuration["MongoDB:ExerciseDatabaseName"] ?? "sync_exercise";
 
@@ -65,12 +70,12 @@ public static class InfrastructureServiceExtensions
         {
             if (_conventionsRegistered) return;
 
+            BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
+
             var pack = new ConventionPack
             {
                 new EnumRepresentationConvention(BsonType.String),
-
                 new IgnoreIfNullConvention(true),
-
                 new IgnoreIfDefaultConvention(false),
             };
 

@@ -22,6 +22,47 @@ public class NotificationController : ControllerBase
         _currentUser = currentUser;
     }
 
+    [HttpGet("me")]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<NotificationMessageDto>>>> GetMyPaged(
+        [FromQuery] NotificationSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.RequireUserId();
+        var result = await _service.GetPagedByUserIdAsync(userId, request, cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<NotificationMessageDto>>.SuccessPagedResponse(
+            result.Items,
+            result.Pagination,
+            "Notifications retrieved successfully."));
+    }
+
+    [HttpGet("me/unread-count")]
+    public async Task<ActionResult<ApiResponse<int>>> GetMyUnreadCount(
+        CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.RequireUserId();
+        var count = await _service.GetUnreadCountByUserIdAsync(userId, cancellationToken);
+        return Ok(ApiResponse<int>.SuccessResponse(count, "Unread count retrieved successfully."));
+    }
+
+    [HttpPatch("me/{id:guid}/read")]
+    public async Task<ActionResult<ApiResponse<object?>>> MarkMyAsRead(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.RequireUserId();
+        await _service.MarkAsReadAsync(userId, id, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Notification marked as read successfully."));
+    }
+
+    [HttpPost("me/read-all")]
+    public async Task<ActionResult<ApiResponse<object?>>> MarkAllMyAsRead(
+        CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.RequireUserId();
+        await _service.MarkAllAsReadAsync(userId, cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "All notifications marked as read successfully."));
+    }
+
     [HttpGet("users/{userId:guid}")]
     public async Task<ActionResult<PagedApiResponse<IReadOnlyList<NotificationMessageDto>>>> GetPaged(
         Guid userId,

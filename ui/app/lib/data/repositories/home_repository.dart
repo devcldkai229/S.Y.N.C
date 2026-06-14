@@ -11,7 +11,12 @@ class HomeRepository {
   final WorkoutApiService _workoutApi;
 
   Future<HomeDashboardData> loadDashboard() async {
-    final settings = await _profileApi.getProfileSettings();
+    ProfileSettings settings;
+    try {
+      settings = await _profileApi.getProfileSettings();
+    } catch (_) {
+      settings = ProfileSettings.fromJson(const {});
+    }
 
     UserInventory? inventory;
     try {

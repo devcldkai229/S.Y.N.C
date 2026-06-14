@@ -1,3 +1,4 @@
+using Social.Application.Clients;
 using Social.Application.DTOs;
 using Social.Application.Exceptions;
 using Social.Application.Mappers;
@@ -11,11 +12,16 @@ public class InteractionService : IInteractionService
 {
     private readonly IInteractionRepository _interactions;
     private readonly IPostRepository _posts;
+    private readonly ISocialNotificationClient _notifications;
 
-    public InteractionService(IInteractionRepository interactions, IPostRepository posts)
+    public InteractionService(
+        IInteractionRepository interactions,
+        IPostRepository posts,
+        ISocialNotificationClient notifications)
     {
         _interactions = interactions;
         _posts = posts;
+        _notifications = notifications;
     }
 
     public async Task<InteractionDto> AddAsync(
@@ -57,6 +63,15 @@ public class InteractionService : IInteractionService
                 }
             },
             cancellationToken);
+
+        if (dto.InteractionType == InteractionType.Like)
+        {
+            var post = await _posts.GetByIdAsync(postId, cancellationToken);
+            if (post is not null)
+            {
+                _ = _notifications.NotifyPostLikedAsync(userId, post.AuthorId, postId, cancellationToken);
+            }
+        }
 
         return interaction.ToDto();
     }

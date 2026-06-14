@@ -11,4 +11,5 @@ public interface IWorkoutExecutionLogRepository : IGenericRepository<WorkoutExec
         DateTimeOffset from,
         DateTimeOffset to,
         CancellationToken cancellationToken = default);
+    Task<WorkoutExecutionLog?> GetActiveExecutionAsync(Guid userId, Guid sessionId, CancellationToken cancellationToken = default);
 }

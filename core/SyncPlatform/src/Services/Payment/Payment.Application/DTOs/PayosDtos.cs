@@ -14,6 +14,9 @@ public class CreatePaymentLinkRequest
     public Guid PlanId { get; set; }
 
     public BillingCycle BillingCycle { get; set; } = BillingCycle.Monthly;
+
+    [MaxLength(64)]
+    public string? CouponCode { get; set; }
 }
 
 public class CreatePaymentLinkResponse

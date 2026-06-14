@@ -127,6 +127,11 @@ namespace Payment.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("description");
+
                     b.Property<DateTimeOffset>("EndsAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ends_at");
@@ -134,6 +139,11 @@ namespace Payment.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
+
+                    b.Property<decimal?>("MaxDiscountAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("max_discount_amount");
 
                     b.Property<decimal>("MinimumSpend")
                         .HasPrecision(18, 2)
@@ -145,6 +155,16 @@ namespace Payment.Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)")
                         .HasColumnName("name");
+
+                    b.Property<Guid?>("PartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("partner_id");
+
+                    b.Property<int>("PerUserUsageLimit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("per_user_usage_limit");
 
                     b.Property<string>("PromotionType")
                         .IsRequired()
@@ -159,6 +179,12 @@ namespace Payment.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
+
+                    b.Property<int>("UsageCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("usage_count");
 
                     b.Property<int>("UsageLimit")
                         .HasColumnType("integer")
@@ -292,6 +318,11 @@ namespace Payment.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("amount");
+
+                    b.Property<string>("CouponCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("coupon_code");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -492,6 +523,57 @@ namespace Payment.Infrastructure.Persistence.Migrations
                     b.ToTable("user_subscriptions", "payment");
                 });
 
+            modelBuilder.Entity("Payment.Domain.Models.UserVoucher", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_used");
+
+                    b.Property<Guid>("PromotionCampaignId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("promotion_campaign_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<DateTimeOffset?>("UsedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("used_at");
+
+                    b.Property<Guid?>("UsedOnOrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("used_on_order_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_vouchers");
+
+                    b.HasIndex("PromotionCampaignId")
+                        .HasDatabaseName("ix_user_vouchers_promotion_campaign_id");
+
+                    b.HasIndex("UserId", "PromotionCampaignId")
+                        .HasDatabaseName("ix_user_vouchers_user_id_promotion_campaign_id");
+
+                    b.ToTable("user_vouchers", "payment");
+                });
+
             modelBuilder.Entity("Payment.Domain.Models.Wallet", b =>
                 {
                     b.Property<Guid>("Id")
@@ -652,6 +734,17 @@ namespace Payment.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_wallet_ledgers_wallet_id");
 
                     b.ToTable("wallet_ledgers", "payment");
+                });
+
+            modelBuilder.Entity("Payment.Domain.Models.UserVoucher", b =>
+                {
+                    b.HasOne("Payment.Domain.Models.PromotionCampaign", "PromotionCampaign")
+                        .WithMany()
+                        .HasForeignKey("PromotionCampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasConstraintName("fk_user_vouchers_promotion_campaigns_promotion_campaign_id");
+
+                    b.Navigation("PromotionCampaign");
                 });
 #pragma warning restore 612, 618
         }

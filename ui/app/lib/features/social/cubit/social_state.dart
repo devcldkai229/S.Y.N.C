@@ -12,6 +12,14 @@ class SocialState extends Equatable {
     this.isLoadingMore = false,
     this.likedPostIds = const [],
     this.sharedPostIds = const [],
+    this.currentUserId = '',
+    this.currentUser,
+    this.hiddenPostIds = const [],
+    this.storyGroups = const [],
+    this.myStories = const [],
+    this.showStoriesRow = true,
+    this.seenStoryAuthorIds = const {},
+    this.snackbarError,
   });
 
   const SocialState.initial() : this(status: SocialStatus.initial);
@@ -24,6 +32,17 @@ class SocialState extends Equatable {
   final bool isLoadingMore;
   final List<String> likedPostIds;
   final List<String> sharedPostIds;
+  final String currentUserId;
+  final SocialAuthorSnapshot? currentUser;
+  final List<String> hiddenPostIds;
+  final List<SocialStoryFeedGroup> storyGroups;
+  final List<SocialStory> myStories;
+  final bool showStoriesRow;
+  final Set<String> seenStoryAuthorIds;
+  final String? snackbarError;
+
+  List<SocialPost> get visiblePosts =>
+      hiddenPostIds.isEmpty ? posts : posts.where((p) => !hiddenPostIds.contains(p.id)).toList();
 
   SocialState copyWith({
     SocialStatus? status,
@@ -35,6 +54,15 @@ class SocialState extends Equatable {
     bool? isLoadingMore,
     List<String>? likedPostIds,
     List<String>? sharedPostIds,
+    String? currentUserId,
+    SocialAuthorSnapshot? currentUser,
+    List<String>? hiddenPostIds,
+    List<SocialStoryFeedGroup>? storyGroups,
+    List<SocialStory>? myStories,
+    bool? showStoriesRow,
+    Set<String>? seenStoryAuthorIds,
+    String? snackbarError,
+    bool clearSnackbarError = false,
   }) {
     return SocialState(
       status: status ?? this.status,
@@ -45,6 +73,14 @@ class SocialState extends Equatable {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       likedPostIds: likedPostIds ?? this.likedPostIds,
       sharedPostIds: sharedPostIds ?? this.sharedPostIds,
+      currentUserId: currentUserId ?? this.currentUserId,
+      currentUser: currentUser ?? this.currentUser,
+      hiddenPostIds: hiddenPostIds ?? this.hiddenPostIds,
+      storyGroups: storyGroups ?? this.storyGroups,
+      myStories: myStories ?? this.myStories,
+      showStoriesRow: showStoriesRow ?? this.showStoriesRow,
+      seenStoryAuthorIds: seenStoryAuthorIds ?? this.seenStoryAuthorIds,
+      snackbarError: clearSnackbarError ? null : (snackbarError ?? this.snackbarError),
     );
   }
 
@@ -58,5 +94,13 @@ class SocialState extends Equatable {
         isLoadingMore,
         likedPostIds,
         sharedPostIds,
+        currentUserId,
+        currentUser,
+        hiddenPostIds,
+        storyGroups,
+        myStories,
+        showStoriesRow,
+        seenStoryAuthorIds,
+        snackbarError,
       ];
 }

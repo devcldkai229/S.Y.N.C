@@ -7,6 +7,11 @@
       "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
     }
   },
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
+  "NotificationService": {
+    "BaseUrl": "http://localhost:5106",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
   },
@@ -17,11 +22,21 @@
       "366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com"
     ]
   },
+  "Minio": {
+    "Endpoint": "localhost:9000",
+    "AccessKey": "minioadmin",
+    "SecretKey": "minioadmin123",
+    "BucketName": "social-assets",
+    "UseSsl": false,
+    "PublicUrl": "http://localhost:9000",
+    "AutoCreateBucket": true,
+    "MaxFileSizeMb": 10
+  },
   "Email": {
     "_comment": "Public IAM or Gateway URL (no trailing slash). Verify link: {VerificationBaseUrl}/api/v1/auth/verify-email?token=...",
     "VerificationBaseUrl": "http://localhost:5288",
     "Smtp": {
-      "Enabled": false,
+      "Enabled": true,
       "Host": "smtp.gmail.com",
       "Port": 587,
       "UserName": "kag40222@gmail.com",

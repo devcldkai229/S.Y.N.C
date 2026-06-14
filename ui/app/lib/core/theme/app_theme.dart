@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 
 class AppTheme {
@@ -20,13 +21,14 @@ class AppTheme {
       ),
     );
 
-    final textTheme = base.textTheme.apply(
+    final textTheme = GoogleFonts.beVietnamProTextTheme(base.textTheme).apply(
       bodyColor: AppColors.textPrimary,
       displayColor: AppColors.textPrimary,
     );
 
     return base.copyWith(
       textTheme: textTheme,
+      primaryTextTheme: textTheme,
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,

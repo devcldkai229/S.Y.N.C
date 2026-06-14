@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
-import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/auth_repository.dart';
-import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/features/auth/utils/auth_error_mapper.dart';
-import 'package:sync_app/shared/widgets/custom_text_field.dart';
+import 'package:sync_app/features/auth/widgets/auth_glass_ui.dart';
+import 'package:sync_app/features/auth/widgets/login_video_background.dart';
 import 'package:sync_app/shared/widgets/language_switcher.dart';
-import 'package:sync_app/shared/widgets/primary_button.dart';
-import 'package:sync_app/shared/widgets/progress_header.dart';
 
 class RegisterStep1Screen extends StatefulWidget {
   const RegisterStep1Screen({super.key});
@@ -24,11 +22,19 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _verificationCodeController = TextEditingController();
+
   late final AuthRepository _authRepository;
   late final bool _isAuthEnabled;
+
   bool _isLoading = false;
+  bool _isSendingCode = false;
   bool _isCodeSent = false;
+  bool _isEmailVerified = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   String _registeredEmail = '';
+
+  int get _currentStep => _isEmailVerified ? 3 : (_isCodeSent ? 2 : 1);
 
   @override
   void initState() {
@@ -51,151 +57,196 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final isVi = Localizations.localeOf(context).languageCode == 'vi';
+
+    final title = _isEmailVerified
+        ? 'Hoàn tất đăng ký'
+        : (_isCodeSent ? l10n.verifyEmailTitle : l10n.registerTitle);
+
+    final subtitle = _isEmailVerified
+        ? 'Email đã xác minh. Nhập mật khẩu và bấm Tiếp tục để hoàn tất đăng ký.'
+        : (_isCodeSent
+            ? 'Mã xác minh đã được gửi đến ${_registeredEmail.isEmpty ? _emailController.text.trim() : _registeredEmail}.'
+            : (isVi
+                ? 'Tham gia SYNC để bắt đầu hành trình bứt phá của bạn.'
+                : l10n.registerSubtitle));
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ProgressHeader(
-              currentStep: _isCodeSent ? 2 : 1,
-              totalSteps: 3,
-              onClose: () => context.go(AppRoutes.login),
-            ),
-            const Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: EdgeInsets.only(right: 16),
-                child: LanguageIconToggle(),
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _isCodeSent
-                          ? context.l10n.verifyEmailTitle
-                          : context.l10n.registerTitle,
-                      style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+      resizeToAvoidBottomInset: true,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const LoginVideoBackground(),
+          const AuthBottomScrim(),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(24, 8, 24, 24 + bottomInset),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => context.go(AppRoutes.login),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        tooltip: 'Quay lại',
                       ),
+                      const Spacer(),
+                      const LanguageIconToggle(),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  AuthStepIndicator(currentStep: _currentStep),
+                  const SizedBox(height: 28),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                      height: 1.15,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _isCodeSent
-                          ? 'Mã xác minh đã được gửi đến ${_registeredEmail.isEmpty ? _emailController.text.trim() : _registeredEmail}. Vui lòng nhập mã để hoàn tất.'
-                          : context.l10n.registerSubtitle,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.5,
-                        color: AppColors.textSecondary,
-                      ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
-                    const SizedBox(height: 32),
-                    CustomTextField(
-                      label: context.l10n.fullNameLabel,
-                      hint: 'FitWarrior',
-                      controller: _usernameController,
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      context.l10n.emailLabel,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                  ),
+                  const SizedBox(height: 28),
+                  AuthGlassCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textPrimary,
-                            ),
-                            decoration: const InputDecoration(
-                              hintText: 'hello@vitality.com',
+                        AuthFrostedTextField(
+                          controller: _usernameController,
+                          hint: l10n.fullNameLabel,
+                          prefixIcon: Icons.person_outline_rounded,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 20),
+                        AuthFrostedTextField(
+                          controller: _emailController,
+                          hint: l10n.emailLabel,
+                          prefixIcon: Icons.mail_outline_rounded,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          readOnly: _isEmailVerified,
+                          suffix: AuthVerifyChip(
+                            label: _isCodeSent ? 'Gửi lại' : 'Xác minh',
+                            isLoading: _isSendingCode,
+                            enabled: !_isEmailVerified,
+                            onPressed: _onSendCodePressed,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        AuthFrostedTextField(
+                          controller: _verificationCodeController,
+                          hint: 'Mã OTP (6 số)',
+                          prefixIcon: Icons.verified_outlined,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.verifyEmailHint,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.55),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        AuthFrostedTextField(
+                          controller: _passwordController,
+                          hint: l10n.passwordLabel,
+                          prefixIcon: Icons.lock_outline_rounded,
+                          obscureText: _obscurePassword,
+                          textInputAction: TextInputAction.next,
+                          suffix: IconButton(
+                            onPressed: () =>
+                                setState(() => _obscurePassword = !_obscurePassword),
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: Colors.white70,
+                              size: 22,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          height: 56,
-                          child: OutlinedButton(
-                            onPressed: _isLoading ? null : _onSendCodePressed,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                              ),
+                        const SizedBox(height: 20),
+                        AuthFrostedTextField(
+                          controller: _confirmPasswordController,
+                          hint: l10n.confirmPasswordLabel,
+                          prefixIcon: Icons.lock_reset_rounded,
+                          obscureText: _obscureConfirmPassword,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _onContinuePressed(),
+                          suffix: IconButton(
+                            onPressed: () => setState(
+                              () => _obscureConfirmPassword = !_obscureConfirmPassword,
                             ),
-                            child: Text(
-                              _isCodeSent ? 'Resend code' : 'Verify email',
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: Colors.white70,
+                              size: 22,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    CustomTextField(
-                      label: 'Mã xác minh email',
-                      hint: 'Nhập mã 6 số gửi về email',
-                      controller: _verificationCodeController,
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Nếu SMTP tắt, mã sẽ xuất hiện trong log IAM.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    CustomTextField(
-                      label: context.l10n.passwordLabel,
-                      hint: '••••••••',
-                      controller: _passwordController,
-                      obscureText: true,
-                      showToggleVisibility: true,
-                    ),
-                    const SizedBox(height: 20),
-                    CustomTextField(
-                      label: context.l10n.confirmPasswordLabel,
-                      hint: '••••••••',
-                      controller: _confirmPasswordController,
-                      obscureText: true,
-                      showToggleVisibility: true,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  PrimaryButton(
-                    label: context.l10n.actionContinue,
+                  ),
+                  const SizedBox(height: 28),
+                  AuthCtaButton(
+                    label: l10n.actionContinue,
                     isLoading: _isLoading,
                     onPressed: _onContinuePressed,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Đã có tài khoản? ',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 14,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => context.go(AppRoutes.login),
+                        child: const Text(
+                          'Đăng nhập',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: authCtaGreen,
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                            decorationColor: authCtaGreen,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -213,82 +264,104 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
 
-    if (username.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        confirmPassword.isEmpty) {
-      _showMessage('Please complete all fields.');
-      return;
-    }
-    if (password.length < 8) {
-      _showMessage('Password must be at least 8 characters.');
-      return;
-    }
-    if (password != confirmPassword) {
-      _showMessage('Confirm password does not match.');
-      return;
-    }
-
-    if (!_isCodeSent) {
-      _showMessage('Vui lòng nhấn "Verify email" để gửi mã xác minh trước.');
-      return;
-    }
-
-    final code = _verificationCodeController.text.trim();
-    if (code.isEmpty) {
-      _showMessage('Vui lòng nhập mã xác minh email.');
+    if (username.isEmpty || email.isEmpty) {
+      _showMessage('Vui lòng nhập họ tên và email.');
       return;
     }
 
     setState(() => _isLoading = true);
     try {
-      final result = await _authRepository.verifyEmail(_extractToken(code));
-      if (!mounted) return;
-      _showMessage(
-        'Email ${result.email} đã xác minh thành công. Mời bạn đăng nhập.',
+      if (_isEmailVerified) {
+        if (password.isEmpty || confirmPassword.isEmpty) {
+          _showMessage('Vui lòng nhập mật khẩu để hoàn tất đăng ký.');
+          return;
+        }
+        if (password.length < 8) {
+          _showMessage('Password must be at least 8 characters.');
+          return;
+        }
+        if (password != confirmPassword) {
+          _showMessage('Confirm password does not match.');
+          return;
+        }
+
+        await _authRepository.finishRegistration(
+          email: email,
+          password: password,
+        );
+        if (!mounted) return;
+        _showMessage('Đăng ký hoàn tất. Mời bạn đăng nhập.');
+        context.go(AppRoutes.login);
+        return;
+      }
+
+      if (!_isCodeSent) {
+        _showMessage('Vui lòng nhấn "Xác minh" để gửi mã xác minh trước.');
+        return;
+      }
+
+      final code = _extractToken(_verificationCodeController.text.trim());
+      if (code.isEmpty) {
+        _showMessage('Vui lòng nhập mã xác minh email.');
+        return;
+      }
+
+      final hasPassword = password.isNotEmpty || confirmPassword.isNotEmpty;
+      if (hasPassword) {
+        if (password.isEmpty || confirmPassword.isEmpty) {
+          _showMessage('Vui lòng nhập và xác nhận mật khẩu.');
+          return;
+        }
+        if (password.length < 8) {
+          _showMessage('Password must be at least 8 characters.');
+          return;
+        }
+        if (password != confirmPassword) {
+          _showMessage('Confirm password does not match.');
+          return;
+        }
+      }
+
+      final result = await _authRepository.completeRegistration(
+        email: email,
+        code: code,
+        password: hasPassword ? password : null,
       );
-      context.go(AppRoutes.login);
+      if (!mounted) return;
+
+      if (hasPassword) {
+        _showMessage(
+          'Email ${result.email} đã xác minh và đăng ký hoàn tất. Mời bạn đăng nhập.',
+        );
+        context.go(AppRoutes.login);
+      } else {
+        _showMessage('Email ${result.email} đã xác minh. Nhập mật khẩu để hoàn tất.');
+        setState(() => _isEmailVerified = true);
+      }
     } catch (error) {
       _showMessage(mapAuthError(error, context.l10n));
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _onSendCodePressed() async {
-    if (_isLoading) return;
+    if (_isSendingCode || _isEmailVerified) return;
+
     final username = _usernameController.text.trim();
     final email = _emailController.text.trim();
-    final password = _passwordController.text;
-    final confirmPassword = _confirmPasswordController.text;
-    if (username.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        confirmPassword.isEmpty) {
-      _showMessage(
-        'Vui lòng nhập đầy đủ họ tên, email và mật khẩu trước khi xác minh email.',
-      );
-      return;
-    }
-    if (password.length < 8) {
-      _showMessage('Password must be at least 8 characters.');
-      return;
-    }
-    if (password != confirmPassword) {
-      _showMessage('Confirm password does not match.');
+    if (username.isEmpty || email.isEmpty) {
+      _showMessage('Vui lòng nhập họ tên và email trước khi xác minh.');
       return;
     }
 
-    setState(() => _isLoading = true);
+    setState(() => _isSendingCode = true);
     try {
       final result = _isCodeSent
           ? await _authRepository.resendVerificationCode(email: email)
-          : await _authRepository.register(
+          : await _authRepository.initRegistration(
               fullName: username,
               email: email,
-              password: password,
             );
       if (!mounted) return;
       _showMessage(
@@ -298,19 +371,17 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
       );
       setState(() {
         _isCodeSent = true;
+        _isEmailVerified = false;
         _registeredEmail = result.email;
       });
     } catch (error) {
       _showMessage(mapAuthError(error, context.l10n));
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isSendingCode = false);
     }
   }
 
   String _extractToken(String input) {
-    // Hỗ trợ cả khi người dùng dán full URL verify-email.
     final uri = Uri.tryParse(input);
     if (uri != null) {
       final q = uri.queryParameters['token'];
@@ -323,6 +394,11 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 }

@@ -16,6 +16,13 @@ public class ExerciseMotionAsset : BaseMongoEntity
     [BsonIgnoreIfNull]
     public string? ThumbnailUrl { get; set; }
 
+    /// <summary>S3 object key (e.g. exercises_catalog/{slug}/0.webp).</summary>
+    [BsonIgnoreIfNull]
+    public string? S3Key { get; set; }
+
+    [BsonIgnoreIfNull]
+    public string? ThumbnailS3Key { get; set; }
+
     // --- CÁC TRƯỜNG DÀNH RIÊNG CHO UNITY (Sẽ null nếu là Video) ---
     
     [BsonIgnoreIfNull]

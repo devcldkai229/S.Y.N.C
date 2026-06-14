@@ -14,6 +14,7 @@
     <Project Path="src/Services/Exercise/Exercise.Application/Exercise.Application.csproj" />
     <Project Path="src/Services/Exercise/Exercise.Domain/Exercise.Domain.csproj" />
     <Project Path="src/Services/Exercise/Exercise.Infrastructure/Exercise.Infrastructure.csproj" />
+    <Project Path="src/Services/Exercise/Exercise.ImportTool/Exercise.ImportTool.csproj" />
   </Folder>
   <Folder Name="/src/Services/Iam/">
     <Project Path="src/Services/Iam/Iam.API/Iam.API.csproj" />
@@ -26,6 +27,18 @@
     <Project Path="src/Services/Marketplace/Marketplace.Application/Marketplace.Application.csproj" />
     <Project Path="src/Services/Marketplace/Marketplace.Domain/Marketplace.Domain.csproj" />
     <Project Path="src/Services/Marketplace/Marketplace.Infrastructure/Marketplace.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Nutrition/">
+    <Project Path="src/Services/Nutrition/Nutrition.API/Nutrition.API.csproj" />
+    <Project Path="src/Services/Nutrition/Nutrition.Application/Nutrition.Application.csproj" />
+    <Project Path="src/Services/Nutrition/Nutrition.Domain/Nutrition.Domain.csproj" />
+    <Project Path="src/Services/Nutrition/Nutrition.Infrastructure/Nutrition.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Order/">
+    <Project Path="src/Services/Order/Order.API/Order.API.csproj" />
+    <Project Path="src/Services/Order/Order.Application/Order.Application.csproj" />
+    <Project Path="src/Services/Order/Order.Domain/Order.Domain.csproj" />
+    <Project Path="src/Services/Order/Order.Infrastructure/Order.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Services/Notification/">
     <Project Path="src/Services/Notification/Notification.API/Notification.API.csproj" />

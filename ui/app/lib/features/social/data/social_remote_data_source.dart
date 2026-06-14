@@ -1,5 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/network/api_paths.dart';
+import 'package:sync_app/core/network/multipart_file_utils.dart';
+import 'package:sync_app/features/social/models/follow_models.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
 
 class SocialRemoteDataSource {
@@ -65,8 +69,16 @@ class SocialRemoteDataSource {
     return CursorFeedPage<SocialPost>(items: items, nextCursor: nextCursor);
   }
 
+  Future<void> deletePost(String postId) async {
+    await _dio.delete<void>('${ApiPaths.socialPosts}/$postId');
+  }
+
   Future<void> likePost(String postId) async {
     await _dio.post<void>('${ApiPaths.socialPosts}/$postId/like');
+  }
+
+  Future<void> unlikePost(String postId) async {
+    await _dio.delete<void>('${ApiPaths.socialPosts}/$postId/like');
   }
 
   Future<void> sharePost(String postId) async {
@@ -74,6 +86,39 @@ class SocialRemoteDataSource {
       '${ApiPaths.socialPosts}/$postId/interactions',
       data: <String, dynamic>{'interactionType': 'Share'},
     );
+  }
+
+  Future<List<SocialStoryFeedGroup>> fetchStoriesFeed() async {
+    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.socialStoriesFeed);
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Failed to fetch stories').toString());
+    }
+    final raw = json['data'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(SocialStoryFeedGroup.fromJson)
+        .toList();
+  }
+
+  Future<List<SocialStory>> fetchMyStories() async {
+    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.socialStoriesMe);
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Failed to fetch my stories').toString());
+    }
+    final raw = json['data'];
+    if (raw is! List) return const [];
+    return raw.whereType<Map<String, dynamic>>().map(SocialStory.fromJson).toList();
+  }
+
+  Future<void> viewStory(String storyId) async {
+    await _dio.post<void>('${ApiPaths.socialStories}/$storyId/view');
+  }
+
+  Future<void> likeStory(String storyId) async {
+    await _dio.post<void>('${ApiPaths.socialStories}/$storyId/like');
   }
 
   Future<CommentsPage> fetchComments(String postId, {int pageNumber = 1, int pageSize = 20}) async {
@@ -105,37 +150,83 @@ class SocialRemoteDataSource {
   Future<SocialComment> createComment({
     required String postId,
     required String content,
-    required String authorFullName,
+    String? authorFullName,
     String? authorAvatarUrl,
   }) async {
-    final response = await _dio.post<Map<String, dynamic>>(
-      '${ApiPaths.socialPosts}/$postId/comments',
-      data: <String, dynamic>{
-        'content': content,
+    final path = '${ApiPaths.socialPosts}/$postId/comments';
+    final payload = <String, dynamic>{
+      'content': content,
+      if (authorFullName != null && authorFullName.isNotEmpty)
         'authorSnapshot': <String, dynamic>{
           'fullName': authorFullName,
-          'avatarUrl': authorAvatarUrl,
-        }
-      },
-    );
+          if (authorAvatarUrl != null) 'avatarUrl': authorAvatarUrl,
+        },
+    };
 
-    final data = response.data?['data'];
+    if (kDebugMode) {
+      debugPrint('[Social] POST $path');
+      debugPrint('[Social] payload: $payload');
+      debugPrint('[Social] Authorization: ${_dio.options.headers['Authorization'] ?? '(from interceptor)'}');
+    }
+
+    final response = await _dio.post<Map<String, dynamic>>(path, data: payload);
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Create comment failed').toString());
+    }
+
+    final data = json['data'];
     if (data is Map<String, dynamic>) {
       return SocialComment.fromJson(data);
     }
     throw Exception('Create comment failed (missing data).');
   }
 
-  Future<List<String>> uploadMediaFiles(List<String> filePaths) async {
-    final files = <MultipartFile>[];
-    for (final p in filePaths) {
-      // support Windows paths
-      if (p.trim().isEmpty) continue;
-      files.add(await MultipartFile.fromFile(p, filename: p.split('\\').last));
+  Future<SocialComment> createReply({
+    required String commentId,
+    required String content,
+    required String parentCommentId,
+    String? authorFullName,
+    String? authorAvatarUrl,
+  }) async {
+    final path = ApiPaths.socialCommentReplies(commentId);
+    final payload = <String, dynamic>{
+      'content': content,
+      'parentCommentId': parentCommentId,
+      if (authorFullName != null && authorFullName.isNotEmpty)
+        'authorSnapshot': <String, dynamic>{
+          'fullName': authorFullName,
+          if (authorAvatarUrl != null) 'avatarUrl': authorAvatarUrl,
+        },
+    };
+
+    if (kDebugMode) {
+      debugPrint('[Social] POST $path');
+      debugPrint('[Social] payload: $payload');
+      debugPrint('[Social] Authorization: ${_dio.options.headers['Authorization'] ?? '(from interceptor)'}');
+    }
+
+    final response = await _dio.post<Map<String, dynamic>>(path, data: payload);
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Create reply failed').toString());
+    }
+
+    final data = json['data'];
+    if (data is Map<String, dynamic>) {
+      return SocialComment.fromJson(data);
+    }
+    throw Exception('Create reply failed (missing data).');
+  }
+
+  Future<List<String>> uploadMediaFiles(List<XFile> files) async {
+    final multipartFiles = <MultipartFile>[];
+    for (final file in files) {
+      multipartFiles.add(await multipartFileFromXFile(file));
     }
 
     final formData = FormData.fromMap(<String, dynamic>{
-      'files': files,
+      'files': multipartFiles,
     });
 
     final response = await _dio.post<Map<String, dynamic>>(
@@ -154,6 +245,38 @@ class SocialRemoteDataSource {
       return raw.map((e) => e.toString()).toList();
     }
     return <String>[];
+  }
+
+  Future<SocialStory> createStory({
+    required XFile file,
+    String? caption,
+    required String authorFullName,
+    String? authorAvatarUrl,
+  }) async {
+    final multipart = await multipartFileFromXFile(file);
+
+    final formData = FormData.fromMap(<String, dynamic>{
+      'file': multipart,
+      if (caption != null && caption.isNotEmpty) 'caption': caption,
+      'authorFullName': authorFullName,
+      if (authorAvatarUrl != null) 'authorAvatarUrl': authorAvatarUrl,
+    });
+
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.socialStories,
+      data: formData,
+      options: Options(contentType: 'multipart/form-data'),
+    );
+
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Create story failed').toString());
+    }
+    final data = json['data'];
+    if (data is Map<String, dynamic>) {
+      return SocialStory.fromJson(data);
+    }
+    throw Exception('Create story failed (missing data).');
   }
 
   Future<SocialPost> createPost({
@@ -187,5 +310,55 @@ class SocialRemoteDataSource {
       return SocialPost.fromJson(data);
     }
     throw Exception('Create post failed (missing data).');
+  }
+
+  Future<FollowCounts> fetchFollowCounts(String userId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.socialUserFollowCounts(userId),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Failed to load follow counts').toString());
+    }
+    final data = json['data'];
+    if (data is Map<String, dynamic>) {
+      return FollowCounts.fromJson(data);
+    }
+    return FollowCounts.empty;
+  }
+
+  Future<FollowStatus> fetchFollowStatus(String userId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.socialUserFollowStatus(userId),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Failed to load follow status').toString());
+    }
+    final data = json['data'];
+    if (data is Map<String, dynamic>) {
+      return FollowStatus.fromJson(data);
+    }
+    return FollowStatus.none;
+  }
+
+  Future<void> followUser(String userId) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.socialUserFollow(userId),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Follow failed').toString());
+    }
+  }
+
+  Future<void> unfollowUser(String userId) async {
+    final response = await _dio.delete<Map<String, dynamic>>(
+      ApiPaths.socialUserFollow(userId),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Unfollow failed').toString());
+    }
   }
 }

@@ -35,4 +35,11 @@ public class ScheduledWorkoutRepository : GenericRepository<ScheduledWorkout>, I
                      && x.ScheduledStartTime <= to)
             .SortBy(x => x.ScheduledStartTime)
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<ScheduledWorkout>> GetBySessionIdsAsync(
+        IEnumerable<Guid> sessionIds,
+        CancellationToken cancellationToken = default)
+        => await Collection
+            .Find(x => sessionIds.Contains(x.SessionId))
+            .ToListAsync(cancellationToken);
 }

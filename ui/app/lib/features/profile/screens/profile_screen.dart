@@ -1,15 +1,20 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/core/locale/locale_cubit.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/profile/cubit/profile_cubit.dart';
 import 'package:sync_app/features/profile/models/profile_models.dart';
 import 'package:sync_app/features/profile/widgets/profile_edit_sheets.dart';
 import 'package:sync_app/shared/widgets/language_switcher.dart';
+import 'package:sync_app/shared/widgets/sync_app_bar.dart';
+import 'package:sync_app/shared/widgets/sync_avatar.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -46,18 +51,25 @@ class _ProfileScreenBody extends StatelessWidget {
       },
       builder: (context, state) {
         if (state.isLoading) {
-          return const SafeArea(
-            child: Center(
+          return const Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: SyncAppBar(),
+            body: Center(
               child: CircularProgressIndicator(color: AppColors.primaryGreen),
             ),
           );
         }
 
         if (state.settings == null) {
-          return SafeArea(
-            child: _ErrorView(
-              message: state.error ?? context.l10n.loadProfileFailed,
-              onRetry: () => context.read<ProfileCubit>().load(),
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            appBar: const SyncAppBar(),
+            body: SafeArea(
+              top: false,
+              child: _ErrorView(
+                message: state.error ?? context.l10n.loadProfileFailed,
+                onRetry: () => context.read<ProfileCubit>().load(),
+              ),
             ),
           );
         }
@@ -66,14 +78,18 @@ class _ProfileScreenBody extends StatelessWidget {
         final l10n = context.l10n;
         final g = state.inventory?.gamification;
         final level = g?.currentLevel ?? state.publicProfile?.currentLevel ?? 1;
-        final langLabel = s.basic.preferredLanguage.toLowerCase().startsWith('en')
-            ? l10n.languageEnglish
-            : l10n.languageVietnamese;
+        final xp = g?.currentXp ?? state.publicProfile?.currentXp ?? 0;
+        final streak = g?.currentStreak ?? 0;
+        final coins = g?.syncCoins.toInt() ?? 0;
 
-        return SafeArea(
-          child: Column(
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: const SyncAppBar(),
+          body: SafeArea(
+            top: false,
+            bottom: false,
+            child: Column(
             children: [
-              _TopBar(onRefresh: () => context.read<ProfileCubit>().load()),
               if (!s.fitness.isConfigured || !s.preferences.isConfigured)
                 _SetupBanner(
                   onSetup: () => context.push(AppRoutes.onboarding),
@@ -89,34 +105,43 @@ class _ProfileScreenBody extends StatelessWidget {
                       _AvatarHeader(
                         name: s.basic.fullName,
                         email: s.basic.email,
+                        avatarUrl: s.basic.avatarUrl,
+                        backgroundImageUrl: s.basic.backgroundImageUrl,
                         level: level,
-                        xp: g?.currentXp ?? state.publicProfile?.currentXp ?? 0,
+                        xp: xp,
+                        streak: streak,
+                        coins: coins,
                         verified: s.basic.emailVerified,
                         onEditAccount: () => _editAccount(context, s.basic),
+                        onPickAvatar: () => _pickAndUploadAvatar(context),
+                        onPickBackground: () => _pickAndUploadBackground(context),
                       ),
                       const SizedBox(height: 12),
-                      _CompletenessCard(
-                        percent: s.profileCompletenessPercent,
-                        hints: s.missingProfileHints,
-                      ),
-                      const SizedBox(height: 12),
+                      if (s.profileCompletenessPercent < 100) ...[
+                        _CompletenessCard(
+                          percent: s.profileCompletenessPercent,
+                          hints: s.missingProfileHints,
+                          onSetup: () => context.push(AppRoutes.onboarding),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
                       _SectionCard(
                         title: l10n.sectionAccount,
                         icon: Icons.person_outline,
+                        initiallyExpanded: true,
                         onEdit: () => _editAccount(context, s.basic),
                         children: [
                           _Row(l10n.fullNameLabel, s.basic.fullName),
                           _Row(l10n.emailLabel, s.basic.email),
-                          _Row(l10n.languageTitle, langLabel),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 4, bottom: 8),
-                            child: LanguageSwitcher(compact: true),
-                          ),
                           _Row(l10n.timezone, s.basic.timeZone),
                           _Row(l10n.packageTier, s.basic.subscriptionTier),
                           _Row(
                             l10n.emailVerified,
                             s.basic.emailVerified ? l10n.yes : l10n.no,
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8, bottom: 4),
+                            child: LanguageSwitcher(compact: true),
                           ),
                         ],
                       ),
@@ -134,7 +159,7 @@ class _ProfileScreenBody extends StatelessWidget {
                         ),
                         children: _fitnessRows(context, s.fitness, state.biometric),
                       ),
-                      if (s.fitness.dailyProteinTargetGram != null) ...[
+                      if (s.fitness.dailyProteinTargetGram != null)
                         _SectionCard(
                           title: l10n.sectionMacros,
                           icon: Icons.pie_chart_outline,
@@ -146,7 +171,6 @@ class _ProfileScreenBody extends StatelessWidget {
                             _Row(l10n.fatG, '${s.fitness.dailyFatTargetGram} g'),
                           ],
                         ),
-                      ],
                       _SectionCard(
                         title: l10n.sectionNutritionAi,
                         icon: Icons.restaurant_outlined,
@@ -181,10 +205,10 @@ class _ProfileScreenBody extends StatelessWidget {
                         icon: Icons.emoji_events_outlined,
                         children: [
                           _Row(l10n.level, '$level'),
-                          _Row('XP', '${g?.currentXp ?? 0}'),
+                          _Row('XP', '$xp'),
                           _Row(
                             'Streak',
-                            '${l10n.streakDays(g?.currentStreak ?? 0)} (${l10n.longestStreak(g?.longestStreak ?? 0)})',
+                            '${l10n.streakDays(streak)} (${l10n.longestStreak(g?.longestStreak ?? 0)})',
                           ),
                           _Row(l10n.syncCoins, '${g?.syncCoins.toStringAsFixed(0) ?? 0}'),
                           _Row(l10n.achievementPoints, '${g?.achievementPoints ?? 0}'),
@@ -233,16 +257,23 @@ class _ProfileScreenBody extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
                       ),
-                      if (state.isSaving)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 16),
-                          child: Center(child: CircularProgressIndicator(color: AppColors.primaryGreen)),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => _logout(context),
+                        icon: const Icon(Icons.logout_rounded),
+                        label: const Text('Log out'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red.shade400,
+                          side: BorderSide(color: Colors.red.shade400),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
+                      ),
                     ],
                   ),
                 ),
               ),
             ],
+            ),
           ),
         );
       },
@@ -300,6 +331,26 @@ class _ProfileScreenBody extends StatelessWidget {
         );
   }
 
+  Future<void> _pickAndUploadAvatar(BuildContext context) async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null || !context.mounted) return;
+    final ok = await context.read<ProfileCubit>().uploadAndSaveAvatar(picked);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? 'Đã cập nhật ảnh đại diện' : 'Không thể tải ảnh lên')),
+    );
+  }
+
+  Future<void> _pickAndUploadBackground(BuildContext context) async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null || !context.mounted) return;
+    final ok = await context.read<ProfileCubit>().uploadAndSaveBackground(picked);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? 'Đã cập nhật ảnh nền' : 'Không thể tải ảnh lên')),
+    );
+  }
+
   Future<void> _editFitness(BuildContext context, FitnessProfile fitness) async {
     final updated = await showFitnessProfileEditor(context, fitness);
     if (updated == null || !context.mounted) return;
@@ -317,41 +368,33 @@ class _ProfileScreenBody extends StatelessWidget {
     if (kg == null || !context.mounted) return;
     await context.read<ProfileCubit>().logWeight(kg);
   }
-}
 
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onRefresh});
-
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 12, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            context.l10n.profileTitle,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+  Future<void> _logout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Log out', style: TextStyle(fontWeight: FontWeight.w800)),
+        content: const Text('Are you sure you want to log out of your account?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
           ),
-          Row(
-            children: [
-              const LanguageIconToggle(),
-              IconButton(
-                onPressed: onRefresh,
-                icon: const Icon(Icons.refresh_rounded),
-                tooltip: context.l10n.refreshTooltip,
-              ),
-              IconButton(
-                onPressed: () => context.push(AppRoutes.notifications),
-                icon: const Icon(Icons.notifications_none_rounded),
-              ),
-            ],
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Log out',
+              style: TextStyle(color: Colors.red.shade400, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
     );
+    if (confirmed != true || !context.mounted) return;
+    await getIt<AuthService>().logout();
+    if (context.mounted) context.go(AppRoutes.login);
   }
 }
 
@@ -400,62 +443,237 @@ class _AvatarHeader extends StatelessWidget {
   const _AvatarHeader({
     required this.name,
     required this.email,
+    this.avatarUrl,
+    this.backgroundImageUrl,
     required this.level,
     required this.xp,
+    required this.streak,
+    required this.coins,
     required this.verified,
     required this.onEditAccount,
+    required this.onPickAvatar,
+    required this.onPickBackground,
   });
 
   final String name;
   final String email;
+  final String? avatarUrl;
+  final String? backgroundImageUrl;
   final int level;
   final int xp;
+  final int streak;
+  final int coins;
   final bool verified;
   final VoidCallback onEditAccount;
+  final VoidCallback onPickAvatar;
+  final VoidCallback onPickBackground;
+
+  static const _avatarRadius = 60.0;
+  static const _bannerHeight = 200.0;
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final hasBackground = backgroundImageUrl != null && backgroundImageUrl!.isNotEmpty;
+
     return Column(
       children: [
         Stack(
-          alignment: Alignment.bottomRight,
+          clipBehavior: Clip.none,
           children: [
-            CircleAvatar(
-              radius: 44,
-              backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+            GestureDetector(
+              onTap: onPickBackground,
+              child: Transform.translate(
+                offset: const Offset(-20, 0),
+                child: SizedBox(
+                  width: screenWidth,
+                  height: _bannerHeight,
+                    child: hasBackground
+                        ? CachedNetworkImage(
+                            imageUrl: backgroundImageUrl!,
+                            fit: BoxFit.cover,
+                            width: screenWidth,
+                            height: _bannerHeight,
+                          )
+                        : DecoratedBox(
+                            decoration: const BoxDecoration(color: AppColors.lightGreen),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.wallpaper_rounded, color: AppColors.primaryGreen),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Đổi ảnh nền',
+                                    style: TextStyle(
+                                      color: AppColors.primaryGreen.withValues(alpha: 0.9),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                ),
               ),
             ),
-            GestureDetector(
-              onTap: onEditAccount,
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
-                child: const Icon(Icons.edit, size: 16, color: Colors.white),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: -_avatarRadius,
+              child: Center(
+                child: GestureDetector(
+                  onTap: onPickAvatar,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.cardBackground,
+                          border: Border.all(color: AppColors.cardBackground, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: SyncAvatar(name: name, imageUrl: avatarUrl, radius: _avatarRadius),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: const BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 10),
-        Text(name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-        Text(email, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        const SizedBox(height: 4),
-        Text(
-          'Level $level · $xp XP${verified ? '' : context.l10n.emailUnverifiedSuffix}',
-          style: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600, fontSize: 12),
+        SizedBox(height: _avatarRadius + 8),
+        Column(
+          children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                name,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+              ),
+              if (verified) ...[
+                const SizedBox(width: 6),
+                const Icon(Icons.verified_rounded, size: 18, color: AppColors.primaryGreen),
+              ],
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(email, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: onPickAvatar,
+            icon: const Icon(Icons.camera_alt_outlined, size: 16),
+            label: const Text('Đổi ảnh đại diện'),
+          ),
+          TextButton.icon(
+            onPressed: onEditAccount,
+            icon: const Icon(Icons.edit_outlined, size: 16),
+            label: const Text('Chỉnh sửa tài khoản'),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _StatChip(
+                icon: Icons.military_tech_rounded,
+                label: 'Lv.$level',
+                color: AppColors.primaryGreen,
+              ),
+              const SizedBox(width: 8),
+              _StatChip(
+                emoji: '🔥',
+                label: '${streak}d',
+                color: Colors.orange,
+              ),
+              const SizedBox(width: 8),
+              _StatChip(
+                emoji: '💰',
+                label: '$coins',
+                color: Colors.amber.shade700,
+              ),
+              const SizedBox(width: 8),
+              _StatChip(
+                icon: Icons.star_rounded,
+                label: '$xp XP',
+                color: Colors.purple.shade400,
+              ),
+            ],
+          ),
+          ],
         ),
       ],
     );
   }
 }
 
+class _StatChip extends StatelessWidget {
+  const _StatChip({
+    required this.label,
+    required this.color,
+    this.icon,
+    this.emoji,
+  });
+
+  final String label;
+  final Color color;
+  final IconData? icon;
+  final String? emoji;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (emoji != null)
+            Text(emoji!, style: const TextStyle(fontSize: 13))
+          else if (icon != null)
+            Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CompletenessCard extends StatelessWidget {
-  const _CompletenessCard({required this.percent, required this.hints});
+  const _CompletenessCard({
+    required this.percent,
+    required this.hints,
+    required this.onSetup,
+  });
 
   final int percent;
   final List<String> hints;
+  final VoidCallback onSetup;
 
   @override
   Widget build(BuildContext context) {
@@ -470,28 +688,65 @@ class _CompletenessCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(context.l10n.profileCompleteness, style: const TextStyle(fontWeight: FontWeight.w700)),
-              Text('$percent%', style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.primaryGreen)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      context.l10n.profileCompleteness,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 6),
+                    LinearProgressIndicator(
+                      value: (percent / 100).clamp(0.0, 1.0),
+                      backgroundColor: AppColors.border,
+                      color: AppColors.primaryGreen,
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '$percent%',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  color: AppColors.primaryGreen,
+                ),
+              ),
             ],
-          ),
-          const SizedBox(height: 8),
-          LinearProgressIndicator(
-            value: (percent / 100).clamp(0.0, 1.0),
-            backgroundColor: AppColors.border,
-            color: AppColors.primaryGreen,
-            minHeight: 6,
-            borderRadius: BorderRadius.circular(4),
           ),
           if (hints.isNotEmpty) ...[
             const SizedBox(height: 10),
             ...hints.take(3).map(
                   (h) => Padding(
                     padding: const EdgeInsets.only(bottom: 4),
-                    child: Text('• $h', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.circle, size: 5, color: AppColors.textMuted),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(h, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: onSetup,
+              child: const Text(
+                'Complete your profile →',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryGreen,
+                ),
+              ),
+            ),
           ],
         ],
       ),
@@ -504,6 +759,7 @@ class _SectionCard extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.children,
+    this.initiallyExpanded = false,
     this.onEdit,
     this.trailing,
   });
@@ -511,6 +767,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final List<Widget> children;
+  final bool initiallyExpanded;
   final VoidCallback? onEdit;
   final Widget? trailing;
 
@@ -526,7 +783,7 @@ class _SectionCard extends StatelessWidget {
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          initiallyExpanded: true,
+          initiallyExpanded: initiallyExpanded,
           tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           leading: Icon(icon, color: AppColors.primaryGreen, size: 22),
@@ -534,7 +791,7 @@ class _SectionCard extends StatelessWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (trailing != null) trailing!,
+              ?trailing,
               if (onEdit != null)
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, size: 20),

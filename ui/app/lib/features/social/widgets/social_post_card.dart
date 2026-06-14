@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/shared/widgets/sync_avatar.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
 import 'package:sync_app/features/social/screens/social_image_viewer_screen.dart';
 import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
@@ -15,6 +16,7 @@ class SocialPostCard extends StatelessWidget {
     required this.onShare,
     required this.onComment,
     required this.onOpenProfile,
+    required this.onMoreTap,
   });
 
   final SocialPost post;
@@ -24,6 +26,7 @@ class SocialPostCard extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onComment;
   final void Function(String userId) onOpenProfile;
+  final VoidCallback onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +51,9 @@ class SocialPostCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
               children: [
-                _Avatar(
+                SyncAvatar(
                   name: post.authorSnapshot.fullName,
-                  url: post.authorSnapshot.avatarUrl,
+                  imageUrl: post.authorSnapshot.avatarUrl,
                   onTap: () => onOpenProfile(post.authorId),
                 ),
                 const SizedBox(width: 12),
@@ -78,7 +81,7 @@ class SocialPostCard extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  onPressed: () {},
+                  onPressed: onMoreTap,
                   icon: const Icon(Icons.more_horiz, color: AppColors.textMuted),
                 ),
               ],
@@ -128,7 +131,6 @@ class SocialPostCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 _ShareButton(
-                  label: _formatCount(post.metrics.shareCount),
                   active: isSharedByMe,
                   onTap: onShare,
                 ),
@@ -153,42 +155,6 @@ class SocialPostCard extends StatelessWidget {
         lower.endsWith('.jpeg') ||
         lower.endsWith('.gif') ||
         lower.endsWith('.webp');
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.name, this.url, this.onTap});
-
-  final String name;
-  final String? url;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
-    final avatar = (url != null && url!.isNotEmpty)
-        ? CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.lightGreen,
-            backgroundImage: CachedNetworkImageProvider(url!),
-          )
-        : CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.lightGreen,
-            child: Text(
-              initial,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryGreen,
-              ),
-            ),
-          );
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(200),
-      onTap: onTap,
-      child: avatar,
-    );
   }
 }
 
@@ -342,12 +308,10 @@ class _VideoMedia extends StatelessWidget {
 
 class _ShareButton extends StatelessWidget {
   const _ShareButton({
-    required this.label,
     required this.active,
     required this.onTap,
   });
 
-  final String label;
   final bool active;
   final VoidCallback onTap;
 
@@ -365,7 +329,7 @@ class _ShareButton extends StatelessWidget {
             Icon(Icons.ios_share_outlined, color: color, size: 22),
             const SizedBox(width: 6),
             Text(
-              label,
+              'Chia sẻ',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,

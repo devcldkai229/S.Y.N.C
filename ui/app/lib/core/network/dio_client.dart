@@ -2,16 +2,17 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 import 'package:sync_app/core/network/auth_interceptor.dart';
+import 'package:sync_app/core/network/dio_errors.dart';
 import '../config/app_config.dart';
 
 final _logger = Logger();
 
-Dio createDio({FlutterSecureStorage? storage}) {
+Dio createDio({FlutterSecureStorage? storage, String? baseUrl}) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: AppConfig.baseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 15),
+      baseUrl: baseUrl ?? AppConfig.baseUrl,
+      connectTimeout: Duration(seconds: AppConfig.isProduction ? 15 : 10),
+      receiveTimeout: Duration(seconds: AppConfig.isProduction ? 15 : 10),
       headers: {'Content-Type': 'application/json'},
     ),
   );
@@ -32,7 +33,12 @@ Dio createDio({FlutterSecureStorage? storage}) {
           handler.next(response);
         },
         onError: (error, handler) {
-          _logger.e('[ERR] ${error.message}');
+          final detail = describeDioError(error);
+          if (isOptionalApiDioError(error)) {
+            _logger.w('[NET] $detail');
+          } else {
+            _logger.e('[ERR] $detail — ${error.message}');
+          }
           handler.next(error);
         },
       ),

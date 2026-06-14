@@ -6,21 +6,13 @@ class NotificationRepository {
 
   final NotificationRemoteDataSource _remote;
 
-  Future<NotificationsPage> loadForUser({
-    required String userId,
-    int pageNumber = 1,
-    int pageSize = 20,
-  }) =>
-      _remote.fetchNotificationsForUser(
-        userId: userId,
-        pageNumber: pageNumber,
-        pageSize: pageSize,
-      );
+  Future<NotificationsPage> loadMine({int pageNumber = 1, int pageSize = 20}) =>
+      _remote.fetchMyNotifications(pageNumber: pageNumber, pageSize: pageSize);
 
-  Future<int> unreadCount(String userId) => _remote.fetchUnreadCount(userId);
+  Future<int> unreadCount() => _remote.fetchMyUnreadCount();
 
-  Future<void> markRead({required String userId, required String notificationId}) =>
-      _remote.markAsRead(userId: userId, notificationId: notificationId);
+  Future<void> markRead({required String notificationId}) =>
+      _remote.markAsRead(notificationId);
 
-  Future<void> markAllRead(String userId) => _remote.markAllAsRead(userId);
+  Future<void> markAllRead() => _remote.markAllAsRead();
 }

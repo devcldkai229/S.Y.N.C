@@ -31,6 +31,9 @@ public static class RoadmapSeedData
     public static readonly Guid DemoSessionScheduledId = Guid.Parse("f4000001-0000-0000-0000-000000000001");
     public static readonly Guid DemoSessionCompletedId = Guid.Parse("f4000002-0000-0000-0000-000000000002");
     public static readonly Guid AdminSessionScheduledId = Guid.Parse("f4000003-0000-0000-0000-000000000003");
+    public static readonly Guid CustomWorkoutSession1Id = Guid.Parse("f4000004-0000-0000-0000-000000000004");
+    public static readonly Guid CustomWorkoutSession2Id = Guid.Parse("f4000005-0000-0000-0000-000000000005");
+    public static readonly Guid PartnerCustomWorkoutSessionId = Guid.Parse("f4000006-0000-0000-0000-000000000006");
 
     public static readonly Guid DemoScheduledWorkoutId = Guid.Parse("f5000001-0000-0000-0000-000000000001");
     public static readonly Guid AdminScheduledWorkoutId = Guid.Parse("f5000002-0000-0000-0000-000000000002");
@@ -109,7 +112,6 @@ public static class RoadmapSeedData
             UserId = DemoUserId,
             CurrentRecoveryScore = 72,
             FatigueLevel = 3,
-            SleepRecoveryScore = 70,
             MuscleSorenessScore = 4,
             CnsFatigueScore = 3,
             RecommendedTrainingIntensity = "Moderate",
@@ -121,7 +123,6 @@ public static class RoadmapSeedData
             UserId = AdminUserId,
             CurrentRecoveryScore = 88,
             FatigueLevel = 2,
-            SleepRecoveryScore = 85,
             MuscleSorenessScore = 2,
             CnsFatigueScore = 2,
             RecommendedTrainingIntensity = "Light",
@@ -133,7 +134,6 @@ public static class RoadmapSeedData
             UserId = PartnerUserId,
             CurrentRecoveryScore = 65,
             FatigueLevel = 4,
-            SleepRecoveryScore = 60,
             MuscleSorenessScore = 5,
             CnsFatigueScore = 4,
             RecommendedTrainingIntensity = "Moderate",
@@ -310,6 +310,132 @@ public static class RoadmapSeedData
                         TargetWeightKg = 0,
                         RestSeconds = 30,
                         Tempo = "static",
+                    },
+                ],
+            },
+            new RoadmapSession
+            {
+                Id = CustomWorkoutSession1Id,
+                RoadmapId = DemoCustomWorkoutId,
+                ScheduledDate = tomorrowMorning,
+                ScheduledTime = "19:00",
+                Timezone = "Asia/Ho_Chi_Minh",
+                SessionType = "Strength",
+                SessionTitle = "Push Focus",
+                EstimatedDurationMinutes = 45,
+                EnergyDemandScore = 5,
+                RecoveryRequirementScore = 5,
+                NotificationEnabled = true,
+                NotificationMinutesBefore = 30,
+                AiGenerated = false,
+                SessionStatus = SessionStatus.Scheduled,
+                ExecutionBlocks =
+                [
+                    new RoadmapSession.ExecutionBlock
+                    {
+                        Order = 1,
+                        ExerciseId = PushUpExerciseId,
+                        ExerciseName = "Push Up",
+                        TargetSets = 3,
+                        TargetReps = 12,
+                        TargetWeightKg = 0,
+                        RestSeconds = 60,
+                        Tempo = "3010",
+                    },
+                    new RoadmapSession.ExecutionBlock
+                    {
+                        Order = 2,
+                        ExerciseId = PlankExerciseId,
+                        ExerciseName = "Plank",
+                        TargetSets = 3,
+                        TargetReps = 45,
+                        TargetWeightKg = 0,
+                        RestSeconds = 45,
+                        Tempo = "static",
+                    },
+                ],
+            },
+            new RoadmapSession
+            {
+                Id = CustomWorkoutSession2Id,
+                RoadmapId = DemoCustomWorkoutId,
+                ScheduledDate = nextWeekMorning,
+                ScheduledTime = "19:00",
+                Timezone = "Asia/Ho_Chi_Minh",
+                SessionType = "Strength",
+                SessionTitle = "Plank Focus",
+                EstimatedDurationMinutes = 45,
+                EnergyDemandScore = 5,
+                RecoveryRequirementScore = 5,
+                NotificationEnabled = true,
+                NotificationMinutesBefore = 30,
+                AiGenerated = false,
+                SessionStatus = SessionStatus.Scheduled,
+                ExecutionBlocks =
+                [
+                    new RoadmapSession.ExecutionBlock
+                    {
+                        Order = 1,
+                        ExerciseId = PushUpExerciseId,
+                        ExerciseName = "Push Up",
+                        TargetSets = 3,
+                        TargetReps = 12,
+                        TargetWeightKg = 0,
+                        RestSeconds = 60,
+                        Tempo = "3010",
+                    },
+                    new RoadmapSession.ExecutionBlock
+                    {
+                        Order = 2,
+                        ExerciseId = PlankExerciseId,
+                        ExerciseName = "Plank",
+                        TargetSets = 3,
+                        TargetReps = 45,
+                        TargetWeightKg = 0,
+                        RestSeconds = 45,
+                        Tempo = "static",
+                    },
+                ],
+            },
+            new RoadmapSession
+            {
+                Id = PartnerCustomWorkoutSessionId,
+                RoadmapId = PartnerCustomWorkoutId,
+                ScheduledDate = tomorrowMorning,
+                ScheduledTime = "07:00",
+                Timezone = "Asia/Ho_Chi_Minh",
+                SessionType = "Cardio",
+                SessionTitle = "Partner HIIT Day",
+                EstimatedDurationMinutes = 50,
+                EnergyDemandScore = 7,
+                RecoveryRequirementScore = 6,
+                NotificationEnabled = true,
+                NotificationMinutesBefore = 30,
+                AiGenerated = false,
+                SessionStatus = SessionStatus.Scheduled,
+                ExecutionBlocks =
+                [
+                    new RoadmapSession.ExecutionBlock
+                    {
+                        Order = 1,
+                        ExerciseId = BurpeeExerciseId,
+                        ExerciseName = "Burpee",
+                        TargetSets = 4,
+                        TargetReps = 10,
+                        TargetWeightKg = 0,
+                        RestSeconds = 90,
+                        Tempo = "fast",
+                    },
+                    new RoadmapSession.ExecutionBlock
+                    {
+                        Order = 2,
+                        ExerciseId = SquatExerciseId,
+                        ExerciseName = "Squat",
+                        TargetSets = 4,
+                        TargetReps = 15,
+                        TargetWeightKg = 20,
+                        RestSeconds = 75,
+                        Tempo = "3010",
                     },
                 ],
             },

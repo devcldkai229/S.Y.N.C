@@ -1,6 +1,9 @@
 using System.Text.Json.Serialization;
+using Iam.API.Configuration;
 using Iam.API.Exceptions;
 using Iam.API.Middleware;
+using Iam.API.Services;
+using Minio;
 using Iam.Application.Abstractions;
 using Iam.Application.Common;
 using Iam.Application.Extensions;
@@ -28,6 +31,17 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddIamApplication(builder.Configuration);
 builder.Services.AddIamInfrastructure(builder.Configuration);
+builder.Services.Configure<MinioOptions>(builder.Configuration.GetSection(MinioOptions.SectionName));
+builder.Services.AddSingleton<IMinioClient>(sp =>
+{
+    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MinioOptions>>().Value;
+    return new MinioClient()
+        .WithEndpoint(options.Endpoint)
+        .WithCredentials(options.AccessKey, options.SecretKey)
+        .WithSSL(options.UseSsl)
+        .Build();
+});
+builder.Services.AddSingleton<IMediaStorage, MinioMediaStorage>();
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSyncHealthChecks();
 

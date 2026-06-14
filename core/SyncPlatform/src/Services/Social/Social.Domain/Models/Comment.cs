@@ -12,4 +12,7 @@ public class Comment : BaseMongoEntity
 
     [BsonIgnoreIfNull]
     public AuthorSnapshot? AuthorSnapshot { get; set; }
+
+    [BsonIgnoreIfNull]
+    public Guid? ParentCommentId { get; set; }
 }

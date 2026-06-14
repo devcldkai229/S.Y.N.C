@@ -1,18 +1,24 @@
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace Exercise.Application.Services;
 
 public interface IStorageService
 {
-    /// <summary>
-    /// Uploads a file stream to object storage and returns the public URL.
-    /// </summary>
-    Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType, CancellationToken cancellationToken = default);
+    /// <summary>Uploads to S3 and returns the object key.</summary>
+    Task<string> UploadFileAsync(
+        Stream fileStream,
+        string objectKey,
+        string contentType,
+        CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Deletes a file from object storage given its public URL or path.
-    /// </summary>
-    Task DeleteFileAsync(string fileUrl, CancellationToken cancellationToken = default);
+    Task DeleteFileByKeyAsync(string objectKey, CancellationToken cancellationToken = default);
+
+    /// <summary>Resolves a public URL or presigned GET URL for an object key.</summary>
+    string ResolveObjectUrl(string objectKey);
+
+    /// <summary>Opens an object stream for proxy download.</summary>
+    Task<(Stream Stream, string ContentType)?> TryOpenObjectAsync(
+        string objectKey,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Legacy: delete by stored URL or key.</summary>
+    Task DeleteFileAsync(string fileUrlOrKey, CancellationToken cancellationToken = default);
 }

@@ -13,6 +13,7 @@ public class PaymentDbContext : DbContext
     public DbSet<SubscriptionPlan> SubscriptionPlans => Set<SubscriptionPlan>();
     public DbSet<UserSubscription> UserSubscriptions => Set<UserSubscription>();
     public DbSet<PromotionCampaign> PromotionCampaigns => Set<PromotionCampaign>();
+    public DbSet<UserVoucher> UserVouchers => Set<UserVoucher>();
     public DbSet<PaymentWebhookEvent> PaymentWebhookEvents => Set<PaymentWebhookEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

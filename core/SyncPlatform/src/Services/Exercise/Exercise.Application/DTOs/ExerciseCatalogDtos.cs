@@ -26,7 +26,11 @@ public class ExerciseCatalogDto
     public List<string> AiCoachingCues { get; set; } = [];
     public List<string> CommonMistakes { get; set; } = [];
     public bool RequiresSpotter { get; set; }
+    public string SafetyLevel { get; set; } = "Moderate";
     public bool IsActive { get; set; }
+
+    /// <summary>Presigned URL of the primary exercise image (fallback when no video).</summary>
+    public string? ThumbnailUrl { get; set; }
 }
 
 public class CreateExerciseCatalogDto
@@ -52,6 +56,7 @@ public class CreateExerciseCatalogDto
     public List<string> AiCoachingCues { get; set; } = [];
     public List<string> CommonMistakes { get; set; } = [];
     public bool RequiresSpotter { get; set; }
+    public string SafetyLevel { get; set; } = "Moderate";
 }
 
 public class UpdateExerciseCatalogDto : CreateExerciseCatalogDto

@@ -10,10 +10,10 @@ public sealed class ExerciseMongoContext
     public ExerciseMongoContext(IMongoDatabase db) => _db = db;
 
     public IMongoCollection<ExerciseCatalog> ExerciseCatalogs
-        => _db.GetCollection<ExerciseCatalog>("ExerciseCatalogs");
+        => _db.GetCollection<ExerciseCatalog>("ExerciseCatalog");
 
     public IMongoCollection<ExerciseMotionAsset> ExerciseMotionAssets
-        => _db.GetCollection<ExerciseMotionAsset>("ExerciseMotionAssets");
+        => _db.GetCollection<ExerciseMotionAsset>("ExerciseMotionAsset");
 
     public IMongoCollection<WorkoutTemplate> WorkoutTemplates
         => _db.GetCollection<WorkoutTemplate>("WorkoutTemplates");

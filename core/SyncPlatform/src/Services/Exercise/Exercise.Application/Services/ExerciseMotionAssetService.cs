@@ -1,15 +1,12 @@
-using System;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+using Exercise.Application.Configuration;
 using Exercise.Application.DTOs;
 using Exercise.Application.Exceptions;
 using Exercise.Application.Mappers;
 using Exercise.Domain.Models;
 using Exercise.Domain.Repositories;
-using Exercise.Application.Configuration;
-using Microsoft.Extensions.Options;
 using Libs.Shared.Enums;
+using Microsoft.Extensions.Options;
 
 namespace Exercise.Application.Services;
 
@@ -18,24 +15,24 @@ public class ExerciseMotionAssetService : IExerciseMotionAssetService
     private readonly IExerciseMotionAssetRepository _assetRepository;
     private readonly IExerciseCatalogRepository _catalogRepository;
     private readonly IStorageService _storageService;
-    private readonly MinioOptions _minioOptions;
+    private readonly StorageOptions _storageOptions;
 
     public ExerciseMotionAssetService(
         IExerciseMotionAssetRepository assetRepository,
         IExerciseCatalogRepository catalogRepository,
         IStorageService storageService,
-        IOptions<MinioOptions> minioOptions)
+        IOptions<StorageOptions> storageOptions)
     {
         _assetRepository = assetRepository;
         _catalogRepository = catalogRepository;
         _storageService = storageService;
-        _minioOptions = minioOptions.Value;
+        _storageOptions = storageOptions.Value;
     }
 
     public async Task<IReadOnlyList<ExerciseMotionAssetDto>> GetByExerciseIdAsync(Guid exerciseId, CancellationToken cancellationToken = default)
     {
         var entities = await _assetRepository.GetByExerciseIdAsync(exerciseId, cancellationToken);
-        return entities.Select(e => e.ToDto()).ToList();
+        return entities.Select(e => e.ToDto(_storageService)).ToList();
     }
 
     public async Task<ExerciseMotionAssetDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -43,7 +40,7 @@ public class ExerciseMotionAssetService : IExerciseMotionAssetService
         var entity = await _assetRepository.GetByIdAsync(id, cancellationToken);
         if (entity == null)
             throw new NotFoundException(nameof(ExerciseMotionAsset), id);
-        return entity.ToDto();
+        return entity.ToDto(_storageService);
     }
 
     public async Task<ExerciseMotionAssetDto> CreateAsync(CreateExerciseMotionAssetDto dto, CancellationToken cancellationToken = default)
@@ -54,7 +51,7 @@ public class ExerciseMotionAssetService : IExerciseMotionAssetService
         entity.UpdateEntity(dto);
 
         await _assetRepository.CreateAsync(entity, cancellationToken);
-        return entity.ToDto();
+        return entity.ToDto(_storageService);
     }
 
     public async Task UpdateAsync(Guid id, UpdateExerciseMotionAssetDto dto, CancellationToken cancellationToken = default)
@@ -78,120 +75,111 @@ public class ExerciseMotionAssetService : IExerciseMotionAssetService
         await _assetRepository.DeleteAsync(id, cancellationToken);
     }
 
-    public async Task<ExerciseMotionAssetDto> CreateWithUploadAsync(
+    public async Task<ExerciseMotionAssetDto> UpdateWithUploadAsync(
         CreateExerciseMotionAssetUploadDto dto,
         CancellationToken cancellationToken = default)
     {
-        // 1. Validate that the target exercise exists
         var exists = await _catalogRepository.ExistsAsync(dto.ExerciseId, cancellationToken);
         if (!exists)
             throw new NotFoundException(nameof(ExerciseCatalog), dto.ExerciseId);
 
-        // 2. Validate main file is not empty
+        var existingAssets = await _assetRepository.GetByExerciseIdAsync(dto.ExerciseId, cancellationToken);
+        var existingAsset = existingAssets.FirstOrDefault(a => a.AssetType == dto.AssetType)
+            ?? throw new NotFoundException($"Motion asset of type '{dto.AssetType}' for exercise ID {dto.ExerciseId} was not found.");
+
         if (dto.FileStream == null || dto.FileStream.Length == 0 || dto.FileSize == 0)
-        {
             throw new BadRequestException("Main file is empty.");
+
+        ValidateUpload(dto);
+
+        var fileExtension = Path.GetExtension(dto.FileName);
+        var mainKey = $"{_storageOptions.KeyPrefix.TrimEnd('/')}/uploads/{Guid.NewGuid()}{fileExtension}";
+        string? thumbKey = null;
+
+        if (dto.ThumbnailStream != null && !string.IsNullOrWhiteSpace(dto.ThumbnailFileName))
+        {
+            var thumbExtension = Path.GetExtension(dto.ThumbnailFileName);
+            thumbKey = $"{_storageOptions.KeyPrefix.TrimEnd('/')}/uploads/{Guid.NewGuid()}_thumb{thumbExtension}";
         }
 
-        // 3. Validate file size of main file
-        long maxFileSizeBytes = _minioOptions.MaxFileSizeMb * 1024 * 1024;
+        var oldMainKey = existingAsset.S3Key;
+        var oldThumbKey = existingAsset.ThumbnailS3Key;
+
+        try
+        {
+            await _storageService.UploadFileAsync(dto.FileStream, mainKey, dto.ContentType, cancellationToken);
+
+            if (dto.ThumbnailStream != null && thumbKey != null && dto.ThumbnailContentType != null)
+            {
+                await _storageService.UploadFileAsync(dto.ThumbnailStream, thumbKey, dto.ThumbnailContentType, cancellationToken);
+            }
+
+            existingAsset.S3Key = mainKey;
+            existingAsset.ThumbnailS3Key = thumbKey;
+            existingAsset.ResourceUrl = _storageOptions.PublicRead ? _storageService.ResolveObjectUrl(mainKey) : string.Empty;
+            existingAsset.ThumbnailUrl = thumbKey != null && _storageOptions.PublicRead
+                ? _storageService.ResolveObjectUrl(thumbKey)
+                : null;
+            existingAsset.UnityPrefabId = dto.AssetType == AssetType.Unity3D ? dto.UnityPrefabId : null;
+            existingAsset.UnityAnimationClip = dto.AssetType == AssetType.Unity3D ? dto.UnityAnimationClip : null;
+            existingAsset.AnimationDurationSeconds = dto.AssetType == AssetType.Unity3D ? dto.AnimationDurationSeconds : 0;
+
+            await _assetRepository.UpdateAsync(existingAsset.Id, existingAsset, cancellationToken);
+
+            if (!string.IsNullOrWhiteSpace(oldMainKey))
+            {
+                try { await _storageService.DeleteFileByKeyAsync(oldMainKey, cancellationToken); } catch { /* ignore */ }
+            }
+            if (!string.IsNullOrWhiteSpace(oldThumbKey))
+            {
+                try { await _storageService.DeleteFileByKeyAsync(oldThumbKey, cancellationToken); } catch { /* ignore */ }
+            }
+
+            return existingAsset.ToDto(_storageService);
+        }
+        catch
+        {
+            try { await _storageService.DeleteFileByKeyAsync(mainKey, cancellationToken); } catch { /* ignore */ }
+            if (thumbKey != null)
+            {
+                try { await _storageService.DeleteFileByKeyAsync(thumbKey, cancellationToken); } catch { /* ignore */ }
+            }
+            throw;
+        }
+    }
+
+    private void ValidateUpload(CreateExerciseMotionAssetUploadDto dto)
+    {
+        var maxFileSizeBytes = _storageOptions.MaxFileSizeMb * 1024 * 1024;
         if (dto.FileSize > maxFileSizeBytes)
+            throw new BadRequestException($"Main file exceeds {_storageOptions.MaxFileSizeMb} MB.");
+
+        if (dto.AssetType == AssetType.Image &&
+            !_storageOptions.AllowedImageContentTypes.Contains(dto.ContentType.ToLowerInvariant()))
         {
-            throw new BadRequestException($"Main file size ({dto.FileSize / 1024.0 / 1024.0:F2} MB) exceeds maximum allowed size ({_minioOptions.MaxFileSizeMb} MB).");
+            throw new BadRequestException($"Content type '{dto.ContentType}' is not allowed for images.");
         }
 
-        // 4. Validate content type based on AssetType
-        if (dto.AssetType == AssetType.Image)
+        if (dto.AssetType == AssetType.Video &&
+            !_storageOptions.AllowedVideoContentTypes.Contains(dto.ContentType.ToLowerInvariant()))
         {
-            if (!_minioOptions.AllowedImageContentTypes.Contains(dto.ContentType.ToLowerInvariant()))
-            {
-                throw new BadRequestException($"Content type '{dto.ContentType}' is not allowed for Image assets. Allowed: {string.Join(", ", _minioOptions.AllowedImageContentTypes)}");
-            }
-        }
-        else if (dto.AssetType == AssetType.Video)
-        {
-            if (!_minioOptions.AllowedVideoContentTypes.Contains(dto.ContentType.ToLowerInvariant()))
-            {
-                throw new BadRequestException($"Content type '{dto.ContentType}' is not allowed for Video assets. Allowed: {string.Join(", ", _minioOptions.AllowedVideoContentTypes)}");
-            }
-        }
-        else if (dto.AssetType == AssetType.Unity3D)
-        {
-            if (string.IsNullOrWhiteSpace(dto.UnityPrefabId) || string.IsNullOrWhiteSpace(dto.UnityAnimationClip))
-            {
-                throw new BadRequestException("UnityPrefabId and UnityAnimationClip are required when AssetType is Unity3D.");
-            }
+            throw new BadRequestException($"Content type '{dto.ContentType}' is not allowed for videos.");
         }
 
-        // 5. Validate optional thumbnail file (must be image type and satisfy size limit)
         if (dto.ThumbnailStream != null)
         {
             if (dto.ThumbnailSize.HasValue)
             {
-                long maxThumbBytes = _minioOptions.MaxThumbnailSizeMb * 1024 * 1024;
+                var maxThumbBytes = _storageOptions.MaxThumbnailSizeMb * 1024 * 1024;
                 if (dto.ThumbnailSize.Value > maxThumbBytes)
-                {
-                    throw new BadRequestException($"Thumbnail file size ({dto.ThumbnailSize.Value / 1024.0 / 1024.0:F2} MB) exceeds maximum allowed size ({_minioOptions.MaxThumbnailSizeMb} MB).");
-                }
-            }
-            if (string.IsNullOrWhiteSpace(dto.ThumbnailContentType) || !_minioOptions.AllowedImageContentTypes.Contains(dto.ThumbnailContentType.ToLowerInvariant()))
-            {
-                throw new BadRequestException($"Thumbnail content type '{dto.ThumbnailContentType}' is not allowed. Only image files are allowed as thumbnails.");
-            }
-        }
-
-        // 6. Generate safe object keys using Guid-based names
-        string fileExtension = Path.GetExtension(dto.FileName);
-        string safeMainKey = $"{Guid.NewGuid()}{fileExtension}";
-
-        string? safeThumbKey = null;
-        if (dto.ThumbnailStream != null && !string.IsNullOrWhiteSpace(dto.ThumbnailFileName))
-        {
-            string thumbExtension = Path.GetExtension(dto.ThumbnailFileName);
-            safeThumbKey = $"{Guid.NewGuid()}_thumb{thumbExtension}";
-        }
-
-        string? uploadedMainUrl = null;
-        string? uploadedThumbUrl = null;
-
-        try
-        {
-            // 7. Upload main file to MinIO
-            uploadedMainUrl = await _storageService.UploadFileAsync(dto.FileStream, safeMainKey, dto.ContentType, cancellationToken);
-
-            // 8. Upload optional thumbnail to MinIO
-            if (dto.ThumbnailStream != null && safeThumbKey != null && dto.ThumbnailContentType != null)
-            {
-                uploadedThumbUrl = await _storageService.UploadFileAsync(dto.ThumbnailStream, safeThumbKey, dto.ThumbnailContentType, cancellationToken);
+                    throw new BadRequestException($"Thumbnail exceeds {_storageOptions.MaxThumbnailSizeMb} MB.");
             }
 
-            // 9. Create database entry
-            var entity = new ExerciseMotionAsset
+            if (string.IsNullOrWhiteSpace(dto.ThumbnailContentType) ||
+                !_storageOptions.AllowedImageContentTypes.Contains(dto.ThumbnailContentType.ToLowerInvariant()))
             {
-                ExerciseId = dto.ExerciseId,
-                AssetType = dto.AssetType,
-                ResourceUrl = uploadedMainUrl,
-                ThumbnailUrl = uploadedThumbUrl,
-                UnityPrefabId = dto.AssetType == AssetType.Unity3D ? dto.UnityPrefabId : null,
-                UnityAnimationClip = dto.AssetType == AssetType.Unity3D ? dto.UnityAnimationClip : null,
-                AnimationDurationSeconds = dto.AssetType == AssetType.Unity3D ? dto.AnimationDurationSeconds : 0
-            };
-
-            await _assetRepository.CreateAsync(entity, cancellationToken);
-            return entity.ToDto();
-        }
-        catch (Exception)
-        {
-            // Rollback uploaded files if DB save or subsequent step fails
-            if (uploadedMainUrl != null)
-            {
-                try { await _storageService.DeleteFileAsync(uploadedMainUrl, cancellationToken); } catch { /* ignore */ }
+                throw new BadRequestException("Thumbnail must be an allowed image type.");
             }
-            if (uploadedThumbUrl != null)
-            {
-                try { await _storageService.DeleteFileAsync(uploadedThumbUrl, cancellationToken); } catch { /* ignore */ }
-            }
-            throw;
         }
     }
 
@@ -201,12 +189,10 @@ public class ExerciseMotionAssetService : IExerciseMotionAssetService
         if (!exists)
             throw new NotFoundException(nameof(ExerciseCatalog), dto.ExerciseId);
 
-        if (dto.AssetType == AssetType.Unity3D)
+        if (dto.AssetType == AssetType.Unity3D &&
+            (string.IsNullOrWhiteSpace(dto.UnityPrefabId) || string.IsNullOrWhiteSpace(dto.UnityAnimationClip)))
         {
-            if (string.IsNullOrWhiteSpace(dto.UnityPrefabId) || string.IsNullOrWhiteSpace(dto.UnityAnimationClip))
-            {
-                throw new BadRequestException("UnityPrefabId and UnityAnimationClip are required when AssetType is Unity3D.");
-            }
+            throw new BadRequestException("UnityPrefabId and UnityAnimationClip are required for Unity3D assets.");
         }
     }
 }

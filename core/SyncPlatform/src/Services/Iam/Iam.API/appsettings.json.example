@@ -8,6 +8,10 @@
     }
   },
   "InternalApiKey": "dev_internal_api_key_sync_platform",
+  "NotificationService": {
+    "BaseUrl": "http://localhost:5106",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
   },
@@ -20,7 +24,7 @@
   "Email": {
     "VerificationBaseUrl": "http://localhost:5288",
     "Smtp": {
-      "Enabled": false,
+      "Enabled": true,
       "Host": "smtp.gmail.com",
       "Port": 587,
       "UserName": "kag40222@gmail.com",

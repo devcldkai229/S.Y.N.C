@@ -1,3 +1,4 @@
+using Libs.Shared.Seed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -36,6 +37,8 @@ public class SocialDatabaseSeeder : ISocialDatabaseSeeder
             return;
         }
 
+        await PatchLegacyCdnUrlsAsync(cancellationToken);
+
         var posts = _database.GetCollection<Post>("Posts");
         if (await posts.Find(x => x.Id == SocialSeedData.SeedMarkerPostId).AnyAsync(cancellationToken))
         {
@@ -53,7 +56,31 @@ public class SocialDatabaseSeeder : ISocialDatabaseSeeder
             "community challenges",
             cancellationToken);
 
+        await InsertMissingAsync(
+            _database.GetCollection<ChallengeParticipant>("ChallengeParticipants"),
+            SocialSeedData.GetSeedChallengeParticipants(utcNow),
+            "challenge participants",
+            cancellationToken);
+
         await InsertMissingAsync(posts, SocialSeedData.GetPosts(utcNow), "posts", cancellationToken);
+
+        await InsertMissingAsync(
+            _database.GetCollection<Story>("Stories"),
+            SocialSeedData.GetSeedStories(utcNow),
+            "stories",
+            cancellationToken);
+
+        await InsertMissingAsync(
+            _database.GetCollection<Blog>("Blogs"),
+            SocialSeedData.GetSeedBlogs(utcNow),
+            "blogs",
+            cancellationToken);
+
+        await InsertMissingAsync(
+            _database.GetCollection<UserFollow>("UserFollows"),
+            SocialSeedData.GetSeedUserFollows(utcNow),
+            "user follows",
+            cancellationToken);
 
         await InsertMissingAsync(
             _database.GetCollection<Comment>("Comments"),
@@ -64,8 +91,8 @@ public class SocialDatabaseSeeder : ISocialDatabaseSeeder
         await InsertMissingInteractionsAsync(utcNow, cancellationToken);
 
         _logger.LogInformation(
-            "Social seed completed. Demo user {DemoUserId} — feed, likes, comments ready.",
-            SocialSeedUserIds.Demo);
+            "Social seed completed. Primary demo user {DemoUserId} — feed, stories, challenges, blogs ready.",
+            SocialSeedUserIds.Beginner);
     }
 
     private async Task InsertMissingInteractionsAsync(DateTimeOffset utcNow, CancellationToken cancellationToken)
@@ -119,5 +146,45 @@ public class SocialDatabaseSeeder : ISocialDatabaseSeeder
 
         await collection.InsertManyAsync(toInsert, cancellationToken: cancellationToken);
         _logger.LogInformation("Social seed: inserted {Count} {Label}.", toInsert.Count, label);
+    }
+
+    private async Task PatchLegacyCdnUrlsAsync(CancellationToken cancellationToken)
+    {
+        var posts = _database.GetCollection<Post>("Posts");
+        var legacyFilter = Builders<Post>.Filter.Or(
+            Builders<Post>.Filter.Regex(
+                x => x.AuthorSnapshot.AvatarUrl,
+                new MongoDB.Bson.BsonRegularExpression(DevSeedMediaUrls.LegacyCdnHost, "i")),
+            Builders<Post>.Filter.Regex(
+                "MediaUrls",
+                new MongoDB.Bson.BsonRegularExpression(DevSeedMediaUrls.LegacyCdnHost, "i")));
+
+        var legacyPosts = await posts.Find(legacyFilter).ToListAsync(cancellationToken);
+        if (legacyPosts.Count == 0)
+            return;
+
+        foreach (var post in legacyPosts)
+        {
+            if (post.AuthorSnapshot is not null &&
+                !string.IsNullOrWhiteSpace(post.AuthorSnapshot.AvatarUrl))
+            {
+                post.AuthorSnapshot.AvatarUrl =
+                    DevSeedMediaUrls.MigrateLegacyUrl(post.AuthorSnapshot.AvatarUrl);
+            }
+
+            if (post.MediaUrls is { Count: > 0 })
+            {
+                post.MediaUrls = post.MediaUrls
+                    .Select(DevSeedMediaUrls.MigrateLegacyUrl)
+                    .ToList();
+            }
+
+            await posts.ReplaceOneAsync(
+                Builders<Post>.Filter.Eq(x => x.Id, post.Id),
+                post,
+                cancellationToken: cancellationToken);
+        }
+
+        _logger.LogInformation("Social seed: migrated {Count} posts from legacy CDN URLs.", legacyPosts.Count);
     }
 }

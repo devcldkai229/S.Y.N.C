@@ -14,11 +14,16 @@ public sealed class UserMeService
 {
     private readonly IUserMeRepository _repository;
     private readonly ICurrentUserContext _currentUser;
+    private readonly IAchievementService _achievementService;
 
-    public UserMeService(IUserMeRepository repository, ICurrentUserContext currentUser)
+    public UserMeService(
+        IUserMeRepository repository,
+        ICurrentUserContext currentUser,
+        IAchievementService achievementService)
     {
         _repository = repository;
         _currentUser = currentUser;
+        _achievementService = achievementService;
     }
 
     public async Task<ProfileSettingsResponse> GetProfileSettingsAsync(CancellationToken cancellationToken = default)
@@ -37,9 +42,14 @@ public sealed class UserMeService
         _ = await _repository.GetUserWithProfilesAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(User), userId);
 
+        // Auto-check and unlock any newly met profile-based achievements
+        await _achievementService.CheckAndUnlockAsync(userId, cancellationToken);
+
         var gamification = await _repository.GetGamificationAsync(userId, cancellationToken);
         var vouchers = await _repository.GetVouchersAsync(userId, cancellationToken);
         var achievements = await _repository.GetAchievementsAsync(userId, cancellationToken);
+        var allAchievements = await _repository.GetAllAchievementsAsync(cancellationToken);
+        var unlockedIds = await _repository.GetUnlockedAchievementIdsAsync(userId, cancellationToken);
 
         var voucherDtos = vouchers
             .OrderByDescending(v => v.AcquiredAt)
@@ -51,10 +61,19 @@ public sealed class UserMeService
             .Select(UserMeMapper.ToAchievementDto)
             .ToList();
 
+        var inProgressDtos = allAchievements
+            .Where(a => !unlockedIds.Contains(a.Id))
+            .Select(a => UserMeMapper.ToProgressDto(a, gamification))
+            .OfType<AchievementProgressDto>()
+            .Where(p => p.CurrentValue > 0)
+            .OrderByDescending(p => (double)p.CurrentValue / p.RequiredValue)
+            .ToList();
+
         return new InventoryResponse(
             UserMeMapper.ToGamificationDto(gamification),
             voucherDtos,
             achievementDtos,
+            inProgressDtos,
             voucherDtos.Count,
             achievementDtos.Count);
     }
@@ -72,6 +91,11 @@ public sealed class UserMeService
 
         if (request.AvatarUrl is not null)
             user.AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? null : request.AvatarUrl.Trim();
+
+        if (request.BackgroundImageUrl is not null)
+            user.BackgroundImageUrl = string.IsNullOrWhiteSpace(request.BackgroundImageUrl)
+                ? null
+                : request.BackgroundImageUrl.Trim();
 
         if (request.PreferredLanguage is not null)
             user.PreferredLanguage = request.PreferredLanguage.Trim();

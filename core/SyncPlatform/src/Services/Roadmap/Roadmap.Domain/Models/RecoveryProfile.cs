@@ -10,8 +10,6 @@ public class RecoveryProfile : BaseMongoEntity
 
     public int FatigueLevel { get; set; }
 
-    public int SleepRecoveryScore { get; set; }
-
     public int MuscleSorenessScore { get; set; }
 
     public int CnsFatigueScore { get; set; }

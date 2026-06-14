@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sync_app/core/locale/l10n_extensions.dart';
+import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
 import 'package:sync_app/shared/widgets/app_bottom_nav_bar.dart';
+import 'package:sync_app/shared/widgets/app_radial_fab_items.dart';
+import 'package:sync_app/shared/widgets/draggable_radial_fab.dart';
+import 'package:sync_app/shared/widgets/notification_realtime_listener.dart';
 
-/// Bottom navigation shell — dùng với [StatefulShellRoute].
+/// Bottom navigation shell — used with [StatefulShellRoute].
 class MainShellScaffold extends StatelessWidget {
   const MainShellScaffold({
     super.key,
@@ -42,16 +46,21 @@ class MainShellScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: AppBottomNavBar(
-        currentTab: _currentTab,
-        onTabSelected: _onTabSelected,
-        onCenterTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(context.l10n.quickActionsComingSoon)),
-          );
-        },
+    return NotificationRealtimeListener(
+      child: Stack(
+        children: [
+          Scaffold(
+            body: navigationShell,
+            bottomNavigationBar: AppBottomNavBar(
+              currentTab: _currentTab,
+              onTabSelected: _onTabSelected,
+            ),
+          ),
+          ListenableBuilder(
+            listenable: getIt<ActiveOrderCountNotifier>(),
+            builder: (context, _) => DraggableRadialFab(items: AppRadialFabItems.build(context)),
+          ),
+        ],
       ),
     );
   }

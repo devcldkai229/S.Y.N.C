@@ -1,11 +1,16 @@
 using Exercise.Application.DTOs;
+using Exercise.Application.Services;
 using Exercise.Domain.Models;
 
 namespace Exercise.Application.Mappers;
 
 public static class ApplicationMappers
 {
-    public static ExerciseCatalogDto ToDto(this ExerciseCatalog entity)
+    /// <summary>Hides AI contraindications until admin sets NeedsReview=false.</summary>
+    private static List<string> PublicContraindications(ExerciseCatalog entity) =>
+        entity.NeedsReview ? [] : entity.Contraindications.ToList();
+
+    public static ExerciseCatalogDto ToDto(this ExerciseCatalog entity, string? thumbnailUrl = null)
     {
         return new ExerciseCatalogDto
         {
@@ -25,14 +30,22 @@ public static class ApplicationMappers
             EstimatedCaloriesPerMinute = entity.EstimatedCaloriesPerMinute,
             MetValue = entity.MetValue,
             RecommendedRestSeconds = entity.RecommendedRestSeconds,
-            Contraindications = entity.Contraindications,
+            Contraindications = PublicContraindications(entity),
             RecommendedGoals = entity.RecommendedGoals,
             MovementTags = entity.MovementTags,
             AiCoachingCues = entity.AiCoachingCues,
             CommonMistakes = entity.CommonMistakes,
             RequiresSpotter = entity.RequiresSpotter,
-            IsActive = entity.IsActive
+            SafetyLevel = entity.SafetyLevel,
+            IsActive = entity.IsActive,
+            ThumbnailUrl = thumbnailUrl,
         };
+    }
+
+    public static string? ResolveDisplayImageUrl(this ExerciseMotionAsset entity, IStorageService storage)
+    {
+        var dto = entity.ToDto(storage);
+        return !string.IsNullOrWhiteSpace(dto.ThumbnailUrl) ? dto.ThumbnailUrl : dto.ResourceUrl;
     }
 
     public static ExerciseCatalogDetailDto ToDetailDto(this ExerciseCatalog entity, IReadOnlyList<ExerciseMotionAssetDto> assets)
@@ -55,12 +68,13 @@ public static class ApplicationMappers
             EstimatedCaloriesPerMinute = entity.EstimatedCaloriesPerMinute,
             MetValue = entity.MetValue,
             RecommendedRestSeconds = entity.RecommendedRestSeconds,
-            Contraindications = entity.Contraindications,
+            Contraindications = PublicContraindications(entity),
             RecommendedGoals = entity.RecommendedGoals,
             MovementTags = entity.MovementTags,
             AiCoachingCues = entity.AiCoachingCues,
             CommonMistakes = entity.CommonMistakes,
             RequiresSpotter = entity.RequiresSpotter,
+            SafetyLevel = entity.SafetyLevel,
             MotionAssets = assets
         };
     }
@@ -88,6 +102,7 @@ public static class ApplicationMappers
         entity.AiCoachingCues = dto.AiCoachingCues;
         entity.CommonMistakes = dto.CommonMistakes;
         entity.RequiresSpotter = dto.RequiresSpotter;
+        entity.SafetyLevel = dto.SafetyLevel;
     }
 
     public static void UpdateEntity(this ExerciseCatalog entity, UpdateExerciseCatalogDto dto)
@@ -119,17 +134,38 @@ public static class ApplicationMappers
         entity.AiCoachingCues = dto.AiCoachingCues;
         entity.CommonMistakes = dto.CommonMistakes;
         entity.RequiresSpotter = dto.RequiresSpotter;
+        entity.SafetyLevel = dto.SafetyLevel;
     }
 
-    public static ExerciseMotionAssetDto ToDto(this ExerciseMotionAsset entity)
+    public static ExerciseMotionAssetDto ToDto(this ExerciseMotionAsset entity, IStorageService? storage = null)
     {
+        var resourceUrl = entity.ResourceUrl;
+        var thumbnailUrl = entity.ThumbnailUrl;
+
+        if (storage != null)
+        {
+            if (!string.IsNullOrWhiteSpace(entity.S3Key))
+            {
+                resourceUrl = storage.ResolveObjectUrl(entity.S3Key);
+            }
+
+            if (!string.IsNullOrWhiteSpace(entity.ThumbnailS3Key))
+            {
+                thumbnailUrl = storage.ResolveObjectUrl(entity.ThumbnailS3Key);
+            }
+            else if (!string.IsNullOrWhiteSpace(entity.S3Key))
+            {
+                thumbnailUrl = storage.ResolveObjectUrl(entity.S3Key);
+            }
+        }
+
         return new ExerciseMotionAssetDto
         {
             Id = entity.Id,
             ExerciseId = entity.ExerciseId,
             AssetType = entity.AssetType,
-            ResourceUrl = entity.ResourceUrl,
-            ThumbnailUrl = entity.ThumbnailUrl,
+            ResourceUrl = resourceUrl,
+            ThumbnailUrl = thumbnailUrl,
             UnityPrefabId = entity.UnityPrefabId,
             UnityAnimationClip = entity.UnityAnimationClip,
             AnimationDurationSeconds = entity.AnimationDurationSeconds
@@ -142,6 +178,8 @@ public static class ApplicationMappers
         entity.AssetType = dto.AssetType;
         entity.ResourceUrl = dto.ResourceUrl;
         entity.ThumbnailUrl = dto.ThumbnailUrl;
+        entity.S3Key = dto.S3Key;
+        entity.ThumbnailS3Key = dto.ThumbnailS3Key;
         entity.UnityPrefabId = dto.UnityPrefabId;
         entity.UnityAnimationClip = dto.UnityAnimationClip;
         entity.AnimationDurationSeconds = dto.AnimationDurationSeconds;
