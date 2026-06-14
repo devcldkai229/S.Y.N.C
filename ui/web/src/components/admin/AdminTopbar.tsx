@@ -2,25 +2,39 @@
 
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
-import { Bell, ChevronRight } from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const BREADCRUMB_MAP: Record<string, string> = {
-  "/admin/dashboard":           "Dashboard",
-  "/admin/users":               "Users",
-  "/admin/exercises":           "Exercises",
-  "/admin/exercises/new":       "New Exercise",
-  "/admin/subscription-plans":  "Subscription Plans",
-  "/admin/promotions":          "Promotions",
-  "/admin/promotions/new":      "New Campaign",
+  "/admin/dashboard":                "Tổng quan",
+  "/admin/users":                    "Người dùng",
+  "/admin/subscriptions":            "Gói đăng ký người dùng",
+  "/admin/subscriptions/new":        "Tạo gói đăng ký",
+  "/admin/exercises":                "Bài tập",
+  "/admin/exercises/new":            "Thêm bài tập",
+  "/admin/subscription-plans":       "Gói dịch vụ",
+  "/admin/subscription-plans/new":   "Tạo gói dịch vụ",
+  "/admin/promotions":               "Khuyến mãi",
+  "/admin/promotions/new":           "Tạo chiến dịch",
+  "/admin/workout-templates":        "Mẫu buổi tập",
+  "/admin/workout-templates/new":    "Tạo mẫu buổi tập",
+  "/admin/notification-templates":   "Mẫu thông báo",
+  "/admin/notification-templates/new": "Tạo mẫu thông báo",
+  "/admin/notifications":            "Gửi thông báo",
+  "/admin/community":                "Cộng đồng",
 };
 
 function getLabel(pathname: string): string {
   if (BREADCRUMB_MAP[pathname]) return BREADCRUMB_MAP[pathname];
-  if (pathname.startsWith("/admin/exercises/"))          return "Edit Exercise";
-  if (pathname.startsWith("/admin/subscription-plans/")) return "Edit Plan";
-  if (pathname.startsWith("/admin/promotions/"))         return "Edit Campaign";
-  if (pathname.startsWith("/admin/users/"))              return "User Detail";
-  return "Admin";
+  if (pathname.startsWith("/admin/exercises/"))            return "Sửa bài tập";
+  if (pathname.startsWith("/admin/subscription-plans/"))   return "Sửa gói dịch vụ";
+  if (pathname.startsWith("/admin/promotions/"))           return "Sửa chiến dịch";
+  if (pathname.startsWith("/admin/subscriptions/"))        return "Sửa gói đăng ký";
+  if (pathname.startsWith("/admin/workout-templates/"))    return "Sửa mẫu buổi tập";
+  if (pathname.startsWith("/admin/notification-templates/")) return "Sửa mẫu thông báo";
+  if (pathname.startsWith("/admin/users/"))                return "Chi tiết người dùng";
+  return "Quản trị";
 }
 
 export function AdminTopbar() {
@@ -31,31 +45,27 @@ export function AdminTopbar() {
     ? user.fullName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()
     : "AD";
 
-  const label = getLabel(pathname);
-
   return (
-    <header className="h-16 px-6 border-b border-gray-100 bg-white flex items-center justify-between shrink-0">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm">
-        <span className="text-gray-400 font-medium">Admin</span>
-        <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
-        <span className="text-gray-900 font-semibold">{label}</span>
+    <header className="h-14 px-4 border-b border-border bg-card flex items-center justify-between shrink-0">
+      <div>
+        <h1 className="text-sm font-semibold text-foreground">{getLabel(pathname)}</h1>
+        <p className="text-xs text-muted-foreground">Trang quản trị</p>
       </div>
 
-      {/* Right side */}
-      <div className="flex items-center gap-3">
-        <button className="relative w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="text-muted-foreground relative">
           <Bell className="w-4 h-4" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
-        </button>
+        </Button>
 
-        <div className="flex items-center gap-2.5 pl-3 border-l border-gray-100">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
-            {initials}
-          </div>
+        <div className="flex items-center gap-2">
+          <Avatar className="w-7 h-7">
+            <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+              {initials}
+            </AvatarFallback>
+          </Avatar>
           <div className="hidden sm:block">
-            <p className="text-xs font-semibold text-gray-800 leading-none">{user?.fullName ?? "Admin"}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{user?.email}</p>
+            <p className="text-xs font-medium leading-none">{user?.fullName ?? "Admin"}</p>
+            <p className="text-xs text-muted-foreground">{user?.email}</p>
           </div>
         </div>
       </div>

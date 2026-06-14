@@ -91,7 +91,7 @@ public class UserSubscriptionsController : ControllerBase
     /// Lấy danh sách toàn bộ gói đăng ký người dùng (Dành cho Admin)
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<UserSubscriptionDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -110,7 +110,7 @@ public class UserSubscriptionsController : ControllerBase
     /// Lấy chi tiết gói đăng ký theo ID (Dành cho Admin)
     /// </summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<UserSubscriptionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<UserSubscriptionDto>>> GetById(Guid id, CancellationToken cancellationToken)
@@ -124,7 +124,7 @@ public class UserSubscriptionsController : ControllerBase
     /// Tạo mới thủ công một gói đăng ký cho người dùng (Dành cho Admin)
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<UserSubscriptionDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -143,7 +143,7 @@ public class UserSubscriptionsController : ControllerBase
     /// Cập nhật thông tin gói đăng ký của người dùng (Dành cho Admin)
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<UserSubscriptionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -161,7 +161,7 @@ public class UserSubscriptionsController : ControllerBase
     /// Xóa/Hủy vĩnh viễn gói đăng ký (Dành cho Admin)
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(

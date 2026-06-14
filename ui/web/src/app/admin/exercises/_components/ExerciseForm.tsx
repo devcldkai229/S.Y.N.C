@@ -61,11 +61,11 @@ export function ExerciseForm({ defaultValues, onSubmit, loading, submitLabel = "
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      {/* Basic Info */}
-      <FormSection title="Basic Info">
+      {/* Thông tin cơ bản */}
+      <FormSection title="Thông tin cơ bản">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>Exercise Code *</Label>
+            <Label>Mã bài tập *</Label>
             <Input {...register("exerciseCode")} placeholder="EX001" />
             <FieldError msg={errors.exerciseCode?.message} />
           </div>
@@ -75,27 +75,27 @@ export function ExerciseForm({ defaultValues, onSubmit, loading, submitLabel = "
             <FieldError msg={errors.slug?.message} />
           </div>
           <div className="space-y-1">
-            <Label>Name (Vietnamese) *</Label>
+            <Label>Tên (Tiếng Việt) *</Label>
             <Input {...register("nameVi")} placeholder="Squat tạ đòn" />
             <FieldError msg={errors.nameVi?.message} />
           </div>
           <div className="space-y-1">
-            <Label>Name (English) *</Label>
+            <Label>Tên (Tiếng Anh) *</Label>
             <Input {...register("nameEn")} placeholder="Barbell Squat" />
             <FieldError msg={errors.nameEn?.message} />
           </div>
         </div>
       </FormSection>
 
-      {/* Classification */}
-      <FormSection title="Classification">
+      {/* Phân loại */}
+      <FormSection title="Phân loại">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {(
             [
-              { label: "Category *",         name: "category",        items: CATEGORIES },
-              { label: "Difficulty *",        name: "difficulty",      items: DIFFICULTIES },
-              { label: "Movement Pattern *",  name: "movementPattern", items: MOVEMENT_PATTERNS },
-              { label: "Body Region *",       name: "bodyRegion",      items: BODY_REGIONS },
+              { label: "Nhóm *",            name: "category",        items: CATEGORIES },
+              { label: "Độ khó *",          name: "difficulty",      items: DIFFICULTIES },
+              { label: "Kiểu chuyển động *", name: "movementPattern", items: MOVEMENT_PATTERNS },
+              { label: "Vùng cơ thể *",     name: "bodyRegion",      items: BODY_REGIONS },
             ] as const
           ).map(({ label, name, items }) => (
             <div key={name} className="space-y-1">
@@ -105,7 +105,7 @@ export function ExerciseForm({ defaultValues, onSubmit, loading, submitLabel = "
                 name={name}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Chọn..." /></SelectTrigger>
                     <SelectContent>
                       {items.map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
                     </SelectContent>
@@ -119,15 +119,15 @@ export function ExerciseForm({ defaultValues, onSubmit, loading, submitLabel = "
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div className="space-y-1">
-            <Label>Calories/Min</Label>
+            <Label>Calo/phút</Label>
             <Input type="number" {...register("estimatedCaloriesPerMinute")} placeholder="8" />
           </div>
           <div className="space-y-1">
-            <Label>MET Value</Label>
+            <Label>Chỉ số MET</Label>
             <Input type="number" step="0.1" {...register("metValue")} placeholder="5.0" />
           </div>
           <div className="space-y-1">
-            <Label>Rest (seconds)</Label>
+            <Label>Nghỉ (giây)</Label>
             <Input type="number" {...register("recommendedRestSeconds")} placeholder="60" />
           </div>
         </div>
@@ -136,33 +136,33 @@ export function ExerciseForm({ defaultValues, onSubmit, loading, submitLabel = "
           <Controller control={control} name="isCompound" render={({ field }) => (
             <div className="flex items-center gap-2">
               <Switch checked={field.value} onCheckedChange={field.onChange} id="isCompound" />
-              <Label htmlFor="isCompound">Compound movement</Label>
+              <Label htmlFor="isCompound">Động tác phức hợp</Label>
             </div>
           )} />
           <Controller control={control} name="requiresSpotter" render={({ field }) => (
             <div className="flex items-center gap-2">
               <Switch checked={field.value} onCheckedChange={field.onChange} id="requiresSpotter" />
-              <Label htmlFor="requiresSpotter">Requires spotter</Label>
+              <Label htmlFor="requiresSpotter">Cần người hỗ trợ</Label>
             </div>
           )} />
           <Controller control={control} name="isActive" render={({ field }) => (
             <div className="flex items-center gap-2">
               <Switch checked={field.value} onCheckedChange={field.onChange} id="isActive" />
-              <Label htmlFor="isActive">Active</Label>
+              <Label htmlFor="isActive">Hoạt động</Label>
             </div>
           )} />
         </div>
       </FormSection>
 
-      {/* Muscles & Equipment */}
-      <FormSection title="Muscles & Equipment">
+      {/* Nhóm cơ & dụng cụ */}
+      <FormSection title="Nhóm cơ & dụng cụ">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {(
             [
-              { label: "Primary Muscles",   name: "primaryMuscles" },
-              { label: "Secondary Muscles", name: "secondaryMuscles" },
-              { label: "Equipment",         name: "equipmentRequired" },
-              { label: "Contraindications", name: "contraindications" },
+              { label: "Nhóm cơ chính",   name: "primaryMuscles" },
+              { label: "Nhóm cơ phụ",     name: "secondaryMuscles" },
+              { label: "Dụng cụ",         name: "equipmentRequired" },
+              { label: "Chống chỉ định",  name: "contraindications" },
             ] as const
           ).map(({ label, name }) => (
             <div key={name} className="space-y-1">
@@ -171,7 +171,7 @@ export function ExerciseForm({ defaultValues, onSubmit, loading, submitLabel = "
                 control={control}
                 name={name}
                 render={({ field }) => (
-                  <TagInput value={field.value} onChange={field.onChange} placeholder={`Add ${label.toLowerCase()} and press Enter`} />
+                  <TagInput value={field.value} onChange={field.onChange} placeholder={`Thêm ${label.toLowerCase()} — nhấn Enter`} />
                 )}
               />
             </div>
@@ -179,15 +179,15 @@ export function ExerciseForm({ defaultValues, onSubmit, loading, submitLabel = "
         </div>
       </FormSection>
 
-      {/* AI & Coaching */}
-      <FormSection title="AI & Coaching">
+      {/* AI & huấn luyện */}
+      <FormSection title="AI & huấn luyện">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {(
             [
-              { label: "Recommended Goals", name: "recommendedGoals" },
-              { label: "Movement Tags",     name: "movementTags" },
-              { label: "AI Coaching Cues",  name: "aiCoachingCues" },
-              { label: "Common Mistakes",   name: "commonMistakes" },
+              { label: "Mục tiêu phù hợp",   name: "recommendedGoals" },
+              { label: "Thẻ chuyển động",    name: "movementTags" },
+              { label: "Gợi ý huấn luyện AI", name: "aiCoachingCues" },
+              { label: "Lỗi thường gặp",     name: "commonMistakes" },
             ] as const
           ).map(({ label, name }) => (
             <div key={name} className="space-y-1">
@@ -196,7 +196,7 @@ export function ExerciseForm({ defaultValues, onSubmit, loading, submitLabel = "
                 control={control}
                 name={name}
                 render={({ field }) => (
-                  <TagInput value={field.value} onChange={field.onChange} placeholder={`Add ${label.toLowerCase()} and press Enter`} />
+                  <TagInput value={field.value} onChange={field.onChange} placeholder={`Thêm ${label.toLowerCase()} — nhấn Enter`} />
                 )}
               />
             </div>

@@ -22,12 +22,12 @@ export default function NewPromotionPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <Button variant="ghost" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        <ArrowLeft className="w-4 h-4 mr-2" /> Quay lại
       </Button>
       <Card>
-        <CardHeader><CardTitle>New Promotion Campaign</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Tạo chiến dịch khuyến mãi</CardTitle></CardHeader>
         <CardContent>
-          <PromotionForm onSubmit={handleSubmit} loading={createMutation.isPending} submitLabel="Create Campaign" />
+          <PromotionForm onSubmit={handleSubmit} loading={createMutation.isPending} submitLabel="Tạo chiến dịch" />
         </CardContent>
       </Card>
     </div>

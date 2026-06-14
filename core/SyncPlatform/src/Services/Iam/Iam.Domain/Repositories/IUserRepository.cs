@@ -1,3 +1,4 @@
+using Iam.Domain.Enums;
 using Iam.Domain.Models;
 
 namespace Iam.Domain.Repositories;
@@ -5,6 +6,13 @@ namespace Iam.Domain.Repositories;
 public interface IUserRepository
 {
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Admin listing — optional free-text (name/email) + role/status filters, newest first.</summary>
+    Task<IReadOnlyList<User>> GetAllForAdminAsync(
+        string? search,
+        UserRole? role,
+        UserStatus? status,
+        CancellationToken cancellationToken = default);
     Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
     Task<User?> GetByEmailVerificationTokenAsync(string token, CancellationToken cancellationToken = default);
     Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default);

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/services/api";
+import { api, type Paged } from "@/services/api";
 import { toast } from "sonner";
 
 export interface ExerciseCatalogDto {
@@ -29,21 +29,18 @@ export interface ExerciseCatalogDto {
 }
 
 export interface ExerciseMotionAssetDto {
-  id:        string;
-  assetType: string;
-  url:       string;
-  fileSize:  number;
+  id:                       string;
+  exerciseId:               string;
+  assetType:                string;
+  resourceUrl:              string;
+  thumbnailUrl?:            string | null;
+  unityPrefabId?:           string | null;
+  unityAnimationClip?:      string | null;
+  animationDurationSeconds: number;
 }
 
 export interface ExerciseCatalogDetailDto extends ExerciseCatalogDto {
   motionAssets: ExerciseMotionAssetDto[];
-}
-
-interface PagedResult<T> {
-  items:      T[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize:   number;
 }
 
 interface ExerciseListParams {
@@ -69,14 +66,14 @@ export function useExercises(params: ExerciseListParams = {}) {
 
   return useQuery({
     queryKey: ["admin", "exercises", params],
-    queryFn:  () => api.get<PagedResult<ExerciseCatalogDto>>(`/api/v1/exercises?${qs}`),
+    queryFn:  (): Promise<Paged<ExerciseCatalogDto>> => api.getPaged<ExerciseCatalogDto>(`/api/v1/exercise/exercises?${qs}`),
   });
 }
 
 export function useExercise(id: string) {
   return useQuery({
     queryKey: ["admin", "exercises", id],
-    queryFn:  () => api.get<ExerciseCatalogDetailDto>(`/api/v1/exercises/${id}/detail`),
+    queryFn:  () => api.get<ExerciseCatalogDetailDto>(`/api/v1/exercise/exercises/${id}/detail`),
     enabled:  !!id,
   });
 }
@@ -84,10 +81,10 @@ export function useExercise(id: string) {
 export function useCreateExercise() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (dto: CreateExerciseDto) => api.post<ExerciseCatalogDto>("/api/v1/exercises", dto),
+    mutationFn: (dto: CreateExerciseDto) => api.post<ExerciseCatalogDto>("/api/v1/exercise/exercises", dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "exercises"] });
-      toast.success("Exercise created successfully");
+      toast.success("Tạo bài tập thành công");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -97,10 +94,10 @@ export function useUpdateExercise() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdateExerciseDto }) =>
-      api.put<ExerciseCatalogDto>(`/api/v1/exercises/${id}`, dto),
+      api.put<ExerciseCatalogDto>(`/api/v1/exercise/exercises/${id}`, dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "exercises"] });
-      toast.success("Exercise updated successfully");
+      toast.success("Cập nhật bài tập thành công");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -109,10 +106,10 @@ export function useUpdateExercise() {
 export function useDeleteExercise() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api.delete(`/api/v1/exercises/${id}`),
+    mutationFn: (id: string) => api.delete(`/api/v1/exercise/exercises/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "exercises"] });
-      toast.success("Exercise deleted");
+      toast.success("Đã xóa bài tập");
     },
     onError: (e: Error) => toast.error(e.message),
   });

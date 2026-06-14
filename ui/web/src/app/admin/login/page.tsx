@@ -4,11 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
 import { api } from "@/services/api";
+import { decodeJwt, isAdminRole } from "@/lib/jwt";
+import { getOrCreateDeviceId } from "@/lib/device";
 import { Eye, EyeOff, Loader2, Zap, ShieldCheck, Lock } from "lucide-react";
 import ParticleCursor from "@/components/ui/ParticleCursor";
 
-interface LoginResponse {
-  data: { token: string; user: { id: string; email: string; fullName: string; role: string } };
+// Backend: ApiResponse<AuthResponse> → api.ts unwraps `.data` for us.
+interface AuthResponse {
+  userId:       string;
+  email:        string;
+  fullName:     string;
+  accessToken:  string;
+  refreshToken: string;
+  expiresIn:    number;
 }
 
 const ADMIN_FEATURES = [
@@ -33,8 +41,25 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await api.post<LoginResponse>("/api/v1/auth/login", { email, password });
-      login(res.data.token, res.data.user);
+      const res = await api.post<AuthResponse>("/api/v1/auth/login", {
+        email,
+        password,
+        deviceId: getOrCreateDeviceId(),
+        platform: "Web",
+      });
+
+      const role = decodeJwt(res.accessToken)?.role;
+      if (!isAdminRole(role)) {
+        setError("Tài khoản này không có quyền truy cập trang quản trị.");
+        return;
+      }
+
+      login(res.accessToken, {
+        id:       res.userId,
+        email:    res.email,
+        fullName: res.fullName,
+        role:     role ?? "",
+      });
       router.push("/admin/dashboard");
     } catch {
       setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");

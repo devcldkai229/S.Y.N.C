@@ -55,7 +55,7 @@ public class PromotionCampaignsController : ControllerBase
     /// Lấy toàn bộ danh sách chiến dịch khuyến mãi (Dành cho Admin/Staff)
     /// </summary>
     [HttpGet]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<PromotionCampaignDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -73,7 +73,7 @@ public class PromotionCampaignsController : ControllerBase
     /// Lấy chi tiết chiến dịch khuyến mãi theo ID (Dành cho Admin/Staff)
     /// </summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<PromotionCampaignDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<PromotionCampaignDto>>> GetById(Guid id, CancellationToken cancellationToken)
@@ -87,7 +87,7 @@ public class PromotionCampaignsController : ControllerBase
     /// Tạo mới chiến dịch khuyến mãi (Dành cho Admin)
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<PromotionCampaignDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
@@ -106,7 +106,7 @@ public class PromotionCampaignsController : ControllerBase
     /// Cập nhật chiến dịch khuyến mãi (Dành cho Admin)
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<PromotionCampaignDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -125,7 +125,7 @@ public class PromotionCampaignsController : ControllerBase
     /// Xóa mềm/Xóa cứng chiến dịch khuyến mãi (Dành cho Admin)
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(

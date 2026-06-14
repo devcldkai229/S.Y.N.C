@@ -50,7 +50,7 @@ public class SubscriptionPlansController : ControllerBase
     /// Lấy toàn bộ danh sách gói subscription (bao gồm cả Inactive và Deleted) - Dành cho Admin
     /// </summary>
     [HttpGet("admin")]
-    [Authorize(Roles = "Admin,Staff")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<IEnumerable<SubscriptionPlanDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
@@ -68,7 +68,7 @@ public class SubscriptionPlansController : ControllerBase
     /// Tạo mới gói subscription - Dành cho Admin
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
@@ -87,7 +87,7 @@ public class SubscriptionPlansController : ControllerBase
     /// Cập nhật thông tin gói subscription - Dành cho Admin
     /// </summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<SubscriptionPlanDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
@@ -106,7 +106,7 @@ public class SubscriptionPlansController : ControllerBase
     /// Xoá mềm/Xoá cứng gói subscription - Dành cho Admin
     /// </summary>
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ApiResponse<object>>> Delete(

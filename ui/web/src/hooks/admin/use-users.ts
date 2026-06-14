@@ -1,39 +1,75 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/services/api";
+import { toast } from "sonner";
+
+export type UserRole = "User" | "Partner" | "SystemAdmin";
+export type UserStatus = "Onboarding" | "Active" | "Suspended" | "PendingVerification" | "Deleted";
+
+export const USER_ROLES: UserRole[] = ["User", "Partner", "SystemAdmin"];
+export const USER_STATUSES: UserStatus[] = ["Onboarding", "Active", "Suspended", "PendingVerification", "Deleted"];
 
 export interface AdminUserListItem {
   id:               string;
-  fullName:         string;
   email:            string;
-  role:             string;
-  status:           string;
+  fullName:         string;
+  avatarUrl?:       string | null;
+  role:             UserRole;
+  status:           UserStatus;
   subscriptionTier: string;
-  lastActive:       string;
+  emailVerified:    boolean;
+  lastActiveAt?:    string | null;
+  lastLoginAt?:     string | null;
   createdAt:        string;
-  avatarUrl?:       string;
 }
 
-const MOCK_USERS: AdminUserListItem[] = [
-  { id: "1", fullName: "Nguyễn Văn An", email: "an.nguyen@email.com", role: "Member", status: "active", subscriptionTier: "Pro", lastActive: "2024-01-15", createdAt: "2024-01-01", avatarUrl: undefined },
-  { id: "2", fullName: "Trần Thị Bình", email: "binh.tran@email.com", role: "Member", status: "active", subscriptionTier: "Free", lastActive: "2024-01-14", createdAt: "2024-01-03", avatarUrl: undefined },
-  { id: "3", fullName: "Lê Minh Châu", email: "chau.le@email.com", role: "Staff", status: "active", subscriptionTier: "Premium", lastActive: "2024-01-15", createdAt: "2023-12-20", avatarUrl: undefined },
-  { id: "4", fullName: "Phạm Quốc Dũng", email: "dung.pham@email.com", role: "Member", status: "banned", subscriptionTier: "Free", lastActive: "2023-12-30", createdAt: "2023-11-15", avatarUrl: undefined },
-  { id: "5", fullName: "Hoàng Thị Em", email: "em.hoang@email.com", role: "Member", status: "active", subscriptionTier: "Basic", lastActive: "2024-01-13", createdAt: "2024-01-05", avatarUrl: undefined },
-  { id: "6", fullName: "Vũ Đức Phúc", email: "phuc.vu@email.com", role: "Admin", status: "active", subscriptionTier: "Premium", lastActive: "2024-01-15", createdAt: "2023-06-01", avatarUrl: undefined },
-  { id: "7", fullName: "Đặng Thị Giang", email: "giang.dang@email.com", role: "Member", status: "suspended", subscriptionTier: "Pro", lastActive: "2024-01-10", createdAt: "2023-10-20", avatarUrl: undefined },
-];
+interface UserListParams {
+  search?: string;
+  role?:   UserRole;
+  status?: UserStatus;
+}
 
-export function useUsers() {
+export function useUsers(params: UserListParams = {}) {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("search", params.search);
+  if (params.role)   qs.set("role", params.role);
+  if (params.status) qs.set("status", params.status);
+
   return useQuery({
-    queryKey: ["admin", "users"],
-    queryFn:  () => Promise.resolve(MOCK_USERS),
-    staleTime: Infinity,
+    queryKey: ["admin", "users", params],
+    queryFn:  () => api.get<AdminUserListItem[]>(`/api/v1/iam/users?${qs}`),
   });
 }
 
 export function useUser(id: string) {
   return useQuery({
     queryKey: ["admin", "users", id],
-    queryFn:  () => Promise.resolve(MOCK_USERS.find((u) => u.id === id) ?? null),
+    queryFn:  () => api.get<AdminUserListItem>(`/api/v1/iam/users/${id}`),
     enabled:  !!id,
+  });
+}
+
+export function useUpdateUserStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: UserStatus }) =>
+      api.put<AdminUserListItem>(`/api/v1/iam/users/${id}/status`, { status }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast.success("Đã cập nhật trạng thái người dùng");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+}
+
+export function useUpdateUserRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: UserRole }) =>
+      api.put<AdminUserListItem>(`/api/v1/iam/users/${id}/role`, { role }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast.success("Đã cập nhật vai trò người dùng");
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 }
