@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:sync_app/core/network/dio_errors.dart';
 
 String mapApiError(Object error) {
   if (error is DioException) {
@@ -10,15 +11,15 @@ String mapApiError(Object error) {
       return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
     }
     if (status == 502 || status == 503) {
-      return 'Không thể tải dữ liệu. Dịch vụ Roadmap chưa chạy — hãy khởi động backend (run-all.ps1).';
+      return 'Không thể tải dữ liệu. Một số dịch vụ backend chưa chạy — hãy chạy run-all.ps1.';
+    }
+    if (isConnectivityDioError(error)) {
+      return 'Không kết nối được server hoặc phản hồi quá chậm. Hãy chạy backend (Gateway :5057).';
     }
     final data = error.response?.data;
     if (data is Map<String, dynamic>) {
       final message = data['message']?.toString();
       if (message != null && message.isNotEmpty) return message;
-    }
-    if (error.type == DioExceptionType.connectionError) {
-      return 'Không kết nối được server. Hãy chạy backend (Gateway :5057).';
     }
     return error.message ?? 'Request failed.';
   }

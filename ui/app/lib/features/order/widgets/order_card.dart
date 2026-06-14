@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sync_app/core/utils/currency_formatter.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
 import 'package:sync_app/features/order/models/order_models.dart';
 import 'package:sync_app/features/order/widgets/status_chip.dart';
@@ -31,7 +32,7 @@ class OrderCard extends StatelessWidget {
             Text(summary, maxLines: 1, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 6),
             Text(
-              '${order.totalAmount.toStringAsFixed(0)}đ · ${order.placedAt.toLocal()}',
+              '${CurrencyFormatter.formatVnd(order.totalAmount)} · ${order.placedAt.toLocal()}',
               style: const TextStyle(fontSize: 12, color: MarketplaceTheme.textMuted),
             ),
           ],

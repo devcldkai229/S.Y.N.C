@@ -9,11 +9,13 @@ class RadialFabMenuItem {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.badgeCount,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final int? badgeCount;
 }
 
 /// Docked center FAB (half-submerged in bottom nav) with radial quick-action menu.
@@ -332,10 +334,33 @@ class _FabMenuItemButton extends StatelessWidget {
                   child: SizedBox(
                     width: size,
                     height: size,
-                    child: Icon(
-                      item.icon,
-                      color: Colors.white,
-                      size: 24,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        Icon(item.icon, color: Colors.white, size: 24),
+                        if (item.badgeCount != null && item.badgeCount! > 0)
+                          Positioned(
+                            right: 2,
+                            top: 2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.white, width: 1.5),
+                              ),
+                              child: Text(
+                                item.badgeCount! > 9 ? '9+' : '${item.badgeCount}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),

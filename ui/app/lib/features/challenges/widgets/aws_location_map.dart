@@ -1,12 +1,15 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 import 'package:sync_app/core/config/aws_map_config.dart';
+
+const _pickerCenterMinMoveMeters = 12.0;
 
 enum UserLocationCenterResult {
   success,
@@ -59,6 +62,9 @@ class AwsLocationMap extends StatefulWidget {
     this.onMapReady,
     this.onTap,
     this.onGpsDisabled,
+    this.onReady,
+    this.pickerMode = false,
+    this.onPickerCenterChanged,
   });
 
   final LatLng? initialCenter;
@@ -71,11 +77,19 @@ class AwsLocationMap extends StatefulWidget {
 
   final bool showUserLocation;
   final bool interactive;
+
+  /// Center-pin picker: reports map center after pan/zoom (debounce in parent).
+  final bool pickerMode;
+  final void Function(LatLng center)? onPickerCenterChanged;
+
   final void Function(fm.MapController controller)? onMapReady;
   final void Function(LatLng point)? onTap;
 
   /// Fired when OS location services are off (Windows/macOS/Android GPS toggle).
   final VoidCallback? onGpsDisabled;
+
+  /// Fired once a map controller (MapLibre or FlutterMap) is ready.
+  final VoidCallback? onReady;
 
   @override
   State<AwsLocationMap> createState() => AwsLocationMapState();
@@ -90,8 +104,17 @@ class AwsLocationMapState extends State<AwsLocationMap> {
   final List<ml.Line> _mapLibreLines = [];
   final List<ml.Circle> _mapLibreCircles = [];
   final List<ml.Symbol> _mapLibreSymbols = [];
+  Timer? _pickerCenterDebounce;
+  LatLng? _lastPickerCenterNotified;
+  LatLng? _lastCenteredLocation;
+  bool _readyNotified = false;
+  static const _distance = Distance();
 
-  bool get _useVectorMap => AwsMapConfig.usesVectorMap;
+  /// Last point passed to [moveTo] / [centerOnUserLocation] (picker GPS / search).
+  LatLng? get lastCenteredLocation => _lastCenteredLocation;
+
+  /// Grab/sync-map keys only authorize style-descriptor (v0), not v2 raster tiles.
+  bool get _useVectorMap => AwsMapConfig.styleDescriptorUrl != null;
 
   @override
   void initState() {
@@ -102,9 +125,16 @@ class AwsLocationMapState extends State<AwsLocationMap> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_flutterMapController != null) {
         widget.onMapReady?.call(_flutterMapController!);
+        _notifyReady();
       }
       if (widget.showUserLocation) _initUserLocation();
     });
+  }
+
+  void _notifyReady() {
+    if (_readyNotified) return;
+    _readyNotified = true;
+    widget.onReady?.call();
   }
 
   @override
@@ -122,11 +152,13 @@ class AwsLocationMapState extends State<AwsLocationMap> {
 
   Future<void> _initUserLocation() async {
     try {
-      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _setFallbackUserLocation();
-        _notifyGpsDisabled();
-        return;
+      if (!kIsWeb) {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          _setFallbackUserLocation();
+          _notifyGpsDisabled();
+          return;
+        }
       }
 
       var permission = await Geolocator.checkPermission();
@@ -166,9 +198,21 @@ class AwsLocationMapState extends State<AwsLocationMap> {
     );
   }
 
-  void moveTo(LatLng point, {double zoom = 14}) {
+  LatLng? get mapCenter {
+    final mlTarget = _mapLibreController?.cameraPosition?.target;
+    if (mlTarget != null) {
+      return LatLng(mlTarget.latitude, mlTarget.longitude);
+    }
+    return _flutterMapController?.camera.center;
+  }
+
+  Future<void> moveTo(LatLng point, {double zoom = 14}) async {
+    _lastCenteredLocation = point;
+    if (widget.pickerMode) {
+      _lastPickerCenterNotified = point;
+    }
     if (_mapLibreController != null) {
-      _mapLibreController!.animateCamera(
+      await _mapLibreController!.animateCamera(
         ml.CameraUpdate.newLatLngZoom(_toMl(point), zoom),
       );
       return;
@@ -203,8 +247,10 @@ class AwsLocationMapState extends State<AwsLocationMap> {
   }
 
   Future<UserLocationCenterResult> centerOnUserLocation({double zoom = 15}) async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) return UserLocationCenterResult.gpsDisabled;
+    if (!kIsWeb) {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) return UserLocationCenterResult.gpsDisabled;
+    }
 
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
@@ -225,7 +271,7 @@ class AwsLocationMapState extends State<AwsLocationMap> {
 
       final latLng = LatLng(position.latitude, position.longitude);
       setState(() => _userLocation = latLng);
-      moveTo(latLng, zoom: zoom);
+      await moveTo(latLng, zoom: zoom);
       _startPositionStream();
       if (_mapLibreStyleReady) unawaited(_syncMapLibreAnnotations());
       return UserLocationCenterResult.success;
@@ -235,6 +281,8 @@ class AwsLocationMapState extends State<AwsLocationMap> {
   }
 
   void _startPositionStream() {
+    if (widget.pickerMode) return;
+
     _positionSub?.cancel();
     _positionSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
@@ -249,8 +297,37 @@ class AwsLocationMapState extends State<AwsLocationMap> {
     });
   }
 
+  bool _pickerCenterMovedEnough(LatLng center) {
+    final last = _lastPickerCenterNotified;
+    if (last == null) return true;
+    return _distance.as(LengthUnit.Meter, last, center) >= _pickerCenterMinMoveMeters;
+  }
+
+  void _notifyPickerCenter({bool immediate = false}) {
+    if (!widget.pickerMode) return;
+    final center = mapCenter;
+    if (center == null) return;
+    if (!_pickerCenterMovedEnough(center)) return;
+
+    void emit() {
+      final latest = mapCenter;
+      if (latest == null || !mounted) return;
+      if (!_pickerCenterMovedEnough(latest)) return;
+      _lastPickerCenterNotified = latest;
+      widget.onPickerCenterChanged?.call(latest);
+    }
+
+    _pickerCenterDebounce?.cancel();
+    if (immediate) {
+      emit();
+      return;
+    }
+    _pickerCenterDebounce = Timer(const Duration(milliseconds: 300), emit);
+  }
+
   Future<void> _onMapLibreCreated(ml.MapLibreMapController controller) async {
     _mapLibreController = controller;
+    _notifyReady();
     await _syncMapLibreAnnotations();
   }
 
@@ -316,6 +393,22 @@ class AwsLocationMapState extends State<AwsLocationMap> {
       }
 
       if (marker.annotationLabel != null && marker.annotationLabel!.isNotEmpty) {
+        // Grab/AWS glyph server does not ship emoji PBF ranges — use pin circles instead.
+        if (_labelUsesEmojiGlyphs(marker.annotationLabel!)) {
+          final fill = marker.annotationColor ?? const Color(0xFF16803A);
+          final circle = await controller.addCircle(
+            ml.CircleOptions(
+              geometry: _toMl(marker.point),
+              circleRadius: 10,
+              circleColor: _colorToHex(fill),
+              circleStrokeWidth: 2.5,
+              circleStrokeColor: '#FFFFFF',
+            ),
+          );
+          _mapLibreCircles.add(circle);
+          continue;
+        }
+
         final symbol = await controller.addSymbol(
           ml.SymbolOptions(
             geometry: _toMl(marker.point),
@@ -348,6 +441,7 @@ class AwsLocationMapState extends State<AwsLocationMap> {
   @override
   void dispose() {
     _positionSub?.cancel();
+    _pickerCenterDebounce?.cancel();
     super.dispose();
   }
 
@@ -372,22 +466,37 @@ class AwsLocationMapState extends State<AwsLocationMap> {
       }(),
     );
 
-    return ml.MapLibreMap(
-      styleString: styleUrl,
-      initialCameraPosition: ml.CameraPosition(
-        target: _toMl(center),
-        zoom: widget.initialZoom,
-      ),
-      compassEnabled: false,
-      rotateGesturesEnabled: widget.interactive,
-      scrollGesturesEnabled: widget.interactive,
-      zoomGesturesEnabled: widget.interactive,
-      tiltGesturesEnabled: false,
-      onMapCreated: _onMapLibreCreated,
-      onStyleLoadedCallback: _onMapLibreStyleLoaded,
-      onMapClick: widget.onTap == null
-          ? null
-          : (_, latLng) => widget.onTap!(LatLng(latLng.latitude, latLng.longitude)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = constraints.maxHeight.isFinite && constraints.maxHeight > 0
+            ? constraints.maxHeight
+            : MediaQuery.sizeOf(context).height;
+
+        return SizedBox(
+          width: constraints.maxWidth,
+          height: height,
+          child: ml.MapLibreMap(
+            styleString: styleUrl,
+            initialCameraPosition: ml.CameraPosition(
+              target: _toMl(center),
+              zoom: widget.initialZoom,
+            ),
+            compassEnabled: false,
+            rotateGesturesEnabled: widget.interactive,
+            scrollGesturesEnabled: widget.interactive,
+            zoomGesturesEnabled: widget.interactive,
+            tiltGesturesEnabled: false,
+            trackCameraPosition: widget.pickerMode,
+            onMapCreated: _onMapLibreCreated,
+            onStyleLoadedCallback: _onMapLibreStyleLoaded,
+            onCameraIdle: widget.pickerMode ? _notifyPickerCenter : null,
+            onMapClick: widget.onTap == null
+                ? null
+                : (_, latLng) =>
+                    widget.onTap!(LatLng(latLng.latitude, latLng.longitude)),
+          ),
+        );
+      },
     );
   }
 
@@ -406,6 +515,18 @@ class AwsLocationMapState extends State<AwsLocationMap> {
         interactionOptions: fm.InteractionOptions(
           flags: widget.interactive ? fm.InteractiveFlag.all : fm.InteractiveFlag.none,
         ),
+        onMapEvent: widget.pickerMode
+            ? (event) {
+                if (event is fm.MapEventMoveEnd) {
+                  _notifyPickerCenter(immediate: true);
+                }
+              }
+            : null,
+        onPositionChanged: widget.pickerMode
+            ? (position, hasGesture) {
+                if (hasGesture) _notifyPickerCenter();
+              }
+            : null,
         onTap: widget.onTap == null
             ? null
             : (_, point) => widget.onTap!(point),
@@ -497,6 +618,13 @@ String _colorToHex(Color color) {
   return '#${r.toRadixString(16).padLeft(2, '0')}'
       '${g.toRadixString(16).padLeft(2, '0')}'
       '${b.toRadixString(16).padLeft(2, '0')}';
+}
+
+bool _labelUsesEmojiGlyphs(String label) {
+  for (final code in label.runes) {
+    if (code >= 0x1F300) return true;
+  }
+  return false;
 }
 
 class _PulsingUserDot extends StatefulWidget {

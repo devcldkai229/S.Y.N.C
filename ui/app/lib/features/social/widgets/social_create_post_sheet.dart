@@ -1,10 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/permissions/media_permissions.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
-import 'package:sync_app/core/utils/local_file_image.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/features/social/cubit/social_cubit.dart';
@@ -81,7 +82,7 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
     setState(() {
       for (final f in picked) {
         if (_imageCount >= SocialMediaUtils.maxPostImages) break;
-        _media.add(_MediaItem(path: f.path, isVideo: false));
+        _media.add(_MediaItem(file: f, isVideo: false));
       }
     });
   }
@@ -91,7 +92,7 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
     if (!_canAddVideo()) return;
     final picked = await _picker.pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
-    setState(() => _media.add(_MediaItem(path: picked.path, isVideo: true)));
+    setState(() => _media.add(_MediaItem(file: picked, isVideo: true)));
   }
 
   Future<void> _takePhoto() async {
@@ -99,7 +100,7 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
     if (!_canAddImages(1)) return;
     final picked = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
     if (picked == null) return;
-    setState(() => _media.add(_MediaItem(path: picked.path, isVideo: false)));
+    setState(() => _media.add(_MediaItem(file: picked, isVideo: false)));
   }
 
   Future<void> _create() async {
@@ -108,8 +109,8 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
 
     try {
       final settings = await _profileApi.getProfileSettings();
-      final paths = _media.map((m) => m.path).toList();
-      final mediaUrls = paths.isEmpty ? <String>[] : await _repo.uploadMediaFiles(paths);
+      final files = _media.map((m) => m.file).toList();
+      final mediaUrls = files.isEmpty ? <String>[] : await _repo.uploadMediaFiles(files);
 
       await _repo.createPost(
         content: _contentCtrl.text.trim(),
@@ -289,8 +290,8 @@ class _SocialCreatePostSheetState extends State<SocialCreatePostSheet> {
 // ─── Data ───────────────────────────────────────────────────────────────────
 
 class _MediaItem {
-  const _MediaItem({required this.path, required this.isVideo});
-  final String path;
+  const _MediaItem({required this.file, required this.isVideo});
+  final XFile file;
   final bool isVideo;
 }
 
@@ -326,7 +327,15 @@ class _Thumbnail extends StatelessWidget {
                     ),
                   ],
                 )
-              : buildLocalFileImage(item.path, fit: BoxFit.cover),
+              : FutureBuilder<Uint8List>(
+                  future: item.file.readAsBytes(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                    }
+                    return Image.memory(snapshot.data!, fit: BoxFit.cover);
+                  },
+                ),
         ),
         Positioned(
           top: -6,

@@ -170,6 +170,7 @@ public class UserCustomWorkoutService : IUserCustomWorkoutService
         {
             UserId = targetUserId,
             WorkoutName = $"{original.WorkoutName} (Cloned)",
+            CoverRoadmapImageUrl = original.CoverRoadmapImageUrl,
             Visibility = Visibility.Private,
             ParentWorkoutId = originalWorkoutId,
             ScheduleMode = original.ScheduleMode,

@@ -56,10 +56,12 @@ dependencies:
   get_it: ^9.2.1
 
   # Utilities
+  google_fonts: ^6.2.1
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
   logger: ^2.5.0
   cached_network_image: ^3.4.1
+  carousel_slider: ^5.1.1
   video_player: ^2.9.5
   image_picker: ^1.1.2
   permission_handler: ^12.0.1
@@ -96,6 +98,25 @@ flutter:
   assets:
     - assets/background_login.mp4
     - assets/images/
+    - assets/marketplace/hero/
+    - assets/marketplace/banners/banner_sf_1.png
+    - assets/marketplace/banners/banner_sf_2.png
+    - assets/marketplace/banners/banner_sf_3.png
+    - assets/marketplace/shortcuts/near_you.jpg
+    - assets/marketplace/shortcuts/macro_today.png
+    - assets/marketplace/shortcuts/high_protein.jpg
+    - assets/marketplace/empty/an_healthy_giao_nhanh.mp4
+    - assets/marketplace/categories/
+    - assets/marketplace/placeholders/
+    - assets/marketplace/empty/
+    - assets/workouts/
+    - assets/workouts/banners/
+    - assets/workouts/covers/
+    - assets/workouts/exercises/
+    - assets/catalog/banners/
+    - assets/catalog/exercises/
+    - assets/catalog/categories/
+    - assets/catalog/muscles/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

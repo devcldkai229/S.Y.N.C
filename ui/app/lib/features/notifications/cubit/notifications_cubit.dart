@@ -29,14 +29,9 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       ),
     );
     try {
-      final results = await Future.wait([
-        _repository.loadMine(pageNumber: 1, pageSize: _pageSize),
-        _repository.unreadCount(),
-      ]);
-      final page = results[0] as NotificationsPage;
-      final unread = results[1] as int;
+      final page = await _repository.loadMine(pageNumber: 1, pageSize: _pageSize);
+      final unread = await _loadUnreadCountBestEffort(page);
 
-      getIt<NotificationInboxNotifier>().setUnreadCount(unread);
       emit(
         state.copyWith(
           status: NotificationsStatus.success,
@@ -146,6 +141,18 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     } catch (e) {
       emit(state.copyWith(items: previous, error: mapNotificationError(e)));
       await load();
+    }
+  }
+
+  Future<int> _loadUnreadCountBestEffort(NotificationsPage page) async {
+    try {
+      final unread = await _repository.unreadCount();
+      getIt<NotificationInboxNotifier>().setUnreadCount(unread);
+      return unread;
+    } catch (_) {
+      final fallback = getIt<NotificationInboxNotifier>().unreadCount;
+      if (fallback > 0) return fallback;
+      return page.items.where((n) => !n.isRead).length;
     }
   }
 

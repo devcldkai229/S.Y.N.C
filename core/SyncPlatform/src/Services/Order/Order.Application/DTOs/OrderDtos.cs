@@ -11,11 +11,22 @@ public class PlaceOrderItemDto
     public string? Notes { get; set; }
 }
 
+public enum CheckoutPaymentMethod
+{
+    Wallet = 0,
+    VietQR = 3,
+    COD = 2,
+}
+
 public class PlaceOrderDto
 {
     public Guid PartnerId { get; set; }
 
     public List<PlaceOrderItemDto> Items { get; set; } = [];
+
+    public CheckoutPaymentMethod PaymentMethod { get; set; } = CheckoutPaymentMethod.Wallet;
+
+    public string? VoucherCode { get; set; }
 
     public Guid? VoucherId { get; set; }
 
@@ -36,6 +47,30 @@ public class PlaceOrderDto
     public string? AIReasoningSnapshotJson { get; set; }
 
     public string? ClientRequestKey { get; set; }
+
+    public string? IdempotencyKey { get; set; }
+}
+
+public class PlaceOrderResultDto
+{
+    public OrderDto Order { get; set; } = null!;
+
+    public string? PayUrl { get; set; }
+
+    public string? Deeplink { get; set; }
+
+    public string? CheckoutUrl { get; set; }
+
+    public string? QrCode { get; set; }
+
+    public long? PayOsOrderCode { get; set; }
+
+    public bool RequiresExternalPayment { get; set; }
+}
+
+public class ActiveOrderCountDto
+{
+    public int Count { get; set; }
 }
 
 public class OrderItemDto

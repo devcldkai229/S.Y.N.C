@@ -22,6 +22,16 @@
       "366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com"
     ]
   },
+  "Minio": {
+    "Endpoint": "localhost:9000",
+    "AccessKey": "minioadmin",
+    "SecretKey": "minioadmin123",
+    "BucketName": "social-assets",
+    "UseSsl": false,
+    "PublicUrl": "http://localhost:9000",
+    "AutoCreateBucket": true,
+    "MaxFileSizeMb": 10
+  },
   "Email": {
     "_comment": "Public IAM or Gateway URL (no trailing slash). Verify link: {VerificationBaseUrl}/api/v1/auth/verify-email?token=...",
     "VerificationBaseUrl": "http://localhost:5288",

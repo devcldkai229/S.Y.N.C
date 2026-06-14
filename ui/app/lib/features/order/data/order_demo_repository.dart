@@ -1,5 +1,4 @@
 import 'package:sync_app/core/utils/app_location_resolver.dart';
-import 'package:sync_app/features/marketplace/mock/marketplace_mock_data.dart';
 import 'package:sync_app/features/marketplace/services/marketplace_location_service.dart';
 import 'package:sync_app/features/order/config/mock_tracking_config.dart';
 import 'package:sync_app/features/order/mock/order_demo_data.dart';
@@ -56,7 +55,9 @@ class OrderDemoRepository {
       return (
         lat: loc.lat!,
         lng: loc.lng!,
-        address: MarketplaceMockData.shortenAddress(full),
+        address: MarketplaceLocationService.shortenAddress(
+          full ?? MockTrackingConfig.fallbackDropLabel,
+        ),
       );
     }
     return (

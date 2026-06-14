@@ -20,8 +20,6 @@ import 'package:sync_app/shared/widgets/sync_avatar.dart';
 
 const _coverHeight = 200.0;
 const _avatarRadius = 45.0;
-const _coverImageUrl = 'https://picsum.photos/seed/sync-gym-cover/1200/600';
-
 /// Premium Facebook/Instagram-style profile for another user.
 class SocialOtherUserProfileScreen extends StatelessWidget {
   const SocialOtherUserProfileScreen({super.key, required this.userId});
@@ -181,6 +179,13 @@ class _OtherUserProfileBodyState extends State<_OtherUserProfileBody> {
     return null;
   }
 
+  String? get _backgroundUrl {
+    if (_profile?.backgroundImageUrl != null && _profile!.backgroundImageUrl!.isNotEmpty) {
+      return _profile!.backgroundImageUrl;
+    }
+    return null;
+  }
+
   int get _level => _profile?.currentLevel ?? 10;
   int get _streak => _profile?.currentStreak ?? 14;
 
@@ -277,7 +282,7 @@ class _OtherUserProfileBodyState extends State<_OtherUserProfileBody> {
               displayName: _displayName,
               avatarUrl: _avatarUrl,
               tagline: 'Fitness Enthusiast',
-              coverUrl: _coverImageUrl,
+              coverUrl: _backgroundUrl,
               onBack: () => context.popOrGoHome(),
               followCounts: _followCounts,
               level: _level,
@@ -381,7 +386,7 @@ class _ProfileHeader extends StatelessWidget {
   final String displayName;
   final String? avatarUrl;
   final String tagline;
-  final String coverUrl;
+  final String? coverUrl;
   final VoidCallback onBack;
   final FollowCounts followCounts;
   final int level;
@@ -390,6 +395,18 @@ class _ProfileHeader extends StatelessWidget {
   final bool followLoading;
   final VoidCallback onFollow;
   final VoidCallback onMessage;
+
+  Widget _defaultCover() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.primaryGreen, AppColors.lightGreen],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -414,22 +431,16 @@ class _ProfileHeader extends StatelessWidget {
                       left: 0,
                       right: 0,
                       height: _coverHeight,
-                      child: CachedNetworkImage(
-                        imageUrl: coverUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => Container(
-                          color: AppColors.primaryGreen.withValues(alpha: 0.25),
-                        ),
-                        errorWidget: (_, __, ___) => Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [AppColors.primaryGreen, AppColors.lightGreen],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                        ),
-                      ),
+                      child: coverUrl != null && coverUrl!.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: coverUrl!,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Container(
+                                color: AppColors.primaryGreen.withValues(alpha: 0.25),
+                              ),
+                              errorWidget: (_, __, ___) => _defaultCover(),
+                            )
+                          : _defaultCover(),
                     ),
                     Positioned(
                       top: topPad + 8,

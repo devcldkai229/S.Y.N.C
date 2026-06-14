@@ -1,3 +1,4 @@
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 import 'package:sync_app/features/workouts/services/workout_api_service.dart';
 
@@ -9,7 +10,13 @@ class WorkoutRepository {
   /// Loads the active AI personalized roadmap, its sessions, and latest recovery.
   Future<({PersonalizedRoadmap? roadmap, List<RoadmapSession> sessions, RecoveryProfile? recovery})>
       loadRoadmap() async {
-    final roadmaps = await _api.getRoadmaps();
+    List<PersonalizedRoadmap> roadmaps;
+    try {
+      roadmaps = await _api.getRoadmaps();
+    } catch (_) {
+      return (roadmap: null, sessions: <RoadmapSession>[], recovery: null);
+    }
+
     PersonalizedRoadmap? active;
     for (final r in roadmaps) {
       if (r.isActive) {
@@ -24,11 +31,13 @@ class WorkoutRepository {
       return (roadmap: null, sessions: <RoadmapSession>[], recovery: recovery);
     }
 
-    List<RoadmapSession> sessions;
+    List<RoadmapSession> sessions = [];
     try {
       sessions = await _api.getSessionsByRoadmap(active.id);
     } catch (_) {
-      sessions = await _api.getSessions(roadmapId: active.id);
+      try {
+        sessions = await _api.getSessions(roadmapId: active.id);
+      } catch (_) {}
     }
     sessions.sort((a, b) => a.scheduledDate.compareTo(b.scheduledDate));
 
@@ -45,6 +54,8 @@ class WorkoutRepository {
 
   Future<UserCustomWorkout> createCustomWorkout(Map<String, dynamic> data) =>
       _api.createCustomWorkout(data);
+
+  Future<List<String>> uploadWorkoutCover(XFile file) => _api.uploadWorkoutCover(file);
 
   Future<UserCustomWorkout> getCustomWorkoutById(String id) =>
       _api.getCustomWorkoutById(id);
@@ -70,6 +81,9 @@ class WorkoutRepository {
 
   Future<ExerciseCatalogDetail?> getExerciseDetail(String id) =>
       _api.getExerciseDetail(id);
+
+  Future<Map<String, String>> getExerciseThumbnailUrls(List<String> exerciseIds) =>
+      _api.getExerciseThumbnailUrls(exerciseIds);
 
   Future<List<RoadmapSession>> getSessionsByRoadmap(String roadmapId) =>
       _api.getSessionsByRoadmap(roadmapId);

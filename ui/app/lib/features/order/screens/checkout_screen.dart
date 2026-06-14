@@ -1,13 +1,24 @@
+import 'dart:async';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
-import 'package:sync_app/core/utils/app_location_resolver.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/marketplace/cubit/marketplace_cart_cubit.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
+import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
+import 'package:sync_app/features/order/data/checkout_remote_data_source.dart';
 import 'package:sync_app/features/order/data/order_remote_data_source.dart';
+import 'package:sync_app/features/order/data/payment_remote_data_source.dart';
+import 'package:sync_app/features/order/models/checkout_models.dart';
+import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
+import 'package:sync_app/features/order/state/delivery_fee_config.dart';
 import 'package:sync_app/features/order/widgets/price_breakdown.dart';
+import 'package:sync_app/features/marketplace/widgets/home/marketplace_location_picker_sheet.dart';
+import 'package:sync_app/features/order/widgets/voucher_warehouse_sheet.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -17,59 +28,174 @@ class CheckoutScreen extends StatefulWidget {
 }
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
-  final _api = getIt<OrderRemoteDataSource>();
+  final _orderApi = getIt<OrderRemoteDataSource>();
+  final _paymentApi = getIt<PaymentRemoteDataSource>();
+  final _checkoutApi = getIt<CheckoutRemoteDataSource>();
+  final _deliveryFeeConfig = getIt<DeliveryFeeConfig>();
+
   final _name = TextEditingController();
   final _phone = TextEditingController();
   final _address = TextEditingController();
   final _notes = TextEditingController();
-  final _voucher = TextEditingController();
+
   bool _placing = false;
   double? _lat;
   double? _lng;
-  static const _deliveryFee = 25000.0;
+  WalletBalance? _wallet;
+  CheckoutPaymentMethod _paymentMethod = CheckoutPaymentMethod.wallet;
+  VoucherValidation? _appliedVoucher;
+  double? _deliveryFee;
+  late final String _idempotencyKey;
 
   @override
   void initState() {
     super.initState();
-    _initLocation();
+    _idempotencyKey = '${DateTime.now().toUtc().millisecondsSinceEpoch}-${identityHashCode(this)}';
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await context.read<MarketplaceCartCubit>().hydrate();
+    if (!mounted) return;
+    final cart = context.read<MarketplaceCartCubit>().state;
+    if (cart.items.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Giỏ hàng trống')),
+        );
+        context.pop();
+      });
+      return;
+    }
+    await Future.wait([_initLocation(), _loadWallet(), _loadDeliveryFee()]);
+  }
+
+  Future<void> _loadDeliveryFee() async {
+    try {
+      final fee = await _deliveryFeeConfig.load();
+      if (mounted) setState(() => _deliveryFee = fee);
+    } catch (_) {}
   }
 
   Future<void> _initLocation() async {
-    final loc = await AppLocationResolver.resolve();
-    if (!mounted || loc.lat == null) return;
-    setState(() {
-      _lat = loc.lat;
-      _lng = loc.lng;
-    });
+    try {
+      final saved = await _checkoutApi.getCurrentAddress();
+      if (saved != null && mounted) {
+        setState(() {
+          _address.text = saved.label;
+          _lat = saved.lat;
+          _lng = saved.lng;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadWallet() async {
+    try {
+      final wallet = await _paymentApi.getWalletBalance();
+      if (mounted) setState(() => _wallet = wallet);
+    } catch (_) {}
+  }
+
+  double _preDiscountTotal(MarketplaceCartState cart) => cart.subtotal + (_deliveryFee ?? 0);
+
+  double _discount() => _appliedVoucher?.discountAmount ?? 0;
+
+  double _total(MarketplaceCartState cart) => _preDiscountTotal(cart) - _discount();
+
+  bool _walletInsufficient(MarketplaceCartState cart) {
+    final wallet = _wallet;
+    if (wallet == null) return false;
+    final coinsRequired = wallet.coinsRequiredForVnd(_total(cart));
+    return _paymentMethod == CheckoutPaymentMethod.wallet && wallet.coins < coinsRequired;
+  }
+
+  Future<void> _openVouchers(MarketplaceCartState cart) async {
+    final result = await VoucherWarehouseSheet.show(
+      context,
+      paymentApi: _paymentApi,
+      orderAmount: _preDiscountTotal(cart),
+      partnerId: cart.partnerId,
+      initialCode: _appliedVoucher?.code,
+    );
+    if (result != null && mounted) setState(() => _appliedVoucher = result);
   }
 
   Future<void> _placeOrder() async {
     final cart = context.read<MarketplaceCartCubit>().state;
     if (cart.partnerId == null || cart.items.isEmpty) return;
+    if (_address.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn địa chỉ giao hàng')),
+      );
+      return;
+    }
+    if (_walletInsufficient(cart)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Số dư ví không đủ. Vui lòng nạp thêm hoặc chọn phương thức khác.')),
+      );
+      return;
+    }
 
     setState(() => _placing = true);
     try {
-      final order = await _api.placeOrder({
+      final result = await _orderApi.placeOrder({
         'partnerId': cart.partnerId,
         'items': cart.items
-            .map((i) => {
-                  'foodMenuItemId': i.foodMenuItemId,
-                  'quantity': i.quantity,
-                  if (i.notes != null) 'notes': i.notes,
+            .map((item) => {
+                  'foodMenuItemId': item.foodMenuItemId,
+                  'quantity': item.quantity,
+                  if (item.notes != null && item.notes!.isNotEmpty) 'notes': item.notes,
                 })
             .toList(),
-        if (_voucher.text.isNotEmpty) 'voucherId': _voucher.text.trim(),
+        'paymentMethod': switch (_paymentMethod) {
+          CheckoutPaymentMethod.wallet => 'Wallet',
+          CheckoutPaymentMethod.vietqr => 'VietQR',
+          CheckoutPaymentMethod.cod => 'COD',
+        },
+        if (_appliedVoucher?.code != null) 'voucherCode': _appliedVoucher!.code,
         'deliveryAddress': _address.text.trim(),
         'deliveryLat': _lat,
         'deliveryLng': _lng,
         'recipientName': _name.text.trim(),
         'recipientPhone': _phone.text.trim(),
         'notes': _notes.text.trim(),
-        'clientRequestKey': DateTime.now().millisecondsSinceEpoch.toString(),
+        'idempotencyKey': _idempotencyKey,
       });
+
+      if (result.requiresExternalPayment) {
+        final paid = await _handleVietQrPayment(result);
+        if (!paid) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Chưa nhận được xác nhận thanh toán. Kiểm tra lại trong Đơn hàng.')),
+            );
+          }
+          return;
+        }
+      }
+
+      if (!mounted) return;
       context.read<MarketplaceCartCubit>().clear();
+      await getIt<ActiveOrderCountNotifier>().refresh();
+      if (!mounted) return;
+      context.go('${AppRoutes.orderSuccess}?toOrders=1', extra: result.order);
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final message = e.response?.data is Map
+          ? (e.response!.data as Map)['message']?.toString()
+          : null;
       if (mounted) {
-        context.go(AppRoutes.orderSuccess, extra: order);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              status == 402
+                  ? (message ?? 'Số dư ví không đủ')
+                  : (message ?? 'Không thể đặt hàng'),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -80,57 +206,224 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
   }
 
+  Future<bool> _handleVietQrPayment(PlaceOrderResult result) async {
+    if (!mounted) return false;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Quét VietQR để thanh toán', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+            const SizedBox(height: 12),
+            if (result.qrCode != null && result.qrCode!.isNotEmpty)
+              SelectableText(result.qrCode!, style: const TextStyle(fontSize: 11)),
+            const SizedBox(height: 12),
+            if (result.checkoutUrl != null)
+              FilledButton(
+                onPressed: () async {
+                  final uri = Uri.parse(result.checkoutUrl!);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: const Text('Mở trang thanh toán PayOS'),
+              ),
+            const SizedBox(height: 8),
+            const Text('Sau khi chuyển khoản, giữ màn hình này để hệ thống xác nhận.', textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+    return _pollUntilPaid(result.order.id);
+  }
+
+  Future<bool> _pollUntilPaid(String orderId) async {
+    const attempts = 20;
+    for (var i = 0; i < attempts; i++) {
+      await Future<void>.delayed(const Duration(seconds: 3));
+      try {
+        final order = await _orderApi.getOrder(orderId);
+        if (order.paymentStatus == 'Paid' || order.status == 'Confirmed') {
+          return true;
+        }
+      } catch (_) {}
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = context.watch<MarketplaceCartCubit>().state;
-    final discount = 0.0;
-    final total = cart.subtotal + _deliveryFee - discount;
+    final total = _total(cart);
+    final walletCoins = _wallet?.coins ?? 0;
+    final coinsRequired = _wallet?.coinsRequiredForVnd(total) ?? (total / 100);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Thanh toán')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text('Địa chỉ giao', style: TextStyle(fontWeight: FontWeight.w700)),
-          const SizedBox(height: 8),
-          TextField(controller: _address, decoration: const InputDecoration(hintText: 'Địa chỉ giao hàng')),
+          Row(
+            children: [
+              const Expanded(
+                child: Text('Địa chỉ giao', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await MarketplaceLocationPickerScreen.show(context);
+                  await _initLocation();
+                },
+                child: const Text('Đổi'),
+              ),
+            ],
+          ),
+          TextField(
+            controller: _address,
+            readOnly: true,
+            decoration: const InputDecoration(hintText: 'Chưa chọn địa chỉ'),
+          ),
           const SizedBox(height: 12),
           TextField(controller: _name, decoration: const InputDecoration(labelText: 'Tên người nhận')),
           TextField(controller: _phone, decoration: const InputDecoration(labelText: 'Số điện thoại')),
-          const SizedBox(height: 16),
-          TextField(controller: _voucher, decoration: const InputDecoration(labelText: 'Mã voucher (tùy chọn)')),
+          const SizedBox(height: 20),
+          const Text('Phương thức thanh toán', style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: MarketplaceTheme.cardDecoration(),
-            child: const Row(
-              children: [
-                Icon(Icons.account_balance_wallet_outlined, color: MarketplaceTheme.primary),
-                SizedBox(width: 12),
-                Expanded(child: Text('Ví SYNC (thanh toán tự động)')),
-              ],
+          _PaymentCard(
+            title: 'Ví SYNC',
+            subtitle: 'Số dư: ${walletCoins.toStringAsFixed(0)} coin (≈ ${MarketplaceFormatters.formatVnd(walletCoins * 100)})',
+            selected: _paymentMethod == CheckoutPaymentMethod.wallet,
+            enabled: !_walletInsufficient(cart) || _paymentMethod == CheckoutPaymentMethod.wallet,
+            onTap: () => setState(() => _paymentMethod = CheckoutPaymentMethod.wallet),
+            trailing: _walletInsufficient(cart)
+                ? Text('Cần ${coinsRequired.toStringAsFixed(0)} coin', style: const TextStyle(fontSize: 12, color: Colors.redAccent))
+                : null,
+          ),
+          _PaymentCard(
+            title: 'VietQR',
+            subtitle: 'Quét mã QR chuyển khoản qua PayOS',
+            selected: _paymentMethod == CheckoutPaymentMethod.vietqr,
+            onTap: () => setState(() => _paymentMethod = CheckoutPaymentMethod.vietqr),
+          ),
+          _PaymentCard(
+            title: 'COD',
+            subtitle: 'Tiền mặt khi nhận hàng',
+            selected: _paymentMethod == CheckoutPaymentMethod.cod,
+            onTap: () => setState(() => _paymentMethod = CheckoutPaymentMethod.cod),
+          ),
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () => _openVouchers(cart),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: MarketplaceTheme.cardDecoration(),
+              child: Row(
+                children: [
+                  const Expanded(child: Text('Giảm giá / Voucher', style: TextStyle(fontWeight: FontWeight.w600))),
+                  if (_appliedVoucher != null)
+                    Chip(
+                      label: Text('-${MarketplaceFormatters.formatVnd(_appliedVoucher!.discountAmount)}'),
+                      onDeleted: () => setState(() => _appliedVoucher = null),
+                    )
+                  else
+                    const Icon(Icons.chevron_right),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 12),
           TextField(controller: _notes, decoration: const InputDecoration(labelText: 'Ghi chú đơn')),
           const SizedBox(height: 16),
-          PriceBreakdown(
-            subtotal: cart.subtotal,
-            deliveryFee: _deliveryFee,
-            discount: discount,
-            total: total,
-          ),
+          if (_deliveryFee == null)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(minHeight: 2),
+            )
+          else
+            PriceBreakdown(
+              subtotal: cart.subtotal,
+              deliveryFee: _deliveryFee!,
+              discount: _discount(),
+              total: total,
+            ),
         ],
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: FilledButton(
-            onPressed: _placing ? null : _placeOrder,
+            onPressed: _placing || _deliveryFee == null || _walletInsufficient(cart) ? null : _placeOrder,
             style: FilledButton.styleFrom(backgroundColor: MarketplaceTheme.primary),
             child: _placing
                 ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Đặt đơn'),
+                : Text('Đặt hàng · ${MarketplaceFormatters.formatVnd(total)}'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentCard extends StatelessWidget {
+  const _PaymentCard({
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+    this.enabled = true,
+    this.trailing,
+  });
+
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool enabled;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Opacity(
+        opacity: enabled ? 1 : 0.5,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled ? onTap : null,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: selected ? MarketplaceTheme.primary : const Color(0xFFE5E7EB),
+                  width: selected ? 2 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                    color: selected ? MarketplaceTheme.primary : MarketplaceTheme.textMuted,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text(subtitle, style: const TextStyle(fontSize: 12, color: MarketplaceTheme.textMuted)),
+                      ],
+                    ),
+                  ),
+                  if (trailing != null) trailing!,
+                ],
+              ),
+            ),
           ),
         ),
       ),

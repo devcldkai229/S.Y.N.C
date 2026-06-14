@@ -23,9 +23,10 @@ public class GlobalExceptionHandler : IExceptionHandler
             NotFoundException notFoundEx => (StatusCodes.Status404NotFound, notFoundEx.Message, null),
             BadRequestException badRequestEx => (StatusCodes.Status400BadRequest, badRequestEx.Message, null),
             AppValidationException valEx => (StatusCodes.Status400BadRequest, valEx.Message, (object)valEx.Errors),
-            ConflictException conflictEx => (StatusCodes.Status409Conflict, conflictEx.Message, null),
+            ConflictException conflictEx => (StatusCodes.Status409Conflict, conflictEx.Message, conflictEx.Details),
             UnauthorizedException unauthEx => (StatusCodes.Status401Unauthorized, unauthEx.Message, null),
             ForbiddenException forbiddenEx => (StatusCodes.Status403Forbidden, forbiddenEx.Message, null),
+            PaymentRequiredException paymentEx => (StatusCodes.Status402PaymentRequired, paymentEx.Message, null),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.", null)
         };
 

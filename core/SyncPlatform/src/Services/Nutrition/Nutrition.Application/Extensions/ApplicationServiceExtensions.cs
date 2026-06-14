@@ -11,6 +11,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IMealLogService, MealLogService>();
         services.AddScoped<IDailyNutritionSummaryService, DailyNutritionSummaryService>();
         services.AddScoped<IOrderCompletedHandler, OrderCompletedHandler>();
+        services.AddSingleton<INutritionRealtimePublisher, NoOpNutritionRealtimePublisher>();
 
         return services;
     }

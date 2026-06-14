@@ -7,6 +7,7 @@ public class UserCustomWorkoutDto
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
     public string WorkoutName { get; set; } = string.Empty;
+    public string? CoverRoadmapImageUrl { get; set; }
     public Visibility Visibility { get; set; }
     public Guid? ParentWorkoutId { get; set; }
     public int SavesCount { get; set; }
@@ -30,6 +31,7 @@ public class CreateUserCustomWorkoutDto
 {
     public Guid UserId { get; set; }
     public string WorkoutName { get; set; } = string.Empty;
+    public string? CoverRoadmapImageUrl { get; set; }
     public string ScheduleMode { get; set; } = string.Empty;
     public Visibility Visibility { get; set; } = Visibility.Private;
     public bool AllowAiOptimization { get; set; }
@@ -48,6 +50,7 @@ public class CreateCustomBlockDto
 public class UpdateUserCustomWorkoutDto
 {
     public string WorkoutName { get; set; } = string.Empty;
+    public string? CoverRoadmapImageUrl { get; set; }
     public string ScheduleMode { get; set; } = string.Empty;
     public Visibility Visibility { get; set; }
     public bool AllowAiOptimization { get; set; }
@@ -58,6 +61,7 @@ public class MyWorkoutDetailDto
 {
     public Guid Id { get; set; }
     public string WorkoutName { get; set; } = string.Empty;
+    public string? CoverRoadmapImageUrl { get; set; }
     public Visibility Visibility { get; set; }
     public Guid? ParentWorkoutId { get; set; }
     public int SavesCount { get; set; }

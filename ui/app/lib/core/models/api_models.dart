@@ -17,7 +17,7 @@ class ApiEnvelope<T> {
     return ApiEnvelope<T>(
       success: json['success'] == true,
       message: (json['message'] ?? '').toString(),
-      data: raw is Map<String, dynamic> ? fromJsonT(raw) : null,
+      data: raw != null ? fromJsonT(raw) : null,
     );
   }
 }

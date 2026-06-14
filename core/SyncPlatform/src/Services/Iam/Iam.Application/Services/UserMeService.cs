@@ -92,6 +92,11 @@ public sealed class UserMeService
         if (request.AvatarUrl is not null)
             user.AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? null : request.AvatarUrl.Trim();
 
+        if (request.BackgroundImageUrl is not null)
+            user.BackgroundImageUrl = string.IsNullOrWhiteSpace(request.BackgroundImageUrl)
+                ? null
+                : request.BackgroundImageUrl.Trim();
+
         if (request.PreferredLanguage is not null)
             user.PreferredLanguage = request.PreferredLanguage.Trim();
 

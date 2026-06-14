@@ -5,6 +5,9 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using Minio;
+using Roadmap.API.Configuration;
+using Roadmap.API.Services;
 using Roadmap.Application.Common;
 using Roadmap.Application.Extensions;
 using Roadmap.API.Middleware;
@@ -33,6 +36,17 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddRoadmapApplication();
 builder.Services.AddRoadmapInfrastructure(builder.Configuration);
+builder.Services.Configure<MinioOptions>(builder.Configuration.GetSection(MinioOptions.SectionName));
+builder.Services.AddSingleton<IMinioClient>(sp =>
+{
+    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MinioOptions>>().Value;
+    return new MinioClient()
+        .WithEndpoint(options.Endpoint)
+        .WithCredentials(options.AccessKey, options.SecretKey)
+        .WithSSL(options.UseSsl)
+        .Build();
+});
+builder.Services.AddSingleton<IWorkoutMediaStorage, MinioMediaStorage>();
 
 // JWT authentication + authorization policies + ICurrentUserContext (shared lib)
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);

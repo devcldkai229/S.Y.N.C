@@ -16,10 +16,34 @@ public class MarketplaceClient : IMarketplaceClient
         ValidateOrderItemsRequest request,
         CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync("/api/internal/food-menu/validate-order", request, JsonOpts, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        var api = await response.Content.ReadFromJsonAsync<ApiResponse<ValidateOrderItemsResult>>(JsonOpts, cancellationToken);
-        return api?.Data ?? new ValidateOrderItemsResult { IsValid = false, ErrorMessage = "Validation failed." };
+        try
+        {
+            var response = await _httpClient.PostAsJsonAsync(
+                "/api/internal/food-menu/validate-order",
+                request,
+                JsonOpts,
+                cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return new ValidateOrderItemsResult
+                {
+                    IsValid = false,
+                    ErrorMessage = $"Marketplace validation failed ({(int)response.StatusCode}).",
+                };
+            }
+
+            var api = await response.Content.ReadFromJsonAsync<ApiResponse<ValidateOrderItemsResult>>(JsonOpts, cancellationToken);
+            return api?.Data ?? new ValidateOrderItemsResult { IsValid = false, ErrorMessage = "Validation failed." };
+        }
+        catch (Exception ex)
+        {
+            return new ValidateOrderItemsResult
+            {
+                IsValid = false,
+                ErrorMessage = $"Marketplace service unavailable: {ex.Message}",
+            };
+        }
     }
 
     public async Task<PartnerInternalDto?> GetPartnerAsync(Guid partnerId, CancellationToken cancellationToken = default)

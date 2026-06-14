@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
@@ -320,6 +321,57 @@ class AuthService {
   Future<bool> isLoggedIn() async {
     final token = await _storage.read(key: _accessTokenKey);
     return token != null && token.isNotEmpty;
+  }
+
+  /// Returns a non-expired access token, refreshing when needed.
+  Future<String?> getValidAccessToken() async {
+    final token = await _storage.read(key: _accessTokenKey);
+    if (token == null || token.isEmpty) return null;
+    if (!_isAccessTokenExpired(token)) return token;
+    return _refreshAccessToken();
+  }
+
+  Future<String?> _refreshAccessToken() async {
+    final refreshToken = await _storage.read(key: _refreshTokenKey);
+    final deviceId = await _storage.read(key: _deviceIdKey);
+    if (refreshToken == null || refreshToken.isEmpty || deviceId == null || deviceId.isEmpty) {
+      return null;
+    }
+
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiPaths.authRefresh,
+        data: <String, dynamic>{
+          'refreshToken': refreshToken,
+          'deviceId': deviceId,
+        },
+      );
+      final envelope = ApiEnvelope<AuthSession>.fromJson(
+        response.data ?? <String, dynamic>{},
+        AuthSession.fromJson,
+      );
+      if (!envelope.success || envelope.data == null) return null;
+      await _saveSession(envelope.data!);
+      return envelope.data!.accessToken;
+    } catch (e) {
+      _logger.w('Token refresh failed: $e');
+      return null;
+    }
+  }
+
+  bool _isAccessTokenExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length < 2) return true;
+      final normalized = base64Url.normalize(parts[1]);
+      final payload = json.decode(utf8.decode(base64Url.decode(normalized)));
+      final exp = payload['exp'];
+      if (exp is! num) return false;
+      final expiresAt = DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000, isUtc: true);
+      return DateTime.now().toUtc().isAfter(expiresAt.subtract(const Duration(seconds: 30)));
+    } catch (_) {
+      return true;
+    }
   }
 
   Future<void> logout() async {

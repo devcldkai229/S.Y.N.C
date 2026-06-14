@@ -160,6 +160,7 @@ class UserCustomWorkout {
     required this.allowAiOptimization,
     required this.blocks,
     required this.createdAt,
+    this.coverRoadmapImageUrl,
     this.parentWorkoutId,
     this.savesCount = 0,
     this.sessions = const [],
@@ -167,6 +168,7 @@ class UserCustomWorkout {
 
   final String id;
   final String workoutName;
+  final String? coverRoadmapImageUrl;
   final String scheduleMode;
   final String visibility;
   final bool allowAiOptimization;
@@ -185,6 +187,7 @@ class UserCustomWorkout {
     return UserCustomWorkout(
       id: json['id']?.toString() ?? '',
       workoutName: (json['workoutName'] ?? 'Custom Workout').toString(),
+      coverRoadmapImageUrl: json['coverRoadmapImageUrl']?.toString(),
       scheduleMode: (json['scheduleMode'] ?? '').toString(),
       visibility: _enumLabel(json['visibility']),
       allowAiOptimization: json['allowAiOptimization'] == true,
@@ -271,11 +274,14 @@ class ExerciseCatalogItem {
     required this.category,
     required this.difficulty,
     required this.movementPattern,
+    required this.bodyRegion,
     required this.primaryMuscles,
     required this.equipmentRequired,
     required this.estimatedCaloriesPerMinute,
     required this.metValue,
     required this.aiCoachingCues,
+    this.thumbnailUrl,
+    this.isAiRecommended = false,
   });
 
   final String id;
@@ -285,13 +291,18 @@ class ExerciseCatalogItem {
   final String category;
   final String difficulty;
   final String movementPattern;
+  final String bodyRegion;
   final List<String> primaryMuscles;
   final List<String> equipmentRequired;
   final int estimatedCaloriesPerMinute;
   final double metValue;
   final List<String> aiCoachingCues;
+  final String? thumbnailUrl;
+  final bool isAiRecommended;
 
   factory ExerciseCatalogItem.fromJson(Map<String, dynamic> json) {
+    final cues = _stringList(json['aiCoachingCues']);
+    final goals = _stringList(json['recommendedGoals']);
     return ExerciseCatalogItem(
       id: json['id']?.toString() ?? '',
       exerciseCode: (json['exerciseCode'] ?? '').toString(),
@@ -300,13 +311,18 @@ class ExerciseCatalogItem {
       category: _enumLabel(json['category']),
       difficulty: _enumLabel(json['difficulty']),
       movementPattern: _enumLabel(json['movementPattern']),
+      bodyRegion: _enumLabel(json['bodyRegion']),
       primaryMuscles: _stringList(json['primaryMuscles']),
       equipmentRequired: _stringList(json['equipmentRequired']),
       estimatedCaloriesPerMinute: (json['estimatedCaloriesPerMinute'] ?? 0) as int,
       metValue: (json['metValue'] is num) ? (json['metValue'] as num).toDouble() : 0,
-      aiCoachingCues: _stringList(json['aiCoachingCues']),
+      aiCoachingCues: cues,
+      thumbnailUrl: json['thumbnailUrl']?.toString(),
+      isAiRecommended: json['isAiRecommended'] == true || (cues.isNotEmpty && goals.isNotEmpty),
     );
   }
+
+  String get bodyRegionGroupTitle => _humanizeEnum(bodyRegion.isNotEmpty ? bodyRegion : movementPattern);
 
   String get patternGroupTitle {
     final p = movementPattern;
@@ -422,12 +438,19 @@ class ExerciseCatalogDetail {
       .where((a) => a.isImage && a.resourceUrl.isNotEmpty)
       .toList();
 
+  List<String> get imageUrls => imageAssets
+      .map((a) => a.displayImageUrl)
+      .whereType<String>()
+      .where((url) => url.isNotEmpty)
+      .toList();
+
   String? get heroThumbnailUrl {
     final video = videoAssets.isNotEmpty ? videoAssets.first : null;
     if (video?.thumbnailUrl != null && video!.thumbnailUrl!.isNotEmpty) {
       return video.thumbnailUrl;
     }
     if (imageAssets.isNotEmpty) return imageAssets.first.resourceUrl;
+    if (imageUrls.isNotEmpty) return imageUrls.first;
     return null;
   }
 
@@ -481,6 +504,13 @@ String _enumLabel(dynamic value) {
   final s = value.toString();
   if (s.contains('.')) return s.split('.').last;
   return s;
+}
+
+String _humanizeEnum(String value) {
+  if (value.isEmpty) return 'Other';
+  return value
+      .replaceAllMapped(RegExp(r'([a-z])([A-Z])'), (m) => '${m[1]} ${m[2]}')
+      .replaceAll('_', ' ');
 }
 
 List<String> _stringList(dynamic value) {

@@ -23,16 +23,21 @@ import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/features/subscription/services/subscription_api_service.dart';
 import 'package:sync_app/features/workouts/services/workout_api_service.dart';
 import 'package:sync_app/features/nutrition/data/nutrition_remote_data_source.dart';
+import 'package:sync_app/features/nutrition/services/nutrition_realtime_service.dart';
+import 'package:sync_app/features/nutrition/state/nutrition_refresh_notifier.dart';
 import 'package:sync_app/features/marketplace/data/marketplace_remote_data_source.dart';
 import 'package:sync_app/features/marketplace/data/marketplace_repository.dart';
-import 'package:sync_app/features/marketplace/data/marketplace_mock_repository.dart';
+import 'package:sync_app/features/marketplace/data/marketplace_remote_repository.dart';
+import 'package:sync_app/features/order/data/checkout_remote_data_source.dart';
 import 'package:sync_app/features/marketplace/cubit/marketplace_cart_cubit.dart';
 import 'package:sync_app/features/marketplace/cubit/marketplace_home_cubit.dart';
 import 'package:sync_app/features/order/data/order_remote_data_source.dart';
+import 'package:sync_app/features/order/data/payment_remote_data_source.dart';
+import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
+import 'package:sync_app/features/order/state/delivery_fee_config.dart';
 import 'package:sync_app/features/order/data/order_demo_repository.dart';
-import 'package:sync_app/features/order/services/order_tracking_service.dart';
+import 'package:sync_app/features/order/services/websocket_tracking_service.dart';
 import 'package:sync_app/features/order/services/i_tracking_service.dart';
-import 'package:sync_app/features/order/services/mock_tracking_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -63,13 +68,21 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => ChallengeRepository(getIt()));
   getIt.registerLazySingleton(() => ChallengeJoinState(getIt()));
   getIt.registerLazySingleton(() => NutritionRemoteDataSource(getIt()));
+  getIt.registerLazySingleton(() => NutritionRefreshNotifier());
+  getIt.registerLazySingleton(() => NutritionRealtimeService(getIt(), getIt()));
   getIt.registerLazySingleton(() => MarketplaceRemoteDataSource(getIt()));
-  getIt.registerLazySingleton<MarketplaceRepository>(MarketplaceMockRepository.new);
+  getIt.registerLazySingleton(() => CheckoutRemoteDataSource(getIt()));
+  getIt.registerLazySingleton(() => DeliveryFeeConfig(getIt()));
+  getIt.registerLazySingleton<MarketplaceRepository>(
+    () => MarketplaceRemoteRepository(getIt(), getIt()),
+  );
   getIt.registerLazySingleton(() => OrderRemoteDataSource(getIt()));
-  getIt.registerLazySingleton(() => OrderTrackingService(getIt()));
+  getIt.registerLazySingleton(() => PaymentRemoteDataSource(getIt()));
+  getIt.registerLazySingleton(() => ActiveOrderCountNotifier(getIt()));
   getIt.registerLazySingleton(OrderDemoRepository.new);
-  // SWAP: WebSocketTrackingService(getIt()) for production Lalamove/SignalR.
-  getIt.registerFactory<ITrackingService>(MockTrackingService.new);
-  getIt.registerLazySingleton(MarketplaceCartCubit.new);
-  getIt.registerFactory(() => MarketplaceHomeCubit(getIt()));
+  getIt.registerFactory<ITrackingService>(
+    () => WebSocketTrackingService(getIt<AuthService>(), getIt()),
+  );
+  getIt.registerLazySingleton(() => MarketplaceCartCubit(getIt()));
+  getIt.registerFactory(() => MarketplaceHomeCubit(getIt(), getIt()));
 }

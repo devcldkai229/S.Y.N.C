@@ -39,6 +39,7 @@ class AppRoutes {
 
   // Marketplace
   static const marketplaceHome = '/marketplace';
+  static const marketplaceKitchens = '/marketplace/kitchens';
   static String marketplacePartner(String id) => '/marketplace/partner/$id';
   static String marketplaceFoodItem(String id) => '/marketplace/food/$id';
   static String marketplaceAffiliate(String id) => '/marketplace/affiliate/$id';

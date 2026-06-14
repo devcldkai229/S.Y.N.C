@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/nutrition/cubit/nutrition_diary_cubit.dart';
+import 'package:sync_app/features/nutrition/state/nutrition_refresh_notifier.dart';
 import 'package:sync_app/features/nutrition/models/nutrition_models.dart';
 import 'package:sync_app/features/nutrition/theme/nutrition_theme.dart';
 import 'package:sync_app/features/nutrition/widgets/calorie_ring.dart';
@@ -26,8 +27,32 @@ class NutritionDiaryScreen extends StatelessWidget {
   }
 }
 
-class _NutritionDiaryView extends StatelessWidget {
+class _NutritionDiaryView extends StatefulWidget {
   const _NutritionDiaryView();
+
+  @override
+  State<_NutritionDiaryView> createState() => _NutritionDiaryViewState();
+}
+
+class _NutritionDiaryViewState extends State<_NutritionDiaryView> {
+  @override
+  void initState() {
+    super.initState();
+    getIt<NutritionRefreshNotifier>().addListener(_onNutritionRefresh);
+  }
+
+  @override
+  void dispose() {
+    getIt<NutritionRefreshNotifier>().removeListener(_onNutritionRefresh);
+    super.dispose();
+  }
+
+  void _onNutritionRefresh() {
+    if (!mounted) return;
+    final changed = getIt<NutritionRefreshNotifier>().lastChangedDate;
+    if (changed == null) return;
+    context.read<NutritionDiaryCubit>().refreshAfterMealLogged(date: changed);
+  }
 
   bool _isToday(DateTime d) {
     final now = DateTime.now();

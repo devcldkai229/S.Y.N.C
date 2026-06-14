@@ -10,6 +10,9 @@
   "Cors": {
     "AllowedOrigins": [ "*" ]
   },
+  "RateLimiting": {
+    "Enabled": false
+  },
   "ReverseProxy": {
     "Routes": {
       "iam-auth-route": {
@@ -170,6 +173,24 @@
           { "PathRemovePrefix": "/api/v1/order" },
           { "PathPrefix": "/api/v1" }
         ]
+      },
+      "order-ahamove-webhook-route": {
+        "ClusterId": "order-cluster",
+        "Match": {
+          "Path": "/webhooks/ahamove"
+        }
+      },
+      "order-tracking-hub-route": {
+        "ClusterId": "order-cluster",
+        "Match": {
+          "Path": "/hubs/tracking/{**catch-all}"
+        }
+      },
+      "payment-momo-webhook-route": {
+        "ClusterId": "payment-cluster",
+        "Match": {
+          "Path": "/webhooks/momo"
+        }
       }
     },
     "Clusters": {

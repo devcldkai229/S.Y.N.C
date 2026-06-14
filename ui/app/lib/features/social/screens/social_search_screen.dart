@@ -70,7 +70,7 @@ class _SocialSearchScreenState extends State<SocialSearchScreen>
   String get _query => _queryCtrl.text.trim().toLowerCase();
 
   List<SocialPost> _filterPosts(List<SocialPost> posts) {
-    if (_query.isEmpty) return posts;
+    if (_query.isEmpty) return const [];
     return posts.where((p) {
       final content = p.content.toLowerCase();
       final author = p.authorSnapshot.fullName.toLowerCase();
@@ -79,7 +79,7 @@ class _SocialSearchScreenState extends State<SocialSearchScreen>
   }
 
   List<_SearchUser> _filterUsers() {
-    if (_query.isEmpty) return _mockUsers;
+    if (_query.isEmpty) return const [];
     return _mockUsers.where((u) {
       return u.name.toLowerCase().contains(_query) ||
           u.subtitle.toLowerCase().contains(_query);
@@ -205,10 +205,12 @@ class _UsersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (query.isNotEmpty && users.isEmpty) {
+    if (users.isEmpty) {
       return _EmptyState(
         icon: Icons.person_search_outlined,
-        message: 'Không tìm thấy người dùng cho "$query"',
+        message: query.isEmpty
+            ? 'Không có kết quả.\nGõ từ khóa để tìm người dùng.'
+            : 'Không tìm thấy người dùng cho "$query"',
       );
     }
 

@@ -55,6 +55,20 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
         services.AddScoped<IPromotionCampaignService, PromotionCampaignService>();
         services.AddScoped<IInternalWalletService, InternalWalletService>();
+        services.AddScoped<IVoucherService, VoucherService>();
+        services.AddScoped<IOrderPaymentService, OrderPaymentService>();
+
+        services.AddHttpClient("Momo");
+
+        services.AddHttpClient<IOrderPaymentNotifyClient, OrderPaymentNotifyClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            client.BaseAddress = new Uri(config["OrderService:BaseUrl"] ?? "http://localhost:5123");
+            client.Timeout = TimeSpan.FromSeconds(10);
+            var apiKey = config["InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
 
         // ── Background jobs ──────────────────────────────────────────────────
         services.AddHostedService<SubscriptionExpiryJob>();

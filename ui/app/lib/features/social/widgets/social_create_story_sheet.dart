@@ -1,10 +1,11 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/permissions/media_permissions.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
-import 'package:sync_app/core/utils/local_file_image.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/features/social/cubit/social_cubit.dart';
@@ -38,7 +39,7 @@ class _SocialCreateStorySheetState extends State<SocialCreateStorySheet> {
   final _repo = getIt<SocialRepository>();
   final _profileApi = getIt<ProfileApiService>();
 
-  String? _mediaPath;
+  XFile? _mediaFile;
   bool _isVideo = false;
   bool _isCreating = false;
 
@@ -48,10 +49,10 @@ class _SocialCreateStorySheetState extends State<SocialCreateStorySheet> {
     super.dispose();
   }
 
-  bool get _canPost => _mediaPath != null;
+  bool get _canPost => _mediaFile != null;
 
   void _clearMedia() => setState(() {
-        _mediaPath = null;
+        _mediaFile = null;
         _isVideo = false;
       });
 
@@ -60,7 +61,7 @@ class _SocialCreateStorySheetState extends State<SocialCreateStorySheet> {
     final picked = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
     if (picked == null) return;
     setState(() {
-      _mediaPath = picked.path;
+      _mediaFile = picked;
       _isVideo = false;
     });
   }
@@ -70,7 +71,7 @@ class _SocialCreateStorySheetState extends State<SocialCreateStorySheet> {
     final picked = await _picker.pickVideo(source: ImageSource.gallery);
     if (picked == null) return;
     setState(() {
-      _mediaPath = picked.path;
+      _mediaFile = picked;
       _isVideo = true;
     });
   }
@@ -80,19 +81,19 @@ class _SocialCreateStorySheetState extends State<SocialCreateStorySheet> {
     final picked = await _picker.pickImage(source: ImageSource.camera, imageQuality: 90);
     if (picked == null) return;
     setState(() {
-      _mediaPath = picked.path;
+      _mediaFile = picked;
       _isVideo = false;
     });
   }
 
   Future<void> _create() async {
-    if (_isCreating || !_canPost || _mediaPath == null) return;
+    if (_isCreating || !_canPost || _mediaFile == null) return;
     setState(() => _isCreating = true);
 
     try {
       final settings = await _profileApi.getProfileSettings();
       await _repo.createStory(
-        filePath: _mediaPath!,
+        file: _mediaFile!,
         caption: _captionCtrl.text.trim().isEmpty ? null : _captionCtrl.text.trim(),
         authorFullName: settings.basic.fullName,
         authorAvatarUrl: settings.basic.avatarUrl,
@@ -194,7 +195,7 @@ class _SocialCreateStorySheetState extends State<SocialCreateStorySheet> {
                           border: Border.all(color: AppColors.border),
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: _mediaPath == null
+                        child: _mediaFile == null
                             ? const Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -216,7 +217,15 @@ class _SocialCreateStorySheetState extends State<SocialCreateStorySheet> {
                                       ),
                                     )
                                   else
-                                    buildLocalFileImage(_mediaPath!, fit: BoxFit.cover),
+                                    FutureBuilder<Uint8List>(
+                                      future: _mediaFile!.readAsBytes(),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData) {
+                                          return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                                        }
+                                        return Image.memory(snapshot.data!, fit: BoxFit.cover);
+                                      },
+                                    ),
                                   Positioned(
                                     top: 8,
                                     right: 8,

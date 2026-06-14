@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
@@ -93,19 +94,43 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
         break;
       case UserLocationCenterResult.gpsDisabled:
         await _showLocationPromptDialog(
-          title: 'Bật định vị',
-          message:
-              'GPS đang tắt. Vui lòng bật dịch vụ định vị để xem vị trí hiện tại của bạn trên bản đồ.',
-          openSettingsLabel: 'Bật GPS',
-          onOpenSettings: Geolocator.openLocationSettings,
+          title: kIsWeb ? 'Cho phép định vị' : 'Bật định vị',
+          message: kIsWeb
+              ? 'Trình duyệt chưa cho phép truy cập vị trí. '
+                  'Nhấn biểu tượng khóa/cài đặt trang bên trái thanh địa chỉ, '
+                  'bật "Vị trí" cho localhost rồi thử lại.'
+              : 'GPS đang tắt. Vui lòng bật dịch vụ định vị để xem vị trí hiện tại của bạn trên bản đồ.',
+          openSettingsLabel: kIsWeb ? 'Thử lại' : 'Bật GPS',
+          onOpenSettings: kIsWeb
+              ? () async {
+                  await Geolocator.requestPermission();
+                  return true;
+                }
+              : Geolocator.openLocationSettings,
+          retryLocation: kIsWeb,
         );
       case UserLocationCenterResult.permissionDenied:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cần quyền truy cập vị trí để định vị trên bản đồ.'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (kIsWeb) {
+          await _showLocationPromptDialog(
+            title: 'Cho phép định vị',
+            message:
+                'Trình duyệt đã từ chối quyền vị trí. '
+                'Mở cài đặt trang (biểu tượng khóa trên thanh URL) và cho phép "Vị trí".',
+            openSettingsLabel: 'Thử lại',
+            onOpenSettings: () async {
+              await Geolocator.requestPermission();
+              return true;
+            },
+            retryLocation: true,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Cần quyền truy cập vị trí để định vị trên bản đồ.'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       case UserLocationCenterResult.permissionDeniedForever:
         await _showLocationPromptDialog(
           title: 'Cấp quyền vị trí',
@@ -129,6 +154,7 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
     required String message,
     required String openSettingsLabel,
     required Future<bool> Function() onOpenSettings,
+    bool retryLocation = false,
   }) async {
     final open = await showDialog<bool>(
       context: context,
@@ -151,6 +177,9 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
 
     if (open == true) {
       await onOpenSettings();
+      if (retryLocation && mounted) {
+        await _centerOnUserLocation();
+      }
     }
   }
 
@@ -234,31 +263,42 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
         body: Stack(
           fit: StackFit.expand,
           children: [
-            AwsLocationMap(
-              key: _mapKey,
-              initialCenter: LatLng(AwsMapConfig.defaultLat, AwsMapConfig.defaultLng),
-              onGpsDisabled: () => _showLocationPromptDialog(
-                title: 'Bật định vị',
-                message:
-                    'Dịch vụ định vị đang tắt trong Cài đặt hệ thống. '
-                    'Hãy bật Location để xem vị trí thật của bạn trên bản đồ.',
-                openSettingsLabel: 'Mở Cài đặt',
-                onOpenSettings: Geolocator.openLocationSettings,
+            Positioned.fill(
+              child: AwsLocationMap(
+                key: _mapKey,
+                initialCenter: LatLng(AwsMapConfig.defaultLat, AwsMapConfig.defaultLng),
+                onGpsDisabled: () => _showLocationPromptDialog(
+                  title: kIsWeb ? 'Cho phép định vị' : 'Bật định vị',
+                  message: kIsWeb
+                      ? 'Trình duyệt chưa cho phép truy cập vị trí. '
+                          'Bật quyền "Vị trí" cho trang này trên thanh địa chỉ.'
+                      : 'Dịch vụ định vị đang tắt trong Cài đặt hệ thống. '
+                          'Hãy bật Location để xem vị trí thật của bạn trên bản đồ.',
+                  openSettingsLabel: kIsWeb ? 'Thử lại' : 'Mở Cài đặt',
+                  onOpenSettings: kIsWeb
+                      ? () async {
+                          await Geolocator.requestPermission();
+                          return true;
+                        }
+                      : Geolocator.openLocationSettings,
+                  retryLocation: kIsWeb,
+                ),
+                markers: mockChallenges
+                    .map(
+                      (c) => MapMarkerData(
+                        id: c.id,
+                        point: c.location,
+                        alignment: Alignment.center,
+                        width: 44,
+                        height: 44,
+                        annotationLabel: c.goalEmoji,
+                        annotationColor: AppColors.primaryGreen,
+                        child: ChallengeMapMarker(challenge: c, compact: true),
+                        onTap: () => _showInfoSheet(c),
+                      ),
+                    )
+                    .toList(),
               ),
-              markers: mockChallenges
-                  .map(
-                    (c) => MapMarkerData(
-                      id: c.id,
-                      point: c.location,
-                      alignment: Alignment.center,
-                      width: 44,
-                      height: 44,
-                      annotationLabel: c.goalEmoji,
-                      child: ChallengeMapMarker(challenge: c, compact: true),
-                      onTap: () => _showInfoSheet(c),
-                    ),
-                  )
-                  .toList(),
             ),
             _ChallengesDraggableSheet(
               controller: _sheetController,

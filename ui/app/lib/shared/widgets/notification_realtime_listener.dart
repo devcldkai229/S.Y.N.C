@@ -7,6 +7,9 @@ import 'package:sync_app/core/notifications/notification_realtime_service.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/models/notification_models.dart';
+import 'package:sync_app/features/nutrition/services/nutrition_realtime_service.dart';
+import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
+import 'package:sync_app/shared/widgets/sync_snack_bar.dart';
 
 /// Starts SignalR and shows lightweight in-app toasts for social notifications.
 class NotificationRealtimeListener extends StatefulWidget {
@@ -25,6 +28,7 @@ class _NotificationRealtimeListenerState extends State<NotificationRealtimeListe
   void initState() {
     super.initState();
     getIt<NotificationRealtimeService>().start();
+    getIt<NutritionRealtimeService>().start();
     _sub = getIt<NotificationInboxNotifier>().incoming.listen(_showToast);
   }
 
@@ -36,25 +40,19 @@ class _NotificationRealtimeListenerState extends State<NotificationRealtimeListe
 
   void _showToast(AppNotification notification) {
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) return;
+    final type = notification.type.toLowerCase();
+    if (type.contains('meal') || type.contains('order')) {
+      getIt<ActiveOrderCountNotifier>().refresh();
+    }
 
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.textPrimary,
-        duration: const Duration(seconds: 4),
-        content: Text(
-          notification.title.isNotEmpty ? notification.title : notification.body,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        action: SnackBarAction(
-          label: 'Xem',
-          textColor: AppColors.brightGreen,
-          onPressed: () => NotificationDeepLink.open(context, notification),
-        ),
+    showSyncSnackBar(
+      context,
+      backgroundColor: AppColors.textPrimary,
+      message: notification.title.isNotEmpty ? notification.title : notification.body,
+      action: SnackBarAction(
+        label: 'Xem',
+        textColor: AppColors.brightGreen,
+        onPressed: () => NotificationDeepLink.open(context, notification),
       ),
     );
   }

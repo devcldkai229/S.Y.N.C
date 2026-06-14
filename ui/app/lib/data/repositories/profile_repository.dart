@@ -1,3 +1,4 @@
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/features/profile/models/profile_models.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
 
@@ -53,15 +54,19 @@ class ProfileRepository {
   Future<ProfileSettings> updateBasic({
     String? fullName,
     String? avatarUrl,
+    String? backgroundImageUrl,
     String? preferredLanguage,
     String? timeZone,
   }) =>
       _api.updateBasicProfile(
         fullName: fullName,
         avatarUrl: avatarUrl,
+        backgroundImageUrl: backgroundImageUrl,
         preferredLanguage: preferredLanguage,
         timeZone: timeZone,
       );
+
+  Future<List<String>> uploadProfileMedia(XFile file) => _api.uploadProfileMedia(file);
 
   Future<ProfileSettings> updateFitness(FitnessProfile fitness) =>
       _api.updateFitnessProfile(fitness);

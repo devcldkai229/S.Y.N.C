@@ -1,3 +1,4 @@
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/features/social/data/social_remote_data_source.dart';
 import 'package:sync_app/features/social/models/follow_models.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
@@ -62,8 +63,8 @@ class SocialRepository {
         authorAvatarUrl: authorAvatarUrl,
       );
 
-  Future<List<String>> uploadMediaFiles(List<String> filePaths) =>
-      _remote.uploadMediaFiles(filePaths);
+  Future<List<String>> uploadMediaFiles(List<XFile> files) =>
+      _remote.uploadMediaFiles(files);
 
   Future<List<SocialStoryFeedGroup>> loadStoriesFeed() => _remote.fetchStoriesFeed();
 
@@ -74,13 +75,13 @@ class SocialRepository {
   Future<void> likeStory(String storyId) => _remote.likeStory(storyId);
 
   Future<SocialStory> createStory({
-    required String filePath,
+    required XFile file,
     String? caption,
     required String authorFullName,
     String? authorAvatarUrl,
   }) =>
       _remote.createStory(
-        filePath: filePath,
+        file: file,
         caption: caption,
         authorFullName: authorFullName,
         authorAvatarUrl: authorAvatarUrl,

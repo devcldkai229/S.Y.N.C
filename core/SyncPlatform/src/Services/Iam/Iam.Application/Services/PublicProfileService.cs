@@ -30,6 +30,7 @@ public class PublicProfileService : IPublicProfileService
             UserId: user.Id,
             FullName: user.FullName,
             AvatarUrl: user.AvatarUrl,
+            BackgroundImageUrl: user.BackgroundImageUrl,
             CurrentLevel: gamification?.CurrentLevel ?? 1,
             CurrentXP: gamification?.CurrentXP ?? 0,
             CurrentStreak: gamification?.CurrentStreak ?? 0);

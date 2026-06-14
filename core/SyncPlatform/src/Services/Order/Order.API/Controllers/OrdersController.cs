@@ -28,13 +28,22 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<ApiResponse<OrderDto>>> PlaceOrder(
+    public async Task<ActionResult<ApiResponse<PlaceOrderResultDto>>> PlaceOrder(
         [FromBody] PlaceOrderDto dto,
         CancellationToken cancellationToken)
     {
         var result = await _orderService.PlaceOrderAsync(_currentUser.RequireUserId(), dto, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = result.Id },
-            ApiResponse<OrderDto>.SuccessResponse(result, "Order placed successfully."));
+        return CreatedAtAction(nameof(GetById), new { id = result.Order.Id },
+            ApiResponse<PlaceOrderResultDto>.SuccessResponse(result, "Order placed successfully."));
+    }
+
+    [HttpGet("active-count")]
+    public async Task<ActionResult<ApiResponse<ActiveOrderCountDto>>> GetActiveCount(CancellationToken cancellationToken)
+    {
+        var count = await _orderService.GetActiveOrderCountAsync(_currentUser.RequireUserId(), cancellationToken);
+        return Ok(ApiResponse<ActiveOrderCountDto>.SuccessResponse(
+            new ActiveOrderCountDto { Count = count },
+            "Active order count retrieved."));
     }
 
     [HttpGet]

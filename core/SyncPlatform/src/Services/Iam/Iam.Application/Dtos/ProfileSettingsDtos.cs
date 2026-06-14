@@ -3,6 +3,7 @@ namespace Iam.Application.DTOs;
 public sealed record BasicProfileDto(
     string FullName,
     string? AvatarUrl,
+    string? BackgroundImageUrl,
     string Email,
     string? PhoneNumber,
     string PreferredLanguage,
@@ -59,6 +60,7 @@ public sealed record ProfileSettingsResponse(
 public sealed record UpdateBasicProfileRequest(
     string? FullName,
     string? AvatarUrl,
+    string? BackgroundImageUrl,
     string? PreferredLanguage,
     string? TimeZone);
 

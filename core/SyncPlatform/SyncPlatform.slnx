@@ -14,6 +14,7 @@
     <Project Path="src/Services/Exercise/Exercise.Application/Exercise.Application.csproj" />
     <Project Path="src/Services/Exercise/Exercise.Domain/Exercise.Domain.csproj" />
     <Project Path="src/Services/Exercise/Exercise.Infrastructure/Exercise.Infrastructure.csproj" />
+    <Project Path="src/Services/Exercise/Exercise.ImportTool/Exercise.ImportTool.csproj" />
   </Folder>
   <Folder Name="/src/Services/Iam/">
     <Project Path="src/Services/Iam/Iam.API/Iam.API.csproj" />

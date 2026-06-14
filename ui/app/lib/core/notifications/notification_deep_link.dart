@@ -40,6 +40,14 @@ abstract final class NotificationDeepLink {
       }
     }
 
+    if (normalized.startsWith('/orders/')) {
+      final id = normalized.split('/').last;
+      if (id.isNotEmpty) {
+        context.push(AppRoutes.orderDetail(id));
+        return;
+      }
+    }
+
     _openFromPayload(context, notification);
   }
 

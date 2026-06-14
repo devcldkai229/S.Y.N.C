@@ -1,6 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/models/api_models.dart';
 import 'package:sync_app/core/network/api_paths.dart';
+import 'package:sync_app/core/network/multipart_file_utils.dart';
+import 'package:sync_app/core/network/dio_errors.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 
 class WorkoutApiService {
@@ -42,12 +45,17 @@ class WorkoutApiService {
   }
 
   Future<RecoveryProfile?> getLatestRecoveryProfile() async {
-    final response = await _dio.get<Map<String, dynamic>>(
-      ApiPaths.recoveryProfiles,
-      queryParameters: {'pageNumber': 1, 'pageSize': 1},
-    );
-    final list = _parsePagedList(response.data, RecoveryProfile.fromJson);
-    return list.isEmpty ? null : list.first;
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.recoveryProfiles,
+        queryParameters: {'pageNumber': 1, 'pageSize': 1},
+      );
+      final list = _parsePagedList(response.data, RecoveryProfile.fromJson);
+      return list.isEmpty ? null : list.first;
+    } on DioException catch (e) {
+      if (isOptionalApiDioError(e)) return null;
+      rethrow;
+    }
   }
 
   /// User-created custom workout templates (paginated).
@@ -89,6 +97,22 @@ class WorkoutApiService {
       throw Exception('Invalid response data structure');
     }
     return UserCustomWorkout.fromJson(raw);
+  }
+
+  Future<List<String>> uploadWorkoutCover(XFile file) async {
+    final multipart = await multipartFileFromXFile(file);
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.roadmapWorkoutMediaUpload,
+      data: FormData.fromMap({'files': [multipart]}),
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Upload failed').toString());
+    }
+    final raw = json['data'];
+    if (raw is List) return raw.map((e) => e.toString()).toList();
+    return <String>[];
   }
 
   Future<UserCustomWorkout> createCustomWorkout(Map<String, dynamic> data) async {
@@ -235,6 +259,21 @@ class WorkoutApiService {
     );
     if (!envelope.success) return null;
     return envelope.data;
+  }
+
+  Future<Map<String, String>> getExerciseThumbnailUrls(List<String> exerciseIds) async {
+    if (exerciseIds.isEmpty) return {};
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.exerciseThumbnails,
+      queryParameters: {'ids': exerciseIds},
+    );
+    final json = response.data;
+    if (json == null || json['success'] != true) return {};
+    final data = json['data'];
+    if (data is! Map) return {};
+    return data.map((key, value) => MapEntry(key.toString(), value?.toString() ?? ''))
+        .map((key, value) => MapEntry(key, value))
+        ..removeWhere((_, url) => url.isEmpty);
   }
 
   Future<WorkoutExecutionDetail> startWorkout(String sessionId, {int? energyLevelBefore}) async {

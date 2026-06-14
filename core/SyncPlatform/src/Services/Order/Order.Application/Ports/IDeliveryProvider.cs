@@ -1,3 +1,5 @@
+using Order.Domain.Enums;
+
 namespace Order.Application.Ports;
 
 public class DeliveryBookingRequest
@@ -51,6 +53,42 @@ public class DeliveryWebhookPayload
     public string? ShipperPhone { get; set; }
 
     public string? ShipperPlateNumber { get; set; }
+
+    public string? SubStatus { get; set; }
+}
+
+public class DriverLocationRequest
+{
+    public string ExternalDeliveryId { get; set; } = string.Empty;
+
+    public DeliveryStatus CurrentStatus { get; set; }
+
+    public decimal? PickupLat { get; set; }
+
+    public decimal? PickupLng { get; set; }
+
+    public decimal? DeliveryLat { get; set; }
+
+    public decimal? DeliveryLng { get; set; }
+
+    public decimal? LastKnownLat { get; set; }
+
+    public decimal? LastKnownLng { get; set; }
+
+    public DateTimeOffset? AssignedAt { get; set; }
+
+    public DateTimeOffset? PickedUpAt { get; set; }
+}
+
+public class DriverLocationResult
+{
+    public bool Found { get; set; }
+
+    public decimal Latitude { get; set; }
+
+    public decimal Longitude { get; set; }
+
+    public DateTimeOffset UpdatedAt { get; set; }
 }
 
 public interface IDeliveryProvider
@@ -59,6 +97,10 @@ public interface IDeliveryProvider
 
     Task<DeliveryBookingResult> CreateOrderAsync(
         DeliveryBookingRequest request,
+        CancellationToken cancellationToken = default);
+
+    Task<DriverLocationResult?> GetDriverLocationAsync(
+        DriverLocationRequest request,
         CancellationToken cancellationToken = default);
 
     DeliveryWebhookPayload? ParseAndVerifyWebhook(string rawBody, string? signatureHeader);

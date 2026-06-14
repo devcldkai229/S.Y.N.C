@@ -28,6 +28,20 @@ class DailyNutritionSummary {
   int get remainingCalories => targetCalories - consumedCalories;
   bool get isOverBudget => remainingCalories < 0;
 
+  DailyNutritionSummary copyWith({int? waterIntakeMl}) => DailyNutritionSummary(
+        date: date,
+        targetCalories: targetCalories,
+        consumedCalories: consumedCalories,
+        targetProteinGram: targetProteinGram,
+        consumedProteinGram: consumedProteinGram,
+        targetCarbGram: targetCarbGram,
+        consumedCarbGram: consumedCarbGram,
+        targetFatGram: targetFatGram,
+        consumedFatGram: consumedFatGram,
+        waterIntakeMl: waterIntakeMl ?? this.waterIntakeMl,
+        mealsLoggedCount: mealsLoggedCount,
+      );
+
   factory DailyNutritionSummary.fromJson(Map<String, dynamic> json) {
     final dateStr = json['date']?.toString() ?? '';
     return DailyNutritionSummary(

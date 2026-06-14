@@ -14,15 +14,18 @@ public class MealLogService : IMealLogService
     private readonly IMealLogRepository _mealLogRepository;
     private readonly IFoodItemRepository _foodItemRepository;
     private readonly IDailyNutritionSummaryService _dailySummaryService;
+    private readonly INutritionRealtimePublisher _realtimePublisher;
 
     public MealLogService(
         IMealLogRepository mealLogRepository,
         IFoodItemRepository foodItemRepository,
-        IDailyNutritionSummaryService dailySummaryService)
+        IDailyNutritionSummaryService dailySummaryService,
+        INutritionRealtimePublisher realtimePublisher)
     {
         _mealLogRepository = mealLogRepository;
         _foodItemRepository = foodItemRepository;
         _dailySummaryService = dailySummaryService;
+        _realtimePublisher = realtimePublisher;
     }
 
     public async Task<MealLogDto> CreateAsync(
@@ -47,7 +50,9 @@ public class MealLogService : IMealLogService
         NutritionMacroCalculator.ApplyTotals(log);
 
         await _mealLogRepository.CreateAsync(log, cancellationToken);
-        await _dailySummaryService.RecomputeForDateAsync(userId, DateOnly.FromDateTime(log.LoggedAt.UtcDateTime), cancellationToken);
+        var logDate = DateOnly.FromDateTime(log.LoggedAt.UtcDateTime);
+        await _dailySummaryService.RecomputeForDateAsync(userId, logDate, cancellationToken);
+        await _realtimePublisher.PublishNutritionUpdatedAsync(userId, logDate, cancellationToken);
 
         return log.ToDto();
     }
@@ -78,6 +83,8 @@ public class MealLogService : IMealLogService
         if (newDate != oldDate)
             await _dailySummaryService.RecomputeForDateAsync(userId, newDate, cancellationToken);
 
+        await _realtimePublisher.PublishNutritionUpdatedAsync(userId, newDate, cancellationToken);
+
         return log.ToDto();
     }
 
@@ -87,6 +94,7 @@ public class MealLogService : IMealLogService
         var date = DateOnly.FromDateTime(log.LoggedAt.UtcDateTime);
         await _mealLogRepository.DeleteAsync(id, cancellationToken);
         await _dailySummaryService.RecomputeForDateAsync(userId, date, cancellationToken);
+        await _realtimePublisher.PublishNutritionUpdatedAsync(userId, date, cancellationToken);
     }
 
     public async Task<IReadOnlyList<MealLogDto>> ListAsync(

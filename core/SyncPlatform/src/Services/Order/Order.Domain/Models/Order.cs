@@ -29,6 +29,8 @@ public class Order : BaseAuditableEntity
 
     public Guid? VoucherId { get; set; }
 
+    public string? VoucherCode { get; set; }
+
     public string? DeliveryAddress { get; set; }
 
     public decimal? DeliveryLat { get; set; }

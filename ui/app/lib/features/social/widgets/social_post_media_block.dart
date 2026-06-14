@@ -5,11 +5,16 @@ import 'package:sync_app/features/social/screens/social_post_media_gallery_scree
 import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
 import 'package:sync_app/features/social/utils/social_media_utils.dart';
 
-/// Feed/profile media preview: 1–2 tiles visible, "+n" overlay, full gallery on tap.
+/// Feed media in a padded card — up to 4 tiles, "+N" overlay on the 4th when more exist.
 class SocialPostMediaBlock extends StatelessWidget {
   const SocialPostMediaBlock({super.key, required this.urls});
 
   final List<String> urls;
+
+  static const _maxVisible = 4;
+  static const _gap = 4.0;
+  static const _cardRadius = 12.0;
+  static const _outerPadding = EdgeInsets.symmetric(horizontal: 12);
 
   void _openGallery(BuildContext context, {int initialIndex = 0}) {
     if (urls.length == 1 && SocialMediaUtils.isVideoUrl(urls.first)) {
@@ -36,47 +41,96 @@ class SocialPostMediaBlock extends StatelessWidget {
     if (urls.isEmpty) return const SizedBox.shrink();
 
     if (urls.length == 1) {
-      return SizedBox(
-        height: 240,
-        child: _MediaTile(
-          url: urls.first,
-          onTap: () => _openGallery(context),
-        ),
-      );
-    }
-
-    if (urls.length == 2) {
-      return SizedBox(
-        height: 220,
-        child: Row(
-          children: [
-            Expanded(child: _MediaTile(url: urls[0], onTap: () => _openGallery(context, initialIndex: 0))),
-            const SizedBox(width: 2),
-            Expanded(child: _MediaTile(url: urls[1], onTap: () => _openGallery(context, initialIndex: 1))),
-          ],
-        ),
-      );
-    }
-
-    final hidden = urls.length - 2;
-    return SizedBox(
-      height: 240,
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: _MediaTile(url: urls[0], onTap: () => _openGallery(context, initialIndex: 0)),
-          ),
-          const SizedBox(width: 2),
-          Expanded(
+      return Padding(
+        padding: _outerPadding,
+        child: _MediaCard(
+          child: AspectRatio(
+            aspectRatio: 16 / 10,
             child: _MediaTile(
-              url: urls[1],
-              overlayLabel: '+$hidden',
-              onTap: () => _openGallery(context, initialIndex: 2),
+              url: urls.first,
+              onTap: () => _openGallery(context),
             ),
           ),
-        ],
+        ),
+      );
+    }
+
+    final visibleCount = urls.length > _maxVisible ? _maxVisible : urls.length;
+    final extra = urls.length > _maxVisible ? urls.length - (_maxVisible - 1) : 0;
+
+    return Padding(
+      padding: _outerPadding,
+      child: _MediaCard(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final cellW = (constraints.maxWidth - _gap) / 2;
+            final cellH = urls.length == 2 ? 160.0 : 120.0;
+
+            if (urls.length == 2) {
+              return SizedBox(
+                height: cellH,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _MediaTile(
+                        url: urls[0],
+                        onTap: () => _openGallery(context, initialIndex: 0),
+                      ),
+                    ),
+                    const SizedBox(width: _gap),
+                    Expanded(
+                      child: _MediaTile(
+                        url: urls[1],
+                        onTap: () => _openGallery(context, initialIndex: 1),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return Wrap(
+              spacing: _gap,
+              runSpacing: _gap,
+              children: List.generate(visibleCount, (i) {
+                final isOverlayCell = extra > 0 && i == _maxVisible - 1;
+                final overlayLabel = isOverlayCell ? '+$extra' : null;
+                final galleryIndex = isOverlayCell ? _maxVisible - 1 : i;
+
+                return SizedBox(
+                  width: cellW,
+                  height: cellH,
+                  child: _MediaTile(
+                    url: urls[i],
+                    overlayLabel: overlayLabel,
+                    onTap: () => _openGallery(context, initialIndex: galleryIndex),
+                  ),
+                );
+              }),
+            );
+          },
+        ),
       ),
+    );
+  }
+}
+
+class _MediaCard extends StatelessWidget {
+  const _MediaCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(SocialPostMediaBlock._cardRadius),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.85)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
     );
   }
 }
@@ -98,41 +152,44 @@ class _MediaTile extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (isVideo)
-            Container(color: AppColors.lightGreen.withValues(alpha: 0.35))
-          else
-            CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: AppColors.lightGreen),
-              errorWidget: (_, __, ___) => Container(
-                color: AppColors.lightGreen,
-                child: const Icon(Icons.broken_image_outlined, color: AppColors.textMuted),
-              ),
-            ),
-          if (isVideo) ...[
-            Container(color: Colors.black.withValues(alpha: 0.25)),
-            const Center(
-              child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 52),
-            ),
-          ],
-          if (overlayLabel != null)
-            Container(
-              color: Colors.black.withValues(alpha: 0.45),
-              alignment: Alignment.center,
-              child: Text(
-                overlayLabel!,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (isVideo)
+              Container(color: AppColors.lightGreen.withValues(alpha: 0.35))
+            else
+              CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(color: AppColors.lightGreen),
+                errorWidget: (_, __, ___) => Container(
+                  color: AppColors.lightGreen,
+                  child: const Icon(Icons.broken_image_outlined, color: AppColors.textMuted),
                 ),
               ),
-            ),
-        ],
+            if (isVideo) ...[
+              Container(color: Colors.black.withValues(alpha: 0.25)),
+              const Center(
+                child: Icon(Icons.play_circle_fill_rounded, color: Colors.white, size: 48),
+              ),
+            ],
+            if (overlayLabel != null)
+              Container(
+                color: Colors.black.withValues(alpha: 0.55),
+                alignment: Alignment.center,
+                child: Text(
+                  overlayLabel!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

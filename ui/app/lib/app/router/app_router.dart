@@ -34,6 +34,8 @@ import 'package:sync_app/features/nutrition/screens/nutrition_diary_screen.dart'
 import 'package:sync_app/features/nutrition/screens/food_search_screen.dart';
 import 'package:sync_app/features/nutrition/screens/create_food_screen.dart';
 import 'package:sync_app/features/marketplace/screens/marketplace_home_screen.dart';
+import 'package:sync_app/features/marketplace/screens/nearby_kitchens_screen.dart';
+import 'package:sync_app/features/marketplace/models/marketplace_home_models.dart';
 import 'package:sync_app/features/marketplace/screens/partner_detail_screen.dart';
 import 'package:sync_app/features/marketplace/screens/food_menu_item_detail_screen.dart';
 import 'package:sync_app/features/marketplace/screens/affiliate_product_detail_screen.dart';
@@ -251,6 +253,16 @@ abstract final class AppRouter {
         builder: (context, state) => const MarketplaceHomeScreen(),
       ),
       GoRoute(
+        path: AppRoutes.marketplaceKitchens,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final kitchens = state.extra is List<KitchenCardVm>
+              ? state.extra! as List<KitchenCardVm>
+              : const <KitchenCardVm>[];
+          return NearbyKitchensScreen(kitchens: kitchens);
+        },
+      ),
+      GoRoute(
         path: '/marketplace/partner/:id',
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) =>
@@ -295,13 +307,18 @@ abstract final class AppRouter {
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
           final order = state.extra as OrderSummary;
-          return OrderSuccessScreen(order: order);
+          final toOrders = state.uri.queryParameters['toOrders'] == '1';
+          return OrderSuccessScreen(order: order, navigateToOrders: toOrders);
         },
       ),
       GoRoute(
         path: AppRoutes.orderList,
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const OrderListScreen(),
+        builder: (context, state) {
+          final tab = state.uri.queryParameters['tab'];
+          final initialTab = tab == 'active' ? 0 : tab == 'history' ? 1 : 0;
+          return OrderListScreen(initialTabIndex: initialTab);
+        },
       ),
       GoRoute(
         path: '/orders/:id/tracking',

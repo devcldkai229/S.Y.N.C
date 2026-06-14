@@ -25,7 +25,8 @@ abstract final class AwsMapConfig {
     defaultValue: 'sync-map',
   );
 
-  /// v2 style when [mapName] is empty: Standard, Hybrid, Satellite, Monochrome.
+  /// v2 Esri style when [mapName] is empty: Standard, Hybrid, Satellite, Monochrome.
+  /// Grab maps use [mapName] (v0) — not a v2 style id.
   static const String style = String.fromEnvironment(
     'AWS_MAP_STYLE',
     defaultValue: 'Hybrid',
@@ -48,9 +49,10 @@ abstract final class AwsMapConfig {
     return 'https://maps.geo.$region.amazonaws.com/v2/styles/$style/descriptor?key=$apiKey';
   }
 
-  /// Raster Esri tiles (legacy flutter_map only — not for Grab maps).
+  /// Raster v2 tiles for FlutterMap fallback. Named Grab maps ([mapName]) have no v2 tile URL —
+  /// those require [styleDescriptorUrl] via MapLibre (API key is map-scoped).
   static String? get rasterTileUrlTemplate {
-    if (!isConfigured || usesVectorMap) return null;
+    if (!isConfigured || mapName.isNotEmpty) return null;
     return 'https://maps.geo.$region.amazonaws.com/v2/styles/$style/tiles/{z}/{x}/{y}?key=$apiKey';
   }
 

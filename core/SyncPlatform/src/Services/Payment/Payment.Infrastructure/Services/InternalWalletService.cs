@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Payment.Application.DTOs;
 using Payment.Application.Exceptions;
+using Payment.Application.Helpers;
 using Payment.Application.Services;
 using Payment.Domain.Enums;
 using Payment.Domain.Models;
@@ -22,8 +23,14 @@ public class InternalWalletService : IInternalWalletService
             return new ChargeMealOrderResponseDto { Success = false, FailureReason = "Amount must be greater than zero." };
 
         var wallet = await GetOrCreateWalletAsync(request.UserId, request.Currency, cancellationToken);
+        var discount = 0m;
+        if (request.VoucherId.HasValue)
+            discount = 0m;
 
-        if (request.IsAiInitiated && request.Amount > wallet.RemainingDailyAutoLimit)
+        var chargeVnd = request.Amount - discount;
+        var chargeCoins = WalletCoinHelper.VndToCoins(chargeVnd);
+
+        if (request.IsAiInitiated && chargeVnd > wallet.RemainingDailyAutoLimit)
         {
             return new ChargeMealOrderResponseDto
             {
@@ -32,7 +39,7 @@ public class InternalWalletService : IInternalWalletService
             };
         }
 
-        if (wallet.AvailableBalance < request.Amount)
+        if (wallet.RewardCoinBalance < chargeCoins)
         {
             return new ChargeMealOrderResponseDto
             {
@@ -41,15 +48,11 @@ public class InternalWalletService : IInternalWalletService
             };
         }
 
-        var discount = 0m;
-        if (request.VoucherId.HasValue)
-            discount = 0m;
-
-        var chargeAmount = request.Amount - discount;
-        var balanceBefore = wallet.AvailableBalance;
-        wallet.AvailableBalance -= chargeAmount;
+        var balanceBefore = wallet.RewardCoinBalance;
+        wallet.RewardCoinBalance -= chargeCoins;
         if (request.IsAiInitiated)
-            wallet.RemainingDailyAutoLimit = Math.Max(0, wallet.RemainingDailyAutoLimit - chargeAmount);
+            wallet.RemainingDailyAutoLimit = Math.Max(0, wallet.RemainingDailyAutoLimit - chargeVnd);
+
         wallet.UpdatedAt = DateTimeOffset.UtcNow;
 
         var transaction = new Transaction
@@ -59,11 +62,11 @@ public class InternalWalletService : IInternalWalletService
             TransactionType = TransactionType.MealPurchase,
             Status = TransactionStatus.Succeeded,
             PaymentMethod = PaymentMethod.Wallet,
-            Amount = chargeAmount,
+            Amount = chargeVnd,
             Currency = request.Currency,
             RelatedEntityType = "Order",
             RelatedEntityId = request.OrderId,
-            Description = $"Meal order {request.OrderId}",
+            Description = $"Meal order {request.OrderId} ({chargeCoins} coins)",
             IsAiInitiated = request.IsAiInitiated,
             ProcessedAt = DateTimeOffset.UtcNow,
             OrderCode = Random.Shared.NextInt64(100000000, 999999999),
@@ -79,9 +82,9 @@ public class InternalWalletService : IInternalWalletService
             WalletId = wallet.Id,
             TransactionId = transaction.Id,
             EntryType = WalletTransactionType.Debit,
-            Amount = chargeAmount,
+            Amount = chargeCoins,
             BalanceBefore = balanceBefore,
-            BalanceAfter = wallet.AvailableBalance,
+            BalanceAfter = wallet.RewardCoinBalance,
         });
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -102,8 +105,9 @@ public class InternalWalletService : IInternalWalletService
             return new RefundMealOrderResponseDto { Success = false, FailureReason = "Amount must be greater than zero." };
 
         var wallet = await GetOrCreateWalletAsync(request.UserId, request.Currency, cancellationToken);
-        var balanceBefore = wallet.AvailableBalance;
-        wallet.AvailableBalance += request.Amount;
+        var refundCoins = WalletCoinHelper.VndToCoins(request.Amount);
+        var balanceBefore = wallet.RewardCoinBalance;
+        wallet.RewardCoinBalance += refundCoins;
         wallet.UpdatedAt = DateTimeOffset.UtcNow;
 
         var transaction = new Transaction
@@ -117,7 +121,7 @@ public class InternalWalletService : IInternalWalletService
             Currency = request.Currency,
             RelatedEntityType = "Order",
             RelatedEntityId = request.OrderId,
-            Description = $"Refund order {request.OrderId}",
+            Description = $"Refund order {request.OrderId} ({refundCoins} coins)",
             ProcessedAt = DateTimeOffset.UtcNow,
             OrderCode = Random.Shared.NextInt64(100000000, 999999999),
             Provider = PaymentProvider.InternalWallet,
@@ -129,9 +133,9 @@ public class InternalWalletService : IInternalWalletService
             WalletId = wallet.Id,
             TransactionId = transaction.Id,
             EntryType = WalletTransactionType.Refund,
-            Amount = request.Amount,
+            Amount = refundCoins,
             BalanceBefore = balanceBefore,
-            BalanceAfter = wallet.AvailableBalance,
+            BalanceAfter = wallet.RewardCoinBalance,
         });
 
         await _db.SaveChangesAsync(cancellationToken);
@@ -156,7 +160,8 @@ public class InternalWalletService : IInternalWalletService
         {
             UserId = userId,
             Currency = currency,
-            AvailableBalance = 1_000_000m,
+            AvailableBalance = 0m,
+            RewardCoinBalance = 10_000m,
             DailyAutoSpendingLimit = 500_000m,
             MonthlyAutoSpendingLimit = 5_000_000m,
             RemainingDailyAutoLimit = 500_000m,

@@ -50,15 +50,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final results = await Future.wait([
-        _api.getPlans(),
-        _api.getActiveSubscription(),
-      ]);
+      final plans = await _api.getPlans();
+      ActiveSubscription? active;
+      try {
+        active = await _api.getActiveSubscription();
+      } catch (_) {
+        active = null;
+      }
       if (!mounted) return;
       setState(() {
-        _plans     = (results[0] as List<SubscriptionPlan>).where((p) => !p.isFree).toList();
-        _activeSub = results[1] as ActiveSubscription?;
-        _loading   = false;
+        _plans = plans.where((p) => !p.isFree).toList();
+        _activeSub = active;
+        _loading = false;
       });
     } catch (e) {
       if (!mounted) return;

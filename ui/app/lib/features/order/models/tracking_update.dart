@@ -35,7 +35,9 @@ class TrackingUpdate {
   final DateTime timestamp;
 
   bool get showShipperMarker =>
-      shipperLat != null && shipperLng != null && const {'PickedUp', 'Delivering', 'Delivered'}.contains(orderStatus);
+      shipperLat != null &&
+      shipperLng != null &&
+      !const {'Delivered', 'Completed', 'Cancelled'}.contains(orderStatus);
 }
 
 class TrackingSession {

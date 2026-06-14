@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sync_app/core/utils/currency_formatter.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_models.dart';
 
 class CartItemTile extends StatelessWidget {
@@ -30,7 +31,7 @@ class CartItemTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(line.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text('${line.unitPrice.toStringAsFixed(0)}đ'),
+                Text(CurrencyFormatter.formatVnd(line.unitPrice)),
               ],
             ),
           ),

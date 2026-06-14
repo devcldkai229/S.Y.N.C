@@ -1,3 +1,4 @@
+using Amazon.LocationService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,19 +35,37 @@ public static class InfrastructureServiceExtensions
                 .UseSnakeCaseNamingConvention());
 
         services.Configure<OrderSettings>(configuration.GetSection(OrderSettings.SectionName));
-        services.Configure<LalamoveSettings>(configuration.GetSection(LalamoveSettings.SectionName));
+        services.Configure<AhamoveSettings>(configuration.GetSection(AhamoveSettings.SectionName));
+        services.Configure<AwsLocationOptions>(configuration.GetSection(AwsLocationOptions.SectionName));
+
+        services.AddSingleton<IAmazonLocationService>(sp =>
+        {
+            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AwsLocationOptions>>().Value;
+            return AwsPlaceIndexClient.CreateClient(options);
+        });
 
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<ICheckoutSessionService, CheckoutSessionService>();
         services.AddScoped<ICommissionService, CommissionService>();
         services.AddScoped<IDeliveryTrackingService, DeliveryTrackingService>();
+        services.AddHostedService<DeliveryLocationPollerService>();
+        services.AddHostedService<SandboxDeliverySimulatorService>();
         services.AddScoped<IInternalOrderVerificationService, InternalOrderVerificationService>();
-        services.AddScoped<IDeliveryProvider, LalamoveAdapter>();
+        services.AddMemoryCache();
+        services.AddHttpClient<AhamoveTokenService>();
+        services.AddHttpClient<AhamoveAdapter>();
+        services.AddSingleton<AhamoveTokenService>();
+        services.AddScoped<IDeliveryProvider, AhamoveAdapter>();
 
         var redisConnection = configuration.GetConnectionString("Redis")
             ?? configuration["Redis:Configuration"]
             ?? "localhost:6379";
         services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnection));
         services.AddSingleton<ITrackingLocationStore, RedisTrackingLocationStore>();
+        services.AddSingleton<ICartStore, RedisCartStore>();
+        services.AddSingleton<IDeliveryAddressStore, RedisDeliveryAddressStore>();
+        services.AddSingleton<IPlaceSearchCache, RedisPlaceSearchCache>();
+        services.AddSingleton<IPlaceIndexClient, AwsPlaceIndexClient>();
 
         services.AddHttpClient<IMarketplaceClient, MarketplaceClient>((sp, client) =>
         {

@@ -37,6 +37,7 @@ class OrderSummary {
     required this.partnerId,
     required this.orderCode,
     required this.status,
+    this.paymentStatus,
     required this.subtotalAmount,
     required this.deliveryFee,
     required this.discountAmount,
@@ -57,6 +58,7 @@ class OrderSummary {
   final String partnerId;
   final String orderCode;
   final String status;
+  final String? paymentStatus;
   final double subtotalAmount;
   final double deliveryFee;
   final double discountAmount;
@@ -72,7 +74,8 @@ class OrderSummary {
   final List<OrderItem> items;
   final DeliveryTracking? tracking;
 
-  bool get isActive => !const {'Completed', 'Cancelled', 'Refunded'}.contains(status);
+  bool get isActive =>
+      !const {'Delivered', 'Completed', 'Cancelled', 'Refunded'}.contains(status);
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
     final itemsRaw = json['items'];
@@ -81,6 +84,7 @@ class OrderSummary {
       partnerId: json['partnerId']?.toString() ?? '',
       orderCode: json['orderCode']?.toString() ?? '',
       status: json['status']?.toString() ?? 'Pending',
+      paymentStatus: json['paymentStatus']?.toString(),
       subtotalAmount: (json['subtotalAmount'] as num?)?.toDouble() ?? 0,
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0,
       discountAmount: (json['discountAmount'] as num?)?.toDouble() ?? 0,
@@ -109,6 +113,10 @@ class DeliveryTracking {
   const DeliveryTracking({
     required this.orderId,
     required this.status,
+    this.orderStatus,
+    this.etaMinutes,
+    this.pickupLat,
+    this.pickupLng,
     this.shipperName,
     this.shipperPhone,
     this.shipperPlateNumber,
@@ -116,10 +124,15 @@ class DeliveryTracking {
     this.lastKnownLng,
     this.lastLocationUpdatedAt,
     this.estimatedArrivalAt,
+    this.statusMessage,
   });
 
   final String orderId;
   final String status;
+  final String? orderStatus;
+  final int? etaMinutes;
+  final double? pickupLat;
+  final double? pickupLng;
   final String? shipperName;
   final String? shipperPhone;
   final String? shipperPlateNumber;
@@ -127,10 +140,15 @@ class DeliveryTracking {
   final double? lastKnownLng;
   final DateTime? lastLocationUpdatedAt;
   final DateTime? estimatedArrivalAt;
+  final String? statusMessage;
 
   factory DeliveryTracking.fromJson(Map<String, dynamic> json) => DeliveryTracking(
         orderId: json['orderId']?.toString() ?? '',
         status: json['status']?.toString() ?? 'Pending',
+        orderStatus: json['orderStatus']?.toString(),
+        etaMinutes: (json['etaMinutes'] as num?)?.toInt(),
+        pickupLat: (json['pickupLat'] as num?)?.toDouble(),
+        pickupLng: (json['pickupLng'] as num?)?.toDouble(),
         shipperName: json['shipperName']?.toString(),
         shipperPhone: json['shipperPhone']?.toString(),
         shipperPlateNumber: json['shipperPlateNumber']?.toString(),
@@ -142,6 +160,7 @@ class DeliveryTracking {
         estimatedArrivalAt: json['estimatedArrivalAt'] != null
             ? DateTime.tryParse(json['estimatedArrivalAt'].toString())
             : null,
+        statusMessage: json['statusMessage']?.toString(),
       );
 }
 

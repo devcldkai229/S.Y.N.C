@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
@@ -21,6 +24,7 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
   bool _isDesigningSession = false; // Sub-state to show Exercise Designer
   bool _isSchedulingSession = false; // Sub-state to show Session Scheduler
   bool _submitting = false;
+  XFile? _coverImage;
 
   // Step 1: Basic Info
   final TextEditingController _nameController = TextEditingController();
@@ -98,6 +102,12 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
     setState(() => _submitting = true);
 
     try {
+      String? coverUrl;
+      if (_coverImage != null) {
+        final urls = await _repository.uploadWorkoutCover(_coverImage!);
+        if (urls.isNotEmpty) coverUrl = urls.first;
+      }
+
       // 1. Create UserCustomWorkout (overall roadmap metadata)
       final workoutBody = {
         'workoutName': name,
@@ -105,6 +115,7 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
         'visibility': _visibility,
         'allowAiOptimization': true,
         'customBlocks': [], // Exercises will reside inside RoadmapSessions
+        if (coverUrl != null) 'coverRoadmapImageUrl': coverUrl,
       };
 
       final createdWorkout = await _repository.createCustomWorkout(workoutBody);
@@ -274,6 +285,8 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
         ),
         const SizedBox(height: 16),
+        _buildCoverPicker(),
+        const SizedBox(height: 16),
         _buildTextField('Tên lộ trình *', _nameController, 'e.g., Push/Pull/Legs 4 buổi/tuần'),
         const SizedBox(height: 16),
         _buildGoalDropdown(),
@@ -282,6 +295,56 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
         const SizedBox(height: 24),
         _buildBottomButton('Tiếp tục', _nextStep),
       ],
+    );
+  }
+
+  Future<void> _pickCoverImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked != null) setState(() => _coverImage = picked);
+  }
+
+  Widget _buildCoverPicker() {
+    return GestureDetector(
+      onTap: _pickCoverImage,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          height: 140,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            border: Border.all(color: AppColors.border),
+          ),
+          child: _coverImage == null
+              ? const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_photo_alternate_outlined, color: AppColors.primaryGreen, size: 32),
+                    SizedBox(height: 8),
+                    Text('Thêm ảnh bìa lộ trình', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                  ],
+                )
+              : FutureBuilder<Uint8List>(
+                  future: _coverImage!.readAsBytes(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+                    }
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.memory(snapshot.data!, fit: BoxFit.cover),
+                        Container(
+                          color: Colors.black26,
+                          alignment: Alignment.center,
+                          child: const Text('Đổi ảnh bìa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+        ),
+      ),
     );
   }
 

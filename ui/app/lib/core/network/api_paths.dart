@@ -8,14 +8,18 @@ abstract final class ApiPaths {
   static const authFinishRegistration = '/v1/auth/finish-registration';
   static const authResendVerification = '/v1/auth/resend-verification';
   static const authGoogle = '/v1/auth/google';
+  static const authRefresh = '/v1/auth/refresh';
   static const authVerifyEmail = '/v1/auth/verify-email';
   static const authForgotPassword = '/v1/auth/forgot-password';
   static const authResetPassword = '/v1/auth/reset-password';
 
   // IAM (gateway prefix: /v1/iam → service /v1)
   static const meProfileSettings = '/v1/iam/me/profile-settings';
-  static const meInventory = '/v1/iam/me/inventory';
+  /// Prefer direct IAM route (`iam-me-route`); `/v1/iam/me/inventory` also works via gateway.
+  static const meInventory = '/v1/me/inventory';
   static const meBasicProfile = '/v1/iam/me/basic-profile';
+  static const meMediaUpload = '/v1/iam/me/media/upload';
+  static const roadmapWorkoutMediaUpload = '/v1/roadmap/workouts/media/upload';
   static const meFitnessProfile = '/v1/iam/me/fitness-profile';
   static const meAccountPreferences = '/v1/iam/me/account-preferences';
   static const biometrics = '/v1/iam/biometrics';
@@ -32,6 +36,7 @@ abstract final class ApiPaths {
 
   // Exercise
   static const exercises = '/v1/exercise/exercises';
+  static const exerciseThumbnails = '/v1/exercise/exercises/thumbnails';
   static String exerciseDetail(String id) =>
       '/v1/exercise/exercises/$id/detail';
 
@@ -60,6 +65,9 @@ abstract final class ApiPaths {
   static const payosCreateLink = '/v1/payment/payments/payos/create-link';
   static String transactionByOrderCode(int orderCode) =>
       '/v1/payment/payments/transactions/by-order-code/$orderCode';
+  static const paymentWalletMe = '/v1/payment/payments/wallet/me';
+  static const paymentVouchersAvailable = '/v1/payment/payments/vouchers/available';
+  static const paymentVouchersValidate = '/v1/payment/payments/vouchers/validate';
 
   // IAM – gamification / shop
   static const meActivityLog = '/v1/iam/me/activity/log';
@@ -113,8 +121,19 @@ abstract final class ApiPaths {
       '/v1/marketplace/affiliate-products/$id/click';
   static const marketplaceReviews = '/v1/marketplace/reviews';
 
+  // Checkout session (gateway: /api/v1/order/checkout → Order /api/v1/checkout)
+  static const checkoutAddressSearch = '/v1/order/checkout/address/search';
+  static const checkoutAddressReverse = '/v1/order/checkout/address/reverse';
+  static const checkoutAddressCurrent = '/v1/order/checkout/address/current';
+  static const checkoutFees = '/v1/order/checkout/fees';
+  static const checkoutCart = '/v1/order/checkout/cart';
+  static const checkoutCartItems = '/v1/order/checkout/cart/items';
+  static String checkoutCartItem(String foodMenuItemId) =>
+      '/v1/order/checkout/cart/items/$foodMenuItemId';
+
   // Order
   static const orderOrders = '/v1/order/orders';
+  static const orderActiveCount = '/v1/order/orders/active-count';
   static String orderById(String id) => '/v1/order/orders/$id';
   static String orderTracking(String id) => '/v1/order/orders/$id/tracking';
   static String orderCancel(String id) => '/v1/order/orders/$id/cancel';

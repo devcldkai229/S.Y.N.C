@@ -30,18 +30,29 @@ class AppConfig {
 
   /// SignalR hub on Notification service (not via Gateway). Override:
   /// `--dart-define=NOTIFICATION_HUB_URL=http://<host>:5106/hubs/notifications`
-  /// Order tracking SignalR hub (Order service :5123). Override:
-  /// `--dart-define=ORDER_TRACKING_HUB_URL=http://<host>:5123/hubs/tracking`
+  /// Order tracking SignalR hub via Gateway (:5057/hubs/tracking). Override:
+  /// `--dart-define=ORDER_TRACKING_HUB_URL=http://<host>:5057/hubs/tracking`
   static String get orderTrackingHubUrl {
     const fromEnv = String.fromEnvironment('ORDER_TRACKING_HUB_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
-    if (kIsWeb) return 'http://localhost:5123/hubs/tracking';
+
+    final apiBase = baseUrl;
+    final origin = apiBase.endsWith('/api') ? apiBase.substring(0, apiBase.length - 4) : apiBase;
+    return '$origin/hubs/tracking';
+  }
+
+  /// Nutrition SignalR hub (Nutrition service :5122). Override:
+  /// `--dart-define=NUTRITION_HUB_URL=http://<host>:5122/hubs/nutrition`
+  static String get nutritionHubUrl {
+    const fromEnv = String.fromEnvironment('NUTRITION_HUB_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (kIsWeb) return 'http://localhost:5122/hubs/nutrition';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
       case TargetPlatform.iOS:
-        return 'http://$_devLanHost:5123/hubs/tracking';
+        return 'http://$_devLanHost:5122/hubs/nutrition';
       default:
-        return 'http://localhost:5123/hubs/tracking';
+        return 'http://localhost:5122/hubs/nutrition';
     }
   }
 

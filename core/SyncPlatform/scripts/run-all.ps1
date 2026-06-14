@@ -67,7 +67,7 @@ $launchShell = Get-LaunchShell
 
 Write-Host "Stopping ports (release file locks before build)..." -ForegroundColor Cyan
 & (Join-Path $PSScriptRoot "stop-all.ps1")
-Start-Sleep -Seconds 2
+Start-Sleep -Seconds 3
 
 if (-not $SkipBuild) {
     Write-Host "Building..." -ForegroundColor Cyan

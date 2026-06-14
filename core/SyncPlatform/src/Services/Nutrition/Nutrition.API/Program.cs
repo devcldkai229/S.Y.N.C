@@ -1,6 +1,11 @@
 using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using Nutrition.API.Hubs;
+using Nutrition.API.Services;
+using Nutrition.Application.Services;
 using Microsoft.OpenApi;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -34,7 +39,33 @@ builder.Services.AddProblemDetails();
 builder.Services.AddNutritionApplication();
 builder.Services.AddNutritionInfrastructure(builder.Configuration);
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyHeader()
+            .AllowAnyMethod()
+            .SetIsOriginAllowed(_ => true)
+            .AllowCredentials());
+});
+
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<INutritionRealtimePublisher, SignalRNutritionRealtimePublisher>();
+
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
+
+builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    var previous = options.Events.OnMessageReceived;
+    options.Events.OnMessageReceived = context =>
+    {
+        var accessToken = context.Request.Query["access_token"];
+        var path = context.HttpContext.Request.Path;
+        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments(NutritionHub.HubPath))
+            context.Token = accessToken;
+
+        return previous is null ? Task.CompletedTask : previous(context);
+    };
+});
 builder.Services.AddSyncHealthChecks();
 
 builder.Services.AddControllers()
@@ -73,6 +104,7 @@ else
 }
 
 app.UseMiddleware<InternalApiKeyMiddleware>();
+app.UseCors();
 app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
@@ -80,6 +112,7 @@ await NutritionSeedData.SeedAsync(mongoDb);
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
 
 app.MapSyncHealthChecks();
+app.MapHub<NutritionHub>(NutritionHub.HubPath);
 app.MapControllers();
 
 app.Run();

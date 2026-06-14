@@ -29,6 +29,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(512);
         builder.Property(u => u.FullName).IsRequired().HasMaxLength(256);
         builder.Property(u => u.AvatarUrl).HasMaxLength(1024);
+        builder.Property(u => u.BackgroundImageUrl).HasMaxLength(1024);
         builder.Property(u => u.PreferredLanguage).IsRequired().HasMaxLength(8).HasDefaultValue("vi");
         builder.Property(u => u.TimeZone).IsRequired().HasMaxLength(64).HasDefaultValue("Asia/Ho_Chi_Minh");
 

@@ -14,7 +14,7 @@ public static class MongoDbIndexInitializer
 
     private static async Task ConfigureExerciseCatalogIndexesAsync(IMongoDatabase database)
     {
-        var collection = database.GetCollection<ExerciseCatalog>("ExerciseCatalogs");
+        var collection = database.GetCollection<ExerciseCatalog>("ExerciseCatalog");
         var ix = Builders<ExerciseCatalog>.IndexKeys;
 
         var codeIndex = new CreateIndexModel<ExerciseCatalog>(
@@ -49,7 +49,7 @@ public static class MongoDbIndexInitializer
 
     private static async Task ConfigureExerciseMotionAssetIndexesAsync(IMongoDatabase database)
     {
-        var collection = database.GetCollection<ExerciseMotionAsset>("ExerciseMotionAssets");
+        var collection = database.GetCollection<ExerciseMotionAsset>("ExerciseMotionAsset");
         var ix = Builders<ExerciseMotionAsset>.IndexKeys;
 
         var exerciseAssetIndex = new CreateIndexModel<ExerciseMotionAsset>(

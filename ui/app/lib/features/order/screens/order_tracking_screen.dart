@@ -5,18 +5,18 @@ import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/utils/injection.dart';
-import 'package:sync_app/features/order/config/mock_tracking_config.dart';
-import 'package:sync_app/features/order/data/order_demo_repository.dart';
-import 'package:sync_app/features/order/mock/order_demo_data.dart';
+import 'package:sync_app/features/order/data/order_remote_data_source.dart';
 import 'package:sync_app/features/order/models/order_models.dart';
 import 'package:sync_app/features/order/models/tracking_update.dart';
 import 'package:sync_app/features/order/services/i_tracking_service.dart';
 import 'package:sync_app/features/order/theme/order_theme.dart';
-import 'package:sync_app/features/order/widgets/demo_tracking_map.dart';
+import 'package:sync_app/features/order/widgets/live_tracking_map.dart';
 import 'package:sync_app/features/order/widgets/eta_banner.dart';
 import 'package:sync_app/features/order/widgets/order_summary_compact.dart';
 import 'package:sync_app/features/order/widgets/tracking_shipper_card.dart';
 import 'package:sync_app/features/order/widgets/tracking_status_stepper.dart';
+import 'package:sync_app/features/order/utils/tracking_map_coords.dart';
+import 'package:sync_app/features/order/utils/tracking_status_mapper.dart';
 
 class OrderTrackingScreen extends StatefulWidget {
   const OrderTrackingScreen({super.key, required this.orderId});
@@ -28,22 +28,31 @@ class OrderTrackingScreen extends StatefulWidget {
 }
 
 class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
-  final _demoRepo = getIt<OrderDemoRepository>();
+  final _api = getIt<OrderRemoteDataSource>();
   late final ITrackingService _tracking = getIt<ITrackingService>();
 
   OrderSummary? _order;
   TrackingUpdate? _update;
   StreamSubscription<TrackingUpdate>? _sub;
   final _stepTimes = <String, DateTime>{};
+  String? _error;
 
-  LatLng get _pickup => const LatLng(MockTrackingConfig.pickupLat, MockTrackingConfig.pickupLng);
+  LatLng get _pickup {
+    final t = _order?.tracking;
+    const fallback = LatLng(10.7769, 106.7009);
+    if (t?.pickupLat != null && t?.pickupLng != null) {
+      return TrackingMapCoords.sanitize(LatLng(t!.pickupLat!, t.pickupLng!), fallback);
+    }
+    return fallback;
+  }
 
   LatLng get _dropoff {
     final o = _order;
+    final fallback = LatLng(_pickup.latitude + 0.01, _pickup.longitude + 0.01);
     if (o?.deliveryLat != null && o?.deliveryLng != null) {
-      return LatLng(o!.deliveryLat!, o.deliveryLng!);
+      return TrackingMapCoords.sanitize(LatLng(o!.deliveryLat!, o.deliveryLng!), fallback);
     }
-    return const LatLng(MockTrackingConfig.fallbackDropLat, MockTrackingConfig.fallbackDropLng);
+    return fallback;
   }
 
   @override
@@ -53,37 +62,34 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
   }
 
   Future<void> _bootstrap() async {
-    await _demoRepo.loadOrders();
-    if (!mounted) return;
-
-    final order = _demoRepo.getOrder(widget.orderId) ??
-        (widget.orderId == MockTrackingConfig.demoActiveOrderId
-            ? OrderDemoData.activeOrder()
-            : null);
-    if (!mounted) return;
-
-    if (order == null) {
-      setState(() => _order = null);
-      return;
-    }
-
-    setState(() => _order = order);
-
-    final session = TrackingSession(
-      orderId: widget.orderId,
-      pickupLat: MockTrackingConfig.pickupLat,
-      pickupLng: MockTrackingConfig.pickupLng,
-      dropoffLat: order.deliveryLat ?? MockTrackingConfig.fallbackDropLat,
-      dropoffLng: order.deliveryLng ?? MockTrackingConfig.fallbackDropLng,
-    );
-
-    _sub = _tracking.watch(session).listen((u) {
+    try {
+      final order = await _api.getOrder(widget.orderId);
       if (!mounted) return;
+
       setState(() {
-        _update = u;
-        _stepTimes.putIfAbsent(u.orderStatus, () => u.timestamp);
+        _order = order;
+        _error = null;
       });
-    });
+
+      final session = TrackingSession(
+        orderId: widget.orderId,
+        pickupLat: _pickup.latitude,
+        pickupLng: _pickup.longitude,
+        dropoffLat: _dropoff.latitude,
+        dropoffLng: _dropoff.longitude,
+      );
+
+      _sub = _tracking.watch(session).listen((u) {
+        if (!mounted) return;
+        setState(() {
+          _update = u;
+          _stepTimes.putIfAbsent(u.orderStatus, () => u.timestamp);
+        });
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _error = 'Không tải được đơn hàng. Vui lòng thử lại.');
+    }
   }
 
   @override
@@ -100,20 +106,34 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final order = _order;
-    if (order == null) {
+    if (_error != null) {
       return Scaffold(
         backgroundColor: OrderTheme.background,
         appBar: AppBar(backgroundColor: OrderTheme.background, title: const Text('Theo dõi đơn')),
-        body: const Center(child: Text('Không tìm thấy đơn demo')),
+        body: Center(child: Text(_error!)),
+      );
+    }
+
+    final order = _order;
+    if (order == null) {
+      return const Scaffold(
+        backgroundColor: OrderTheme.background,
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
     final update = _update;
-    final status = update?.orderStatus ?? order.status;
-    final shipperPoint = update?.shipperLat != null && update?.shipperLng != null
-        ? LatLng(update!.shipperLat!, update.shipperLng!)
-        : null;
+    final status = update?.orderStatus ??
+        TrackingStatusMapper.displayOrderStatus(
+          orderStatus: order.status,
+          deliveryStatus: order.tracking?.status ?? 'Pending',
+        );
+    final shipperPoint = TrackingMapCoords.resolveShipper(
+      pickup: _pickup,
+      lat: update?.shipperLat,
+      lng: update?.shipperLng,
+      deliveryStatus: update?.deliveryStatus ?? order.tracking?.status,
+    );
     final mapHeight = MediaQuery.sizeOf(context).height * 0.46;
 
     return Scaffold(
@@ -129,11 +149,12 @@ class _OrderTrackingScreenState extends State<OrderTrackingScreen> {
           SizedBox(
             height: mapHeight,
             width: double.infinity,
-            child: DemoTrackingMap(
+            child: LiveTrackingMap(
               pickup: _pickup,
-              dropoff: _dropoff,
-              shipper: update?.showShipperMarker == true ? shipperPoint : null,
-              followShipper: status == 'Delivering',
+              destination: _dropoff,
+              shipper: shipperPoint,
+                followShipper: const {'Preparing', 'PickedUp', 'Delivering'}.contains(status),
+              height: mapHeight,
             ),
           ),
           Expanded(

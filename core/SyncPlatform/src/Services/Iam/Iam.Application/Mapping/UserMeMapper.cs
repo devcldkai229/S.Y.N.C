@@ -12,6 +12,7 @@ internal static class UserMeMapper
         new(
             user.FullName,
             user.AvatarUrl,
+            user.BackgroundImageUrl,
             user.Email,
             user.PhoneNumber,
             user.PreferredLanguage,

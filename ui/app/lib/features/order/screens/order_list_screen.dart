@@ -2,32 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/utils/injection.dart';
-import 'package:sync_app/features/order/config/mock_tracking_config.dart';
-import 'package:sync_app/features/order/data/order_demo_repository.dart';
-import 'package:sync_app/features/order/mock/order_demo_data.dart';
+import 'package:sync_app/features/order/data/order_remote_data_source.dart';
+import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
+import 'package:sync_app/features/order/models/order_models.dart';
 import 'package:sync_app/features/order/theme/order_theme.dart';
+import 'package:sync_app/features/order/mock/order_demo_data.dart';
 import 'package:sync_app/features/order/widgets/demo_order_card.dart';
 import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
 import 'package:sync_app/shared/widgets/sync_shimmer_box.dart';
 
 class OrderListScreen extends StatefulWidget {
-  const OrderListScreen({super.key});
+  const OrderListScreen({super.key, this.initialTabIndex = 0});
+
+  final int initialTabIndex;
 
   @override
   State<OrderListScreen> createState() => _OrderListScreenState();
 }
 
 class _OrderListScreenState extends State<OrderListScreen> with SingleTickerProviderStateMixin {
-  final _repo = getIt<OrderDemoRepository>();
+  final _api = getIt<OrderRemoteDataSource>();
   late final TabController _tabs;
-  List<OrderListItemVm> _active = [];
-  List<OrderListItemVm> _history = [];
+  List<OrderSummary> _orders = [];
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
+    _tabs = TabController(length: 2, vsync: this, initialIndex: widget.initialTabIndex.clamp(0, 1));
     _load();
   }
 
@@ -39,22 +41,25 @@ class _OrderListScreenState extends State<OrderListScreen> with SingleTickerProv
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final result = await _repo.loadOrders();
-    if (mounted) {
+    try {
+      final orders = await _api.listOrders();
+      if (!mounted) return;
       setState(() {
-        _active = result.active;
-        _history = result.history;
+        _orders = orders;
         _loading = false;
       });
+      await getIt<ActiveOrderCountNotifier>().refresh();
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  void _onOrderTap(OrderListItemVm item) {
-    if (item.order.id == MockTrackingConfig.demoActiveOrderId && item.order.isActive) {
-      context.push(AppRoutes.orderTracking(item.order.id));
-      return;
-    }
-    context.push(AppRoutes.orderDetail(item.order.id));
+  List<OrderSummary> get _active => _orders.where((o) => o.isActive).toList();
+
+  List<OrderSummary> get _history => _orders.where((o) => !o.isActive).toList();
+
+  void _onOrderTap(OrderSummary order) {
+    context.push(AppRoutes.orderDetail(order.id));
   }
 
   @override
@@ -82,44 +87,51 @@ class _OrderListScreenState extends State<OrderListScreen> with SingleTickerProv
             ? ListView(
                 padding: const EdgeInsets.all(16),
                 children: const [
-                  SyncShimmerBox(height: 100, borderRadius: 16),
+                  SyncShimmerBox(height: 96),
                   SizedBox(height: 12),
-                  SyncShimmerBox(height: 100, borderRadius: 16),
+                  SyncShimmerBox(height: 96),
                 ],
               )
             : TabBarView(
                 controller: _tabs,
                 children: [
-                  _list(_active, emptyMessage: 'Chưa có đơn đang giao'),
-                  _list(_history, emptyMessage: 'Chưa có đơn nào — đặt món từ Sync Foods nhé'),
+                  _OrderList(items: _active, emptyText: 'Chưa có đơn đang giao', onTap: _onOrderTap),
+                  _OrderList(items: _history, emptyText: 'Chưa có lịch sử đơn', onTap: _onOrderTap),
                 ],
               ),
       ),
     );
   }
+}
 
-  Widget _list(List<OrderListItemVm> orders, {required String emptyMessage}) {
-    if (orders.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(emptyMessage, textAlign: TextAlign.center, style: const TextStyle(color: OrderTheme.textMuted)),
-        ),
-      );
+class _OrderList extends StatelessWidget {
+  const _OrderList({
+    required this.items,
+    required this.emptyText,
+    required this.onTap,
+  });
+
+  final List<OrderSummary> items;
+  final String emptyText;
+  final void Function(OrderSummary) onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return Center(child: Text(emptyText, style: const TextStyle(color: OrderTheme.textMuted)));
     }
 
-    return RefreshIndicator(
-      color: OrderTheme.accent,
-      onRefresh: _load,
-      child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-        itemCount: orders.length,
-        itemBuilder: (_, i) => DemoOrderCard(
-          item: orders[i],
-          onTap: () => _onOrderTap(orders[i]),
-        ),
-      ),
-    );
+    return ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, i) {
+          final order = items[i];
+          return DemoOrderCard(
+            item: OrderListItemVm(order: order, partnerName: order.orderCode),
+            onTap: () => onTap(order),
+          );
+        },
+      );
   }
 }

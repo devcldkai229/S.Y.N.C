@@ -7,6 +7,7 @@ public sealed record PublicProfileResponse(
     Guid UserId,
     string FullName,
     string? AvatarUrl,
+    string? BackgroundImageUrl,
     int CurrentLevel,
     long CurrentXP,
     int CurrentStreak);

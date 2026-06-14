@@ -405,6 +405,11 @@ namespace Order.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("user_id");
 
+                    b.Property<string>("VoucherCode")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("voucher_code");
+
                     b.Property<Guid?>("VoucherId")
                         .HasColumnType("uuid")
                         .HasColumnName("voucher_id");

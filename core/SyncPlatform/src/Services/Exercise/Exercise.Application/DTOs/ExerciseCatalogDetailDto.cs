@@ -26,5 +26,6 @@ public class ExerciseCatalogDetailDto
     public List<string> AiCoachingCues { get; set; } = [];
     public List<string> CommonMistakes { get; set; } = [];
     public bool RequiresSpotter { get; set; }
+    public string SafetyLevel { get; set; } = "Moderate";
     public IReadOnlyList<ExerciseMotionAssetDto> MotionAssets { get; set; } = [];
 }

@@ -33,6 +33,7 @@ public class PayosPaymentService : IPayosPaymentService
     private readonly PayOS _payOS;
     private readonly PayosSettings _settings;
     private readonly IIamSubscriptionClient _iamClient;
+    private readonly IOrderPaymentNotifyClient _orderNotifyClient;
     private readonly ILogger<PayosPaymentService> _logger;
 
     public PayosPaymentService(
@@ -40,12 +41,14 @@ public class PayosPaymentService : IPayosPaymentService
         PayOS payOS,
         IOptions<PayosSettings> settings,
         IIamSubscriptionClient iamClient,
+        IOrderPaymentNotifyClient orderNotifyClient,
         ILogger<PayosPaymentService> logger)
     {
         _db        = db;
         _payOS     = payOS;
         _settings  = settings.Value;
         _iamClient = iamClient;
+        _orderNotifyClient = orderNotifyClient;
         _logger    = logger;
     }
 
@@ -97,7 +100,7 @@ public class PayosPaymentService : IPayosPaymentService
             UserId                    = userId,
             TransactionType           = TransactionType.Subscription,
             Status                    = TransactionStatus.Pending,
-            PaymentMethod             = PaymentMethod.Momo,
+            PaymentMethod             = PaymentMethod.VietQR,
             Provider                  = PaymentProvider.PayOS,
             Amount                    = finalAmount,
             Currency                  = plan.Currency,
@@ -330,7 +333,7 @@ public class PayosPaymentService : IPayosPaymentService
 
             transaction.Status = TransactionStatus.Succeeded;
 
-            // e) Activate / extend UserSubscription if this Transaction is for a SubscriptionPlan
+            // e) Activate subscription or confirm meal order payment
             if (transaction.RelatedEntityType == nameof(SubscriptionPlan)
                 && transaction.RelatedEntityId is { } planId)
             {
@@ -342,9 +345,13 @@ public class PayosPaymentService : IPayosPaymentService
                     now,
                     cancellationToken);
 
-                // Sync tier to IAM — fire-and-forget style: nuốt lỗi để không làm fail webhook
                 await SyncTierToIamAsync(transaction.UserId, "Premium", cancellationToken);
                 await IncrementCouponUsageAsync(transaction.CouponCode, cancellationToken);
+            }
+            else if (transaction.RelatedEntityType == "Order"
+                     && transaction.RelatedEntityId is Guid mealOrderId)
+            {
+                await _orderNotifyClient.ConfirmOrderPaymentAsync(mealOrderId, transaction.Id, cancellationToken);
             }
 
             // f) Mark webhook event as processed
@@ -430,6 +437,11 @@ public class PayosPaymentService : IPayosPaymentService
             await SyncTierToIamAsync(transaction.UserId, "Premium", cancellationToken);
             await IncrementCouponUsageAsync(transaction.CouponCode, cancellationToken);
         }
+        else if (transaction.RelatedEntityType == "Order"
+                 && transaction.RelatedEntityId is Guid mealOrderId)
+        {
+            await _orderNotifyClient.ConfirmOrderPaymentAsync(mealOrderId, transaction.Id, cancellationToken);
+        }
 
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -441,7 +453,7 @@ public class PayosPaymentService : IPayosPaymentService
         {
             Outcome   = WebhookProcessOutcome.Processed,
             OrderCode = orderCode,
-            Message   = "[DEV] Payment simulated and subscription activated."
+            Message   = "[DEV] Payment simulated successfully."
         };
     }
 

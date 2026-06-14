@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Payment.Domain.Models;
 
 namespace Payment.Infrastructure.Persistence.Seed;
@@ -80,7 +81,18 @@ public static class PaymentSeedData
     private static string SerializeFeatures(IReadOnlyList<string> features) =>
         JsonSerializer.Serialize(features, JsonOptions);
 
-    /// <summary>Applies EF migrations and idempotent subscription plan seed (run once at Payment.API startup).</summary>
+    /// <summary>Idempotent subscription plan seed (called from Payment.API startup).</summary>
+    public static async Task SeedAsync(
+        PaymentDbContext db,
+        ILogger logger,
+        CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("Seeding Payment subscription plans...");
+        await PaymentDbSeeder.SeedAsync(db, cancellationToken);
+        logger.LogInformation("Payment subscription plan seed completed.");
+    }
+
+    /// <summary>Applies EF migrations and idempotent subscription plan seed.</summary>
     public static class PaymentDbSeeder
     {
         public static async Task SeedAsync(

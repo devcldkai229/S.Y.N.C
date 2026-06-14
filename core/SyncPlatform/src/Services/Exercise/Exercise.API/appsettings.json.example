@@ -9,14 +9,18 @@
     "ExerciseDatabaseName": "sync_exercise"
   },
 
-  "Minio": {
-    "Endpoint": "localhost:9000",
-    "AccessKey": "minioadmin",
-    "SecretKey": "minioadmin123",
-    "BucketName": "exercise-assets",
-    "UseSsl": false,
-    "PublicUrl": "http://localhost:9000",
-    "AutoCreateBucket": true,
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+
+  "Storage": {
+    "Bucket": "sync-objs",
+    "KeyPrefix": "exercises_catalog/",
+    "PublicRead": false,
+    "UseMediaProxy": true,
+    "MediaProxyBaseUrl": "http://localhost:5057/api/v1/exercise/exercises/media/",
+    "PresignedUrlExpiryMinutes": 60,
     "MaxFileSizeMb": 50,
     "MaxThumbnailSizeMb": 5,
     "AllowedImageContentTypes": [
@@ -31,5 +35,20 @@
       "video/quicktime",
       "video/webm"
     ]
+  },
+
+  "FreeExerciseDb": {
+    "JsonUrl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
+    "ImageBaseUrl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"
+  },
+
+  "Translate": {
+    "Provider": "passthrough"
+  },
+  "Enrichment": {
+    "OllamaBaseUrl": "http://localhost:11434",
+    "Model": "qwen2.5:latest",
+    "Temperature": 0.2,
+    "Concurrency": 2
   }
 }

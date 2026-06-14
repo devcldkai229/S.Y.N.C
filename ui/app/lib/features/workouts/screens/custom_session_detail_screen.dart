@@ -6,6 +6,8 @@ import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/data/repositories/workout_repository.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
+import 'package:sync_app/features/workouts/theme/workout_theme.dart';
+import 'package:sync_app/features/workouts/widgets/workout_ui/workout_shared_widgets.dart';
 
 class CustomSessionDetailScreen extends StatefulWidget {
   const CustomSessionDetailScreen({
@@ -26,6 +28,11 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
   bool _loading = true;
   String? _error;
   bool _isModified = false;
+  int _visibleExerciseCount = 5;
+  Map<String, String> _thumbnailUrls = {};
+  bool _loadingThumbnails = false;
+
+  static const _exercisePageSize = 5;
 
   @override
   void initState() {
@@ -34,6 +41,7 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -41,16 +49,53 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
 
     try {
       final session = await _repository.getSessionById(widget.sessionId);
+      if (!mounted) return;
       setState(() {
         _session = session;
         _loading = false;
+        _visibleExerciseCount = session.executionBlocks.length <= 5
+            ? session.executionBlocks.length
+            : 5;
       });
+      await _loadThumbnailsForVisible();
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = mapApiError(e);
         _loading = false;
       });
     }
+  }
+
+  Future<void> _loadThumbnailsForVisible() async {
+    final session = _session;
+    if (session == null || session.executionBlocks.isEmpty) return;
+
+    final blocks = session.executionBlocks.take(_visibleExerciseCount).toList();
+    final missingIds = blocks
+        .map((b) => b.exerciseId)
+        .where((id) => id.isNotEmpty && !_thumbnailUrls.containsKey(id))
+        .toList();
+    if (missingIds.isEmpty) return;
+
+    setState(() => _loadingThumbnails = true);
+    try {
+      final urls = await _repository.getExerciseThumbnailUrls(missingIds);
+      if (!mounted) return;
+      setState(() {
+        _thumbnailUrls = {..._thumbnailUrls, ...urls};
+        _loadingThumbnails = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingThumbnails = false);
+    }
+  }
+
+  void _showMoreExercises(int total) {
+    setState(() {
+      _visibleExerciseCount = (_visibleExerciseCount + _exercisePageSize).clamp(0, total);
+    });
+    _loadThumbnailsForVisible();
   }
 
   void _showEditSessionModal() {
@@ -426,29 +471,18 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Clean premium background
+      backgroundColor: WorkoutTheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: WorkoutTheme.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary, size: 24),
+          icon: const Icon(Icons.arrow_back_rounded, color: WorkoutTheme.textPrimary),
           onPressed: () => context.pop(_isModified),
         ),
         title: Text(
           _session?.sessionTitle ?? 'Chi tiết buổi tập',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-          ),
+          style: const TextStyle(color: WorkoutTheme.textPrimary, fontSize: 17, fontWeight: FontWeight.w900),
         ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: AppColors.textPrimary, size: 20),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: _buildBody(),
     );
@@ -456,7 +490,7 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
+      return const Center(child: CircularProgressIndicator(color: WorkoutTheme.primary));
     }
 
     if (_error != null) {
@@ -466,11 +500,7 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
           children: [
             Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent)),
             const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: _load,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-              child: const Text('Thử lại', style: TextStyle(color: Colors.white)),
-            ),
+            FilledButton(onPressed: _load, child: const Text('Thử lại')),
           ],
         ),
       );
@@ -485,142 +515,88 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
 
     return Column(
       children: [
-        // Header metadata subtitle
-        Container(
-          width: double.infinity,
-          color: Colors.white,
-          padding: const EdgeInsets.only(bottom: 12, top: 4),
-          child: Center(
-            child: Text(
-              '${session.estimatedDurationMinutes} phút  •  ${session.sessionType}',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ),
-
         Expanded(
           child: RefreshIndicator(
             onRefresh: _load,
-            color: AppColors.primaryGreen,
+            color: WorkoutTheme.primary,
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               children: [
-                // Summary pills row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
+                Text(
+                  session.sessionTitle,
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: WorkoutTheme.textPrimary),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${session.estimatedDurationMinutes} phút · ${session.sessionType}',
+                  style: const TextStyle(color: WorkoutTheme.textMuted, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
-                    _buildSummaryPill(Icons.timer_outlined, '${session.estimatedDurationMinutes} phút'),
-                    const SizedBox(width: 8),
-                    _buildSummaryPill(Icons.fitness_center_outlined, '${session.exerciseCount} exercises'),
-                    const SizedBox(width: 8),
-                    _buildSummaryPill(Icons.playlist_add_check_outlined, '$totalSets sets'),
+                    WorkoutStatChip(icon: Icons.timer_outlined, label: '${session.estimatedDurationMinutes} phút'),
+                    WorkoutStatChip(icon: Icons.fitness_center_outlined, label: '${session.exerciseCount} bài'),
+                    WorkoutStatChip(icon: Icons.checklist_rounded, label: '$totalSets sets'),
                   ],
                 ),
-                const SizedBox(height: 20),
-
-                // Exercises List
-                ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: session.executionBlocks.length,
-                  separatorBuilder: (_, index) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final block = session.executionBlocks[index];
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE9ECEF)),
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          context.push(AppRoutes.exerciseDetail(block.exerciseId));
-                        },
-                        borderRadius: BorderRadius.circular(16),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              // 1. Order circle badge
-                              Container(
-                                width: 24,
-                                height: 24,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.primaryGreen,
-                                  shape: BoxShape.circle,
-                                ),
-                                alignment: Alignment.center,
-                                child: Text(
-                                  '${index + 1}',
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-
-                              // 2. Exercise Image/Icon placeholder
-                              Container(
-                                width: 50,
-                                height: 50,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F3F5),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Icon(Icons.fitness_center, color: AppColors.textMuted, size: 22),
-                              ),
-                              const SizedBox(width: 12),
-
-                              // 3. Exercise metadata
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      block.exerciseName,
-                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textPrimary),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      '${block.targetSets} sets × ${block.targetReps} reps  •  ${block.targetWeightKg.toStringAsFixed(block.targetWeightKg.truncateToDouble() == block.targetWeightKg ? 0 : 1)} kg  •  Rest ${block.restSeconds}s',
-                                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.chevron_right, size: 18, color: AppColors.textMuted),
-                            ],
-                          ),
+                const SizedBox(height: 24),
+                const Text('Danh sách bài tập', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: WorkoutTheme.textPrimary)),
+                const SizedBox(height: 12),
+                ...session.executionBlocks.take(_visibleExerciseCount).toList().asMap().entries.map((e) {
+                  final block = e.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: ExerciseListRow(
+                      index: e.key + 1,
+                      name: block.exerciseName,
+                      sets: block.targetSets,
+                      reps: block.targetReps,
+                      weightKg: block.targetWeightKg,
+                      restSeconds: block.restSeconds,
+                      thumbnailUrl: _thumbnailUrls[block.exerciseId],
+                      onTap: () => context.push(AppRoutes.exerciseDetail(block.exerciseId)),
+                    ),
+                  );
+                }),
+                if (_visibleExerciseCount < session.executionBlocks.length)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Center(
+                      child: OutlinedButton.icon(
+                        onPressed: _loadingThumbnails
+                            ? null
+                            : () => _showMoreExercises(session.executionBlocks.length),
+                        icon: const Icon(Icons.expand_more_rounded, size: 18),
+                        label: Text(
+                          'Xem thêm (${session.executionBlocks.length - _visibleExerciseCount} bài)',
                         ),
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 20),
-
-                // AI Note Card
+                    ),
+                  ),
+                const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.15)),
+                    color: WorkoutTheme.lime.withValues(alpha: 0.25),
+                    borderRadius: WorkoutTheme.radiusMd,
+                    border: Border.all(color: WorkoutTheme.primary.withValues(alpha: 0.2)),
                   ),
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.auto_awesome, color: AppColors.primaryGreen, size: 18),
+                      Icon(Icons.auto_awesome, color: WorkoutTheme.primary, size: 20),
                       SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'AI Note',
-                              style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.primaryGreen, fontSize: 13),
-                            ),
+                            Text('AI Note', style: TextStyle(fontWeight: FontWeight.w900, color: WorkoutTheme.primary, fontSize: 13)),
                             SizedBox(height: 4),
                             Text(
                               'Tập trung vào kỹ thuật, không cần tăng tạ quá nhanh.',
-                              style: TextStyle(color: AppColors.textPrimary, fontSize: 12, height: 1.4, fontWeight: FontWeight.w500),
+                              style: TextStyle(color: WorkoutTheme.textPrimary, fontSize: 12, height: 1.4, fontWeight: FontWeight.w500),
                             ),
                           ],
                         ),
@@ -628,90 +604,24 @@ class _CustomSessionDetailScreenState extends State<CustomSessionDetailScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
               ],
             ),
           ),
         ),
-
-        // Bottom Actions (Chỉnh sửa buổi tập, Start Workout)
-        Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: OutlinedButton.icon(
-                  onPressed: _showEditSessionModal,
-                  icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
-                  label: const Text('Chỉnh sửa buổi tập', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 12)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 5,
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final res = await context.push(
-                      AppRoutes.activeWorkout(session.id),
-                      extra: session,
-                    );
-                    if (context.mounted && res == true) {
-                      setState(() {
-                        _isModified = true;
-                      });
-                      await _load();
-                    }
-                  },
-                  icon: const Icon(Icons.play_arrow, color: Colors.white, size: 20),
-                  label: const Text('Start Workout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryGreen,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        WorkoutStickyActions(
+          secondaryLabel: 'Chỉnh sửa buổi tập',
+          onSecondary: _showEditSessionModal,
+          primaryLabel: 'Start Workout',
+          onPrimary: () async {
+            final res = await context.push(AppRoutes.activeWorkout(session.id), extra: session);
+            if (!mounted) return;
+            if (res == true) {
+              setState(() => _isModified = true);
+              await _load();
+            }
+          },
         ),
       ],
-    );
-  }
-
-  Widget _buildSummaryPill(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE9ECEF)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: AppColors.primaryGreen),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

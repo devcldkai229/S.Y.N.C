@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/features/marketplace/cubit/marketplace_cart_cubit.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
+import 'package:sync_app/core/utils/currency_formatter.dart';
 import 'package:sync_app/features/order/widgets/cart_item_tile.dart';
 
 class CartScreen extends StatelessWidget {
@@ -48,7 +49,10 @@ class CartScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Tạm tính'),
-                        Text('${cart.subtotal.toStringAsFixed(0)}đ', style: const TextStyle(fontWeight: FontWeight.w700)),
+                        Text(
+                          CurrencyFormatter.formatVnd(cart.subtotal),
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ],
                     ),
                   ],
@@ -61,7 +65,9 @@ class CartScreen extends StatelessWidget {
                     child: FilledButton(
                       onPressed: () => context.push(AppRoutes.orderCheckout),
                       style: FilledButton.styleFrom(backgroundColor: MarketplaceTheme.primary),
-                      child: const Text('Tiếp tục'),
+                      child: Text(
+                        'Tiến hành thanh toán · ${CurrencyFormatter.formatVnd(cart.subtotal)}',
+                      ),
                     ),
                   ),
                 ),

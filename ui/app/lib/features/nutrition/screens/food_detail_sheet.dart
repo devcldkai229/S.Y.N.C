@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/features/nutrition/cubit/nutrition_diary_cubit.dart';
 import 'package:sync_app/features/nutrition/data/nutrition_remote_data_source.dart';
+import 'package:sync_app/features/nutrition/state/nutrition_refresh_notifier.dart';
 import 'package:sync_app/features/nutrition/models/nutrition_models.dart';
 import 'package:sync_app/features/nutrition/theme/nutrition_theme.dart';
 
@@ -46,13 +49,17 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
           },
         ],
       });
+      getIt<NutritionRefreshNotifier>().notifyDateChanged(DateTime.now());
       if (mounted) {
+        try {
+          await context.read<NutritionDiaryCubit>().refreshAfterMealLogged();
+        } catch (_) {}
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đã thêm vào nhật ký'), behavior: SnackBarBehavior.floating),
         );
-        context.pop();
-        context.pop();
+        context.pop(true);
+        context.pop(true);
       }
     } catch (e) {
       if (mounted) {

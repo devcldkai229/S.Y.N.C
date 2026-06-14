@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:sync_app/core/network/api_paths.dart';
+import 'package:sync_app/features/order/models/checkout_models.dart';
 import 'package:sync_app/features/order/models/order_models.dart';
 
 class OrderRemoteDataSource {
@@ -7,9 +8,34 @@ class OrderRemoteDataSource {
 
   final Dio _dio;
 
-  Future<OrderSummary> placeOrder(Map<String, dynamic> body) async {
+  Future<PlaceOrderResult> placeOrder(Map<String, dynamic> body) async {
     final response = await _dio.post<Map<String, dynamic>>(ApiPaths.orderOrders, data: body);
-    return _parseEnvelope(response.data, OrderSummary.fromJson);
+    final json = response.data;
+    if (json == null || json['success'] != true) {
+      throw Exception(json?['message']?.toString() ?? 'Request failed');
+    }
+    final data = json['data'];
+    if (data is! Map<String, dynamic>) throw Exception('Invalid data');
+    final orderJson = data['order'];
+    if (orderJson is! Map<String, dynamic>) throw Exception('Invalid order');
+    return PlaceOrderResult(
+      order: OrderSummary.fromJson(orderJson),
+      payUrl: data['payUrl']?.toString(),
+      deeplink: data['deeplink']?.toString(),
+      checkoutUrl: data['checkoutUrl']?.toString(),
+      qrCode: data['qrCode']?.toString(),
+      payOsOrderCode: (data['payOsOrderCode'] as num?)?.toInt(),
+      requiresExternalPayment: data['requiresExternalPayment'] == true,
+    );
+  }
+
+  Future<int> getActiveOrderCount() async {
+    final response = await _dio.get<Map<String, dynamic>>(ApiPaths.orderActiveCount);
+    final json = response.data;
+    if (json == null || json['success'] != true) return 0;
+    final data = json['data'];
+    if (data is! Map<String, dynamic>) return 0;
+    return (data['count'] as num?)?.toInt() ?? 0;
   }
 
   Future<List<OrderSummary>> listOrders({String? status, int page = 1}) async {

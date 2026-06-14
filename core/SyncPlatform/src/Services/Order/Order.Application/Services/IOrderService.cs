@@ -6,7 +6,14 @@ namespace Order.Application.Services;
 
 public interface IOrderService
 {
-    Task<OrderDto> PlaceOrderAsync(Guid userId, PlaceOrderDto dto, CancellationToken cancellationToken = default);
+    Task<PlaceOrderResultDto> PlaceOrderAsync(Guid userId, PlaceOrderDto dto, CancellationToken cancellationToken = default);
+
+    Task<OrderDto> ConfirmOrderPaymentAsync(
+        Guid orderId,
+        Guid transactionId,
+        CancellationToken cancellationToken = default);
+
+    Task<int> GetActiveOrderCountAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<OrderDetailDto> GetOrderDetailForUserAsync(Guid userId, Guid orderId, CancellationToken cancellationToken = default);
 

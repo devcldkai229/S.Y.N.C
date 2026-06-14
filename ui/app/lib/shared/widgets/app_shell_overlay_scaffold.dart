@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
+import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
 import 'package:sync_app/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:sync_app/shared/widgets/app_radial_fab_items.dart';
 import 'package:sync_app/shared/widgets/draggable_radial_fab.dart';
@@ -35,7 +37,10 @@ class AppShellOverlayScaffold extends StatelessWidget {
             onTabSelected: (tab) => _onTabSelected(context, tab),
           ),
         ),
-        DraggableRadialFab(items: AppRadialFabItems.build(context)),
+        ListenableBuilder(
+          listenable: getIt<ActiveOrderCountNotifier>(),
+          builder: (context, _) => DraggableRadialFab(items: AppRadialFabItems.build(context)),
+        ),
       ],
     );
   }

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/models/api_models.dart';
 import 'package:sync_app/core/network/api_paths.dart';
+import 'package:sync_app/core/network/multipart_file_utils.dart';
 import 'package:sync_app/features/profile/models/profile_models.dart';
 
 class ProfileApiService {
@@ -65,19 +67,37 @@ class ProfileApiService {
   Future<ProfileSettings> updateBasicProfile({
     String? fullName,
     String? avatarUrl,
+    String? backgroundImageUrl,
     String? preferredLanguage,
     String? timeZone,
   }) async {
     final response = await _dio.put<Map<String, dynamic>>(
       ApiPaths.meBasicProfile,
       data: <String, dynamic>{
-        'fullName': fullName,
-        'avatarUrl': avatarUrl,
-        'preferredLanguage': preferredLanguage,
-        'timeZone': timeZone,
+        if (fullName != null) 'fullName': fullName,
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+        if (backgroundImageUrl != null) 'backgroundImageUrl': backgroundImageUrl,
+        if (preferredLanguage != null) 'preferredLanguage': preferredLanguage,
+        if (timeZone != null) 'timeZone': timeZone,
       },
     );
     return _parseSettings(response.data);
+  }
+
+  Future<List<String>> uploadProfileMedia(XFile file) async {
+    final multipart = await multipartFileFromXFile(file);
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.meMediaUpload,
+      data: FormData.fromMap({'files': [multipart]}),
+      options: Options(contentType: 'multipart/form-data'),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Upload failed').toString());
+    }
+    final raw = json['data'];
+    if (raw is List) return raw.map((e) => e.toString()).toList();
+    return <String>[];
   }
 
   Future<ProfileSettings> updateFitnessProfile(FitnessProfile fitness) async {

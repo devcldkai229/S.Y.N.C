@@ -8,6 +8,7 @@ using Order.Application.DTOs;
 using Order.Application.Exceptions;
 using Order.Application.Helpers;
 using Order.Application.Mappers;
+using Order.Application.Ports;
 using Order.Application.Services;
 using Order.Domain.Enums;
 using Order.Domain.Models;
@@ -25,6 +26,8 @@ public class OrderService : IOrderService
     private readonly INutritionEventClient _nutritionEventClient;
     private readonly ICommissionService _commissionService;
     private readonly IDeliveryTrackingService _deliveryTrackingService;
+    private readonly ICartStore _cartStore;
+    private readonly IDeliveryAddressStore _deliveryAddressStore;
     private readonly OrderSettings _settings;
     private readonly ILogger<OrderService> _logger;
 
@@ -36,6 +39,8 @@ public class OrderService : IOrderService
         INutritionEventClient nutritionEventClient,
         ICommissionService commissionService,
         IDeliveryTrackingService deliveryTrackingService,
+        ICartStore cartStore,
+        IDeliveryAddressStore deliveryAddressStore,
         IOptions<OrderSettings> settings,
         ILogger<OrderService> logger)
     {
@@ -46,28 +51,39 @@ public class OrderService : IOrderService
         _nutritionEventClient = nutritionEventClient;
         _commissionService = commissionService;
         _deliveryTrackingService = deliveryTrackingService;
+        _cartStore = cartStore;
+        _deliveryAddressStore = deliveryAddressStore;
         _settings = settings.Value;
         _logger = logger;
     }
 
-    public async Task<OrderDto> PlaceOrderAsync(
+    public async Task<PlaceOrderResultDto> PlaceOrderAsync(
         Guid userId,
         PlaceOrderDto dto,
         CancellationToken cancellationToken = default)
     {
+        await HydrateFromCheckoutSessionAsync(userId, dto, cancellationToken);
+
         if (dto.Items.Count == 0)
-            throw new BadRequestException("At least one item is required.");
-        if (!string.IsNullOrWhiteSpace(dto.ClientRequestKey))
+            throw new BadRequestException("Giỏ hàng trống.");
+
+        var idempotencyKey = dto.IdempotencyKey ?? dto.ClientRequestKey;
+        if (!string.IsNullOrWhiteSpace(idempotencyKey))
         {
             var existing = await _db.OrderIdempotencyKeys
                 .AsNoTracking()
                 .FirstOrDefaultAsync(
-                    x => x.UserId == userId && x.ClientRequestKey == dto.ClientRequestKey,
+                    x => x.UserId == userId && x.ClientRequestKey == idempotencyKey,
                     cancellationToken);
             if (existing != null)
             {
                 var existingOrder = await LoadOrderAsync(existing.OrderId, cancellationToken);
-                return existingOrder.ToDto();
+                return new PlaceOrderResultDto
+                {
+                    Order = existingOrder.ToDto(),
+                    RequiresExternalPayment = existingOrder.PaymentStatus == PaymentStatus.Unpaid
+                        && existingOrder.Status == OrderStatus.Pending,
+                };
             }
         }
 
@@ -105,38 +121,128 @@ public class OrderService : IOrderService
         }
 
         var deliveryFee = _settings.DefaultDeliveryFee;
-        var orderId = Guid.NewGuid();
-        var charge = await _paymentClient.ChargeMealOrderAsync(new ChargeMealOrderRequest
+        var preDiscountTotal = subtotal + deliveryFee;
+        decimal discount = 0;
+        Guid? voucherCampaignId = dto.VoucherId;
+        string? voucherCode = dto.VoucherCode;
+
+        if (!string.IsNullOrWhiteSpace(voucherCode))
         {
-            UserId = userId,
-            OrderId = orderId,
-            Amount = subtotal + deliveryFee,
-            VoucherId = dto.VoucherId,
-            IsAiInitiated = dto.IsAiInitiated,
-        }, cancellationToken);
+            var voucher = await _paymentClient.ValidateVoucherAsync(new ValidateVoucherRequest
+            {
+                UserId = userId,
+                Code = voucherCode,
+                OrderAmount = preDiscountTotal,
+                PartnerId = dto.PartnerId,
+            }, cancellationToken);
 
-        if (!charge.Success)
-            throw new BadRequestException(charge.FailureReason ?? "Payment failed.");
+            if (!voucher.Valid)
+                throw new BadRequestException(voucher.Message ?? "Voucher không hợp lệ.");
 
-        var discount = charge.DiscountAmount;
-        var total = subtotal + deliveryFee - discount;
+            discount = voucher.DiscountAmount;
+            voucherCampaignId = voucher.CampaignId;
+            voucherCode = voucherCode.Trim().ToUpperInvariant();
+        }
+
+        var total = preDiscountTotal - discount;
+        var orderId = Guid.NewGuid();
+        var orderCode = OrderCodeGenerator.Generate();
         var now = DateTimeOffset.UtcNow;
+
+        Guid? paymentTransactionId = null;
+        string? payUrl = null;
+        string? deeplink = null;
+        string? checkoutUrl = null;
+        string? qrCode = null;
+        long? payOsOrderCode = null;
+        var requiresExternalPayment = false;
+        OrderStatus orderStatus;
+        PaymentStatus paymentStatus;
+
+        switch (dto.PaymentMethod)
+        {
+            case CheckoutPaymentMethod.Wallet:
+            {
+                var charge = await _paymentClient.ChargeMealOrderAsync(new ChargeMealOrderRequest
+                {
+                    UserId = userId,
+                    OrderId = orderId,
+                    Amount = total,
+                    IsAiInitiated = dto.IsAiInitiated,
+                }, cancellationToken);
+
+                if (!charge.Success)
+                {
+                    if (charge.InsufficientBalance)
+                        throw new PaymentRequiredException(charge.FailureReason ?? "Số dư ví không đủ.");
+                    throw new BadRequestException(charge.FailureReason ?? "Thanh toán ví thất bại.");
+                }
+
+                paymentTransactionId = charge.TransactionId;
+                orderStatus = OrderStatus.Confirmed;
+                paymentStatus = PaymentStatus.Paid;
+                break;
+            }
+            case CheckoutPaymentMethod.COD:
+            {
+                var cod = await _paymentClient.CreateCodTransactionAsync(new CreateCodPaymentRequest
+                {
+                    UserId = userId,
+                    OrderId = orderId,
+                    Amount = total,
+                }, cancellationToken);
+
+                if (!cod.Success)
+                    throw new BadRequestException("Không tạo được giao dịch COD.");
+
+                paymentTransactionId = cod.TransactionId;
+                orderStatus = OrderStatus.Confirmed;
+                paymentStatus = PaymentStatus.Unpaid;
+                break;
+            }
+            case CheckoutPaymentMethod.VietQR:
+            {
+                var vietQr = await _paymentClient.CreateVietQrPaymentAsync(new CreateVietQrPaymentRequest
+                {
+                    UserId = userId,
+                    OrderId = orderId,
+                    OrderCode = orderCode,
+                    Amount = total,
+                }, cancellationToken);
+
+                if (!vietQr.Success)
+                    throw new BadRequestException(vietQr.FailureReason ?? "Không tạo được thanh toán VietQR.");
+
+                paymentTransactionId = vietQr.TransactionId;
+                payUrl = vietQr.CheckoutUrl;
+                checkoutUrl = vietQr.CheckoutUrl;
+                qrCode = vietQr.QrCode;
+                payOsOrderCode = vietQr.PayOsOrderCode;
+                requiresExternalPayment = true;
+                orderStatus = OrderStatus.Pending;
+                paymentStatus = PaymentStatus.Unpaid;
+                break;
+            }
+            default:
+                throw new BadRequestException("Phương thức thanh toán không hợp lệ.");
+        }
 
         var order = new Domain.Models.Order
         {
             Id = orderId,
             UserId = userId,
             PartnerId = dto.PartnerId,
-            OrderCode = OrderCodeGenerator.Generate(),
-            Status = OrderStatus.Confirmed,
+            OrderCode = orderCode,
+            Status = orderStatus,
             SubtotalAmount = subtotal,
             DeliveryFee = deliveryFee,
             DiscountAmount = discount,
             TotalAmount = total,
             Currency = "VND",
-            PaymentTransactionId = charge.TransactionId,
-            PaymentStatus = PaymentStatus.Paid,
-            VoucherId = dto.VoucherId,
+            PaymentTransactionId = paymentTransactionId,
+            PaymentStatus = paymentStatus,
+            VoucherId = voucherCampaignId,
+            VoucherCode = voucherCode,
             DeliveryAddress = dto.DeliveryAddress,
             DeliveryLat = dto.DeliveryLat,
             DeliveryLng = dto.DeliveryLng,
@@ -146,52 +252,150 @@ public class OrderService : IOrderService
             IsAiInitiated = dto.IsAiInitiated,
             AIReasoningSnapshotJson = dto.AIReasoningSnapshotJson,
             PlacedAt = now,
-            ConfirmedAt = now,
+            ConfirmedAt = orderStatus == OrderStatus.Confirmed ? now : null,
             Items = orderItems,
         };
 
         foreach (var item in orderItems)
             item.OrderId = order.Id;
 
-        await using var tx = await _db.Database.BeginTransactionAsync(cancellationToken);
-        _db.Orders.Add(order);
+        var strategy = _db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(
+            (object?)null,
+            async (_, _, ct) =>
+            {
+                await using var tx = await _db.Database.BeginTransactionAsync(ct);
+                _db.Orders.Add(order);
+                _db.OrderStatusHistories.Add(new OrderStatusHistory
+                {
+                    OrderId = order.Id,
+                    FromStatus = OrderStatus.Pending,
+                    ToStatus = orderStatus,
+                    ChangedBy = "system",
+                    Note = dto.PaymentMethod.ToString(),
+                });
+
+                if (!string.IsNullOrWhiteSpace(idempotencyKey))
+                {
+                    _db.OrderIdempotencyKeys.Add(new OrderIdempotencyKey
+                    {
+                        UserId = userId,
+                        ClientRequestKey = idempotencyKey!,
+                        OrderId = order.Id,
+                    });
+                }
+
+                await _db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+                return true;
+            },
+            verifySucceeded: null,
+            cancellationToken);
+
+        if (orderStatus == OrderStatus.Confirmed)
+        {
+            await FinalizeSuccessfulOrderAsync(userId, order, voucherCode, clearCart: true, cancellationToken);
+        }
+
+        _logger.LogInformation(
+            "OrderPlaced {Event}: {OrderId} user={UserId} partner={PartnerId} total={Total} method={Method}",
+            nameof(OrderPlacedEvent),
+            order.Id,
+            userId,
+            order.PartnerId,
+            order.TotalAmount,
+            dto.PaymentMethod);
+
+        return new PlaceOrderResultDto
+        {
+            Order = order.ToDto(),
+            PayUrl = payUrl,
+            Deeplink = deeplink,
+            CheckoutUrl = checkoutUrl,
+            QrCode = qrCode,
+            PayOsOrderCode = payOsOrderCode,
+            RequiresExternalPayment = requiresExternalPayment,
+        };
+    }
+
+    public async Task<OrderDto> ConfirmOrderPaymentAsync(
+        Guid orderId,
+        Guid transactionId,
+        CancellationToken cancellationToken = default)
+    {
+        var order = await LoadOrderAsync(orderId, cancellationToken);
+        if (order.PaymentStatus == PaymentStatus.Paid && order.Status == OrderStatus.Confirmed)
+            return order.ToDto();
+
+        order.PaymentStatus = PaymentStatus.Paid;
+        order.PaymentTransactionId = transactionId;
+        order.Status = OrderStatus.Confirmed;
+        order.ConfirmedAt = DateTimeOffset.UtcNow;
+        order.UpdatedAt = DateTimeOffset.UtcNow;
+
         _db.OrderStatusHistories.Add(new OrderStatusHistory
         {
             OrderId = order.Id,
             FromStatus = OrderStatus.Pending,
             ToStatus = OrderStatus.Confirmed,
-            ChangedBy = "system",
-            Note = "Payment succeeded",
+            ChangedBy = "payos-webhook",
+            Note = "VietQR payment succeeded",
         });
 
-        if (!string.IsNullOrWhiteSpace(dto.ClientRequestKey))
+        await _db.SaveChangesAsync(cancellationToken);
+        await FinalizeSuccessfulOrderAsync(order.UserId, order, order.VoucherCode, clearCart: true, cancellationToken);
+        return order.ToDto();
+    }
+
+    public async Task<int> GetActiveOrderCountAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var terminal = new[]
         {
-            _db.OrderIdempotencyKeys.Add(new OrderIdempotencyKey
+            OrderStatus.Delivered,
+            OrderStatus.Completed,
+            OrderStatus.Cancelled,
+            OrderStatus.Refunded,
+        };
+
+        return await _db.Orders.AsNoTracking()
+            .CountAsync(o => o.UserId == userId && !terminal.Contains(o.Status), cancellationToken);
+    }
+
+    private async Task FinalizeSuccessfulOrderAsync(
+        Guid userId,
+        Domain.Models.Order order,
+        string? voucherCode,
+        bool clearCart,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(voucherCode))
+        {
+            await _paymentClient.MarkVoucherUsedAsync(new MarkVoucherUsedRequest
             {
                 UserId = userId,
-                ClientRequestKey = dto.ClientRequestKey!,
+                Code = voucherCode,
                 OrderId = order.Id,
-            });
+            }, cancellationToken);
         }
-
-        await _db.SaveChangesAsync(cancellationToken);
-        await tx.CommitAsync(cancellationToken);
 
         await _notificationClient.SendOrderStatusAsync(
             userId,
-            "Đơn hàng đã đặt",
+            "Đặt hàng thành công",
             $"Đơn {order.OrderCode} đã được xác nhận.",
             order.Id,
             cancellationToken);
 
-        _logger.LogInformation(
-            "OrderPlaced {Event}: {OrderId} user={UserId} partner={PartnerId} total={Total}",
-            nameof(OrderPlacedEvent),
-            order.Id,
-            userId,
-            order.PartnerId,
-            order.TotalAmount);
-        return order.ToDto();
+        if (clearCart)
+            await _cartStore.DeleteAsync(userId, cancellationToken);
+
+        try
+        {
+            await _deliveryTrackingService.KickoffDeliveryAsync(order.Id, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Delivery kickoff failed for order {OrderId}", order.Id);
+        }
     }
 
     public async Task<OrderDetailDto> GetOrderDetailForUserAsync(
@@ -427,6 +631,40 @@ public class OrderService : IOrderService
         };
 
         await _nutritionEventClient.PublishOrderCompletedAsync(evt, cancellationToken);
+    }
+
+    private async Task HydrateFromCheckoutSessionAsync(
+        Guid userId,
+        PlaceOrderDto dto,
+        CancellationToken cancellationToken)
+    {
+        if (dto.Items.Count == 0 || dto.PartnerId == Guid.Empty)
+        {
+            var cart = await _cartStore.GetAsync(userId, cancellationToken);
+            if (cart is { Items.Count: > 0, PartnerId: not null })
+            {
+                dto.PartnerId = cart.PartnerId.Value;
+                dto.Items = cart.Items.Select(i => new PlaceOrderItemDto
+                {
+                    FoodMenuItemId = i.FoodMenuItemId,
+                    Quantity = i.Quantity,
+                    Notes = i.Notes,
+                }).ToList();
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.DeliveryAddress) ||
+            !dto.DeliveryLat.HasValue ||
+            !dto.DeliveryLng.HasValue)
+        {
+            var address = await _deliveryAddressStore.GetAsync(userId, cancellationToken);
+            if (address != null)
+            {
+                dto.DeliveryAddress ??= address.Label;
+                dto.DeliveryLat ??= (decimal)address.Lat;
+                dto.DeliveryLng ??= (decimal)address.Lng;
+            }
+        }
     }
 
     private async Task<Domain.Models.Order> LoadOrderAsync(Guid orderId, CancellationToken cancellationToken)

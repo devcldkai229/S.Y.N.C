@@ -8,5 +8,6 @@ public enum MovementPattern
     VerticalPull = 3,
     Squat = 4,
     Hinge = 5,
-    Core = 6
+    Core = 6,
+    General = 7,
 }

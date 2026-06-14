@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/locale/l10n_extensions.dart';
@@ -12,6 +14,7 @@ import 'package:sync_app/features/profile/models/profile_models.dart';
 import 'package:sync_app/features/profile/widgets/profile_edit_sheets.dart';
 import 'package:sync_app/shared/widgets/language_switcher.dart';
 import 'package:sync_app/shared/widgets/sync_app_bar.dart';
+import 'package:sync_app/shared/widgets/sync_avatar.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -102,12 +105,16 @@ class _ProfileScreenBody extends StatelessWidget {
                       _AvatarHeader(
                         name: s.basic.fullName,
                         email: s.basic.email,
+                        avatarUrl: s.basic.avatarUrl,
+                        backgroundImageUrl: s.basic.backgroundImageUrl,
                         level: level,
                         xp: xp,
                         streak: streak,
                         coins: coins,
                         verified: s.basic.emailVerified,
                         onEditAccount: () => _editAccount(context, s.basic),
+                        onPickAvatar: () => _pickAndUploadAvatar(context),
+                        onPickBackground: () => _pickAndUploadBackground(context),
                       ),
                       const SizedBox(height: 12),
                       if (s.profileCompletenessPercent < 100) ...[
@@ -324,6 +331,26 @@ class _ProfileScreenBody extends StatelessWidget {
         );
   }
 
+  Future<void> _pickAndUploadAvatar(BuildContext context) async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null || !context.mounted) return;
+    final ok = await context.read<ProfileCubit>().uploadAndSaveAvatar(picked);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? 'Đã cập nhật ảnh đại diện' : 'Không thể tải ảnh lên')),
+    );
+  }
+
+  Future<void> _pickAndUploadBackground(BuildContext context) async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (picked == null || !context.mounted) return;
+    final ok = await context.read<ProfileCubit>().uploadAndSaveBackground(picked);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(ok ? 'Đã cập nhật ảnh nền' : 'Không thể tải ảnh lên')),
+    );
+  }
+
   Future<void> _editFitness(BuildContext context, FitnessProfile fitness) async {
     final updated = await showFitnessProfileEditor(context, fitness);
     if (updated == null || !context.mounted) return;
@@ -416,51 +443,121 @@ class _AvatarHeader extends StatelessWidget {
   const _AvatarHeader({
     required this.name,
     required this.email,
+    this.avatarUrl,
+    this.backgroundImageUrl,
     required this.level,
     required this.xp,
     required this.streak,
     required this.coins,
     required this.verified,
     required this.onEditAccount,
+    required this.onPickAvatar,
+    required this.onPickBackground,
   });
 
   final String name;
   final String email;
+  final String? avatarUrl;
+  final String? backgroundImageUrl;
   final int level;
   final int xp;
   final int streak;
   final int coins;
   final bool verified;
   final VoidCallback onEditAccount;
+  final VoidCallback onPickAvatar;
+  final VoidCallback onPickBackground;
+
+  static const _avatarRadius = 60.0;
+  static const _bannerHeight = 200.0;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        children: [
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              CircleAvatar(
-                radius: 48,
-                backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.15),
-                child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : '?',
-                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final hasBackground = backgroundImageUrl != null && backgroundImageUrl!.isNotEmpty;
+
+    return Column(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            GestureDetector(
+              onTap: onPickBackground,
+              child: Transform.translate(
+                offset: const Offset(-20, 0),
+                child: SizedBox(
+                  width: screenWidth,
+                  height: _bannerHeight,
+                    child: hasBackground
+                        ? CachedNetworkImage(
+                            imageUrl: backgroundImageUrl!,
+                            fit: BoxFit.cover,
+                            width: screenWidth,
+                            height: _bannerHeight,
+                          )
+                        : DecoratedBox(
+                            decoration: const BoxDecoration(color: AppColors.lightGreen),
+                            child: Center(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.wallpaper_rounded, color: AppColors.primaryGreen),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Đổi ảnh nền',
+                                    style: TextStyle(
+                                      color: AppColors.primaryGreen.withValues(alpha: 0.9),
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                 ),
               ),
-              GestureDetector(
-                onTap: onEditAccount,
-                child: Container(
-                  padding: const EdgeInsets.all(7),
-                  decoration: const BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
-                  child: const Icon(Icons.edit, size: 15, color: Colors.white),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: -_avatarRadius,
+              child: Center(
+                child: GestureDetector(
+                  onTap: onPickAvatar,
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.cardBackground,
+                          border: Border.all(color: AppColors.cardBackground, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: SyncAvatar(name: name, imageUrl: avatarUrl, radius: _avatarRadius),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: const BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
+            ),
+          ],
+        ),
+        SizedBox(height: _avatarRadius + 8),
+        Column(
+          children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -476,8 +573,18 @@ class _AvatarHeader extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(email, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-          const SizedBox(height: 14),
-          // Stat chips row
+          const SizedBox(height: 8),
+          TextButton.icon(
+            onPressed: onPickAvatar,
+            icon: const Icon(Icons.camera_alt_outlined, size: 16),
+            label: const Text('Đổi ảnh đại diện'),
+          ),
+          TextButton.icon(
+            onPressed: onEditAccount,
+            icon: const Icon(Icons.edit_outlined, size: 16),
+            label: const Text('Chỉnh sửa tài khoản'),
+          ),
+          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -506,8 +613,9 @@ class _AvatarHeader extends StatelessWidget {
               ),
             ],
           ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }

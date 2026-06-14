@@ -14,6 +14,7 @@ public static class ApplicationMappers
             Id = entity.Id,
             UserId = entity.UserId,
             WorkoutName = entity.WorkoutName,
+            CoverRoadmapImageUrl = entity.CoverRoadmapImageUrl,
             Visibility = entity.Visibility,
             ParentWorkoutId = entity.ParentWorkoutId,
             SavesCount = entity.SavesCount,
@@ -35,6 +36,7 @@ public static class ApplicationMappers
     {
         entity.UserId = dto.UserId;
         entity.WorkoutName = dto.WorkoutName;
+        entity.CoverRoadmapImageUrl = dto.CoverRoadmapImageUrl;
         entity.ScheduleMode = dto.ScheduleMode;
         entity.Visibility = dto.Visibility;
         entity.AllowAiOptimization = dto.AllowAiOptimization;
@@ -453,6 +455,10 @@ public static class ApplicationMappers
     public static void UpdateEntity(this UserCustomWorkout entity, UpdateUserCustomWorkoutDto dto)
     {
         entity.WorkoutName = dto.WorkoutName;
+        if (dto.CoverRoadmapImageUrl is not null)
+            entity.CoverRoadmapImageUrl = string.IsNullOrWhiteSpace(dto.CoverRoadmapImageUrl)
+                ? null
+                : dto.CoverRoadmapImageUrl.Trim();
         entity.ScheduleMode = dto.ScheduleMode;
         entity.Visibility = dto.Visibility;
         entity.AllowAiOptimization = dto.AllowAiOptimization;
@@ -475,6 +481,7 @@ public static class ApplicationMappers
         {
             Id = entity.Id,
             WorkoutName = entity.WorkoutName,
+            CoverRoadmapImageUrl = entity.CoverRoadmapImageUrl,
             Visibility = entity.Visibility,
             ParentWorkoutId = entity.ParentWorkoutId,
             SavesCount = entity.SavesCount,

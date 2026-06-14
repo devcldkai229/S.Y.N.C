@@ -8,6 +8,8 @@ public class UserCustomWorkout : BaseMongoEntity
 
     public string WorkoutName { get; set; } = string.Empty;
 
+    public string? CoverRoadmapImageUrl { get; set; }
+
     public Visibility Visibility { get; set; }
 
     public Guid? ParentWorkoutId { get; set; }

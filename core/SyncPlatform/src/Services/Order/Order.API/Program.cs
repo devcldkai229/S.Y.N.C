@@ -13,6 +13,8 @@ using Order.Application.Ports;
 using Order.Infrastructure.Extensions;
 using Order.Infrastructure.Persistence;
 using Order.Infrastructure.Persistence.Seed;
+using Microsoft.Extensions.Options;
+using Order.Infrastructure.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -109,5 +111,11 @@ app.UseSyncJwtAuthentication();
 app.MapSyncHealthChecks();
 app.MapControllers();
 app.MapHub<TrackingHub>(TrackingHub.HubPath);
+
+var orderSettings = app.Services.GetRequiredService<IOptions<OrderSettings>>().Value;
+if (!string.IsNullOrWhiteSpace(orderSettings.AhamoveWebhookUrl))
+{
+    app.Logger.LogInformation("Ahamove webhook URL (register in partner portal): {WebhookUrl}", orderSettings.AhamoveWebhookUrl);
+}
 
 app.Run();

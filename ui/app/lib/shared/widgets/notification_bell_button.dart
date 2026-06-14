@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:sync_app/core/constants/app_routes.dart';
+import 'package:sync_app/core/network/dio_errors.dart';
 import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
 import 'package:sync_app/core/notifications/notification_realtime_service.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/notification_repository.dart';
+import 'package:sync_app/shared/widgets/notification_inbox_panel.dart';
 
 class NotificationBellButton extends StatefulWidget {
   const NotificationBellButton({
@@ -25,6 +25,7 @@ class NotificationBellButton extends StatefulWidget {
 }
 
 class _NotificationBellButtonState extends State<NotificationBellButton> {
+  final _anchorKey = GlobalKey();
   NotificationInboxNotifier get _inbox => getIt<NotificationInboxNotifier>();
   Timer? _pollTimer;
 
@@ -53,13 +54,26 @@ class _NotificationBellButtonState extends State<NotificationBellButton> {
       final count = await getIt<NotificationRepository>().unreadCount();
       _inbox.setUnreadCount(count);
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      if (status == 404 || status == 502 || status == 503) {
-        _inbox.setUnreadCount(0);
+      if (isOptionalApiDioError(e)) {
+        // Keep the last badge when unread-count is slow or unavailable.
       }
     } catch (_) {
       // Badge is best-effort
     }
+  }
+
+  Future<void> _openInboxPanel() async {
+    final context = _anchorKey.currentContext;
+    if (context == null) return;
+
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.hasSize) return;
+
+    final offset = box.localToGlobal(Offset.zero);
+    final anchor = offset & box.size;
+
+    await NotificationInboxPanel.show(context, anchor: anchor);
+    if (mounted) await _loadUnreadCount();
   }
 
   @override
@@ -67,10 +81,9 @@ class _NotificationBellButtonState extends State<NotificationBellButton> {
     final unread = _inbox.unreadCount;
 
     return IconButton(
-      onPressed: () async {
-        await context.push(AppRoutes.notifications);
-        if (mounted) await _loadUnreadCount();
-      },
+      key: _anchorKey,
+      tooltip: 'Thông báo',
+      onPressed: _openInboxPanel,
       icon: Badge(
         isLabelVisible: unread > 0,
         label: Text(

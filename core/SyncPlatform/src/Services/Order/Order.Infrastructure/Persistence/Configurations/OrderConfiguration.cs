@@ -33,6 +33,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Domain.Models.Order>
         builder.Property(o => o.RecipientPhone).HasMaxLength(32);
         builder.Property(o => o.Notes).HasMaxLength(1024);
         builder.Property(o => o.CancellationReason).HasMaxLength(1024);
+        builder.Property(o => o.VoucherCode).HasMaxLength(64);
         builder.Property(o => o.AIReasoningSnapshotJson).HasColumnType("jsonb");
 
         builder.HasMany(o => o.Items)

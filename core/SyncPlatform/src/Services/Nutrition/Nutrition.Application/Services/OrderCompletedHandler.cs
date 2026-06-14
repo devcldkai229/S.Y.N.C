@@ -11,13 +11,16 @@ public class OrderCompletedHandler : IOrderCompletedHandler
 {
     private readonly IMealLogRepository _mealLogRepository;
     private readonly IDailyNutritionSummaryService _dailySummaryService;
+    private readonly INutritionRealtimePublisher _realtimePublisher;
 
     public OrderCompletedHandler(
         IMealLogRepository mealLogRepository,
-        IDailyNutritionSummaryService dailySummaryService)
+        IDailyNutritionSummaryService dailySummaryService,
+        INutritionRealtimePublisher realtimePublisher)
     {
         _mealLogRepository = mealLogRepository;
         _dailySummaryService = dailySummaryService;
+        _realtimePublisher = realtimePublisher;
     }
 
     public async Task HandleAsync(OrderCompletedEvent orderEvent, CancellationToken cancellationToken = default)
@@ -52,10 +55,12 @@ public class OrderCompletedHandler : IOrderCompletedHandler
 
         NutritionMacroCalculator.ApplyTotals(log);
         await _mealLogRepository.CreateAsync(log, cancellationToken);
+        var logDate = DateOnly.FromDateTime(orderEvent.CompletedAt.UtcDateTime);
         await _dailySummaryService.RecomputeForDateAsync(
             orderEvent.UserId,
-            DateOnly.FromDateTime(orderEvent.CompletedAt.UtcDateTime),
+            logDate,
             cancellationToken);
+        await _realtimePublisher.PublishNutritionUpdatedAsync(orderEvent.UserId, logDate, cancellationToken);
     }
 
     private static MealType InferMealType(DateTimeOffset completedAt)

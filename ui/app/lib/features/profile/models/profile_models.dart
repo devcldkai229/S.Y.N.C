@@ -35,6 +35,7 @@ class BasicProfile {
   BasicProfile({
     required this.fullName,
     this.avatarUrl,
+    this.backgroundImageUrl,
     required this.email,
     this.phoneNumber,
     required this.preferredLanguage,
@@ -48,6 +49,7 @@ class BasicProfile {
 
   final String fullName;
   final String? avatarUrl;
+  final String? backgroundImageUrl;
   final String email;
   final String? phoneNumber;
   final String preferredLanguage;
@@ -62,6 +64,7 @@ class BasicProfile {
     return BasicProfile(
       fullName: (json['fullName'] ?? '').toString(),
       avatarUrl: json['avatarUrl']?.toString(),
+      backgroundImageUrl: json['backgroundImageUrl']?.toString(),
       email: (json['email'] ?? '').toString(),
       phoneNumber: json['phoneNumber']?.toString(),
       preferredLanguage: (json['preferredLanguage'] ?? 'en').toString(),
@@ -411,6 +414,7 @@ class PublicProfile {
     required this.userId,
     required this.fullName,
     this.avatarUrl,
+    this.backgroundImageUrl,
     required this.currentLevel,
     required this.currentXp,
     required this.currentStreak,
@@ -419,6 +423,7 @@ class PublicProfile {
   final String userId;
   final String fullName;
   final String? avatarUrl;
+  final String? backgroundImageUrl;
   final int currentLevel;
   final int currentXp;
   final int currentStreak;
@@ -428,6 +433,7 @@ class PublicProfile {
       userId: json['userId']?.toString() ?? '',
       fullName: (json['fullName'] ?? '').toString(),
       avatarUrl: json['avatarUrl']?.toString(),
+      backgroundImageUrl: json['backgroundImageUrl']?.toString(),
       currentLevel: _jsonInt(json['currentLevel'], fallback: 1),
       currentXp: _jsonInt(json['currentXP'] ?? json['currentXp']),
       currentStreak: _jsonInt(json['currentStreak']),

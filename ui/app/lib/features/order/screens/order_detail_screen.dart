@@ -1,17 +1,23 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/utils/injection.dart';
-import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
 import 'package:sync_app/features/order/data/order_remote_data_source.dart';
 import 'package:sync_app/features/order/models/order_models.dart';
-import 'package:sync_app/features/order/services/order_tracking_service.dart';
+import 'package:sync_app/features/order/models/tracking_update.dart';
+import 'package:sync_app/features/order/services/i_tracking_service.dart';
+import 'package:sync_app/features/order/theme/order_theme.dart';
+import 'package:sync_app/features/order/widgets/eta_banner.dart';
 import 'package:sync_app/features/order/widgets/live_tracking_map.dart';
-import 'package:sync_app/features/order/widgets/order_status_stepper.dart';
-import 'package:sync_app/features/order/widgets/shipper_card.dart';
-import 'package:sync_app/features/order/widgets/status_chip.dart';
+import 'package:sync_app/features/order/widgets/order_summary_compact.dart';
+import 'package:sync_app/features/order/widgets/tracking_shipper_card.dart';
+import 'package:sync_app/features/order/widgets/tracking_status_stepper.dart';
+import 'package:sync_app/features/order/utils/tracking_map_coords.dart';
+import 'package:sync_app/features/order/utils/tracking_status_mapper.dart';
+import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   const OrderDetailScreen({super.key, required this.orderId});
@@ -24,110 +30,208 @@ class OrderDetailScreen extends StatefulWidget {
 
 class _OrderDetailScreenState extends State<OrderDetailScreen> {
   final _api = getIt<OrderRemoteDataSource>();
-  final _trackingService = getIt<OrderTrackingService>();
+  late final ITrackingService _tracking = getIt<ITrackingService>();
+
   OrderSummary? _order;
-  LatLng? _shipper;
-  StreamSubscription<TrackingLocationUpdate>? _sub;
-  Timer? _fallbackTimer;
+  TrackingUpdate? _update;
+  StreamSubscription<TrackingUpdate>? _sub;
+  final _stepTimes = <String, DateTime>{};
+  String? _error;
+
+  LatLng get _pickup {
+    final t = _order?.tracking;
+    final fallback = const LatLng(10.7769, 106.7009);
+    if (t?.pickupLat != null && t?.pickupLng != null) {
+      return TrackingMapCoords.sanitize(
+        LatLng(t!.pickupLat!, t.pickupLng!),
+        fallback,
+      );
+    }
+    return fallback;
+  }
+
+  LatLng get _dropoff {
+    final o = _order;
+    final fallback = LatLng(_pickup.latitude + 0.01, _pickup.longitude + 0.01);
+    if (o?.deliveryLat != null && o?.deliveryLng != null) {
+      return TrackingMapCoords.sanitize(
+        LatLng(o!.deliveryLat!, o.deliveryLng!),
+        fallback,
+      );
+    }
+    return fallback;
+  }
 
   @override
   void initState() {
     super.initState();
-    _load();
-    _connectRealtime();
-    _fallbackTimer = Timer.periodic(const Duration(seconds: 20), (_) => _refreshTracking());
+    _bootstrap();
   }
 
-  Future<void> _load() async {
-    final order = await _api.getOrder(widget.orderId);
-    if (!mounted) return;
-    setState(() => _order = order);
-    _applyTracking(order.tracking);
-  }
-
-  Future<void> _refreshTracking() async {
-    final t = await _api.getTracking(widget.orderId);
-    if (t != null && mounted) _applyTracking(t);
-  }
-
-  void _applyTracking(DeliveryTracking? t) {
-    if (t?.lastKnownLat != null && t?.lastKnownLng != null) {
-      setState(() => _shipper = LatLng(t!.lastKnownLat!, t.lastKnownLng!));
-    }
-  }
-
-  Future<void> _connectRealtime() async {
-    await _trackingService.connect(widget.orderId);
-    _sub = _trackingService.locations.listen((u) {
+  Future<void> _bootstrap() async {
+    try {
+      final order = await _api.getOrder(widget.orderId);
       if (!mounted) return;
-      setState(() => _shipper = LatLng(u.latitude, u.longitude));
-    });
+
+      setState(() {
+        _order = order;
+        _error = null;
+      });
+
+      final session = TrackingSession(
+        orderId: widget.orderId,
+        pickupLat: _pickup.latitude,
+        pickupLng: _pickup.longitude,
+        dropoffLat: _dropoff.latitude,
+        dropoffLng: _dropoff.longitude,
+      );
+
+      _sub = _tracking.watch(session).listen((u) {
+        if (!mounted) return;
+        setState(() {
+          _update = u;
+          _stepTimes.putIfAbsent(u.orderStatus, () => u.timestamp);
+        });
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'Không tải được đơn hàng. Vui lòng thử lại.');
+    }
   }
 
   @override
   void dispose() {
     _sub?.cancel();
-    _fallbackTimer?.cancel();
-    _trackingService.disconnect();
+    _tracking.stop();
     super.dispose();
+  }
+
+  List<DateTime?> _stepTimestamps() {
+    const order = ['Confirmed', 'Preparing', 'PickedUp', 'Delivering', 'Delivered'];
+    return order.map((s) => _stepTimes[s]).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final order = _order;
-    if (order == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    if (_error != null) {
+      return AppShellOverlayScaffold(
+        child: Scaffold(
+          backgroundColor: OrderTheme.background,
+          appBar: AppBar(
+            backgroundColor: OrderTheme.background,
+            title: const Text('Theo dõi đơn hàng'),
+          ),
+          body: Center(child: Text(_error!)),
+        ),
+      );
     }
 
-    final dest = order.deliveryLat != null && order.deliveryLng != null
-        ? LatLng(order.deliveryLat!, order.deliveryLng!)
-        : const LatLng(10.7769, 106.7009);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(order.orderCode),
-        actions: [Padding(padding: const EdgeInsets.only(right: 12), child: StatusChip(status: order.status))],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          LiveTrackingMap(destination: dest, shipper: _shipper),
-          const SizedBox(height: 12),
-          if (order.tracking != null) ShipperCard(tracking: order.tracking!),
-          const SizedBox(height: 16),
-          OrderStatusStepper(currentStatus: order.status),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: MarketplaceTheme.cardDecoration(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Tóm tắt đơn', style: TextStyle(fontWeight: FontWeight.w800)),
-                const SizedBox(height: 8),
-                ...order.items.map((i) => Text('${i.quantity}x ${i.nameSnapshot}')),
-                const Divider(),
-                Text('Tổng: ${order.totalAmount.toStringAsFixed(0)}đ'),
-                if (order.deliveryAddress != null) Text(order.deliveryAddress!),
-              ],
-            ),
+    final order = _order;
+    if (order == null) {
+      return AppShellOverlayScaffold(
+        child: Scaffold(
+          backgroundColor: OrderTheme.background,
+          appBar: AppBar(
+            backgroundColor: OrderTheme.background,
+            title: const Text('Theo dõi đơn hàng'),
           ),
-          if (order.status == 'Completed')
-            Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: FilledButton(
-                onPressed: () => context.push(
-                  AppRoutes.marketplaceWriteReview,
-                  extra: {
-                    'targetType': 'Partner',
-                    'targetId': order.partnerId,
-                    'orderId': order.id,
-                  },
-                ),
-                child: const Text('Đánh giá'),
+          body: const Center(child: CircularProgressIndicator(color: OrderTheme.accent)),
+        ),
+      );
+    }
+
+    final update = _update;
+    final status = update?.orderStatus ??
+        TrackingStatusMapper.displayOrderStatus(
+          orderStatus: order.status,
+          deliveryStatus: order.tracking?.status ?? 'Pending',
+        );
+    final shipperPoint = TrackingMapCoords.resolveShipper(
+      pickup: _pickup,
+      lat: update?.shipperLat,
+      lng: update?.shipperLng,
+      deliveryStatus: update?.deliveryStatus ?? order.tracking?.status,
+    );
+    final mapHeight = MediaQuery.sizeOf(context).height * 0.46;
+    final isDelivered = status == 'Delivered' || status == 'Completed';
+
+    return AppShellOverlayScaffold(
+      child: Scaffold(
+        backgroundColor: OrderTheme.background,
+        appBar: AppBar(
+          backgroundColor: OrderTheme.background,
+          elevation: 0,
+          foregroundColor: OrderTheme.textPrimary,
+          title: const Text('Theo dõi đơn hàng', style: TextStyle(fontWeight: FontWeight.w800)),
+        ),
+        body: Column(
+          children: [
+            SizedBox(
+              height: mapHeight,
+              width: double.infinity,
+              child: LiveTrackingMap(
+                pickup: _pickup,
+                destination: _dropoff,
+                shipper: shipperPoint,
+                followShipper: const {'Preparing', 'PickedUp', 'Delivering'}.contains(status),
+                height: mapHeight,
               ),
             ),
-        ],
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                children: [
+                  EtaBanner(
+                    etaMinutes: update?.etaMinutes,
+                    statusMessage: update?.statusMessage,
+                    isDelivered: isDelivered,
+                  ),
+                  const SizedBox(height: 20),
+                  TrackingStatusStepper(
+                    currentStatus: status,
+                    timestamps: _stepTimestamps(),
+                  ),
+                  if (update?.shipper != null) ...[
+                    const SizedBox(height: 16),
+                    TrackingShipperCard(shipper: update!.shipper!),
+                  ] else if (order.tracking?.shipperName != null) ...[
+                    const SizedBox(height: 16),
+                    TrackingShipperCard(
+                      shipper: ShipperInfo(
+                        name: order.tracking!.shipperName!,
+                        plateNumber: order.tracking!.shipperPlateNumber ?? '—',
+                        phone: order.tracking!.shipperPhone,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  OrderSummaryCompact(order: order),
+                  if (isDelivered) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton(
+                        onPressed: () => context.push(
+                          AppRoutes.marketplaceWriteReview,
+                          extra: {
+                            'targetType': 'Partner',
+                            'targetId': order.partnerId,
+                            'orderId': order.id,
+                          },
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: OrderTheme.accent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text('Đánh giá'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

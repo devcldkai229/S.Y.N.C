@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/network/api_paths.dart';
+import 'package:sync_app/core/network/multipart_file_utils.dart';
 import 'package:sync_app/features/social/models/follow_models.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
 
@@ -217,16 +219,14 @@ class SocialRemoteDataSource {
     throw Exception('Create reply failed (missing data).');
   }
 
-  Future<List<String>> uploadMediaFiles(List<String> filePaths) async {
-    final files = <MultipartFile>[];
-    for (final p in filePaths) {
-      // support Windows paths
-      if (p.trim().isEmpty) continue;
-      files.add(await MultipartFile.fromFile(p, filename: p.split('\\').last));
+  Future<List<String>> uploadMediaFiles(List<XFile> files) async {
+    final multipartFiles = <MultipartFile>[];
+    for (final file in files) {
+      multipartFiles.add(await multipartFileFromXFile(file));
     }
 
     final formData = FormData.fromMap(<String, dynamic>{
-      'files': files,
+      'files': multipartFiles,
     });
 
     final response = await _dio.post<Map<String, dynamic>>(
@@ -248,13 +248,12 @@ class SocialRemoteDataSource {
   }
 
   Future<SocialStory> createStory({
-    required String filePath,
+    required XFile file,
     String? caption,
     required String authorFullName,
     String? authorAvatarUrl,
   }) async {
-    final fileName = filePath.split(RegExp(r'[/\\]')).last;
-    final multipart = await MultipartFile.fromFile(filePath, filename: fileName);
+    final multipart = await multipartFileFromXFile(file);
 
     final formData = FormData.fromMap(<String, dynamic>{
       'file': multipart,

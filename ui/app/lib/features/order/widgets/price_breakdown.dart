@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sync_app/core/utils/currency_formatter.dart';
 
 class PriceBreakdown extends StatelessWidget {
   const PriceBreakdown({
@@ -33,7 +34,10 @@ class PriceBreakdown extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: TextStyle(fontWeight: bold ? FontWeight.w800 : FontWeight.w500)),
-            Text('${value.toStringAsFixed(0)}đ', style: TextStyle(fontWeight: bold ? FontWeight.w800 : null)),
+            Text(
+              CurrencyFormatter.formatVnd(value),
+              style: TextStyle(fontWeight: bold ? FontWeight.w800 : null),
+            ),
           ],
         ),
       );
