@@ -19,6 +19,8 @@ import 'package:sync_app/features/marketplace/widgets/home/marketplace_promo_car
 import 'package:sync_app/features/marketplace/widgets/home/marketplace_location_picker_sheet.dart';
 import 'package:sync_app/features/marketplace/widgets/home/marketplace_section_header.dart';
 import 'package:sync_app/features/marketplace/widgets/home/marketplace_shortcut_card.dart';
+import 'package:sync_app/features/marketplace/models/marketplace_listing_filter.dart';
+import 'package:sync_app/features/marketplace/utils/marketplace_nav.dart';
 import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
 import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
 
@@ -87,21 +89,21 @@ class _MarketplaceHomeView extends StatelessWidget {
                     locationStatus: state.locationStatus,
                     deliveryLabel: _deliveryLabel(state),
                     onLocationTap: () => _openLocationPicker(context),
-                    onSearchTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Tìm kiếm sẽ sớm ra mắt'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
+                    onSearchTap: () => MarketplaceNav.openSearch(context),
                     cartItemCount: cart.itemCount,
                     onCartTap: cart.items.isEmpty
                         ? null
                         : () => MarketplaceCartSheet.show(context),
                   ),
                 ),
-                const SliverToBoxAdapter(child: MarketplaceHeroBanner()),
+                SliverToBoxAdapter(
+                  child: MarketplaceHeroBanner(
+                    onTap: () => MarketplaceNav.openListing(
+                      context,
+                      filter: MarketplaceListingFilter.healthy,
+                    ),
+                  ),
+                ),
                 const SliverToBoxAdapter(child: SizedBox(height: 12)),
                 if (state.isLoading && data == null)
                   const SliverToBoxAdapter(child: MarketplaceHomeSkeleton())
@@ -118,25 +120,35 @@ class _MarketplaceHomeView extends StatelessWidget {
                     child: MarketplaceCategoryRow(
                       categories: data.categories,
                       selectedId: state.selectedCategoryId,
-                      onSelected: cubit.selectCategory,
+                      onSelected: (id) => MarketplaceNav.openCategory(context, id),
                     ),
                   ),
                   SliverToBoxAdapter(
                     child: MarketplaceShortcutRow(
                       shortcuts: data.shortcuts,
-                      onTap: (s) {
-                        if (s.filterTag != null) {
-                          cubit.selectCategory(s.filterTag == 'nearby' ? null : s.filterTag);
-                        }
+                      onTap: (s) => MarketplaceNav.openShortcut(context, s),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: MarketplacePromoCarousel(
+                      onSlideTap: (index) {
+                        final filter = switch (index) {
+                          0 => MarketplaceListingFilter.healthy,
+                          1 => MarketplaceListingFilter.highProtein,
+                          _ => MarketplaceListingFilter.macro,
+                        };
+                        MarketplaceNav.openListing(context, filter: filter);
                       },
                     ),
                   ),
-                  const SliverToBoxAdapter(child: MarketplacePromoCarousel()),
                   SliverToBoxAdapter(
                     child: MarketplaceSectionHeader(
                       title: 'Gợi ý cho bạn',
                       trailing: TextButton(
-                        onPressed: () {},
+                        onPressed: () => MarketplaceNav.openListing(
+                          context,
+                          filter: MarketplaceListingFilter.suggestions,
+                        ),
                         child: const Text('XEM TẤT CẢ', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
                       ),
                     ),
@@ -152,7 +164,7 @@ class _MarketplaceHomeView extends StatelessWidget {
                     SliverToBoxAdapter(
                       child: MarketplaceFeaturedRow(
                         dishes: data.featured,
-                        onDishTap: (d) => context.push(AppRoutes.marketplaceFoodItem(d.item.id)),
+                        onDishTap: (d) => context.push(AppRoutes.marketplacePartner(d.item.partnerId)),
                       ),
                     ),
                   SliverToBoxAdapter(

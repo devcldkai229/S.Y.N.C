@@ -37,6 +37,15 @@ public class PartnerRepository : GenericRepository<Partner>, IPartnerRepository
         if (criteria.Type.HasValue)
             filters.Add(builder.Eq(x => x.Type, criteria.Type.Value));
 
+        if (!string.IsNullOrWhiteSpace(criteria.Query))
+        {
+            var pattern = new MongoDB.Bson.BsonRegularExpression(criteria.Query.Trim(), "i");
+            filters.Add(builder.Or(
+                builder.Regex(x => x.Name, pattern),
+                builder.Regex(x => x.Description!, pattern),
+                builder.Regex(x => x.Address!, pattern)));
+        }
+
         var baseFilter = builder.And(filters);
 
         if (criteria.Latitude is not null && criteria.Longitude is not null && criteria.RadiusKm is > 0)

@@ -95,6 +95,20 @@ class SocialRepository {
 
   Future<void> unfollowUser(String userId) => _remote.unfollowUser(userId);
 
+  Future<PagedSearchPage<SocialPost>> searchPosts({
+    required String query,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) =>
+      _remote.searchPosts(query: query, pageNumber: pageNumber, pageSize: pageSize);
+
+  Future<PagedSearchPage<UserSearchResult>> searchUsers({
+    required String query,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) =>
+      _remote.searchUsers(query: query, pageNumber: pageNumber, pageSize: pageSize);
+
   Future<SocialPost> createPost({
     required String content,
     required List<String> mediaUrls,

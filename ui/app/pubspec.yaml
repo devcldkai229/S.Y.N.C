@@ -118,6 +118,9 @@ flutter:
     - assets/catalog/exercises/
     - assets/catalog/categories/
     - assets/catalog/muscles/
+    - assets/home/hero/
+    - assets/home/banners/
+    - assets/home/challenges/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

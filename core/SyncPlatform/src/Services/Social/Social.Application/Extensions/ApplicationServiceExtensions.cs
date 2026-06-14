@@ -14,6 +14,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<ICommunityChallengeService, CommunityChallengeService>();
         services.AddScoped<IChallengeParticipationService, ChallengeParticipationService>();
         services.AddScoped<IUserFollowService, UserFollowService>();
+        services.AddScoped<ISocialUserSearchService, SocialUserSearchService>();
         services.AddScoped<IStoryService, StoryService>();
         services.AddScoped<IBlogService, BlogService>();
         return services;

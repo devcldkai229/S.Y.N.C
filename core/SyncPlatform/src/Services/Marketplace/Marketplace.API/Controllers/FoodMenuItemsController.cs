@@ -32,6 +32,17 @@ public class FoodMenuItemsController : ControllerBase
             items, pagination, "Food menu items retrieved successfully."));
     }
 
+    [HttpGet("suggestions")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<FoodMenuItemDto>>>> GetSuggestions(
+        [FromQuery] FoodMenuItemSuggestionsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var items = await _service.GetSuggestionsAsync(request, cancellationToken);
+        return Ok(ApiResponse<IReadOnlyList<FoodMenuItemDto>>.SuccessResponse(
+            items, "Food menu suggestions retrieved successfully."));
+    }
+
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     public async Task<ActionResult<ApiResponse<FoodMenuItemDto>>> GetById(Guid id, CancellationToken cancellationToken)

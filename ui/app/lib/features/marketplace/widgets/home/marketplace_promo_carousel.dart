@@ -6,7 +6,9 @@ import 'package:sync_app/features/marketplace/widgets/marketplace_asset_image.da
 
 /// Promo slides above "Gợi ý cho bạn".
 class MarketplacePromoCarousel extends StatefulWidget {
-  const MarketplacePromoCarousel({super.key});
+  const MarketplacePromoCarousel({super.key, this.onSlideTap});
+
+  final void Function(int index)? onSlideTap;
 
   @override
   State<MarketplacePromoCarousel> createState() => _MarketplacePromoCarouselState();
@@ -29,16 +31,20 @@ abstract final class MarketplacePromoSlides {
 }
 
 class _MarketplacePromoCarouselState extends State<MarketplacePromoCarousel> {
+  static const _horizontalPadding = 8.0;
+  /// Banner assets are 1672×941 (~16:9).
+  static const _bannerAspectRatio = 16 / 9;
+
   int _index = 0;
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width - 32;
-    final height = width * 9 / 20;
+    final width = MediaQuery.sizeOf(context).width - (_horizontalPadding * 2);
+    final height = width / _bannerAspectRatio;
     final slides = MarketplacePromoSlides.items;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      padding: const EdgeInsets.fromLTRB(_horizontalPadding, 8, _horizontalPadding, 4),
       child: Column(
         children: [
           CarouselSlider.builder(
@@ -52,7 +58,9 @@ class _MarketplacePromoCarouselState extends State<MarketplacePromoCarousel> {
             ),
             itemBuilder: (context, index, _) {
               final slide = slides[index];
-              return ClipRRect(
+              return GestureDetector(
+                onTap: () => widget.onSlideTap?.call(index),
+                child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: SizedBox(
                   width: width,
@@ -74,6 +82,7 @@ class _MarketplacePromoCarouselState extends State<MarketplacePromoCarousel> {
                               errorBuilder: (_, __, ___) => _promoFallback(slide),
                             )
                           : _promoFallback(slide),
+                ),
                 ),
               );
             },

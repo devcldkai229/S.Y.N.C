@@ -13,11 +13,16 @@ namespace Social.API.Controllers;
 public class UserFollowController : ControllerBase
 {
     private readonly IUserFollowService _follows;
+    private readonly ISocialUserSearchService _userSearch;
     private readonly ICurrentUserContext _currentUser;
 
-    public UserFollowController(IUserFollowService follows, ICurrentUserContext currentUser)
+    public UserFollowController(
+        IUserFollowService follows,
+        ISocialUserSearchService userSearch,
+        ICurrentUserContext currentUser)
     {
         _follows = follows;
+        _userSearch = userSearch;
         _currentUser = currentUser;
     }
 
@@ -129,5 +134,22 @@ public class UserFollowController : ControllerBase
     {
         var result = await _follows.GetFollowCountsAsync(userId, cancellationToken);
         return Ok(ApiResponse<FollowCountsDto>.SuccessResponse(result, "Follow counts retrieved successfully."));
+    }
+
+    /// <summary>Search users by full name (IAM) with follow status; excludes blocked users.</summary>
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(PagedApiResponse<IReadOnlyList<SocialUserSearchItemDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<SocialUserSearchItemDto>>>> SearchUsers(
+        [FromQuery] SocialUserSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _userSearch.SearchAsync(
+            _currentUser.RequireUserId(),
+            request,
+            cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<SocialUserSearchItemDto>>.SuccessPagedResponse(
+            result.Items,
+            result.Pagination,
+            "Users retrieved successfully."));
     }
 }

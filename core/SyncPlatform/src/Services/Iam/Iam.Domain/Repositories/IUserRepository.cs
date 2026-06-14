@@ -25,4 +25,11 @@ public interface IUserRepository
     /// <summary>User + gamification only — for public profile (no biometrics/preferences).</summary>
     Task<User?> GetByIdForPublicProfileAsync(Guid id, CancellationToken cancellationToken = default);
     Task UpdateAsync(User user, CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<User> Items, int TotalRecords)> SearchByFullNameAsync(
+        string query,
+        UserStatus status,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
 }

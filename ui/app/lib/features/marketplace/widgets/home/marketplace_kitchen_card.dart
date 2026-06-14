@@ -38,7 +38,7 @@ class MarketplaceKitchenCard extends StatelessWidget {
                 Positioned(
                   top: 10,
                   right: 10,
-                  child: _StatusBadge(isOpen: p.isOpen),
+                  child: _StatusBadge(isOpen: p.isOpenNow),
                 ),
                 if (kitchen.promoLabel != null)
                   Positioned(

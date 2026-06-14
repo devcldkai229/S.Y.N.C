@@ -56,4 +56,9 @@ public interface IUserFollowRepository
         Guid followerId,
         Guid followeeId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>User IDs involved in a Blocked relationship with <paramref name="userId"/>.</summary>
+    Task<IReadOnlyList<Guid>> GetBlockedPeerIdsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
 }

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:sync_app/features/marketplace/data/marketplace_catalog.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_home_models.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_models.dart';
@@ -458,19 +460,17 @@ abstract final class MarketplaceMockData {
     return null;
   }
 
+  static List<FeaturedDishVm> pickRandomFeatured({int count = 10}) {
+    final pool = [...featured]..shuffle(Random());
+    return pool.take(count).toList();
+  }
+
   static MarketplaceHomeData buildHome({String? categoryId}) {
-    var featuredList = featured;
+    final featuredList = pickRandomFeatured();
     var kitchenList = kitchens;
 
     if (categoryId != null && categoryId != 'all') {
       final tag = categoryId.replaceAll('-', ' ');
-      featuredList = featured
-          .where((d) =>
-              d.item.category.toLowerCase().contains(tag) ||
-              d.item.dietaryTags.any((t) => t.toLowerCase().contains(tag)))
-          .toList();
-      if (featuredList.isEmpty) featuredList = featured.take(4).toList();
-
       kitchenList = kitchens
           .where((k) => k.tags.any((t) => t.toLowerCase().contains(tag.split(' ').first)))
           .toList();

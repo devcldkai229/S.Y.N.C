@@ -1,3 +1,5 @@
+import 'package:sync_app/features/marketplace/utils/marketplace_partner_hours.dart';
+
 class NutritionSnapshot {
   const NutritionSnapshot({
     required this.calories,
@@ -19,6 +21,39 @@ class NutritionSnapshot {
       );
 }
 
+class PartnerLocation {
+  const PartnerLocation({required this.latitude, required this.longitude});
+
+  final double latitude;
+  final double longitude;
+
+  factory PartnerLocation.fromJson(Map<String, dynamic>? json) => PartnerLocation(
+        latitude: (json?['latitude'] as num?)?.toDouble() ?? 0,
+        longitude: (json?['longitude'] as num?)?.toDouble() ?? 0,
+      );
+}
+
+class OperatingHour {
+  const OperatingHour({
+    required this.dayOfWeek,
+    required this.openTime,
+    required this.closeTime,
+    required this.isClosed,
+  });
+
+  final int dayOfWeek;
+  final String openTime;
+  final String closeTime;
+  final bool isClosed;
+
+  factory OperatingHour.fromJson(Map<String, dynamic> json) => OperatingHour(
+        dayOfWeek: (json['dayOfWeek'] as num?)?.toInt() ?? 0,
+        openTime: json['openTime']?.toString() ?? '',
+        closeTime: json['closeTime']?.toString() ?? '',
+        isClosed: json['isClosed'] == true,
+      );
+}
+
 class Partner {
   const Partner({
     required this.id,
@@ -31,6 +66,8 @@ class Partner {
     this.distanceKm,
     required this.status,
     this.address,
+    this.location,
+    this.operatingHours = const [],
   });
 
   final String id;
@@ -43,21 +80,32 @@ class Partner {
   final double? distanceKm;
   final String status;
   final String? address;
+  final PartnerLocation? location;
+  final List<OperatingHour> operatingHours;
 
-  bool get isOpen => status == 'Active';
+  bool get isOpenNow => MarketplacePartnerHours.isOpenNow(operatingHours);
 
-  factory Partner.fromJson(Map<String, dynamic> json) => Partner(
-        id: json['id']?.toString() ?? '',
-        name: json['name']?.toString() ?? '',
-        logoUrl: json['logoUrl']?.toString(),
-        coverImageUrl: json['coverImageUrl']?.toString(),
-        description: json['description']?.toString(),
-        ratingAverage: (json['ratingAverage'] as num?)?.toDouble() ?? 0,
-        ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
-        distanceKm: (json['distanceKm'] as num?)?.toDouble(),
-        status: json['status']?.toString() ?? 'Active',
-        address: json['address']?.toString(),
-      );
+  factory Partner.fromJson(Map<String, dynamic> json) {
+    final hoursRaw = json['operatingHours'];
+    return Partner(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      logoUrl: json['logoUrl']?.toString(),
+      coverImageUrl: json['coverImageUrl']?.toString(),
+      description: json['description']?.toString(),
+      ratingAverage: (json['ratingAverage'] as num?)?.toDouble() ?? 0,
+      ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
+      distanceKm: (json['distanceKm'] as num?)?.toDouble(),
+      status: json['status']?.toString() ?? 'Active',
+      address: json['address']?.toString(),
+      location: json['location'] is Map<String, dynamic>
+          ? PartnerLocation.fromJson(json['location'] as Map<String, dynamic>)
+          : null,
+      operatingHours: hoursRaw is List
+          ? hoursRaw.whereType<Map<String, dynamic>>().map(OperatingHour.fromJson).toList()
+          : const [],
+    );
+  }
 }
 
 class PartnerDetail extends Partner {
@@ -72,6 +120,8 @@ class PartnerDetail extends Partner {
     super.distanceKm,
     required super.status,
     super.address,
+    super.location,
+    super.operatingHours,
     required this.menu,
   });
 
@@ -79,17 +129,20 @@ class PartnerDetail extends Partner {
 
   factory PartnerDetail.fromJson(Map<String, dynamic> json) {
     final menuRaw = json['menu'];
+    final base = Partner.fromJson(json);
     return PartnerDetail(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      logoUrl: json['logoUrl']?.toString(),
-      coverImageUrl: json['coverImageUrl']?.toString(),
-      description: json['description']?.toString(),
-      ratingAverage: (json['ratingAverage'] as num?)?.toDouble() ?? 0,
-      ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
-      distanceKm: (json['distanceKm'] as num?)?.toDouble(),
-      status: json['status']?.toString() ?? 'Active',
-      address: json['address']?.toString(),
+      id: base.id,
+      name: base.name,
+      logoUrl: base.logoUrl,
+      coverImageUrl: base.coverImageUrl,
+      description: base.description,
+      ratingAverage: base.ratingAverage,
+      ratingCount: base.ratingCount,
+      distanceKm: base.distanceKm,
+      status: base.status,
+      address: base.address,
+      location: base.location,
+      operatingHours: base.operatingHours,
       menu: menuRaw is List
           ? menuRaw.whereType<Map<String, dynamic>>().map(FoodMenuItem.fromJson).toList()
           : const [],

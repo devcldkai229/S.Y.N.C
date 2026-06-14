@@ -106,6 +106,18 @@ public static class InfrastructureServiceExtensions
                 client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
         });
 
+        services.AddHttpClient<IIamUserSearchClient, IamUserSearchClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["IamService:BaseUrl"] ?? "http://localhost:5288";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var apiKey = config["IamService:InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
+
         services.AddHttpClient<ISocialNotificationClient, SocialNotificationClient>((sp, client) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();

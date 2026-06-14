@@ -33,6 +33,11 @@ public interface IPostService
         CancellationToken cancellationToken = default);
 
     Task UnlikePostAsync(Guid userId, Guid postId, CancellationToken cancellationToken = default);
+
+    Task<PagedResult<PostDto>> SearchPostsAsync(
+        PostSearchRequest request,
+        Guid? viewerUserId,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class PagedResult<T>

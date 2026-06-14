@@ -52,6 +52,12 @@ public static class MongoDbIndexInitializer
             });
 
         await collection.Indexes.CreateManyAsync([feedIndex, authorIndex, typeIndex, shareCodeIndex]);
+
+        var contentTextIndex = new CreateIndexModel<Post>(
+            ix.Text(x => x.Content),
+            new CreateIndexOptions { Name = "IX_Content_Text" });
+
+        await collection.Indexes.CreateOneAsync(contentTextIndex);
     }
 
     private static async Task ConfigureInteractionIndexesAsync(IMongoDatabase database)

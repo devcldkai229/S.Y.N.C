@@ -35,6 +35,47 @@ public class FoodMenuItemRepository : GenericRepository<FoodMenuItem>, IFoodMenu
         FoodMenuItemSearchCriteria criteria,
         CancellationToken cancellationToken = default)
     {
+        var filter = BuildFilter(criteria);
+        var total = (int)await Collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
+        var items = await Collection.Find(filter)
+            .SortByDescending(x => x.RatingAverage)
+            .ThenBy(x => x.NameVi)
+            .Skip((criteria.PageNumber - 1) * criteria.PageSize)
+            .Limit(criteria.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
+
+    public async Task<IReadOnlyList<FoodMenuItem>> GetRandomAsync(
+        FoodMenuItemSearchCriteria criteria,
+        int count,
+        CancellationToken cancellationToken = default)
+    {
+        var filter = BuildFilter(criteria);
+        var sampleSize = Math.Clamp(count, 1, 50);
+
+        return await Collection.Aggregate()
+            .Match(filter)
+            .Sample(sampleSize)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task UpdateRatingAsync(
+        Guid id,
+        decimal ratingAverage,
+        int ratingCount,
+        CancellationToken cancellationToken = default)
+    {
+        var update = Builders<FoodMenuItem>.Update
+            .Set(x => x.RatingAverage, ratingAverage)
+            .Set(x => x.RatingCount, ratingCount)
+            .Set(x => x.UpdatedAt, DateTimeOffset.UtcNow);
+        await Collection.UpdateOneAsync(x => x.Id == id, update, cancellationToken: cancellationToken);
+    }
+
+    private static FilterDefinition<FoodMenuItem> BuildFilter(FoodMenuItemSearchCriteria criteria)
+    {
         var builder = Builders<FoodMenuItem>.Filter;
         var filters = new List<FilterDefinition<FoodMenuItem>>();
 
@@ -70,28 +111,6 @@ public class FoodMenuItemRepository : GenericRepository<FoodMenuItem>, IFoodMenu
         if (criteria.PartnerIds is { Count: > 0 })
             filters.Add(builder.In(x => x.PartnerId, criteria.PartnerIds));
 
-        var filter = filters.Count == 0 ? builder.Empty : builder.And(filters);
-        var total = (int)await Collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
-        var items = await Collection.Find(filter)
-            .SortByDescending(x => x.RatingAverage)
-            .ThenBy(x => x.NameVi)
-            .Skip((criteria.PageNumber - 1) * criteria.PageSize)
-            .Limit(criteria.PageSize)
-            .ToListAsync(cancellationToken);
-
-        return (items, total);
-    }
-
-    public async Task UpdateRatingAsync(
-        Guid id,
-        decimal ratingAverage,
-        int ratingCount,
-        CancellationToken cancellationToken = default)
-    {
-        var update = Builders<FoodMenuItem>.Update
-            .Set(x => x.RatingAverage, ratingAverage)
-            .Set(x => x.RatingCount, ratingCount)
-            .Set(x => x.UpdatedAt, DateTimeOffset.UtcNow);
-        await Collection.UpdateOneAsync(x => x.Id == id, update, cancellationToken: cancellationToken);
+        return filters.Count == 0 ? builder.Empty : builder.And(filters);
     }
 }

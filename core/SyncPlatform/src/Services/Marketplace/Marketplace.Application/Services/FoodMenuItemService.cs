@@ -75,6 +75,37 @@ public class FoodMenuItemService : IFoodMenuItemService
         return (items.Select(i => i.ToDto()).ToList(), new PaginationMetadata(pageNumber, pageSize, total));
     }
 
+    public async Task<IReadOnlyList<FoodMenuItemDto>> GetSuggestionsAsync(
+        FoodMenuItemSuggestionsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var count = Math.Clamp(request.Count, 1, 20);
+        var criteria = new FoodMenuItemSearchCriteria
+        {
+            Availability = AvailabilityStatus.Available,
+        };
+
+        if (request.Latitude is not null && request.Longitude is not null && request.RadiusKm is > 0)
+        {
+            var partnerCriteria = new PartnerSearchCriteria
+            {
+                Status = PartnerStatus.Active,
+                Latitude = request.Latitude,
+                Longitude = request.Longitude,
+                RadiusKm = request.RadiusKm,
+                PageNumber = 1,
+                PageSize = 500,
+            };
+            var (nearby, _) = await _partnerRepository.SearchPagedAsync(partnerCriteria, cancellationToken);
+            criteria.PartnerIds = nearby.Select(x => x.Partner.Id).ToList();
+            if (criteria.PartnerIds.Count == 0)
+                return [];
+        }
+
+        var items = await _repository.GetRandomAsync(criteria, count, cancellationToken);
+        return items.Select(i => i.ToDto()).ToList();
+    }
+
     public async Task<FoodMenuItemDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var entity = await _repository.GetByIdAsync(id, cancellationToken);

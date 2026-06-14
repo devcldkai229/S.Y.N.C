@@ -47,3 +47,12 @@ public class PostFeedQuery
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }
+
+public class PostSearchRequest
+{
+    public string Query { get; set; } = string.Empty;
+
+    public int PageNumber { get; set; } = 1;
+
+    public int PageSize { get; set; } = 20;
+}

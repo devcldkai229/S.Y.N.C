@@ -80,4 +80,25 @@ public class UserRepository : IUserRepository
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _db.SaveChangesAsync(cancellationToken);
+
+    public async Task<(IReadOnlyList<User> Items, int TotalRecords)> SearchByFullNameAsync(
+        string query,
+        UserStatus status,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var trimmed = query.Trim();
+        var baseQuery = _db.Users.AsNoTracking()
+            .Where(u => u.Status == status && EF.Functions.ILike(u.FullName, $"%{trimmed}%"));
+
+        var total = await baseQuery.CountAsync(cancellationToken);
+        var items = await baseQuery
+            .OrderBy(u => u.FullName)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
 }

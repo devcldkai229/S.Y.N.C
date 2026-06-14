@@ -4,7 +4,9 @@ import 'package:sync_app/features/marketplace/data/marketplace_catalog.dart';
 import 'package:sync_app/features/marketplace/widgets/marketplace_asset_image.dart';
 
 class MarketplaceHeroBanner extends StatefulWidget {
-  const MarketplaceHeroBanner({super.key});
+  const MarketplaceHeroBanner({super.key, this.onTap});
+
+  final VoidCallback? onTap;
 
   @override
   State<MarketplaceHeroBanner> createState() => _MarketplaceHeroBannerState();
@@ -45,7 +47,9 @@ class _MarketplaceHeroBannerState extends State<MarketplaceHeroBanner> {
     final video = _controller;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: ClipRRect(
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: SizedBox(
           height: 168,
@@ -95,6 +99,7 @@ class _MarketplaceHeroBannerState extends State<MarketplaceHeroBanner> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

@@ -47,4 +47,10 @@ public interface IPostRepository : IGenericRepository<Post>
     Task<IReadOnlyList<Post>> GetPostsWithoutShareCodeAsync(
         int batchSize,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Post>> SearchByTextAsync(
+        string query,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default);
 }

@@ -38,6 +38,12 @@
           "Path": "/api/v1/users/{id}/public-profile"
         }
       },
+      "iam-users-search-route": {
+        "ClusterId": "iam-cluster",
+        "Match": {
+          "Path": "/api/v1/users/search"
+        }
+      },
       "roadmap-route": {
         "ClusterId": "roadmap-cluster",
         "AuthorizationPolicy": "AuthenticatedUser",
