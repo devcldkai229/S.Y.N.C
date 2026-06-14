@@ -31,21 +31,21 @@ export default function EditPlanPage() {
     );
   }
 
-  if (!data) return <p className="text-muted-foreground">Plan not found.</p>;
+  if (!data) return <p className="text-muted-foreground">Không tìm thấy gói dịch vụ.</p>;
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <Button variant="ghost" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        <ArrowLeft className="w-4 h-4 mr-2" /> Quay lại
       </Button>
       <Card>
-        <CardHeader><CardTitle>Edit Plan — {data.name}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Sửa gói dịch vụ — {data.name}</CardTitle></CardHeader>
         <CardContent>
           <PlanForm
             defaultValues={data}
             onSubmit={handleSubmit}
             loading={updateMutation.isPending}
-            submitLabel="Update Plan"
+            submitLabel="Cập nhật gói"
           />
         </CardContent>
       </Card>

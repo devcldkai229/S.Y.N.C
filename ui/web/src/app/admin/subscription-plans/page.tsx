@@ -34,7 +34,7 @@ export default function SubscriptionPlansPage() {
   const columns: ColumnDef<SubscriptionPlanDto>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Tên gói",
       cell: ({ row }) => (
         <div>
           <p className="font-medium text-sm">{row.original.name}</p>
@@ -46,22 +46,22 @@ export default function SubscriptionPlansPage() {
     },
     {
       accessorKey: "monthlyPrice",
-      header: "Monthly",
+      header: "Theo tháng",
       cell: ({ row }) => <span className="text-sm font-medium">{formatVND(row.original.monthlyPrice)}</span>,
     },
     {
       accessorKey: "yearlyPrice",
-      header: "Yearly",
+      header: "Theo năm",
       cell: ({ row }) => <span className="text-sm font-medium">{formatVND(row.original.yearlyPrice)}</span>,
     },
     {
       accessorKey: "aiUsageLimitPerMonth",
-      header: "AI Limit/Mo",
+      header: "Giới hạn AI/tháng",
       cell: ({ row }) => <span className="text-sm">{row.original.aiUsageLimitPerMonth}</span>,
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: "Trạng thái",
       cell: ({ row }) => <StatusBadge status={row.original.isActive} />,
     },
     {
@@ -73,10 +73,10 @@ export default function SubscriptionPlansPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => router.push(`/admin/subscription-plans/${row.original.id}`)}>
-              <Pencil className="w-4 h-4 mr-2" /> Edit
+              <Pencil className="w-4 h-4 mr-2" /> Sửa
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(row.original)}>
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
+              <Trash2 className="w-4 h-4 mr-2" /> Xóa
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -87,24 +87,24 @@ export default function SubscriptionPlansPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{data?.length ?? 0} plans total</p>
+        <p className="text-xs text-muted-foreground">{data?.length ?? 0} gói dịch vụ</p>
         <Button size="sm" onClick={() => router.push("/admin/subscription-plans/new")}>
-          <Plus className="w-4 h-4 mr-2" /> New Plan
+          <Plus className="w-4 h-4 mr-2" /> Tạo gói dịch vụ
         </Button>
       </div>
 
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
       ) : (
-        <DataTable columns={columns} data={data ?? []} searchPlaceholder="Search plans..." />
+        <DataTable columns={columns} data={data ?? []} searchPlaceholder="Tìm gói dịch vụ..." />
       )}
 
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title="Delete Plan"
-        description={`Delete "${deleteTarget?.name}"? This is a soft delete.`}
-        confirmLabel="Delete"
+        title="Xóa gói dịch vụ"
+        description={`Xóa "${deleteTarget?.name}"? Đây là xóa mềm.`}
+        confirmLabel="Xóa"
         loading={deleteMutation.isPending}
         onConfirm={() => {
           if (!deleteTarget) return;

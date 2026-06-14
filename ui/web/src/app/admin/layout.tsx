@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
+import { isAdminRole } from "@/lib/jwt";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminTopbar } from "@/components/admin/AdminTopbar";
 import { Toaster } from "@/components/ui/sonner";
@@ -10,7 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router      = useRouter();
   const pathname    = usePathname();
-  const { isAuthenticated, loadFromStorage } = useAuthStore();
+  const { isAuthenticated, user, loadFromStorage } = useAuthStore();
 
   useEffect(() => {
     loadFromStorage();
@@ -18,10 +19,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (pathname === "/admin/login") return;
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !isAdminRole(user?.role)) {
       router.replace("/admin/login");
     }
-  }, [isAuthenticated, pathname, router]);
+  }, [isAuthenticated, user, pathname, router]);
 
   if (pathname === "/admin/login") {
     return (

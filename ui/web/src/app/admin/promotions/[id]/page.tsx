@@ -32,21 +32,21 @@ export default function EditPromotionPage() {
     );
   }
 
-  if (!data) return <p className="text-muted-foreground">Campaign not found.</p>;
+  if (!data) return <p className="text-muted-foreground">Không tìm thấy chiến dịch.</p>;
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <Button variant="ghost" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        <ArrowLeft className="w-4 h-4 mr-2" /> Quay lại
       </Button>
       <Card>
-        <CardHeader><CardTitle>Edit Campaign — {data.name}</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Sửa chiến dịch — {data.name}</CardTitle></CardHeader>
         <CardContent>
           <PromotionForm
             defaultValues={data}
             onSubmit={handleSubmit}
             loading={updateMutation.isPending}
-            submitLabel="Update Campaign"
+            submitLabel="Cập nhật chiến dịch"
           />
         </CardContent>
       </Card>

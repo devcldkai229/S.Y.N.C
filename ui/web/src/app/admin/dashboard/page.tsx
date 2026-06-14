@@ -7,6 +7,7 @@ import { useExercises } from "@/hooks/admin/use-exercises";
 import { useSubscriptionPlans } from "@/hooks/admin/use-subscription-plans";
 import { usePromotionCampaigns, campaignStatus } from "@/hooks/admin/use-promotions";
 import { useUsers } from "@/hooks/admin/use-users";
+import { useUserSubscriptions } from "@/hooks/admin/use-user-subscriptions";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   BarChart,
@@ -37,11 +38,12 @@ export default function DashboardPage() {
   const { data: plans, isLoading: loadingPlans }         = useSubscriptionPlans();
   const { data: campaigns, isLoading: loadingCampaigns } = usePromotionCampaigns();
   const { data: users, isLoading: loadingUsers }         = useUsers();
+  const { data: subscriptions }                          = useUserSubscriptions();
 
   const totalUsers         = users?.length ?? 0;
-  const totalExercises     = exercisesPage?.totalCount ?? 0;
+  const totalExercises     = exercisesPage?.pagination.totalRecords ?? 0;
   const activeCampaigns    = campaigns?.filter((c) => campaignStatus(c) === "running").length ?? 0;
-  const activeSubscriptions = plans?.filter((p) => p.isActive).length ?? 0;
+  const activeSubscriptions = subscriptions?.filter((s) => s.status === "Active").length ?? 0;
 
   const tierCounts = (plans ?? []).reduce<Record<string, number>>((acc, p) => {
     acc[p.name] = (acc[p.name] ?? 0) + 1;
@@ -61,10 +63,10 @@ export default function DashboardPage() {
           ))
         ) : (
           <>
-            <StatsCard title="Total Users"          value={totalUsers}         icon={Users}      description="Mock data — backend pending" />
-            <StatsCard title="Active Plans"         value={activeSubscriptions} icon={CreditCard}  description="Subscription plans active" />
-            <StatsCard title="Exercise Catalog"     value={totalExercises}     icon={Dumbbell}   description="Total exercises in catalog" />
-            <StatsCard title="Running Campaigns"    value={activeCampaigns}    icon={Megaphone}  description="Promotion campaigns live" />
+            <StatsCard title="Tổng người dùng"     value={totalUsers}          icon={Users}      description="Người dùng đã đăng ký" />
+            <StatsCard title="Gói đang hoạt động"  value={activeSubscriptions} icon={CreditCard} description="Gói đăng ký đang active" />
+            <StatsCard title="Thư viện bài tập"    value={totalExercises}      icon={Dumbbell}   description="Tổng số bài tập" />
+            <StatsCard title="Chiến dịch đang chạy" value={activeCampaigns}    icon={Megaphone}  description="Khuyến mãi đang diễn ra" />
           </>
         )}
       </div>
@@ -73,7 +75,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold">New Users (Weekly)</CardTitle>
+            <CardTitle className="text-sm font-semibold">Người dùng mới (theo tuần)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={220}>
@@ -89,7 +91,7 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-semibold">Subscription Plans Distribution</CardTitle>
+            <CardTitle className="text-sm font-semibold">Phân bố gói dịch vụ</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-center">
             {pieData.length > 0 ? (
@@ -105,7 +107,7 @@ export default function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-muted-foreground text-sm py-12">No plan data available</p>
+              <p className="text-muted-foreground text-sm py-12">Chưa có dữ liệu gói dịch vụ</p>
             )}
           </CardContent>
         </Card>
@@ -114,7 +116,7 @@ export default function DashboardPage() {
       {/* Recent users */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-semibold">Recent Users</CardTitle>
+          <CardTitle className="text-sm font-semibold">Người dùng gần đây</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="divide-y divide-border">

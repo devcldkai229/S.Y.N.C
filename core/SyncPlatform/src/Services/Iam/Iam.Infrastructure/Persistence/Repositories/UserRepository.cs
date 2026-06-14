@@ -1,3 +1,4 @@
+using Iam.Domain.Enums;
 using Iam.Domain.Models;
 using Iam.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,33 @@ public class UserRepository : IUserRepository
 
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         _db.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<User>> GetAllForAdminAsync(
+        string? search,
+        UserRole? role,
+        UserStatus? status,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _db.Users.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLower();
+            query = query.Where(u =>
+                u.Email.ToLower().Contains(term) ||
+                u.FullName.ToLower().Contains(term));
+        }
+
+        if (role.HasValue)
+            query = query.Where(u => u.Role == role.Value);
+
+        if (status.HasValue)
+            query = query.Where(u => u.Status == status.Value);
+
+        return await query
+            .OrderByDescending(u => u.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
 
     public Task<User?> GetByIdWithBiometricAsync(Guid id, CancellationToken cancellationToken = default) =>
         _db.Users

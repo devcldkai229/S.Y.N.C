@@ -12,6 +12,11 @@ import {
   Zap,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  ListChecks,
+  Bell,
+  Send,
+  MessagesSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth.store";
@@ -19,11 +24,16 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 const NAV_ITEMS = [
-  { href: "/admin/dashboard",            label: "Dashboard",    icon: LayoutDashboard },
-  { href: "/admin/users",                label: "Users",        icon: Users },
-  { href: "/admin/exercises",            label: "Exercises",    icon: Dumbbell },
-  { href: "/admin/subscription-plans",   label: "Plans",        icon: CreditCard },
-  { href: "/admin/promotions",           label: "Promotions",   icon: Megaphone },
+  { href: "/admin/dashboard",              label: "Tổng quan",        icon: LayoutDashboard },
+  { href: "/admin/users",                  label: "Người dùng",       icon: Users },
+  { href: "/admin/subscriptions",          label: "Gói đăng ký",      icon: ClipboardList },
+  { href: "/admin/subscription-plans",     label: "Gói dịch vụ",      icon: CreditCard },
+  { href: "/admin/promotions",             label: "Khuyến mãi",       icon: Megaphone },
+  { href: "/admin/exercises",              label: "Bài tập",          icon: Dumbbell },
+  { href: "/admin/workout-templates",      label: "Mẫu buổi tập",     icon: ListChecks },
+  { href: "/admin/notification-templates", label: "Mẫu thông báo",    icon: Bell },
+  { href: "/admin/notifications",          label: "Gửi thông báo",    icon: Send },
+  { href: "/admin/community",              label: "Cộng đồng",        icon: MessagesSquare },
 ];
 
 export function AdminSidebar() {

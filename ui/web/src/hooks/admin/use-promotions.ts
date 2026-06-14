@@ -35,14 +35,14 @@ export function campaignStatus(c: PromotionCampaignDto): "upcoming" | "running" 
 export function usePromotionCampaigns() {
   return useQuery({
     queryKey: ["admin", "promotions"],
-    queryFn:  () => api.get<PromotionCampaignDto[]>("/api/v1/payments/promotion-campaigns"),
+    queryFn:  () => api.get<PromotionCampaignDto[]>("/api/v1/payment/payments/promotion-campaigns"),
   });
 }
 
 export function usePromotionCampaign(id: string) {
   return useQuery({
     queryKey: ["admin", "promotions", id],
-    queryFn:  () => api.get<PromotionCampaignDto>(`/api/v1/payments/promotion-campaigns/${id}`),
+    queryFn:  () => api.get<PromotionCampaignDto>(`/api/v1/payment/payments/promotion-campaigns/${id}`),
     enabled:  !!id,
   });
 }
@@ -51,10 +51,10 @@ export function useCreatePromotionCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (dto: CreatePromotionCampaignDto) =>
-      api.post<PromotionCampaignDto>("/api/v1/payments/promotion-campaigns", dto),
+      api.post<PromotionCampaignDto>("/api/v1/payment/payments/promotion-campaigns", dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "promotions"] });
-      toast.success("Campaign created successfully");
+      toast.success("Tạo chiến dịch thành công");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -64,10 +64,10 @@ export function useUpdatePromotionCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: UpdatePromotionCampaignDto }) =>
-      api.put<PromotionCampaignDto>(`/api/v1/payments/promotion-campaigns/${id}`, dto),
+      api.put<PromotionCampaignDto>(`/api/v1/payment/payments/promotion-campaigns/${id}`, dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "promotions"] });
-      toast.success("Campaign updated successfully");
+      toast.success("Cập nhật chiến dịch thành công");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -77,10 +77,10 @@ export function useDeletePromotionCampaign() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      api.delete(`/api/v1/payments/promotion-campaigns/${id}?softDelete=true`),
+      api.delete(`/api/v1/payment/payments/promotion-campaigns/${id}?softDelete=true`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["admin", "promotions"] });
-      toast.success("Campaign deleted");
+      toast.success("Đã xóa chiến dịch");
     },
     onError: (e: Error) => toast.error(e.message),
   });

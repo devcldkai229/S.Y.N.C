@@ -33,17 +33,17 @@ export default function PromotionsPage() {
   const columns: ColumnDef<PromotionCampaignDto>[] = [
     {
       accessorKey: "name",
-      header: "Name",
+      header: "Tên chiến dịch",
       cell: ({ row }) => <p className="font-medium text-sm">{row.original.name}</p>,
     },
     {
       accessorKey: "promotionType",
-      header: "Type",
+      header: "Loại",
       cell: ({ row }) => <Badge variant="outline" className="text-xs">{row.original.promotionType}</Badge>,
     },
     {
       accessorKey: "value",
-      header: "Value",
+      header: "Giá trị",
       cell: ({ row }) => (
         <span className="text-sm font-medium">
           {row.original.promotionType === "Percentage" ? `${row.original.value}%` : `${row.original.value.toLocaleString()}đ`}
@@ -52,14 +52,14 @@ export default function PromotionsPage() {
     },
     {
       accessorKey: "couponCode",
-      header: "Coupon",
+      header: "Mã giảm giá",
       cell: ({ row }) => row.original.couponCode
         ? <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{row.original.couponCode}</span>
         : <span className="text-muted-foreground text-xs">—</span>,
     },
     {
       accessorKey: "startsAt",
-      header: "Period",
+      header: "Thời gian",
       cell: ({ row }) => (
         <div className="text-xs text-muted-foreground">
           <p>{format(new Date(row.original.startsAt), "dd/MM/yyyy")}</p>
@@ -69,7 +69,7 @@ export default function PromotionsPage() {
     },
     {
       id: "campaignStatus",
-      header: "Status",
+      header: "Trạng thái",
       cell: ({ row }) => <StatusBadge status={campaignStatus(row.original)} />,
     },
     {
@@ -81,10 +81,10 @@ export default function PromotionsPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => router.push(`/admin/promotions/${row.original.id}`)}>
-              <Pencil className="w-4 h-4 mr-2" /> Edit
+              <Pencil className="w-4 h-4 mr-2" /> Sửa
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onClick={() => setDeleteTarget(row.original)}>
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
+              <Trash2 className="w-4 h-4 mr-2" /> Xóa
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -95,24 +95,24 @@ export default function PromotionsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{data?.length ?? 0} campaigns total</p>
+        <p className="text-xs text-muted-foreground">{data?.length ?? 0} chiến dịch</p>
         <Button size="sm" onClick={() => router.push("/admin/promotions/new")}>
-          <Plus className="w-4 h-4 mr-2" /> New Campaign
+          <Plus className="w-4 h-4 mr-2" /> Tạo chiến dịch
         </Button>
       </div>
 
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
       ) : (
-        <DataTable columns={columns} data={data ?? []} searchPlaceholder="Search campaigns..." />
+        <DataTable columns={columns} data={data ?? []} searchPlaceholder="Tìm chiến dịch..." />
       )}
 
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title="Delete Campaign"
-        description={`Delete "${deleteTarget?.name}"? This is a soft delete.`}
-        confirmLabel="Delete"
+        title="Xóa chiến dịch"
+        description={`Xóa "${deleteTarget?.name}"? Đây là xóa mềm.`}
+        confirmLabel="Xóa"
         loading={deleteMutation.isPending}
         onConfirm={() => {
           if (!deleteTarget) return;
