@@ -34,9 +34,13 @@ public class PartnersController : ControllerBase
 
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
-    public async Task<ActionResult<ApiResponse<PartnerDetailDto>>> GetById(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<ApiResponse<PartnerDetailDto>>> GetById(
+        Guid id,
+        [FromQuery] double? latitude,
+        [FromQuery] double? longitude,
+        CancellationToken cancellationToken)
     {
-        var result = await _service.GetDetailAsync(id, cancellationToken);
+        var result = await _service.GetDetailAsync(id, latitude, longitude, cancellationToken);
         return Ok(ApiResponse<PartnerDetailDto>.SuccessResponse(result, "Partner retrieved successfully."));
     }
 

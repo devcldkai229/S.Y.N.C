@@ -9,6 +9,7 @@ using Order.Application.Ports;
 using Order.Application.Services;
 using Order.Domain.Enums;
 using Order.Domain.Models;
+using Order.Infrastructure.Delivery;
 using Order.Infrastructure.Options;
 using Order.Infrastructure.Persistence;
 
@@ -134,7 +135,7 @@ public class DeliveryTrackingService : IDeliveryTrackingService
         await PublishStatusAsync(tracking, cancellationToken);
 
         if (tracking.ExternalDeliveryId?.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase) == true)
-            await PublishSandboxDriverLocationAsync(tracking, cancellationToken);
+            await AdvanceSingleSandboxDeliveryAsync(tracking, cancellationToken);
     }
 
     public async Task AdvanceSandboxDeliveriesAsync(CancellationToken cancellationToken = default)
@@ -152,13 +153,127 @@ public class DeliveryTrackingService : IDeliveryTrackingService
             .ToListAsync(cancellationToken);
 
         foreach (var tracking in trackings)
-        {
-            var payload = BuildNextSandboxWebhook(tracking);
-            if (payload == null)
-                continue;
+            await AdvanceSingleSandboxDeliveryAsync(tracking, cancellationToken);
+    }
 
-            await ProcessWebhookAsync(payload, "{}", cancellationToken);
+    private async Task AdvanceSingleSandboxDeliveryAsync(
+        DeliveryTracking tracking,
+        CancellationToken cancellationToken)
+    {
+        var entity = await _db.DeliveryTrackings
+            .FirstOrDefaultAsync(x => x.Id == tracking.Id, cancellationToken);
+        if (entity == null)
+            return;
+
+        var order = await _db.Orders.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == entity.OrderId, cancellationToken);
+        if (order == null)
+            return;
+
+        var (pickupLat, pickupLng) = await ResolvePickupCoordinatesAsync(order, cancellationToken);
+        var dropLat = (double)(order.DeliveryLat ?? (decimal)(pickupLat + 0.015));
+        var dropLng = (double)(order.DeliveryLng ?? (decimal)(pickupLng + 0.012));
+
+        if (entity.Status == DeliveryStatus.Arrived)
+        {
+            await PublishSandboxStatusWebhookAsync(entity, cancellationToken);
+            return;
         }
+
+        if (entity.Status == DeliveryStatus.ArrivedAtPickup)
+        {
+            await PublishSandboxLocationAsync(entity, pickupLat, pickupLng, cancellationToken);
+            await PublishSandboxStatusWebhookAsync(entity, cancellationToken);
+            return;
+        }
+
+        if (entity.Status is DeliveryStatus.Completed or DeliveryStatus.Cancelled or DeliveryStatus.Failed)
+            return;
+
+        var headingToCustomer = entity.Status is DeliveryStatus.PickedUp or DeliveryStatus.Delivering;
+        var headingToPickup = entity.Status is DeliveryStatus.Assigned or DeliveryStatus.HeadingToPickup;
+
+        if (!headingToCustomer && !headingToPickup)
+            return;
+
+        var targetLat = headingToCustomer ? dropLat : pickupLat;
+        var targetLng = headingToCustomer ? dropLng : pickupLng;
+
+        double currentLat;
+        double currentLng;
+        if (entity.LastKnownLat is null || entity.LastKnownLng is null)
+        {
+            (currentLat, currentLng) = SandboxGeoHelper.SpawnNearPickup(pickupLat, pickupLng);
+            if (entity.Status == DeliveryStatus.Assigned)
+            {
+                entity.Status = DeliveryStatus.HeadingToPickup;
+                await _db.SaveChangesAsync(cancellationToken);
+                await PublishStatusAsync(entity, cancellationToken);
+            }
+        }
+        else
+        {
+            currentLat = (double)entity.LastKnownLat.Value;
+            currentLng = (double)entity.LastKnownLng.Value;
+        }
+
+        var (nextLat, nextLng) = SandboxGeoHelper.StepToward(currentLat, currentLng, targetLat, targetLng);
+        await PublishSandboxLocationAsync(entity, nextLat, nextLng, cancellationToken);
+
+        var distM = SandboxGeoHelper.DistanceMeters(nextLat, nextLng, targetLat, targetLng);
+        if (distM >= 70)
+            return;
+
+        if (headingToPickup)
+            await PublishSandboxLocationAsync(entity, pickupLat, pickupLng, cancellationToken);
+
+        if (headingToCustomer)
+            await PublishSandboxLocationAsync(entity, dropLat, dropLng, cancellationToken);
+
+        await PublishSandboxStatusWebhookAsync(entity, cancellationToken);
+    }
+
+    private async Task PublishSandboxStatusWebhookAsync(
+        DeliveryTracking tracking,
+        CancellationToken cancellationToken)
+    {
+        var fresh = await _db.DeliveryTrackings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == tracking.Id, cancellationToken);
+        if (fresh == null)
+            return;
+
+        var payload = BuildNextSandboxWebhook(fresh);
+        if (payload == null)
+            return;
+
+        await ProcessWebhookAsync(payload, "{}", cancellationToken);
+    }
+
+    private async Task PublishSandboxLocationAsync(
+        DeliveryTracking tracking,
+        double lat,
+        double lng,
+        CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        await HandleLocationUpdateAsync(tracking, (decimal)lat, (decimal)lng, now, cancellationToken);
+        tracking.LastKnownLat = (decimal)lat;
+        tracking.LastKnownLng = (decimal)lng;
+        tracking.LastLocationUpdatedAt = now;
+        tracking.UpdatedAt = now;
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<(double Lat, double Lng)> ResolvePickupCoordinatesAsync(
+        Domain.Models.Order order,
+        CancellationToken cancellationToken)
+    {
+        var partner = await _marketplaceClient.GetPartnerAsync(order.PartnerId, cancellationToken);
+        if (partner?.Latitude is not null && partner.Longitude is not null)
+            return (partner.Latitude.Value, partner.Longitude.Value);
+
+        return (10.7769, 106.7009);
     }
 
     private static DeliveryWebhookPayload? BuildNextSandboxWebhook(DeliveryTracking tracking)
@@ -244,6 +359,12 @@ public class DeliveryTrackingService : IDeliveryTrackingService
             dto.LastKnownLng = live.Longitude;
             dto.LastLocationUpdatedAt = live.UpdatedAt;
         }
+        else if (tracking.LastKnownLat is not null && tracking.LastKnownLng is not null)
+        {
+            dto.LastKnownLat = tracking.LastKnownLat;
+            dto.LastKnownLng = tracking.LastKnownLng;
+            dto.LastLocationUpdatedAt = tracking.LastLocationUpdatedAt;
+        }
         else if (order != null
             && tracking.ExternalDeliveryId?.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase) == true)
         {
@@ -308,9 +429,6 @@ public class DeliveryTrackingService : IDeliveryTrackingService
             if (tracking != null)
             {
                 await HandleWebhookEventAsync(tracking, payload, cancellationToken);
-
-                if (tracking.ExternalDeliveryId?.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase) == true)
-                    await PublishSandboxDriverLocationAsync(tracking, cancellationToken);
             }
             else
             {
@@ -342,6 +460,9 @@ public class DeliveryTrackingService : IDeliveryTrackingService
         foreach (var tracking in active)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (tracking.ExternalDeliveryId?.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase) == true)
+                continue;
 
             var order = await _db.Orders.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == tracking.OrderId, cancellationToken);
@@ -649,45 +770,6 @@ public class DeliveryTrackingService : IDeliveryTrackingService
                 };
             }).ToList(),
         }, cancellationToken);
-    }
-
-    private async Task PublishSandboxDriverLocationAsync(
-        DeliveryTracking tracking,
-        CancellationToken cancellationToken)
-    {
-        var order = await _db.Orders.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == tracking.OrderId, cancellationToken);
-        if (order == null)
-            return;
-
-        decimal? pickupLat = null;
-        decimal? pickupLng = null;
-        var partner = await _marketplaceClient.GetPartnerAsync(order.PartnerId, cancellationToken);
-        if (partner?.Latitude is not null && partner.Longitude is not null)
-        {
-            pickupLat = (decimal)partner.Latitude.Value;
-            pickupLng = (decimal)partner.Longitude.Value;
-        }
-
-        var location = await _deliveryProvider.GetDriverLocationAsync(new DriverLocationRequest
-        {
-            ExternalDeliveryId = tracking.ExternalDeliveryId!,
-            CurrentStatus = tracking.Status,
-            PickupLat = pickupLat,
-            PickupLng = pickupLng,
-            DeliveryLat = order.DeliveryLat,
-            DeliveryLng = order.DeliveryLng,
-            LastKnownLat = tracking.LastKnownLat,
-            LastKnownLng = tracking.LastKnownLng,
-            AssignedAt = tracking.AssignedAt,
-            PickedUpAt = tracking.PickedUpAt,
-        }, cancellationToken);
-
-        if (location is not { Found: true })
-            return;
-
-        await HandleLocationUpdateAsync(
-            tracking, location.Latitude, location.Longitude, location.UpdatedAt, cancellationToken);
     }
 
     private static bool CanDeliveryTransition(OrderStatus from, OrderStatus to)

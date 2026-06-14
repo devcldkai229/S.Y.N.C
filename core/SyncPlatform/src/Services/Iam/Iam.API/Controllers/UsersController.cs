@@ -12,10 +12,25 @@ namespace Iam.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IPublicProfileService _publicProfiles;
+    private readonly IUserSearchService _userSearch;
 
-    public UsersController(IPublicProfileService publicProfiles)
+    public UsersController(IPublicProfileService publicProfiles, IUserSearchService userSearch)
     {
         _publicProfiles = publicProfiles;
+        _userSearch = userSearch;
+    }
+
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(PagedApiResponse<IReadOnlyList<UserSearchItemDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<UserSearchItemDto>>>> Search(
+        [FromQuery] UserSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var (items, pagination) = await _userSearch.SearchAsync(request, cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<UserSearchItemDto>>.SuccessPagedResponse(
+            items,
+            pagination,
+            "Users retrieved successfully."));
     }
 
     /// <summary>

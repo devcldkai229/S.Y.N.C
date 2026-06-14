@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/core/utils/safe_emit.dart';
@@ -58,9 +59,19 @@ class MarketplaceHomeCubit extends Cubit<MarketplaceHomeState> with SafeEmitMixi
       if (isClosed) return;
       safeEmit(state.copyWith(
         status: MarketplaceHomeStatus.failure,
-        error: e.toString(),
+        error: _friendlyLoadError(e),
       ));
     }
+  }
+
+  static String _friendlyLoadError(Object e) {
+    if (e is DioException) {
+      final code = e.response?.statusCode;
+      if (code == 401) return 'Phiên đăng nhập hết hạn — hãy đăng nhập lại.';
+      if (code == 404) return 'Không tìm thấy API Sync Foods. Kiểm tra Gateway và Marketplace API.';
+      if (code != null) return 'Lỗi tải Sync Foods (HTTP $code).';
+    }
+    return 'Không tải được Sync Foods. Vui lòng thử lại.';
   }
 
   Future<void> selectCategory(String? categoryId) async {

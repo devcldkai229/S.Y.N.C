@@ -469,11 +469,11 @@ class _AvatarHeader extends StatelessWidget {
   final VoidCallback onPickBackground;
 
   static const _avatarRadius = 60.0;
-  static const _bannerHeight = 200.0;
+  static const _bannerHeight = 220.0;
+  static const _bannerRadius = 14.0;
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
     final hasBackground = backgroundImageUrl != null && backgroundImageUrl!.isNotEmpty;
 
     return Column(
@@ -483,37 +483,37 @@ class _AvatarHeader extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: onPickBackground,
-              child: Transform.translate(
-                offset: const Offset(-20, 0),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(_bannerRadius),
                 child: SizedBox(
-                  width: screenWidth,
+                  width: double.infinity,
                   height: _bannerHeight,
-                    child: hasBackground
-                        ? CachedNetworkImage(
-                            imageUrl: backgroundImageUrl!,
-                            fit: BoxFit.cover,
-                            width: screenWidth,
-                            height: _bannerHeight,
-                          )
-                        : DecoratedBox(
-                            decoration: const BoxDecoration(color: AppColors.lightGreen),
-                            child: Center(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.wallpaper_rounded, color: AppColors.primaryGreen),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Đổi ảnh nền',
-                                    style: TextStyle(
-                                      color: AppColors.primaryGreen.withValues(alpha: 0.9),
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                  child: hasBackground
+                      ? CachedNetworkImage(
+                          imageUrl: backgroundImageUrl!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: _bannerHeight,
+                        )
+                      : DecoratedBox(
+                          decoration: const BoxDecoration(color: AppColors.lightGreen),
+                          child: Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.wallpaper_rounded, color: AppColors.primaryGreen),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Đổi ảnh nền',
+                                  style: TextStyle(
+                                    color: AppColors.primaryGreen.withValues(alpha: 0.9),
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
+                        ),
                 ),
               ),
             ),

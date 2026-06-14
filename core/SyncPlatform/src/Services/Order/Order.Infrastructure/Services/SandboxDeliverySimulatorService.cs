@@ -29,7 +29,7 @@ public sealed class SandboxDeliverySimulatorService : BackgroundService
         if (!_settings.SimulateDeliveryProgress)
             return;
 
-        var delay = TimeSpan.FromSeconds(Math.Max(12, _settings.SandboxSimulationIntervalSeconds));
+        var delay = TimeSpan.FromSeconds(Math.Max(3, _settings.SandboxSimulationIntervalSeconds));
 
         while (!stoppingToken.IsCancellationRequested)
         {

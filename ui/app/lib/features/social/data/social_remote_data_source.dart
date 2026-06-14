@@ -361,4 +361,65 @@ class SocialRemoteDataSource {
       throw Exception((json['message'] ?? 'Unfollow failed').toString());
     }
   }
+
+  Future<PagedSearchPage<SocialPost>> searchPosts({
+    required String query,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.socialPostsSearch,
+      queryParameters: <String, dynamic>{
+        'query': query,
+        'pageNumber': pageNumber,
+        'pageSize': pageSize,
+      },
+    );
+
+    return _parsePagedSearch(response.data, SocialPost.fromJson);
+  }
+
+  Future<PagedSearchPage<UserSearchResult>> searchUsers({
+    required String query,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.socialUsersSearch,
+      queryParameters: <String, dynamic>{
+        'query': query,
+        'pageNumber': pageNumber,
+        'pageSize': pageSize,
+      },
+    );
+
+    return _parsePagedSearch(response.data, UserSearchResult.fromJson);
+  }
+
+  PagedSearchPage<T> _parsePagedSearch<T>(
+    Map<String, dynamic>? json,
+    T Function(Map<String, dynamic>) mapItem,
+  ) {
+    final body = json ?? const {};
+    if (body['success'] != true) {
+      throw Exception((body['message'] ?? 'Search failed').toString());
+    }
+
+    final raw = body['data'];
+    final items = (raw is List)
+        ? raw.whereType<Map<String, dynamic>>().map(mapItem).toList()
+        : <T>[];
+
+    final pagination = body['pagination'] as Map<String, dynamic>? ?? const {};
+    final pageNumber = (pagination['pageNumber'] ?? 1) as int;
+    final pageSize = (pagination['pageSize'] ?? 20) as int;
+    final totalRecords = (pagination['totalRecords'] ?? items.length) as int;
+
+    return PagedSearchPage<T>(
+      items: items,
+      pageNumber: pageNumber,
+      pageSize: pageSize,
+      totalRecords: totalRecords,
+    );
+  }
 }

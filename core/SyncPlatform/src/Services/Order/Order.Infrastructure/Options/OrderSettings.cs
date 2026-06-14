@@ -16,7 +16,7 @@ public class OrderSettings
     /// <summary>Auto-book delivery and simulate driver progression in Development.</summary>
     public bool SimulateDeliveryProgress { get; set; } = true;
 
-    public int SandboxSimulationIntervalSeconds { get; set; } = 18;
+    public int SandboxSimulationIntervalSeconds { get; set; } = 4;
 
     public string? AhamoveWebhookUrl =>
         string.IsNullOrWhiteSpace(PublicBaseUrl) ? null : $"{PublicBaseUrl.TrimEnd('/')}/webhooks/ahamove";

@@ -65,6 +65,17 @@ public class FoodMenuItemSearchRequest
     public int PageSize { get; set; } = 20;
 }
 
+public class FoodMenuItemSuggestionsRequest
+{
+    public int Count { get; set; } = 10;
+
+    public double? Latitude { get; set; }
+
+    public double? Longitude { get; set; }
+
+    public double? RadiusKm { get; set; }
+}
+
 public class CreateFoodMenuItemDto
 {
     public string NameVi { get; set; } = string.Empty;

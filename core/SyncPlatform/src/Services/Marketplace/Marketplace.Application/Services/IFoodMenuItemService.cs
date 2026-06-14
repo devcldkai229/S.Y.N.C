@@ -9,6 +9,10 @@ public interface IFoodMenuItemService
         FoodMenuItemSearchRequest request,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<FoodMenuItemDto>> GetSuggestionsAsync(
+        FoodMenuItemSuggestionsRequest request,
+        CancellationToken cancellationToken = default);
+
     Task<FoodMenuItemDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<FoodMenuItemDto>> GetByPartnerAsync(Guid partnerId, CancellationToken cancellationToken = default);

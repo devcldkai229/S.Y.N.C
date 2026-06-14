@@ -34,8 +34,11 @@ import 'package:sync_app/features/nutrition/screens/nutrition_diary_screen.dart'
 import 'package:sync_app/features/nutrition/screens/food_search_screen.dart';
 import 'package:sync_app/features/nutrition/screens/create_food_screen.dart';
 import 'package:sync_app/features/marketplace/screens/marketplace_home_screen.dart';
-import 'package:sync_app/features/marketplace/screens/nearby_kitchens_screen.dart';
+import 'package:sync_app/features/marketplace/screens/marketplace_listing_screen.dart';
+import 'package:sync_app/features/marketplace/screens/marketplace_search_screen.dart';
+import 'package:sync_app/features/marketplace/models/marketplace_listing_filter.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_home_models.dart';
+import 'package:sync_app/features/marketplace/screens/nearby_kitchens_screen.dart';
 import 'package:sync_app/features/marketplace/screens/partner_detail_screen.dart';
 import 'package:sync_app/features/marketplace/screens/food_menu_item_detail_screen.dart';
 import 'package:sync_app/features/marketplace/screens/affiliate_product_detail_screen.dart';
@@ -251,6 +254,21 @@ abstract final class AppRouter {
         path: AppRoutes.marketplaceHome,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const MarketplaceHomeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.marketplaceListing,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) {
+          final filter = state.extra is MarketplaceListingFilter
+              ? state.extra! as MarketplaceListingFilter
+              : MarketplaceListingFilter.all;
+          return MarketplaceListingScreen(filter: filter);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.marketplaceSearch,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const MarketplaceSearchScreen(),
       ),
       GoRoute(
         path: AppRoutes.marketplaceKitchens,

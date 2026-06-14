@@ -12,7 +12,7 @@
     "LocationPersistIntervalSeconds": 30,
     "LocationPollIntervalSeconds": 8,
     "SimulateDeliveryProgress": true,
-    "SandboxSimulationIntervalSeconds": 10,
+    "SandboxSimulationIntervalSeconds": 4,
     "PublicBaseUrl": "https://frictional-delisa-squeakingly.ngrok-free.dev"
   },
   "AwsLocation": {

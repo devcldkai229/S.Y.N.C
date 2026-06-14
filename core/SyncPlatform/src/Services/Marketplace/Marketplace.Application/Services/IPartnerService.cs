@@ -10,7 +10,11 @@ public interface IPartnerService
         PartnerSearchRequest request,
         CancellationToken cancellationToken = default);
 
-    Task<PartnerDetailDto> GetDetailAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<PartnerDetailDto> GetDetailAsync(
+        Guid id,
+        double? latitude = null,
+        double? longitude = null,
+        CancellationToken cancellationToken = default);
 
     Task<PartnerDto> GetMyPartnerAsync(Guid ownerUserId, CancellationToken cancellationToken = default);
 

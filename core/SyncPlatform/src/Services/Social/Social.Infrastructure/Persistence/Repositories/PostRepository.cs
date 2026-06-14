@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Social.Domain.Models;
 using Social.Domain.Repositories;
@@ -135,5 +137,31 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
             x => x.ShareCode == normalized,
             cancellationToken: cancellationToken);
         return count > 0;
+    }
+
+    public async Task<IReadOnlyList<Post>> SearchByTextAsync(
+        string query,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        var trimmed = query.Trim();
+        if (trimmed.Length < 2)
+            return [];
+
+        var escaped = Regex.Escape(trimmed);
+        var pattern = $"(?i).*{escaped}.*";
+        var regex = new BsonRegularExpression(pattern);
+
+        var filterBuilder = Builders<Post>.Filter;
+        var filter = filterBuilder.Or(
+            filterBuilder.Regex(x => x.Content, regex),
+            filterBuilder.Regex("AuthorSnapshot.FullName", regex));
+
+        return await Collection.Find(filter)
+            .SortByDescending(x => x.CreatedAt)
+            .Skip(skip)
+            .Limit(take)
+            .ToListAsync(cancellationToken);
     }
 }

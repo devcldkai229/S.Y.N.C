@@ -32,6 +32,7 @@ public class PartnerService : IPartnerService
 
         var criteria = new PartnerSearchCriteria
         {
+            Query = request.Query,
             Status = PartnerStatus.Active,
             Latitude = request.Latitude,
             Longitude = request.Longitude,
@@ -51,7 +52,11 @@ public class PartnerService : IPartnerService
         return (dtos, new PaginationMetadata(pageNumber, pageSize, total));
     }
 
-    public async Task<PartnerDetailDto> GetDetailAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<PartnerDetailDto> GetDetailAsync(
+        Guid id,
+        double? latitude = null,
+        double? longitude = null,
+        CancellationToken cancellationToken = default)
     {
         var partner = await _partnerRepository.GetByIdAsync(id, cancellationToken);
         if (partner == null || partner.Status != PartnerStatus.Active)
@@ -60,7 +65,21 @@ public class PartnerService : IPartnerService
         var menu = await _foodMenuItemRepository.GetByPartnerIdAsync(
             id, AvailabilityStatus.Available, cancellationToken);
 
-        var dto = partner.ToDto();
+        double? distanceKm = null;
+        if (latitude is not null && longitude is not null)
+        {
+            var coords = GeoLocationMapping.FromGeoJsonPoint(partner.Location);
+            if (coords != null)
+            {
+                distanceKm = HaversineKm(
+                    latitude.Value,
+                    longitude.Value,
+                    coords.Value.Latitude,
+                    coords.Value.Longitude);
+            }
+        }
+
+        var dto = partner.ToDto(distanceKm);
         return new PartnerDetailDto
         {
             Id = dto.Id,
@@ -85,6 +104,19 @@ public class PartnerService : IPartnerService
             DistanceKm = dto.DistanceKm,
             Menu = menu.Select(m => m.ToDto()).ToList(),
         };
+    }
+
+    private static double HaversineKm(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double earthRadiusKm = 6371.0;
+        static double DegreesToRadians(double degrees) => degrees * Math.PI / 180.0;
+        var dLat = DegreesToRadians(lat2 - lat1);
+        var dLon = DegreesToRadians(lon2 - lon1);
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2)
+                + Math.Cos(DegreesToRadians(lat1)) * Math.Cos(DegreesToRadians(lat2))
+                * Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return Math.Round(earthRadiusKm * c, 2);
     }
 
     public async Task<PartnerDto> GetMyPartnerAsync(Guid ownerUserId, CancellationToken cancellationToken = default)

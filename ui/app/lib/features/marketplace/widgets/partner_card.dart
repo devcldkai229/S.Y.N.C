@@ -48,14 +48,14 @@ class PartnerCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: partner.isOpen ? Colors.green.shade50 : Colors.grey.shade100,
+                      color: partner.isOpenNow ? Colors.green.shade50 : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      partner.isOpen ? 'Đang mở' : 'Đóng',
+                      partner.isOpenNow ? 'Đang mở' : 'Đóng',
                       style: TextStyle(
                         fontSize: 12,
-                        color: partner.isOpen ? Colors.green.shade800 : Colors.grey,
+                        color: partner.isOpenNow ? Colors.green.shade800 : Colors.grey,
                       ),
                     ),
                   ),

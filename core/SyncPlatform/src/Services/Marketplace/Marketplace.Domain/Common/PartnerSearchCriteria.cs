@@ -4,6 +4,8 @@ namespace Marketplace.Domain.Common;
 
 public class PartnerSearchCriteria
 {
+    public string? Query { get; set; }
+
     public PartnerType? Type { get; set; }
 
     public PartnerStatus Status { get; set; } = PartnerStatus.Active;

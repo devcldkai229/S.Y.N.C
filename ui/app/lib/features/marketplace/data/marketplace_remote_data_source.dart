@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:dio/dio.dart';
 import 'package:sync_app/core/network/api_paths.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_models.dart';
@@ -8,19 +10,22 @@ class MarketplaceRemoteDataSource {
   final Dio _dio;
 
   Future<List<Partner>> searchPartners({
+    String? query,
     double? lat,
     double? lng,
     double radiusKm = 10,
     int page = 1,
+    int pageSize = 20,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       ApiPaths.marketplacePartners,
       queryParameters: {
+        if (query != null && query.isNotEmpty) 'query': query,
         if (lat != null) 'latitude': lat,
         if (lng != null) 'longitude': lng,
-        'radiusKm': radiusKm,
+        if (lat != null && lng != null) 'radiusKm': radiusKm,
         'pageNumber': page,
-        'pageSize': 20,
+        'pageSize': pageSize,
       },
     );
     return _parsePaged(response.data, Partner.fromJson);
@@ -37,6 +42,43 @@ class MarketplaceRemoteDataSource {
     return _parseEnvelope(response.data, PartnerDetail.fromJson);
   }
 
+  Future<List<FoodMenuItem>> getFoodSuggestions({
+    int count = 10,
+    double? lat,
+    double? lng,
+  }) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.marketplaceFoodSuggestions,
+        queryParameters: {
+          'count': count,
+          if (lat != null) 'latitude': lat,
+          if (lng != null) 'longitude': lng,
+          'radiusKm': 15,
+        },
+      );
+      return _parseList(response.data, FoodMenuItem.fromJson);
+    } on DioException catch (e) {
+      if (e.response?.statusCode != 404) rethrow;
+      return _randomFoodFromSearch(count: count, lat: lat, lng: lng);
+    }
+  }
+
+  Future<List<FoodMenuItem>> _randomFoodFromSearch({
+    required int count,
+    double? lat,
+    double? lng,
+  }) async {
+    final items = await searchFoodMenu(
+      lat: lat,
+      lng: lng,
+      pageSize: 60,
+    );
+    if (items.isEmpty) return items;
+    final pool = List<FoodMenuItem>.from(items)..shuffle(Random());
+    return pool.take(count).toList();
+  }
+
   Future<List<FoodMenuItem>> searchFoodMenu({
     String? query,
     String? category,
@@ -44,6 +86,7 @@ class MarketplaceRemoteDataSource {
     double? lat,
     double? lng,
     int page = 1,
+    int pageSize = 20,
   }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       ApiPaths.marketplaceFoodMenu,
@@ -55,7 +98,7 @@ class MarketplaceRemoteDataSource {
         if (lng != null) 'longitude': lng,
         'radiusKm': 15,
         'pageNumber': page,
-        'pageSize': 20,
+        'pageSize': pageSize,
       },
     );
     return _parsePaged(response.data, FoodMenuItem.fromJson);
@@ -138,6 +181,18 @@ class MarketplaceRemoteDataSource {
   }
 
   List<T> _parsePaged<T>(
+    Map<String, dynamic>? json,
+    T Function(Map<String, dynamic>) fromJson,
+  ) {
+    if (json == null || json['success'] != true) {
+      throw Exception(json?['message']?.toString() ?? 'Request failed');
+    }
+    final data = json['data'];
+    if (data is! List) return [];
+    return data.whereType<Map<String, dynamic>>().map(fromJson).toList();
+  }
+
+  List<T> _parseList<T>(
     Map<String, dynamic>? json,
     T Function(Map<String, dynamic>) fromJson,
   ) {

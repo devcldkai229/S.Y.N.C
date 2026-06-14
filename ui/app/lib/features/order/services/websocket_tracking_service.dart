@@ -34,7 +34,7 @@ class WebSocketTrackingService implements ITrackingService {
   Future<void> _bootstrap(TrackingSession session, int generation) async {
     await _pullFallback(session, generation);
     await _connectHub(session, generation);
-    _fallbackTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _fallbackTimer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (generation != _generation) return;
       _pullFallback(session, generation);
     });

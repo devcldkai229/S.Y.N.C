@@ -97,6 +97,8 @@ abstract final class ApiPaths {
   static String socialUserFollowStatus(String userId) =>
       '/v1/social/users/$userId/follow-status';
   static String socialUserFollow(String userId) => '/v1/social/users/$userId/follow';
+  static const socialUsersSearch = '/v1/social/users/search';
+  static const socialPostsSearch = '/v1/posts/search';
 
   // Nutrition (gateway → /api/v1/nutrition/*)
   static const nutritionFoods = '/v1/nutrition/foods';
@@ -112,6 +114,7 @@ abstract final class ApiPaths {
   static const marketplacePartners = '/v1/marketplace/partners';
   static String marketplacePartnerById(String id) => '/v1/marketplace/partners/$id';
   static const marketplaceFoodMenu = '/v1/marketplace/food-menu-items';
+  static const marketplaceFoodSuggestions = '/v1/marketplace/food-menu-items/suggestions';
   static String marketplaceFoodMenuById(String id) =>
       '/v1/marketplace/food-menu-items/$id';
   static const marketplaceAffiliateProducts = '/v1/marketplace/affiliate-products';

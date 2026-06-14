@@ -97,6 +97,21 @@ public class PostController : ControllerBase
             "User posts retrieved successfully."));
     }
 
+    /// <summary>Search posts by content or author name (privacy-aware).</summary>
+    [HttpGet("search")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PagedApiResponse<IReadOnlyList<PostDto>>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<PostDto>>>> Search(
+        [FromQuery] PostSearchRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _posts.SearchPostsAsync(request, _currentUser.UserId, cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<PostDto>>.SuccessPagedResponse(
+            result.Items,
+            result.Pagination,
+            "Posts retrieved successfully."));
+    }
+
     /// <summary>Resolve a post from a deep-link share code (8 alphanumeric characters).</summary>
     [HttpGet("share/{shareCode}")]
     [AllowAnonymous]

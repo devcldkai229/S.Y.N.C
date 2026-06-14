@@ -258,42 +258,27 @@ public sealed class AhamoveAdapter : IDeliveryProvider
 
     private static DriverLocationResult? SimulateSandboxLocation(DriverLocationRequest request)
     {
+        if (request.LastKnownLat is decimal lat && request.LastKnownLng is decimal lng)
+        {
+            return new DriverLocationResult
+            {
+                Found = true,
+                Latitude = lat,
+                Longitude = lng,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            };
+        }
+
         var pickupLat = (double)(request.PickupLat ?? 10.7769m);
         var pickupLng = (double)(request.PickupLng ?? 106.7009m);
-        var dropLat = (double)(request.DeliveryLat ?? (decimal)(pickupLat + 0.02));
-        var dropLng = (double)(request.DeliveryLng ?? (decimal)(pickupLng + 0.02));
-
-        var now = DateTimeOffset.UtcNow;
-        double lat;
-        double lng;
-
-        if (request.CurrentStatus is DeliveryStatus.PickedUp or DeliveryStatus.Delivering or DeliveryStatus.Arrived)
-        {
-            var start = request.PickedUpAt ?? request.AssignedAt ?? now.AddMinutes(-5);
-            var elapsed = Math.Clamp((now - start).TotalMinutes / 12.0, 0, 1);
-            lat = pickupLat + (dropLat - pickupLat) * elapsed;
-            lng = pickupLng + (dropLng - pickupLng) * elapsed;
-        }
-        else if (request.CurrentStatus is DeliveryStatus.HeadingToPickup or DeliveryStatus.Assigned or DeliveryStatus.ArrivedAtPickup)
-        {
-            var start = request.AssignedAt ?? now.AddMinutes(-3);
-            var elapsed = Math.Clamp((now - start).TotalMinutes / 6.0, 0, 1);
-            var baseLat = (double)(request.LastKnownLat ?? (decimal)(pickupLat - 0.01));
-            var baseLng = (double)(request.LastKnownLng ?? (decimal)(pickupLng - 0.01));
-            lat = baseLat + (pickupLat - baseLat) * elapsed;
-            lng = baseLng + (pickupLng - baseLng) * elapsed;
-        }
-        else
-        {
-            return null;
-        }
+        var (spawnLat, spawnLng) = SandboxGeoHelper.SpawnNearPickup(pickupLat, pickupLng);
 
         return new DriverLocationResult
         {
             Found = true,
-            Latitude = (decimal)lat,
-            Longitude = (decimal)lng,
-            UpdatedAt = now,
+            Latitude = (decimal)spawnLat,
+            Longitude = (decimal)spawnLng,
+            UpdatedAt = DateTimeOffset.UtcNow,
         };
     }
 

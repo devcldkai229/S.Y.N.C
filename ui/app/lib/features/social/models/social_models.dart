@@ -313,3 +313,64 @@ class CommentsPage {
 
   bool get hasNextPage => pageNumber < totalPages;
 }
+
+class PagedSearchPage<T> {
+  const PagedSearchPage({
+    required this.items,
+    required this.pageNumber,
+    required this.pageSize,
+    required this.totalRecords,
+  });
+
+  final List<T> items;
+  final int pageNumber;
+  final int pageSize;
+  final int totalRecords;
+
+  bool get hasNextPage {
+    if (pageSize <= 0) return false;
+    return pageNumber * pageSize < totalRecords;
+  }
+}
+
+class UserSearchResult {
+  const UserSearchResult({
+    required this.id,
+    required this.fullName,
+    this.avatarUrl,
+    this.outgoingStatus,
+    this.canFollow = true,
+  });
+
+  final String id;
+  final String fullName;
+  final String? avatarUrl;
+  final String? outgoingStatus;
+  final bool canFollow;
+
+  bool get isFollowing => outgoingStatus == 'Accepted';
+  bool get isPending => outgoingStatus == 'Pending';
+
+  UserSearchResult copyWith({
+    String? outgoingStatus,
+    bool? canFollow,
+  }) {
+    return UserSearchResult(
+      id: id,
+      fullName: fullName,
+      avatarUrl: avatarUrl,
+      outgoingStatus: outgoingStatus ?? this.outgoingStatus,
+      canFollow: canFollow ?? this.canFollow,
+    );
+  }
+
+  factory UserSearchResult.fromJson(Map<String, dynamic> json) {
+    return UserSearchResult(
+      id: json['id']?.toString() ?? '',
+      fullName: json['fullName']?.toString() ?? '',
+      avatarUrl: json['avatarUrl']?.toString(),
+      outgoingStatus: json['outgoingStatus']?.toString(),
+      canFollow: json['canFollow'] != false,
+    );
+  }
+}

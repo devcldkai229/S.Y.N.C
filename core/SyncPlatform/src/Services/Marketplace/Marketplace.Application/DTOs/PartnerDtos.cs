@@ -52,6 +52,8 @@ public class PartnerDetailDto : PartnerDto
 
 public class PartnerSearchRequest
 {
+    public string? Query { get; set; }
+
     public string? Type { get; set; }
 
     public double? Latitude { get; set; }

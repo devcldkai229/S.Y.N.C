@@ -86,7 +86,7 @@ class _LiveTrackingMapState extends State<LiveTrackingMap> with SingleTickerProv
 
   void _animateShipper(LatLng from, LatLng to) {
     _anim?.dispose();
-    _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800));
+    _anim = AnimationController(vsync: this, duration: const Duration(milliseconds: 3200));
     _latAnim = Tween<double>(begin: from.latitude, end: to.latitude)
         .animate(CurvedAnimation(parent: _anim!, curve: Curves.easeInOut));
     _lngAnim = Tween<double>(begin: from.longitude, end: to.longitude)

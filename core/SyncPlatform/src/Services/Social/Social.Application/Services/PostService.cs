@@ -4,6 +4,7 @@ using Social.Application.DTOs;
 using Social.Application.Exceptions;
 using Social.Application.Helpers;
 using Social.Application.Mappers;
+using Social.Domain.Enums;
 using Social.Domain.Exceptions;
 using Social.Domain.Models;
 using Social.Domain.Repositories;
@@ -12,9 +13,14 @@ namespace Social.Application.Services;
 
 public class PostService : IPostService
 {
+    private const int MaxPageSize = 50;
+    private const int SearchBatchSize = 40;
+    private const int MaxSearchRawBatches = 8;
+
     private readonly IPostRepository _posts;
     private readonly IPostEngagementRepository _engagement;
     private readonly IUserFollowRepository _follows;
+    private readonly IUserSocialSettingsRepository _socialSettings;
     private readonly IIamGamificationClient _gamification;
     private readonly ISocialNotificationClient _notifications;
 
@@ -22,12 +28,14 @@ public class PostService : IPostService
         IPostRepository posts,
         IPostEngagementRepository engagement,
         IUserFollowRepository follows,
+        IUserSocialSettingsRepository socialSettings,
         IIamGamificationClient gamification,
         ISocialNotificationClient notifications)
     {
         _posts = posts;
         _engagement = engagement;
         _follows = follows;
+        _socialSettings = socialSettings;
         _gamification = gamification;
         _notifications = notifications;
     }
@@ -244,6 +252,106 @@ public class PostService : IPostService
             throw new ForbiddenException("You can only delete your own posts.");
 
         await _posts.DeleteAsync(postId, cancellationToken);
+    }
+
+    public async Task<PagedResult<PostDto>> SearchPostsAsync(
+        PostSearchRequest request,
+        Guid? viewerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var query = request.Query?.Trim() ?? string.Empty;
+        if (query.Length < 2)
+        {
+            return new PagedResult<PostDto>
+            {
+                Items = [],
+                Pagination = new PaginationMetadata { PageNumber = 1, PageSize = 20, TotalRecords = 0 },
+            };
+        }
+
+        var pageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
+        var pageSize = request.PageSize < 1 ? 20 : Math.Min(request.PageSize, MaxPageSize);
+        var targetSkip = (pageNumber - 1) * pageSize;
+
+        HashSet<Guid> blockedPeerIds = [];
+        HashSet<Guid> acceptedFolloweeIds = [];
+        if (viewerUserId.HasValue)
+        {
+            var blocked = await _follows.GetBlockedPeerIdsAsync(viewerUserId.Value, cancellationToken);
+            blockedPeerIds = blocked.ToHashSet();
+            var following = await _follows.GetAcceptedFolloweeIdsAsync(viewerUserId.Value, cancellationToken);
+            acceptedFolloweeIds = following.ToHashSet();
+        }
+
+        var visible = new List<Post>();
+        var rawSkip = 0;
+        var hasMoreRaw = true;
+        var batches = 0;
+
+        while (visible.Count < targetSkip + pageSize && hasMoreRaw && batches < MaxSearchRawBatches)
+        {
+            var batch = await _posts.SearchByTextAsync(query, rawSkip, SearchBatchSize, cancellationToken);
+            batches++;
+            if (batch.Count == 0)
+            {
+                hasMoreRaw = false;
+                break;
+            }
+
+            rawSkip += batch.Count;
+            hasMoreRaw = batch.Count >= SearchBatchSize;
+
+            var authorIds = batch
+                .Select(p => p.AuthorId)
+                .Distinct()
+                .ToList();
+
+            var privacyByAuthor = new Dictionary<Guid, PrivacyType>();
+            foreach (var authorId in authorIds)
+            {
+                privacyByAuthor[authorId] = await _socialSettings.GetProfilePrivacyAsync(
+                    authorId,
+                    cancellationToken);
+            }
+
+            foreach (var post in batch)
+            {
+                var isBlocked = viewerUserId.HasValue && blockedPeerIds.Contains(post.AuthorId);
+                var isFollower = viewerUserId.HasValue && acceptedFolloweeIds.Contains(post.AuthorId);
+                var privacy = privacyByAuthor.GetValueOrDefault(post.AuthorId, PrivacyType.Public);
+
+                if (!PostVisibilityHelper.CanView(post, viewerUserId, privacy, isFollower, isBlocked))
+                    continue;
+
+                visible.Add(post);
+            }
+        }
+
+        var page = visible.Skip(targetSkip).Take(pageSize).ToList();
+
+        HashSet<Guid> likedIds = [];
+        if (viewerUserId.HasValue && page.Count > 0)
+        {
+            likedIds = await _engagement.GetLikedPostIdsAsync(
+                viewerUserId.Value,
+                page.Select(p => p.Id),
+                cancellationToken);
+        }
+
+        var totalRecords = visible.Count;
+        if (hasMoreRaw && visible.Count >= targetSkip + pageSize)
+            totalRecords = Math.Max(totalRecords, pageNumber * pageSize + 1);
+
+        return new PagedResult<PostDto>
+        {
+            Items = page.Select(x => x.ToDto(likedIds.Contains(x.Id))).ToList(),
+            Pagination = new PaginationMetadata
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords,
+            },
+        };
     }
 
     private static int NormalizeFeedLimit(int limit) =>

@@ -64,15 +64,27 @@ abstract final class MarketplaceCatalog {
   static Map<String, dynamic>? searchParamsForCategory(String? categoryId) {
     if (categoryId == null) return null;
     return switch (categoryId) {
-      'healthy' => {'dietaryTags': ['Healthy']},
-      'eat-clean' => {'dietaryTags': ['EatClean']},
+      'healthy' => {'dietaryTags': ['LowFat']},
+      'eat-clean' => {'dietaryTags': ['Vegetarian']},
       'high-protein' => {'dietaryTags': ['HighProtein']},
-      'salad' => {'category': 'Salad'},
+      'salad' => {'category': 'Vegetable'},
       'com' => {'category': 'PreparedMeal'},
       'combo' => {'category': 'PreparedMeal'},
       'drinks' => {'category': 'Beverage'},
-      'macro' => {'dietaryTags': ['HighProtein', 'LowCarb']},
+      'macro' => {'macroBalanced': true},
       _ => null,
+    };
+  }
+
+  static String labelForCategoryId(String? categoryId) {
+    if (categoryId == null) return 'Tất cả';
+    for (final c in categories) {
+      if (c.id == categoryId) return c.label;
+    }
+    return switch (categoryId) {
+      'nearby' => 'Gần bạn',
+      'macro' => 'Đủ dinh dưỡng',
+      _ => categoryId,
     };
   }
 }

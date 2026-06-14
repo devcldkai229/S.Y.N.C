@@ -15,5 +15,10 @@ public interface IFoodMenuItemRepository : IGenericRepository<FoodMenuItem>
         FoodMenuItemSearchCriteria criteria,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<FoodMenuItem>> GetRandomAsync(
+        FoodMenuItemSearchCriteria criteria,
+        int count,
+        CancellationToken cancellationToken = default);
+
     Task UpdateRatingAsync(Guid id, decimal ratingAverage, int ratingCount, CancellationToken cancellationToken = default);
 }

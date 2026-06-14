@@ -181,6 +181,23 @@ public class UserFollowRepository : IUserFollowRepository
         return await _collection.Find(filter).AnyAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Guid>> GetBlockedPeerIdsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<UserFollow>.Filter.And(
+            Builders<UserFollow>.Filter.Eq(x => x.Status, FollowStatus.Blocked),
+            Builders<UserFollow>.Filter.Or(
+                Builders<UserFollow>.Filter.Eq(x => x.FollowerId, userId),
+                Builders<UserFollow>.Filter.Eq(x => x.FolloweeId, userId)));
+
+        var follows = await _collection.Find(filter).ToListAsync(cancellationToken);
+        return follows
+            .Select(f => f.FollowerId == userId ? f.FolloweeId : f.FollowerId)
+            .Distinct()
+            .ToList();
+    }
+
     private async Task<(IReadOnlyList<UserFollow> Items, int TotalRecords)> GetPagedAsync(
         FilterDefinition<UserFollow> filter,
         int pageNumber,
