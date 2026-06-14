@@ -9,6 +9,10 @@ abstract final class WorkoutAssets {
   static const banner2Mp4 = 'assets/workouts/banners/banner_2.mp4';
   static const banner3Jpg = 'assets/workouts/banners/banner_3.jpg';
 
+  static const bannerCustom1 = 'assets/workouts/banners_custom_workouts/banner1.jpg';
+  static const bannerCustom2 = 'assets/workouts/banners_custom_workouts/banner2.jpg';
+  static const bannerCustom3 = 'assets/workouts/banners_custom_workouts/banner3.jpg';
+
   static const celebrateLottie = 'assets/workouts/completion/celebrate.json';
 
   static String coverForWorkout(String name) {

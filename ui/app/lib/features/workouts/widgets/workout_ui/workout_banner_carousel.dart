@@ -16,9 +16,9 @@ class WorkoutBannerSlide {
 
 abstract final class WorkoutBannerSlides {
   static const items = [
-    WorkoutBannerSlide(assetPath: WorkoutAssets.banner3Jpg),
-    WorkoutBannerSlide(assetPath: WorkoutAssets.banner2Mp4),
-    WorkoutBannerSlide(assetPath: WorkoutAssets.banner1Mp4),
+    WorkoutBannerSlide(assetPath: WorkoutAssets.bannerCustom1),
+    WorkoutBannerSlide(assetPath: WorkoutAssets.bannerCustom2),
+    WorkoutBannerSlide(assetPath: WorkoutAssets.bannerCustom3),
   ];
 }
 

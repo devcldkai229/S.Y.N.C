@@ -111,6 +111,7 @@ flutter:
     - assets/marketplace/empty/
     - assets/workouts/
     - assets/workouts/banners/
+    - assets/workouts/banners_custom_workouts/
     - assets/workouts/covers/
     - assets/workouts/exercises/
     - assets/catalog/banners/
