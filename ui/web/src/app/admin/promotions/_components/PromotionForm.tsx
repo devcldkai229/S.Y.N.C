@@ -58,22 +58,22 @@ export function PromotionForm({ defaultValues, onSubmit, loading, submitLabel = 
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      <FormSection title="Basic Info">
+      <FormSection title="Thông tin cơ bản">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1 md:col-span-2">
-            <Label>Campaign Name *</Label>
-            <Input {...register("name")} placeholder="Summer Sale 2024" />
+            <Label>Tên chiến dịch *</Label>
+            <Input {...register("name")} placeholder="Sale hè 2024" />
             <FieldError msg={errors.name?.message} />
           </div>
 
           <div className="space-y-1">
-            <Label>Promotion Type *</Label>
+            <Label>Loại khuyến mãi *</Label>
             <Controller
               control={control}
               name="promotionType"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Chọn loại..." /></SelectTrigger>
                   <SelectContent>
                     {PROMOTION_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
                   </SelectContent>
@@ -84,44 +84,44 @@ export function PromotionForm({ defaultValues, onSubmit, loading, submitLabel = 
           </div>
 
           <div className="space-y-1">
-            <Label>Value</Label>
-            <Input type="number" step="0.01" {...register("value")} placeholder="20 (% or fixed amount)" />
+            <Label>Giá trị</Label>
+            <Input type="number" step="0.01" {...register("value")} placeholder="20 (% hoặc số tiền)" />
             <FieldError msg={errors.value?.message} />
           </div>
 
           <div className="space-y-1">
-            <Label>Coupon Code</Label>
+            <Label>Mã giảm giá</Label>
             <Input {...register("couponCode")} placeholder="SUMMER20" className="uppercase" />
           </div>
 
           <div className="space-y-1">
-            <Label>Minimum Spend (VND)</Label>
+            <Label>Chi tiêu tối thiểu (VND)</Label>
             <Input type="number" {...register("minimumSpend")} placeholder="0" />
           </div>
 
           <div className="space-y-1">
-            <Label>Usage Limit (0 = unlimited)</Label>
+            <Label>Giới hạn lượt dùng (0 = không giới hạn)</Label>
             <Input type="number" {...register("usageLimit")} placeholder="0" />
           </div>
         </div>
       </FormSection>
 
-      <FormSection title="Schedule">
+      <FormSection title="Lịch áp dụng">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <Label>Starts At *</Label>
+            <Label>Bắt đầu *</Label>
             <Input type="datetime-local" {...register("startsAt")} />
             <FieldError msg={errors.startsAt?.message} />
           </div>
           <div className="space-y-1">
-            <Label>Ends At *</Label>
+            <Label>Kết thúc *</Label>
             <Input type="datetime-local" {...register("endsAt")} />
             <FieldError msg={errors.endsAt?.message} />
           </div>
         </div>
       </FormSection>
 
-      <FormSection title="Applicable Products">
+      <FormSection title="Sản phẩm áp dụng">
         <Controller
           control={control}
           name="applicableProductTypes"
@@ -129,17 +129,17 @@ export function PromotionForm({ defaultValues, onSubmit, loading, submitLabel = 
             <TagInput
               value={field.value ?? []}
               onChange={field.onChange}
-              placeholder="e.g. SubscriptionPlan, WorkoutTemplate — press Enter"
+              placeholder="vd: SubscriptionPlan, WorkoutTemplate — nhấn Enter"
             />
           )}
         />
       </FormSection>
 
-      <FormSection title="Settings">
+      <FormSection title="Cài đặt">
         <Controller control={control} name="isActive" render={({ field }) => (
           <div className="flex items-center gap-2">
             <Switch checked={field.value} onCheckedChange={field.onChange} id="isActive" />
-            <Label htmlFor="isActive">Active</Label>
+            <Label htmlFor="isActive">Hoạt động</Label>
           </div>
         )} />
       </FormSection>

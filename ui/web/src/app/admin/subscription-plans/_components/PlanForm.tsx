@@ -49,58 +49,58 @@ export function PlanForm({ defaultValues, onSubmit, loading, submitLabel = "Save
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-      <FormSection title="Basic Info">
+      <FormSection title="Thông tin cơ bản">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1 md:col-span-2">
-            <Label>Plan Name *</Label>
-            <Input {...register("name")} placeholder="Pro Plan" />
+            <Label>Tên gói *</Label>
+            <Input {...register("name")} placeholder="Gói Pro" />
             <FieldError msg={errors.name?.message} />
           </div>
           <div className="space-y-1 md:col-span-2">
-            <Label>Description</Label>
-            <Textarea {...register("description")} placeholder="Plan description..." rows={2} />
+            <Label>Mô tả</Label>
+            <Textarea {...register("description")} placeholder="Mô tả gói..." rows={2} />
           </div>
         </div>
       </FormSection>
 
-      <FormSection title="Pricing">
+      <FormSection title="Giá">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1">
-            <Label>Monthly Price (VND)</Label>
+            <Label>Giá theo tháng (VND)</Label>
             <Input type="number" {...register("monthlyPrice")} placeholder="99000" />
             <FieldError msg={errors.monthlyPrice?.message} />
           </div>
           <div className="space-y-1">
-            <Label>Yearly Price (VND)</Label>
+            <Label>Giá theo năm (VND)</Label>
             <Input type="number" {...register("yearlyPrice")} placeholder="990000" />
             <FieldError msg={errors.yearlyPrice?.message} />
           </div>
           <div className="space-y-1">
-            <Label>Currency</Label>
+            <Label>Tiền tệ</Label>
             <Input {...register("currency")} placeholder="VND" />
           </div>
         </div>
       </FormSection>
 
-      <FormSection title="Features & Limits">
+      <FormSection title="Tính năng & giới hạn">
         <div className="space-y-1">
-          <Label>Features</Label>
+          <Label>Tính năng</Label>
           <Controller
             control={control}
             name="features"
             render={({ field }) => (
-              <TagInput value={field.value ?? []} onChange={field.onChange} placeholder="Add feature and press Enter" />
+              <TagInput value={field.value ?? []} onChange={field.onChange} placeholder="Nhập tính năng rồi nhấn Enter" />
             )}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
           <div className="space-y-1">
-            <Label>AI Usage Limit / Month</Label>
+            <Label>Giới hạn dùng AI / tháng</Label>
             <Input type="number" {...register("aiUsageLimitPerMonth")} />
           </div>
           <div className="space-y-1">
-            <Label>Max AI Auto Orders / Month</Label>
+            <Label>Số đơn AI tự động tối đa / tháng</Label>
             <Input type="number" {...register("maxAiAutoOrdersPerMonth")} />
           </div>
           <div className="space-y-1">
@@ -112,10 +112,10 @@ export function PlanForm({ defaultValues, onSubmit, loading, submitLabel = "Save
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
           {(
             [
-              { name: "premiumWorkoutAccess",     label: "Premium Workouts" },
-              { name: "premiumMarketplaceAccess", label: "Premium Marketplace" },
-              { name: "priorityAiResponses",      label: "Priority AI" },
-              { name: "isActive",                 label: "Active" },
+              { name: "premiumWorkoutAccess",     label: "Buổi tập Premium" },
+              { name: "premiumMarketplaceAccess", label: "Marketplace Premium" },
+              { name: "priorityAiResponses",      label: "Ưu tiên AI" },
+              { name: "isActive",                 label: "Hoạt động" },
             ] as const
           ).map(({ name, label }) => (
             <Controller key={name} control={control} name={name} render={({ field }) => (

@@ -28,12 +28,12 @@ export default function ExercisesPage() {
   const columns: ColumnDef<ExerciseCatalogDto>[] = [
     {
       accessorKey: "exerciseCode",
-      header: "Code",
+      header: "Mã",
       cell: ({ row }) => <span className="font-mono text-xs">{row.original.exerciseCode}</span>,
     },
     {
       accessorKey: "nameVi",
-      header: "Name (VI)",
+      header: "Tên (VI)",
       cell: ({ row }) => (
         <div>
           <p className="font-medium text-sm">{row.original.nameVi}</p>
@@ -43,22 +43,22 @@ export default function ExercisesPage() {
     },
     {
       accessorKey: "category",
-      header: "Category",
+      header: "Nhóm",
       cell: ({ row }) => <Badge variant="outline" className="text-xs">{row.original.category}</Badge>,
     },
     {
       accessorKey: "difficulty",
-      header: "Difficulty",
+      header: "Độ khó",
       cell: ({ row }) => <span className="text-sm">{row.original.difficulty}</span>,
     },
     {
       accessorKey: "bodyRegion",
-      header: "Body Region",
+      header: "Vùng cơ thể",
       cell: ({ row }) => <span className="text-sm text-muted-foreground">{row.original.bodyRegion}</span>,
     },
     {
       accessorKey: "isActive",
-      header: "Status",
+      header: "Trạng thái",
       cell: ({ row }) => <StatusBadge status={row.original.isActive} />,
     },
     {
@@ -70,13 +70,13 @@ export default function ExercisesPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => router.push(`/admin/exercises/${row.original.id}`)}>
-              <Pencil className="w-4 h-4 mr-2" /> Edit
+              <Pencil className="w-4 h-4 mr-2" /> Sửa
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => setDeleteTarget(row.original)}
             >
-              <Trash2 className="w-4 h-4 mr-2" /> Delete
+              <Trash2 className="w-4 h-4 mr-2" /> Xóa
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -88,10 +88,10 @@ export default function ExercisesPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-muted-foreground">{data?.totalCount ?? 0} exercises total</p>
+          <p className="text-xs text-muted-foreground">{data?.pagination.totalRecords ?? 0} bài tập</p>
         </div>
         <Button size="sm" onClick={() => router.push("/admin/exercises/new")}>
-          <Plus className="w-4 h-4 mr-2" /> New Exercise
+          <Plus className="w-4 h-4 mr-2" /> Thêm bài tập
         </Button>
       </div>
 
@@ -101,16 +101,16 @@ export default function ExercisesPage() {
         <DataTable
           columns={columns}
           data={data?.items ?? []}
-          searchPlaceholder="Search exercises..."
+          searchPlaceholder="Tìm bài tập..."
         />
       )}
 
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(o) => !o && setDeleteTarget(null)}
-        title="Delete Exercise"
-        description={`Are you sure you want to delete "${deleteTarget?.nameEn}"? This action cannot be undone.`}
-        confirmLabel="Delete"
+        title="Xóa bài tập"
+        description={`Bạn có chắc muốn xóa "${deleteTarget?.nameVi || deleteTarget?.nameEn}"? Hành động này không thể hoàn tác.`}
+        confirmLabel="Xóa"
         loading={deleteMutation.isPending}
         onConfirm={() => {
           if (!deleteTarget) return;

@@ -34,6 +34,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPublicProfileService, PublicProfileService>();
         services.AddScoped<IUserSearchService, UserSearchService>();
+        services.AddScoped<IAdminUserService, AdminUserService>();
         services.AddScoped<ISubscriptionTierService, SubscriptionTierService>();
 
         return services;

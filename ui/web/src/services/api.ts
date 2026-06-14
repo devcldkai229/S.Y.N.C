@@ -5,7 +5,44 @@ function getAuthToken(): string | null {
   return localStorage.getItem("sync_admin_token");
 }
 
-async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+/** Backend wraps every response in ApiResponse<T> = { success, message, data, errors }. */
+interface ApiEnvelope<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  errors?: unknown;
+  pagination?: PaginationMetadata;
+}
+
+export interface PaginationMetadata {
+  pageNumber:      number;
+  pageSize:        number;
+  totalRecords:    number;
+  totalPages:      number;
+  hasPreviousPage: boolean;
+  hasNextPage:     boolean;
+}
+
+export interface Paged<T> {
+  items:      T[];
+  pagination: PaginationMetadata;
+}
+
+function isEnvelope(value: unknown): value is ApiEnvelope<unknown> {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "success" in value &&
+    "data" in value
+  );
+}
+
+/** Returns the inner `data` payload when the backend envelope is present; otherwise the raw value. */
+function unwrap<T>(parsed: unknown): T {
+  return isEnvelope(parsed) ? (parsed.data as T) : (parsed as T);
+}
+
+async function rawRequest(endpoint: string, options?: RequestInit): Promise<unknown> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -28,11 +65,24 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(`API error: ${response.status} ${response.statusText} ${text}`);
+    // Surface the backend message when the envelope is present.
+    let message = `${response.status} ${response.statusText}`;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.message) message = parsed.message;
+    } catch {
+      if (text) message = text;
+    }
+    throw new Error(message);
   }
 
   const text = await response.text();
-  return text ? (JSON.parse(text) as T) : ({} as T);
+  return text ? JSON.parse(text) : null;
+}
+
+async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const parsed = await rawRequest(endpoint, options);
+  return unwrap<T>(parsed);
 }
 
 async function requestFormData<T>(endpoint: string, body: FormData, method = "POST"): Promise<T> {
@@ -40,11 +90,7 @@ async function requestFormData<T>(endpoint: string, body: FormData, method = "PO
   const headers: Record<string, string> = {};
   if (token) headers["Authorization"] = `Bearer ${token}`;
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method,
-    headers,
-    body,
-  });
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, { method, headers, body });
 
   if (response.status === 401) {
     if (typeof window !== "undefined") {
@@ -56,15 +102,34 @@ async function requestFormData<T>(endpoint: string, body: FormData, method = "PO
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    throw new Error(`API error: ${response.status} ${response.statusText} ${text}`);
+    throw new Error(text || `${response.status} ${response.statusText}`);
   }
 
-  return response.json() as Promise<T>;
+  const text = await response.text();
+  return unwrap<T>(text ? JSON.parse(text) : null);
 }
 
 export const api = {
   get: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { method: "GET", ...options }),
+
+  /** For PagedApiResponse endpoints — returns both items (data) and pagination metadata. */
+  getPaged: async <T>(endpoint: string, options?: RequestInit): Promise<Paged<T>> => {
+    const parsed = await rawRequest(endpoint, { method: "GET", ...options });
+    const env = (isEnvelope(parsed) ? parsed : { data: [], pagination: undefined }) as ApiEnvelope<T[]>;
+    return {
+      items: (env.data ?? []) as T[],
+      pagination:
+        env.pagination ?? {
+          pageNumber: 1,
+          pageSize: (env.data as T[])?.length ?? 0,
+          totalRecords: (env.data as T[])?.length ?? 0,
+          totalPages: 1,
+          hasPreviousPage: false,
+          hasNextPage: false,
+        },
+    };
+  },
 
   post: <T>(endpoint: string, body: unknown, options?: RequestInit) =>
     request<T>(endpoint, { method: "POST", body: JSON.stringify(body), ...options }),

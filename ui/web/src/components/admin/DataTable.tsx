@@ -37,7 +37,7 @@ export function DataTable<TData, TValue>({
   columns,
   data,
   searchKey,
-  searchPlaceholder = "Search...",
+  searchPlaceholder = "Tìm kiếm...",
   toolbar,
   pageSize = 10,
 }: DataTableProps<TData, TValue>) {
@@ -104,7 +104,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-32 text-center text-muted-foreground">
-                  No results found.
+                  Không có dữ liệu.
                 </TableCell>
               </TableRow>
             )}
@@ -115,8 +115,8 @@ export function DataTable<TData, TValue>({
       {/* Pagination */}
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>
-          {table.getFilteredRowModel().rows.length} row(s)
-          {table.getState().pagination && ` · Page ${table.getState().pagination.pageIndex + 1} of ${table.getPageCount()}`}
+          {table.getFilteredRowModel().rows.length} dòng
+          {table.getState().pagination && ` · Trang ${table.getState().pagination.pageIndex + 1}/${table.getPageCount()}`}
         </span>
         <div className="flex items-center gap-1">
           <Button variant="outline" size="icon" className="w-8 h-8" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>

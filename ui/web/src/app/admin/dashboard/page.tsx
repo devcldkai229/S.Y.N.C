@@ -2,14 +2,24 @@
 
 import { Users, CreditCard, Dumbbell, Megaphone } from "lucide-react";
 import { StatsCard } from "@/components/admin/StatsCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useExercises } from "@/hooks/admin/use-exercises";
 import { useSubscriptionPlans } from "@/hooks/admin/use-subscription-plans";
 import { usePromotionCampaigns, campaignStatus } from "@/hooks/admin/use-promotions";
 import { useUsers } from "@/hooks/admin/use-users";
+import { useUserSubscriptions } from "@/hooks/admin/use-user-subscriptions";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts";
 
 const WEEKLY_DATA = [
@@ -21,18 +31,19 @@ const WEEKLY_DATA = [
   { week: "W6", users: 34 },
 ];
 
-const PIE_COLORS = ["#1A8344", "#3b82f6", "#f59e0b", "#8b5cf6"];
+const PIE_COLORS = ["#6b7280", "#3b82f6", "#1A8344", "#f59e0b"];
 
 export default function DashboardPage() {
   const { data: exercisesPage, isLoading: loadingEx }   = useExercises({ pageSize: 1 });
   const { data: plans, isLoading: loadingPlans }         = useSubscriptionPlans();
   const { data: campaigns, isLoading: loadingCampaigns } = usePromotionCampaigns();
   const { data: users, isLoading: loadingUsers }         = useUsers();
+  const { data: subscriptions }                          = useUserSubscriptions();
 
-  const totalUsers          = users?.length ?? 0;
-  const totalExercises      = exercisesPage?.totalCount ?? 0;
-  const activeCampaigns     = campaigns?.filter((c) => campaignStatus(c) === "running").length ?? 0;
-  const activeSubscriptions = plans?.filter((p) => p.isActive).length ?? 0;
+  const totalUsers         = users?.length ?? 0;
+  const totalExercises     = exercisesPage?.pagination.totalRecords ?? 0;
+  const activeCampaigns    = campaigns?.filter((c) => campaignStatus(c) === "running").length ?? 0;
+  const activeSubscriptions = subscriptions?.filter((s) => s.status === "Active").length ?? 0;
 
   const tierCounts = (plans ?? []).reduce<Record<string, number>>((acc, p) => {
     acc[p.name] = (acc[p.name] ?? 0) + 1;
@@ -44,57 +55,45 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">Tổng quan hệ thống</h2>
-        <p className="text-sm text-gray-400 mt-0.5">Theo dõi hoạt động và các số liệu quan trọng</p>
-      </div>
-
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-2xl" />
+            <Skeleton key={i} className="h-28 rounded-xl" />
           ))
         ) : (
           <>
-            <StatsCard title="Total Users"      value={totalUsers}          icon={Users}      color="green"  description="Registered accounts" />
-            <StatsCard title="Active Plans"     value={activeSubscriptions} icon={CreditCard} color="blue"   description="Subscription plans active" />
-            <StatsCard title="Exercise Catalog" value={totalExercises}      icon={Dumbbell}   color="orange" description="Total exercises in catalog" />
-            <StatsCard title="Live Campaigns"   value={activeCampaigns}     icon={Megaphone}  color="purple" description="Promotion campaigns running" />
+            <StatsCard title="Tổng người dùng"     value={totalUsers}          icon={Users}      description="Người dùng đã đăng ký" />
+            <StatsCard title="Gói đang hoạt động"  value={activeSubscriptions} icon={CreditCard} description="Gói đăng ký đang active" />
+            <StatsCard title="Thư viện bài tập"    value={totalExercises}      icon={Dumbbell}   description="Tổng số bài tập" />
+            <StatsCard title="Chiến dịch đang chạy" value={activeCampaigns}    icon={Megaphone}  description="Khuyến mãi đang diễn ra" />
           </>
         )}
       </div>
 
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">New Users (Weekly)</h3>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={WEEKLY_DATA} barSize={28}>
-              <XAxis
-                dataKey="week"
-                tick={{ fontSize: 12, fill: "#9ca3af" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: "#9ca3af" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                cursor={{ fill: "#f9fafb" }}
-                contentStyle={{ borderRadius: "12px", border: "1px solid #f3f4f6", fontSize: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}
-              />
-              <Bar dataKey="users" fill="#1A8344" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Người dùng mới (theo tuần)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={WEEKLY_DATA} barSize={28}>
+                <XAxis dataKey="week" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: "oklch(0.97 0 0)" }} />
+                <Bar dataKey="users" fill="oklch(0.52 0.165 149)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">Subscription Plans Distribution</h3>
-          <div className="flex items-center justify-center">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">Phân bố gói dịch vụ</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center">
             {pieData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -103,54 +102,39 @@ export default function DashboardPage() {
                       <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Legend wrapperStyle={{ fontSize: "12px" }} />
-                  <Tooltip
-                    contentStyle={{ borderRadius: "12px", border: "1px solid #f3f4f6", fontSize: "12px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)" }}
-                  />
+                  <Legend />
+                  <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <p className="text-gray-400 text-sm py-12">No plan data available</p>
+              <p className="text-muted-foreground text-sm py-12">Chưa có dữ liệu gói dịch vụ</p>
             )}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Recent users */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-4">Recent Users</h3>
-        <div className="space-y-1">
-          {(users ?? []).slice(0, 5).map((u) => {
-            const avatarInitials = u.fullName
-              ?.trim().split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase() ?? "U";
-            return (
-              <div
-                key={u.id}
-                className="flex items-center justify-between py-3 px-3 rounded-xl hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold shrink-0">
-                    {avatarInitials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{u.fullName}</p>
-                    <p className="text-xs text-gray-400">{u.email}</p>
-                  </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold">Người dùng gần đây</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="divide-y divide-border">
+            {(users ?? []).slice(0, 5).map((u) => (
+              <div key={u.id} className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-sm font-medium">{u.fullName}</p>
+                  <p className="text-xs text-muted-foreground">{u.email}</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                    {u.subscriptionTier}
-                  </span>
-                  <p className="text-xs text-gray-400 mt-1">{u.role}</p>
+                  <p className="text-xs font-medium">{u.subscriptionTier}</p>
+                  <p className="text-xs text-muted-foreground">{u.role}</p>
                 </div>
               </div>
-            );
-          })}
-          {(!users || users.length === 0) && !isLoading && (
-            <p className="text-gray-400 text-sm text-center py-8">No users found</p>
-          )}
-        </div>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

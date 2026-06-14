@@ -5,17 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Ban, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useUser } from "@/hooks/admin/use-users";
+import { useUser, useUpdateUserStatus } from "@/hooks/admin/use-users";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 
 const ROLE_COLORS: Record<string, string> = {
-  Admin:  "bg-purple-100 text-purple-700 border-purple-200",
-  Staff:  "bg-blue-100 text-blue-700 border-blue-200",
-  Member: "bg-gray-100 text-gray-600 border-gray-200",
+  SystemAdmin: "bg-purple-100 text-purple-700 border-purple-200",
+  Partner:     "bg-blue-100 text-blue-700 border-blue-200",
+  User:        "bg-gray-100 text-gray-600 border-gray-200",
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  SystemAdmin: "Quản trị viên",
+  Partner:     "Đối tác",
+  User:        "Người dùng",
 };
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -32,6 +38,7 @@ export default function UserDetailPage() {
   const id       = params?.id ?? "";
   const router   = useRouter();
   const { data, isLoading } = useUser(id);
+  const updateStatus = useUpdateUserStatus();
 
   if (isLoading) {
     return (
@@ -42,17 +49,28 @@ export default function UserDetailPage() {
     );
   }
 
-  if (!data) return <p className="text-muted-foreground">User not found.</p>;
+  if (!data) return <p className="text-muted-foreground">Không tìm thấy người dùng.</p>;
 
-  const initials = data.fullName.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const initials = (data.fullName || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+  const isSuspended = data.status === "Suspended";
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <Button variant="ghost" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="w-4 h-4 mr-2" /> Quay lại
+        </Button>
+        {isSuspended ? (
+          <Button size="sm" variant="outline" onClick={() => updateStatus.mutate({ id, status: "Active" })} disabled={updateStatus.isPending}>
+            <CheckCircle2 className="w-4 h-4 mr-2" /> Kích hoạt
+          </Button>
+        ) : (
+          <Button size="sm" variant="destructive" onClick={() => updateStatus.mutate({ id, status: "Suspended" })} disabled={updateStatus.isPending}>
+            <Ban className="w-4 h-4 mr-2" /> Tạm khóa
+          </Button>
+        )}
+      </div>
 
-      {/* Profile header */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center gap-4">
@@ -62,7 +80,7 @@ export default function UserDetailPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-lg font-bold">{data.fullName}</h2>
-                <Badge variant="outline" className={`text-xs ${ROLE_COLORS[data.role] ?? ""}`}>{data.role}</Badge>
+                <Badge variant="outline" className={`text-xs ${ROLE_COLORS[data.role] ?? ""}`}>{ROLE_LABELS[data.role] ?? data.role}</Badge>
                 <StatusBadge status={data.status} />
               </div>
               <p className="text-sm text-muted-foreground">{data.email}</p>
@@ -73,35 +91,34 @@ export default function UserDetailPage() {
 
       <Tabs defaultValue="profile">
         <TabsList>
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="subscription">Subscription</TabsTrigger>
+          <TabsTrigger value="profile">Hồ sơ</TabsTrigger>
+          <TabsTrigger value="account">Tài khoản</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-4">
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold">Profile Details</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-semibold">Thông tin hồ sơ</CardTitle></CardHeader>
             <CardContent>
-              <InfoRow label="Full Name"          value={data.fullName} />
-              <InfoRow label="Email"              value={data.email} />
-              <InfoRow label="Role"               value={data.role} />
-              <InfoRow label="Status"             value={<StatusBadge status={data.status} />} />
-              <InfoRow label="Member Since"       value={format(new Date(data.createdAt), "dd/MM/yyyy")} />
-              <InfoRow label="Last Active"        value={format(new Date(data.lastActive), "dd/MM/yyyy")} />
-              <div className="mt-4 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
-                Note: Full biometric & device data requires admin backend endpoints (pending implementation).
-              </div>
+              <InfoRow label="Họ tên"          value={data.fullName} />
+              <InfoRow label="Email"           value={data.email} />
+              <InfoRow label="Đã xác minh email" value={data.emailVerified ? "Có" : "Không"} />
+              <InfoRow label="Vai trò"         value={ROLE_LABELS[data.role] ?? data.role} />
+              <InfoRow label="Trạng thái"      value={<StatusBadge status={data.status} />} />
+              <InfoRow label="Ngày tham gia"   value={format(new Date(data.createdAt), "dd/MM/yyyy")} />
+              <InfoRow label="Hoạt động cuối"  value={data.lastActiveAt ? format(new Date(data.lastActiveAt), "dd/MM/yyyy HH:mm") : "—"} />
+              <InfoRow label="Đăng nhập cuối"  value={data.lastLoginAt ? format(new Date(data.lastLoginAt), "dd/MM/yyyy HH:mm") : "—"} />
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="subscription" className="mt-4">
+        <TabsContent value="account" className="mt-4">
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold">Subscription</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-sm font-semibold">Tài khoản & gói đăng ký</CardTitle></CardHeader>
             <CardContent>
-              <InfoRow label="Current Plan" value={data.subscriptionTier} />
-              <InfoRow label="Status"       value={<StatusBadge status="active" />} />
+              <InfoRow label="Gói hiện tại" value={data.subscriptionTier} />
+              <InfoRow label="Mã người dùng" value={<span className="font-mono text-xs">{data.id}</span>} />
               <div className="mt-4 p-3 bg-muted/50 rounded-lg text-xs text-muted-foreground">
-                Note: Detailed billing info requires admin user subscription endpoints (pending implementation).
+                Quản lý gói đăng ký chi tiết tại mục <span className="font-medium">Gói đăng ký</span>.
               </div>
             </CardContent>
           </Card>

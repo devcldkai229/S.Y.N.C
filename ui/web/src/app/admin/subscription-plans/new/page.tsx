@@ -21,12 +21,12 @@ export default function NewPlanPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <Button variant="ghost" size="sm" onClick={() => router.back()}>
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back
+        <ArrowLeft className="w-4 h-4 mr-2" /> Quay lại
       </Button>
       <Card>
-        <CardHeader><CardTitle>New Subscription Plan</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Tạo gói dịch vụ</CardTitle></CardHeader>
         <CardContent>
-          <PlanForm onSubmit={handleSubmit} loading={createMutation.isPending} submitLabel="Create Plan" />
+          <PlanForm onSubmit={handleSubmit} loading={createMutation.isPending} submitLabel="Tạo gói" />
         </CardContent>
       </Card>
     </div>
