@@ -17,7 +17,7 @@ export default function CTASection() {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            href="/register"
+            href="/admin/login"
             className="group flex items-center gap-2 bg-primary text-white px-9 py-4 rounded-full text-lg font-medium hover:bg-primary-dark transition-all hover:scale-[1.02] shadow-lg shadow-primary/25"
           >
             Bắt đầu miễn phí

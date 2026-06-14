@@ -23,7 +23,7 @@ export default function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">
-            {["Features", "How it works", "Testimonials", "Pricing"].map((item) => (
+            {["Features", "How it works", "Testimonials"].map((item) => (
               <Link
                 key={item}
                 href={`#${item.toLowerCase().replace(/ /g, "-")}`}
@@ -36,11 +36,11 @@ export default function Navbar() {
 
           {/* CTA */}
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+            <Link href="/admin/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
               Sign in
             </Link>
             <Link
-              href="/register"
+              href="/admin/login"
               className="text-sm bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition-colors font-medium"
             >
               Get started
@@ -68,7 +68,7 @@ export default function Navbar() {
             </Link>
           ))}
           <Link
-            href="/register"
+            href="/admin/login"
             className="block w-full text-center bg-primary text-white px-4 py-2.5 rounded-full font-medium mt-2"
           >
             Get started

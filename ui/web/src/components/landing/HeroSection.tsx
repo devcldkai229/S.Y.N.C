@@ -53,7 +53,7 @@ export default function HeroSection() {
         <HeroEntrance delay={0.48}>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
             <Link
-              href="/register"
+              href="/admin/login"
               className="group flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-full text-base font-medium hover:bg-primary-dark transition-all hover:scale-[1.03] shadow-lg shadow-primary/25"
             >
               Bắt đầu miễn phí
