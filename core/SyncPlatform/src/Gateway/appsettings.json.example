@@ -197,6 +197,12 @@
         "Match": {
           "Path": "/webhooks/momo"
         }
+      },
+      "media-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/media/{**catch-all}"
+        }
       }
     },
     "Clusters": {

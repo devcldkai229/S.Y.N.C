@@ -1,14 +1,12 @@
 using Amazon.LocationService;
+using Libs.Storage.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
-using Minio;
 using Social.Application.Clients;
 using Social.Domain.Repositories;
-using Social.Application.Configuration;
 using Social.Application.Services;
 using Social.Infrastructure.Clients;
 using Social.Infrastructure.Options;
@@ -30,7 +28,7 @@ public static class InfrastructureServiceExtensions
     {
         RegisterBsonConventions();
 
-        services.Configure<MinioOptions>(configuration.GetSection(MinioOptions.SectionName));
+        services.AddS3ObjectStorage(configuration);
         services.Configure<AwsLocationOptions>(configuration.GetSection(AwsLocationOptions.SectionName));
 
         var awsLocation = configuration.GetSection(AwsLocationOptions.SectionName).Get<AwsLocationOptions>()
@@ -46,17 +44,7 @@ public static class InfrastructureServiceExtensions
             services.AddScoped<IChallengeRouteCalculator, HaversineChallengeRouteCalculator>();
         }
 
-        services.AddSingleton<IMinioClient>(sp =>
-        {
-            var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MinioOptions>>().Value;
-            return new MinioClient()
-                .WithEndpoint(options.Endpoint)
-                .WithCredentials(options.AccessKey, options.SecretKey)
-                .WithSSL(options.UseSsl)
-                .Build();
-        });
-
-        services.AddSingleton<IStorageService, MinioStorageService>();
+        services.AddSingleton<IStorageService, S3StorageService>();
 
         var connectionString = configuration.GetConnectionString("SocialDatabase")
             ?? throw new InvalidOperationException("Connection string 'SocialDatabase' is not configured.");
@@ -91,7 +79,7 @@ public static class InfrastructureServiceExtensions
 
         services.Configure<SocialSeedOptions>(configuration.GetSection(SocialSeedOptions.SectionName));
         services.AddScoped<ISocialDatabaseSeeder, SocialDatabaseSeeder>();
-        services.AddScoped<MinioDevAssetSeeder>();
+        services.AddScoped<S3DevAssetSeeder>();
 
         // Inter-service: IAM gamification (grant XP after social events)
         services.AddHttpClient<IIamGamificationClient, IamGamificationClient>((sp, client) =>

@@ -193,7 +193,7 @@ public class OrderService : IOrderService
                 }, cancellationToken);
 
                 if (!cod.Success)
-                    throw new BadRequestException("Không tạo được giao dịch COD.");
+                    throw new BadRequestException(cod.FailureReason ?? "Không tạo được giao dịch COD.");
 
                 paymentTransactionId = cod.TransactionId;
                 orderStatus = OrderStatus.Confirmed;
@@ -450,7 +450,21 @@ public class OrderService : IOrderService
         var total = await query.CountAsync(cancellationToken);
         var items = await query.OrderByDescending(o => o.PlacedAt)
             .Skip((page - 1) * size).Take(size).ToListAsync(cancellationToken);
-        return (items.Select(o => o.ToDto()).ToList(), new PaginationMetadata(page, size, total));
+
+        var orderIds = items.Select(o => o.Id).ToList();
+        var deliveryByOrder = await _db.DeliveryTrackings.AsNoTracking()
+            .Where(t => orderIds.Contains(t.OrderId))
+            .ToDictionaryAsync(t => t.OrderId, t => t.Status, cancellationToken);
+
+        var dtos = items.Select(o =>
+        {
+            var dto = o.ToDto();
+            if (deliveryByOrder.TryGetValue(o.Id, out var deliveryStatus))
+                dto.DeliveryStatus = deliveryStatus;
+            return dto;
+        }).ToList();
+
+        return (dtos, new PaginationMetadata(page, size, total));
     }
 
     public async Task<(IReadOnlyList<OrderDto> Items, PaginationMetadata Pagination)> ListPartnerOrdersAsync(

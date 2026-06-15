@@ -24,7 +24,7 @@ Script copy `*.json.example` → `*.json` (bỏ qua file đã tồn tại). Dùn
 Sau đó điền secret trong:
 
 1. `configs/appsettings.Shared.Development.json` → `Jwt:SecretKey` (≥ 32 ký tự)
-2. Mỗi service `appsettings.Development.json` → connection strings, PayOS, Google, SMTP, MinIO, …
+2. Mỗi service `appsettings.Development.json` → connection strings, PayOS, Google, SMTP, AWS S3 (`Storage` + `AWS`), …
 
 ## Production
 
@@ -35,7 +35,7 @@ Dùng biến môi trường (`Jwt__SecretKey`, `ConnectionStrings__IamDatabase`,
 ```powershell
 cd core/SyncPlatform
 .\scripts\setup-appsettings.ps1
-.\scripts\run-all.ps1 -Infra   # lần đầu: Docker Postgres/Mongo/MinIO
+.\scripts\run-all.ps1 -Infra   # lần đầu: Docker Postgres/Mongo
 .\scripts\run-all.ps1
 ```
 

@@ -1,7 +1,7 @@
 {
     "_meta": {
       "description": "SYNC Marketplace seed data — 16 cloud kitchens tại TP.HCM, mỗi bếp 5-7 món (healthy → phổ biến). Toạ độ thật theo khu vực HCMC. Thương hiệu bếp là hư cấu (đối tác SYNC), đặt tại vị trí khu vực có thật.",
-      "imageStrategy": "Mỗi món có 'imageQuery' (từ khoá tìm trên Pexels/Unsplash, free commercial) + 's3Key' đích. Bước seed: Pexels API search theo imageQuery -> download -> upload S3 'sync-objs/food_catalog/' -> set ImageUrls. Logo/cover bếp tương tự.",
+      "imageStrategy": "Mỗi món có 'imageQuery' (từ khoá tìm trên Pexels/Unsplash, free commercial) + 's3Key' đích. Bước seed: Pexels API search theo imageQuery -> download -> upload S3 bucket 'sync-public-assets' prefix 'food_catalog/' -> set ImageUrls. Logo/cover bếp tương tự.",
       "operatingHoursNote": "operatingHours dạng gọn {openTime, closeTime, closedDays[]}; seed map ra 7 OperatingHour (DayOfWeek 1-7, IsClosed nếu thuộc closedDays).",
       "schema": "Khớp spec Marketplace: Partner + FoodMenuItem(NutritionSnapshot). Enum: PartnerType, PartnerStatus, FoodCategory, DietaryTag, SpiceLevel, AvailabilityStatus.",
       "currency": "VND",

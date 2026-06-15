@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
 import 'package:sync_app/features/order/mock/order_demo_data.dart';
+import 'package:sync_app/features/order/utils/order_display_status.dart';
 import 'package:sync_app/features/order/theme/order_theme.dart';
 
 class DemoOrderCard extends StatelessWidget {
@@ -34,7 +35,7 @@ class DemoOrderCard extends StatelessWidget {
                   ),
                 ),
                 _NeutralStatusChip(
-                  label: _statusLabel(order.status),
+                  label: OrderDisplayStatus.label(order.displayStatus),
                   highlighted: order.isActive,
                 ),
               ],
@@ -67,14 +68,6 @@ class DemoOrderCard extends StatelessWidget {
       ),
     );
   }
-
-  String _statusLabel(String status) => switch (status) {
-        'Delivering' => 'Đang giao',
-        'Completed' => 'Đã giao',
-        'Confirmed' => 'Đã xác nhận',
-        'Preparing' => 'Đang chuẩn bị',
-        _ => status,
-      };
 }
 
 class _NeutralStatusChip extends StatelessWidget {

@@ -1,12 +1,11 @@
 using Libs.Auth.Extensions;
+using Libs.Storage.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
-using Minio;
-using Roadmap.API.Configuration;
 using Roadmap.API.Services;
 using Roadmap.Application.Common;
 using Roadmap.Application.Extensions;
@@ -36,17 +35,8 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddRoadmapApplication();
 builder.Services.AddRoadmapInfrastructure(builder.Configuration);
-builder.Services.Configure<MinioOptions>(builder.Configuration.GetSection(MinioOptions.SectionName));
-builder.Services.AddSingleton<IMinioClient>(sp =>
-{
-    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<MinioOptions>>().Value;
-    return new MinioClient()
-        .WithEndpoint(options.Endpoint)
-        .WithCredentials(options.AccessKey, options.SecretKey)
-        .WithSSL(options.UseSsl)
-        .Build();
-});
-builder.Services.AddSingleton<IWorkoutMediaStorage, MinioMediaStorage>();
+builder.Services.AddS3ObjectStorage(builder.Configuration);
+builder.Services.AddSingleton<IWorkoutMediaStorage, S3WorkoutMediaStorage>();
 
 // JWT authentication + authorization policies + ICurrentUserContext (shared lib)
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);

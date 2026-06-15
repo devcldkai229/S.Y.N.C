@@ -114,9 +114,6 @@ public class PartnerRepository : GenericRepository<Partner>, IPartnerRepository
                         criteria.Longitude!.Value,
                         coords.Value.Latitude,
                         coords.Value.Longitude);
-
-                    if (partner.ServiceRadiusKm is > 0 && distanceKm > (double)partner.ServiceRadiusKm)
-                        return null;
                 }
 
                 return new PartnerWithDistance { Partner = partner, DistanceKm = distanceKm };

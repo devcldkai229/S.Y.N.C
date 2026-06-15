@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Social.Domain\Social.Domain.csproj" />
     <ProjectReference Include="..\Social.Application\Social.Application.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Libs.Shared\Libs.Shared.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Storage\Libs.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -14,7 +15,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.8" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.8" />
     <PackageReference Include="MongoDB.Driver" Version="3.8.1" />
-    <PackageReference Include="Minio" Version="6.0.3" />
   </ItemGroup>
 
   <PropertyGroup>

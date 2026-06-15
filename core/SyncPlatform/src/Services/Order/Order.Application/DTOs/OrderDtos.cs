@@ -134,6 +134,8 @@ public class OrderDto
 
     public DateTimeOffset? CompletedAt { get; set; }
 
+    public DeliveryStatus? DeliveryStatus { get; set; }
+
     public IReadOnlyList<OrderItemDto> Items { get; set; } = [];
 }
 

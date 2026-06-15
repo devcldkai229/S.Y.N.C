@@ -74,7 +74,7 @@ public sealed class ExerciseCatalogUpserter
                 AssetType = AssetType.Image,
                 S3Key = image.S3Key,
                 ThumbnailS3Key = image.S3Key == primary.S3Key ? primary.S3Key : null,
-                ResourceUrl = _storageOptions.PublicRead ? string.Empty : string.Empty,
+                ResourceUrl = string.Empty,
                 ThumbnailUrl = null,
                 AnimationDurationSeconds = 0,
             };

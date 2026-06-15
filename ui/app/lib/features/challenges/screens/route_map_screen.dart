@@ -7,7 +7,6 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/context_navigation.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/challenge_repository.dart';
-import 'package:sync_app/features/challenges/models/challenge_mock_data.dart';
 import 'package:sync_app/features/challenges/models/challenge_models.dart';
 import 'package:sync_app/features/challenges/models/challenge_route_models.dart';
 import 'package:sync_app/features/challenges/state/challenge_join_state.dart';
@@ -44,7 +43,9 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
   LatLng? _userPoint;
   LatLng? _calloutPoint;
 
-  MockChallenge? get _challenge => challengeById(widget.challengeId);
+  CommunityChallenge? _challenge;
+  bool _loadingChallenge = true;
+
   ChallengeJoinState get _joinState => getIt<ChallengeJoinState>();
   ChallengeRepository get _repository => getIt<ChallengeRepository>();
 
@@ -52,7 +53,19 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
   void initState() {
     super.initState();
     _joinState.refreshStatus(widget.challengeId);
-    _loadRoute();
+    _loadChallenge();
+  }
+
+  Future<void> _loadChallenge() async {
+    try {
+      final challenge = await _repository.getById(widget.challengeId);
+      if (mounted) setState(() => _challenge = challenge);
+      await _loadRoute();
+    } catch (_) {
+      if (mounted) setState(() => _routeError = 'Không tải được thử thách');
+    } finally {
+      if (mounted) setState(() => _loadingChallenge = false);
+    }
   }
 
   Future<void> _loadRoute() async {
@@ -89,7 +102,9 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
         destination: destination,
       );
 
-      final gapM = offRoadGapMeters(points, destination);
+      final gapM = modeRoute.offRoadGapMeters > 0
+          ? modeRoute.offRoadGapMeters
+          : offRoadGapMeters(points, destination);
       final connector = gapM >= 30 ? [points.last, destination] : <LatLng>[];
 
       if (!mounted) return;
@@ -104,8 +119,10 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _mapKey.currentState?.fitToPoints([
-          ...points,
-          if (connector.isNotEmpty) destination,
+          userPoint,
+          destination,
+          if (points.isNotEmpty) points.first,
+          if (points.length > 1) points.last,
         ]);
       });
     } on DioException catch (e) {
@@ -203,7 +220,11 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
     if (challenge == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Đường đi')),
-        body: const Center(child: Text('Không tìm thấy thử thách')),
+        body: Center(
+          child: _loadingChallenge
+              ? const CircularProgressIndicator()
+              : Text(_routeError ?? 'Không tìm thấy thử thách'),
+        ),
       );
     }
 

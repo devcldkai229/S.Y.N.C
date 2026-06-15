@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:sync_app/core/utils/exercise_media_url_resolver.dart';
 import 'package:sync_app/features/workouts/data/catalog_assets.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 import 'package:sync_app/features/workouts/theme/exercise_catalog_theme.dart';
@@ -59,7 +60,7 @@ class CatalogExerciseThumbnail extends StatelessWidget {
   }
 
   Widget _build(double w, double h) {
-    final net = _network;
+    final net = ExerciseMediaUrlResolver.resolve(_network);
     if (net != null) {
       return CachedNetworkImage(
         imageUrl: net,

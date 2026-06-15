@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/features/social/screens/social_post_media_gallery_screen.dart';
 import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
 import 'package:sync_app/features/social/utils/social_media_utils.dart';
@@ -161,7 +162,7 @@ class _MediaTile extends StatelessWidget {
               Container(color: AppColors.lightGreen.withValues(alpha: 0.35))
             else
               CachedNetworkImage(
-                imageUrl: url,
+                imageUrl: MediaUrlResolver.resolve(url)!,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => Container(color: AppColors.lightGreen),
                 errorWidget: (_, __, ___) => Container(

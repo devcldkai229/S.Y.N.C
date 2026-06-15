@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:sync_app/core/utils/exercise_media_url_resolver.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
+import 'package:sync_app/features/workouts/widgets/exercise_catalog/catalog_exercise_thumbnail.dart';
 import 'package:sync_app/features/workouts/widgets/workout_execution/execution_theme.dart';
 import 'package:video_player/video_player.dart';
 
@@ -12,6 +14,7 @@ class ActiveWorkoutMediaPanel extends StatelessWidget {
     required this.videoController,
     required this.videoReady,
     required this.videoError,
+    this.exerciseName,
     this.onFullscreen,
     this.height = 200,
   });
@@ -21,6 +24,7 @@ class ActiveWorkoutMediaPanel extends StatelessWidget {
   final VideoPlayerController? videoController;
   final bool videoReady;
   final String? videoError;
+  final String? exerciseName;
   final VoidCallback? onFullscreen;
   final double height;
 
@@ -54,7 +58,7 @@ class ActiveWorkoutMediaPanel extends StatelessWidget {
     }
 
     final videos = detail?.videoAssets;
-    final thumb = detail?.heroThumbnailUrl;
+    final thumb = ExerciseMediaUrlResolver.resolve(detail?.heroThumbnailUrl);
     final controller = videoController;
 
     if (videos != null && videos.isNotEmpty && controller != null && videoReady && videoError == null) {
@@ -91,7 +95,24 @@ class ActiveWorkoutMediaPanel extends StatelessWidget {
     }
 
     if (thumb != null && thumb.isNotEmpty) {
-      return CachedNetworkImage(imageUrl: thumb, fit: BoxFit.cover);
+      return CachedNetworkImage(
+        imageUrl: thumb,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) => _fallbackThumbnail(),
+      );
+    }
+
+    return _fallbackThumbnail();
+  }
+
+  Widget _fallbackThumbnail() {
+    final name = exerciseName ?? detail?.nameVi ?? detail?.nameEn;
+    if (name != null && name.isNotEmpty) {
+      return CatalogExerciseThumbnail(
+        exerciseName: name,
+        fill: true,
+        borderRadius: 0,
+      );
     }
 
     return Container(

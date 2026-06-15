@@ -428,6 +428,12 @@ public class DeliveryTrackingService : IDeliveryTrackingService
 
             if (tracking != null)
             {
+                _logger.LogInformation(
+                    "Ahamove webhook matched orderId={OrderId} externalId={ExternalId} status={Status}",
+                    tracking.OrderId,
+                    payload.ExternalDeliveryId,
+                    payload.Status);
+
                 await HandleWebhookEventAsync(tracking, payload, cancellationToken);
             }
             else
@@ -457,12 +463,17 @@ public class DeliveryTrackingService : IDeliveryTrackingService
             .Take(50)
             .ToListAsync(cancellationToken);
 
+        var polled = 0;
+        var located = 0;
+
         foreach (var tracking in active)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (tracking.ExternalDeliveryId?.StartsWith("sandbox-", StringComparison.OrdinalIgnoreCase) == true)
                 continue;
+
+            polled++;
 
             var order = await _db.Orders.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == tracking.OrderId, cancellationToken);
@@ -493,9 +504,25 @@ public class DeliveryTrackingService : IDeliveryTrackingService
             }, cancellationToken);
 
             if (location is not { Found: true })
+            {
+                _logger.LogDebug(
+                    "Ahamove poll: no driver location for orderId={OrderId} externalId={ExternalId}",
+                    tracking.OrderId,
+                    tracking.ExternalDeliveryId);
                 continue;
+            }
 
+            located++;
             await HandleLocationUpdateAsync(tracking, location.Latitude, location.Longitude, location.UpdatedAt, cancellationToken);
+        }
+
+        if (active.Count > 0)
+        {
+            _logger.LogInformation(
+                "Ahamove location poll: {ActiveCount} active trackings, {PolledCount} real IDs polled, {LocatedCount} with coordinates",
+                active.Count,
+                polled,
+                located);
         }
     }
 
@@ -574,6 +601,12 @@ public class DeliveryTrackingService : IDeliveryTrackingService
         await _locationStore.PublishLocationUpdateAsync(update, cancellationToken);
         await _realtimePublisher.PublishLocationAsync(update, cancellationToken);
 
+        await TryAdvanceStatusByGeofenceAsync(
+            tracking,
+            (double)lat,
+            (double)lng,
+            cancellationToken);
+
         var shouldPersist = tracking.LastLocationUpdatedAt == null
             || tracking.LastLocationUpdatedAt.Value.AddSeconds(_settings.LocationPersistIntervalSeconds) <= DateTimeOffset.UtcNow;
 
@@ -585,6 +618,102 @@ public class DeliveryTrackingService : IDeliveryTrackingService
             tracking.UpdatedAt = DateTimeOffset.UtcNow;
             await _db.SaveChangesAsync(cancellationToken);
         }
+    }
+
+    private const double PickupPickedUpRadiusMeters = 1000;
+    private const double DropoffArrivedRadiusMeters = 100;
+    private const double DropoffCompletedRadiusMeters = 50;
+
+    private async Task TryAdvanceStatusByGeofenceAsync(
+        DeliveryTracking tracking,
+        double lat,
+        double lng,
+        CancellationToken cancellationToken)
+    {
+        if (tracking.Status is DeliveryStatus.Completed or DeliveryStatus.Cancelled or DeliveryStatus.Failed)
+            return;
+
+        var order = await _db.Orders.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == tracking.OrderId, cancellationToken);
+        if (order == null)
+            return;
+
+        var (pickupLat, pickupLng) = await ResolvePickupCoordinatesAsync(order, cancellationToken);
+        var dropLat = (double)(order.DeliveryLat ?? (decimal)(pickupLat + 0.015));
+        var dropLng = (double)(order.DeliveryLng ?? (decimal)(pickupLng + 0.012));
+
+        var distToPickup = SandboxGeoHelper.DistanceMeters(lat, lng, pickupLat, pickupLng);
+        var distToDropoff = SandboxGeoHelper.DistanceMeters(lat, lng, dropLat, dropLng);
+
+        var previous = tracking.Status;
+        var next = previous;
+
+        switch (previous)
+        {
+            case DeliveryStatus.Pending:
+                return;
+
+            case DeliveryStatus.Assigned:
+                next = distToPickup <= PickupPickedUpRadiusMeters
+                    ? DeliveryStatus.PickedUp
+                    : DeliveryStatus.HeadingToPickup;
+                break;
+
+            case DeliveryStatus.HeadingToPickup:
+            case DeliveryStatus.ArrivedAtPickup:
+                if (distToPickup <= PickupPickedUpRadiusMeters)
+                    next = DeliveryStatus.PickedUp;
+                break;
+
+            case DeliveryStatus.PickedUp:
+                next = distToDropoff <= DropoffCompletedRadiusMeters
+                    ? DeliveryStatus.Completed
+                    : distToDropoff <= DropoffArrivedRadiusMeters
+                        ? DeliveryStatus.Arrived
+                        : DeliveryStatus.Delivering;
+                break;
+
+            case DeliveryStatus.Delivering:
+                next = distToDropoff <= DropoffCompletedRadiusMeters
+                    ? DeliveryStatus.Completed
+                    : distToDropoff <= DropoffArrivedRadiusMeters
+                        ? DeliveryStatus.Arrived
+                        : DeliveryStatus.Delivering;
+                break;
+
+            case DeliveryStatus.Arrived:
+                if (distToDropoff <= DropoffCompletedRadiusMeters)
+                    next = DeliveryStatus.Completed;
+                break;
+        }
+
+        if (next == previous)
+            return;
+
+        tracking.Status = next;
+        if (next == DeliveryStatus.PickedUp)
+            tracking.PickedUpAt ??= DateTimeOffset.UtcNow;
+        if (next == DeliveryStatus.Completed)
+            tracking.DeliveredAt ??= DateTimeOffset.UtcNow;
+        if (next is DeliveryStatus.Delivering or DeliveryStatus.PickedUp)
+            tracking.EstimatedArrivalAt ??= DateTimeOffset.UtcNow.AddMinutes(15);
+
+        tracking.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync(cancellationToken);
+
+        var orderStatus = MapOrderStatus(next);
+        if (orderStatus.HasValue)
+            await ApplyOrderStatusAsync(tracking.OrderId, orderStatus.Value, "geofence", cancellationToken);
+
+        await PublishStatusAsync(tracking, cancellationToken);
+
+        _logger.LogInformation(
+            "Geofence advanced order {OrderId}: {Previous} → {Next} (pickup={PickupM:F0}m dropoff={DropoffM:F0}m)",
+            tracking.OrderId,
+            previous,
+            next,
+            distToPickup,
+            distToDropoff);
     }
 
     private async Task HandleStatusUpdateAsync(

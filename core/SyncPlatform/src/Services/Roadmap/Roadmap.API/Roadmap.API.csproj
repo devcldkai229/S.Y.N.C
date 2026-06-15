@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
-    <PackageReference Include="Minio" Version="6.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
   </ItemGroup>
 
@@ -16,6 +15,8 @@
     <ProjectReference Include="..\Roadmap.Application\Roadmap.Application.csproj" />
     <ProjectReference Include="..\Roadmap.Infrastructure\Roadmap.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Libs.Auth\Libs.Auth.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Shared\Libs.Shared.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Storage\Libs.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>

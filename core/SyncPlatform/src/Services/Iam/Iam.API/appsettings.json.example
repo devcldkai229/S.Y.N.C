@@ -21,6 +21,15 @@
       "366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com"
     ]
   },
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-private-assets",
+    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
+    "MaxFileSizeMb": 10
+  },
   "Email": {
     "VerificationBaseUrl": "http://localhost:5288",
     "Smtp": {

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Roadmap.API.Configuration;
+using Libs.Storage.Configuration;
 using Roadmap.API.Services;
 using Roadmap.Application.Common;
 
@@ -13,9 +13,9 @@ namespace Roadmap.API.Controllers;
 public class WorkoutMediaController : ControllerBase
 {
     private readonly IWorkoutMediaStorage _storage;
-    private readonly MinioOptions _options;
+    private readonly ObjectStorageOptions _options;
 
-    public WorkoutMediaController(IWorkoutMediaStorage storage, IOptions<MinioOptions> options)
+    public WorkoutMediaController(IWorkoutMediaStorage storage, IOptions<ObjectStorageOptions> options)
     {
         _storage = storage;
         _options = options.Value;

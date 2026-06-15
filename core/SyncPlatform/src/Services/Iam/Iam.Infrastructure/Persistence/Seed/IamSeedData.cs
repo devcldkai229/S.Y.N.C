@@ -10,7 +10,7 @@ namespace Iam.Infrastructure.Persistence.Seed;
 /// <summary>Stable IDs and dev seed data (Flutter, Social, Roadmap cross-service references).</summary>
 public static class IamSeedData
 {
-    public const string DefaultDevPassword = "Sync@12345";
+    public const string DefaultDevPassword = "image.png";
 
     public static readonly Guid DemoUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     public static readonly Guid AdminUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");

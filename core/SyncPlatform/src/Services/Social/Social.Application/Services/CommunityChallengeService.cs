@@ -54,6 +54,7 @@ public class CommunityChallengeService : ICommunityChallengeService
             TargetValue = dto.TargetValue,
             PointRewards = dto.PointRewards,
             Gifts = NormalizeGifts(dto.Gifts),
+            BackgroundUrl = NormalizeBackgroundUrl(dto.BackgroundUrl),
             Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim(),
             Location = GeoLocationMapping.ToGeoJsonPoint(
                 dto.Latitude is null ? null : (double)dto.Latitude,
@@ -93,6 +94,7 @@ public class CommunityChallengeService : ICommunityChallengeService
         challenge.TargetValue = dto.TargetValue;
         challenge.PointRewards = dto.PointRewards;
         challenge.Gifts = NormalizeGifts(dto.Gifts);
+        challenge.BackgroundUrl = NormalizeBackgroundUrl(dto.BackgroundUrl);
         challenge.Address = string.IsNullOrWhiteSpace(dto.Address) ? null : dto.Address.Trim();
         challenge.Location = GeoLocationMapping.ToGeoJsonPoint(
             dto.Latitude is null ? null : (double)dto.Latitude,
@@ -184,16 +186,14 @@ public class CommunityChallengeService : ICommunityChallengeService
         var pageNumber = Math.Max(1, query.PageNumber);
         var pageSize = Math.Clamp(query.PageSize, 1, 100);
 
-        var (items, total) = await _challenges.GetPagedAsync(
+        var (items, total) = await _challenges.GetBrowsablePagedAsync(
             pageNumber,
             pageSize,
-            status: null,
             query.GoalType,
             query.StartDateFrom,
             query.StartDateTo,
             query.EndDateFrom,
             query.EndDateTo,
-            requiredStatus: ChallengeStatus.Active,
             cancellationToken);
 
         return (items.Select(x => x.ToDto()).ToList(), BuildPagination(pageNumber, pageSize, total));
@@ -205,7 +205,13 @@ public class CommunityChallengeService : ICommunityChallengeService
     {
         var challenge = await GetSyncedChallengeAsync(challengeId, cancellationToken);
 
-        if (challenge.Status != ChallengeStatus.Active)
+        if (challenge.Status == ChallengeStatus.Completed)
+            return challenge.ToDto();
+
+        if (challenge.Status is not (
+            ChallengeStatus.Active or
+            ChallengeStatus.Upcoming or
+            ChallengeStatus.InProgress))
             throw new NotFoundException($"Challenge {challengeId} was not found.");
 
         return challenge.ToDto();
@@ -315,6 +321,9 @@ public class CommunityChallengeService : ICommunityChallengeService
 
     private static string[]? NormalizeGifts(IEnumerable<string>? gifts) =>
         gifts?.Where(g => !string.IsNullOrWhiteSpace(g)).Select(g => g.Trim()).ToArray();
+
+    private static string? NormalizeBackgroundUrl(string? url) =>
+        string.IsNullOrWhiteSpace(url) ? null : url.Trim();
 
     private static PaginationMetadata BuildPagination(int pageNumber, int pageSize, int totalRecords) =>
         new()

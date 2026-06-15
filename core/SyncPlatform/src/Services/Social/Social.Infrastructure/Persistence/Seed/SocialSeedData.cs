@@ -28,6 +28,15 @@ public static class SocialSeedData
     public static readonly Guid ChallengeCompletedId = Guid.Parse("c8000003-0000-0000-0000-000000000003");
     public static readonly Guid ChallengeUpcomingWaitingId = Guid.Parse("c8000004-0000-0000-0000-000000000004");
 
+    public static IReadOnlyDictionary<Guid, string> ChallengeBackgroundUrls { get; } =
+        new Dictionary<Guid, string>
+        {
+            [ChallengeActiveId] = "https://vcdn1-kinhdoanh.vnecdn.net/2024/11/01/mb2-1982-1730427106.jpg?w=680&h=0&q=100&dpr=2&fit=crop&s=k1qrkshkJ-ChQadOU800KQ",
+            [ChallengeUpcomingId] = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0gYoiVniv_39-D3L1G9bdQIYqASjaLCapOQ&s",
+            [ChallengeUpcomingWaitingId] = "https://cdn.muscleandstrength.com/sites/default/files/field/feature-wide-image/workout/total_body_torcher_-_1000x500.jpg",
+            [ChallengeCompletedId] = "https://res.cloudinary.com/ggus-dev/image/private/s--sfLYWEsq--/c_auto,g_auto,w_3600,h_2400/v1/25fcf1e9/blog-10min-workout.webp?_a=BAAAV6DQ",
+        };
+
     private static GeoJsonPoint<GeoJson2DGeographicCoordinates> HcmLocation() =>
         new(new GeoJson2DGeographicCoordinates(106.660172, 10.762622));
 
@@ -344,6 +353,7 @@ public static class SocialSeedData
             targetValue: 100,
             pointRewards: 500,
             gifts: ["Badge 100K", "Áo thun SYNC"],
+            backgroundUrl: ChallengeBackgroundUrls[ChallengeActiveId],
             address: "Công viên Tao Đàn, Quận 1, TP.HCM",
             location: HcmLocation(),
             participantCount: 5,
@@ -361,6 +371,7 @@ public static class SocialSeedData
             targetValue: 5000,
             pointRewards: 400,
             gifts: ["Shaker SYNC"],
+            backgroundUrl: ChallengeBackgroundUrls[ChallengeUpcomingId],
             address: "Landmark 81, Bình Thạnh, TP.HCM",
             location: new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
                 new GeoJson2DGeographicCoordinates(106.7220, 10.7951)),
@@ -379,6 +390,7 @@ public static class SocialSeedData
             targetValue: 21,
             pointRewards: 350,
             gifts: ["Badge Core"],
+            backgroundUrl: ChallengeBackgroundUrls[ChallengeUpcomingWaitingId],
             address: "Sân vận động Thống Nhất, TP.HCM",
             location: new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
                 new GeoJson2DGeographicCoordinates(106.6688, 10.8003)),
@@ -397,6 +409,7 @@ public static class SocialSeedData
             targetValue: 14,
             pointRewards: 300,
             gifts: ["Voucher 200k"],
+            backgroundUrl: ChallengeBackgroundUrls[ChallengeCompletedId],
             address: "SYNC Fitness Hub, Quận 7, TP.HCM",
             location: new GeoJsonPoint<GeoJson2DGeographicCoordinates>(
                 new GeoJson2DGeographicCoordinates(106.7204, 10.7295)),
@@ -417,6 +430,7 @@ public static class SocialSeedData
         decimal targetValue,
         decimal pointRewards,
         string[] gifts,
+        string? backgroundUrl,
         string address,
         GeoJsonPoint<GeoJson2DGeographicCoordinates> location,
         int participantCount,
@@ -435,6 +449,7 @@ public static class SocialSeedData
             TargetValue = targetValue,
             PointRewards = pointRewards,
             Gifts = gifts,
+            BackgroundUrl = backgroundUrl,
             Address = address,
             Location = location,
             ParticipantCount = participantCount,

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:random_avatar/random_avatar.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
 import 'package:sync_app/shared/utils/random_avatar_url.dart';
 import 'package:sync_app/shared/widgets/sync_avatar.dart';
@@ -178,7 +179,7 @@ class _CreateStoryCard extends StatelessWidget {
   }) {
     if (previewUrl != null && previewUrl.isNotEmpty) {
       return CachedNetworkImage(
-        imageUrl: previewUrl,
+        imageUrl: MediaUrlResolver.resolve(previewUrl)!,
         fit: BoxFit.cover,
         placeholder: (_, __) => Container(color: AppColors.lightGreen),
         errorWidget: (_, __, ___) => Container(color: AppColors.lightGreen),
@@ -192,7 +193,7 @@ class _CreateStoryCard extends StatelessWidget {
 
     if (avatarUrl != null && avatarUrl.isNotEmpty) {
       return CachedNetworkImage(
-        imageUrl: avatarUrl,
+        imageUrl: MediaUrlResolver.resolve(avatarUrl)!,
         fit: BoxFit.cover,
         placeholder: (_, __) => Container(color: AppColors.lightGreen),
         errorWidget: (_, __, ___) => Container(color: AppColors.lightGreen),

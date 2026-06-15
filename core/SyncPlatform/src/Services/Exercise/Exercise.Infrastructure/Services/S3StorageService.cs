@@ -2,6 +2,7 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using Exercise.Application.Configuration;
 using Exercise.Application.Services;
+using Libs.Shared.Storage;
 using Microsoft.Extensions.Options;
 
 namespace Exercise.Infrastructure.Services;
@@ -66,16 +67,11 @@ public class S3StorageService : IStorageService
 
         if (_options.PublicRead)
         {
-            return $"https://{_options.Bucket}.s3.{_region}.amazonaws.com/{objectKey}";
+            return $"https://{_options.Bucket}.s3.{_region}.amazonaws.com/{objectKey.TrimStart('/')}";
         }
 
-        return _s3.GetPreSignedURL(new GetPreSignedUrlRequest
-        {
-            BucketName = _options.Bucket,
-            Key = objectKey,
-            Verb = HttpVerb.GET,
-            Expires = DateTime.UtcNow.AddMinutes(_options.PresignedUrlExpiryMinutes),
-        });
+        throw new InvalidOperationException(
+            $"Storage bucket '{_options.Bucket}' is not public-read and media proxy is disabled.");
     }
 
     public async Task<(Stream Stream, string ContentType)?> TryOpenObjectAsync(
@@ -140,10 +136,11 @@ public class S3StorageService : IStorageService
         if (!Uri.TryCreate(fileUrlOrKey, UriKind.Absolute, out var uri)) return null;
 
         var path = uri.AbsolutePath.TrimStart('/');
-        var bucketPrefix = $"{_options.Bucket}/";
-        if (path.StartsWith(bucketPrefix, StringComparison.OrdinalIgnoreCase))
+        foreach (var bucket in new[] { _options.Bucket }.Concat(StorageBuckets.LegacyPublicBuckets))
         {
-            return path[bucketPrefix.Length..];
+            var bucketPrefix = $"{bucket}/";
+            if (path.StartsWith(bucketPrefix, StringComparison.OrdinalIgnoreCase))
+                return path[bucketPrefix.Length..];
         }
 
         return path;

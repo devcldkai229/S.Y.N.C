@@ -62,6 +62,7 @@ public static class SocialMapper
             TargetValue = entity.TargetValue,
             PointRewards = entity.PointRewards,
             Gifts = entity.Gifts ?? [],
+            BackgroundUrl = entity.BackgroundUrl,
             ParticipantCount = entity.ParticipantCount,
             Address = entity.Address,
             Location = location is null
@@ -100,6 +101,7 @@ public static class SocialMapper
             TargetValue = dto.TargetValue,
             PointRewards = dto.PointRewards,
             Gifts = dto.Gifts,
+            BackgroundUrl = dto.BackgroundUrl,
             ParticipantCount = dto.ParticipantCount,
             Address = dto.Address,
             Location = dto.Location,

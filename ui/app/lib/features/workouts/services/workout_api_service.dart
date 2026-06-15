@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/core/models/api_models.dart';
 import 'package:sync_app/core/network/api_paths.dart';
 import 'package:sync_app/core/network/multipart_file_utils.dart';
@@ -111,7 +112,11 @@ class WorkoutApiService {
       throw Exception((json['message'] ?? 'Upload failed').toString());
     }
     final raw = json['data'];
-    if (raw is List) return raw.map((e) => e.toString()).toList();
+    if (raw is List) {
+      return raw
+          .map((e) => MediaUrlResolver.resolve(e.toString()) ?? e.toString())
+          .toList();
+    }
     return <String>[];
   }
 

@@ -7,6 +7,7 @@ import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/core/locale/locale_cubit.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/profile/cubit/profile_cubit.dart';
@@ -490,7 +491,7 @@ class _AvatarHeader extends StatelessWidget {
                   height: _bannerHeight,
                   child: hasBackground
                       ? CachedNetworkImage(
-                          imageUrl: backgroundImageUrl!,
+                          imageUrl: MediaUrlResolver.resolve(backgroundImageUrl)!,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: _bannerHeight,

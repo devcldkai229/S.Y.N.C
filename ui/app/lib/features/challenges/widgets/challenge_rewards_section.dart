@@ -316,15 +316,17 @@ class _GiftRewardCard extends StatelessWidget {
               Text(theme.emoji, style: TextStyle(fontSize: compact ? 16 : 18)),
             ],
           ),
-          SizedBox(height: compact ? 8 : 10),
+          SizedBox(height: compact ? 6 : 10),
           Text(
             theme.category,
             style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: theme.accent),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
           const SizedBox(height: 2),
           Text(
             gift,
-            maxLines: 2,
+            maxLines: compact ? 1 : 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: compact ? 12 : 13,
@@ -386,17 +388,32 @@ class _CompactRewards extends StatelessWidget {
           ),
         if (pointRewards > 0 && gifts.isNotEmpty) const SizedBox(height: 8),
         if (gifts.isNotEmpty)
-          SizedBox(
-            height: 88,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: gifts.length,
-              separatorBuilder: (context, index) => const SizedBox(width: 8),
-              itemBuilder: (context, index) => SizedBox(
-                width: 120,
-                child: _GiftRewardCard(gift: gifts[index], compact: true),
-              ),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (gifts.length <= 2 && constraints.maxWidth > 240) {
+                return Row(
+                  children: [
+                    for (var i = 0; i < gifts.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(child: _GiftRewardCard(gift: gifts[i], compact: true)),
+                    ],
+                  ],
+                );
+              }
+
+              return SizedBox(
+                height: 96,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: gifts.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) => SizedBox(
+                    width: 120,
+                    child: _GiftRewardCard(gift: gifts[index], compact: true),
+                  ),
+                ),
+              );
+            },
           ),
       ],
     );

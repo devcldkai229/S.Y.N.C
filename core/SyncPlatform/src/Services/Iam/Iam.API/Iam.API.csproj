@@ -9,7 +9,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" />
-    <PackageReference Include="Minio" Version="6.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.8">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -21,6 +20,8 @@
     <ProjectReference Include="..\Iam.Application\Iam.Application.csproj" />
     <ProjectReference Include="..\Iam.Infrastructure\Iam.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Libs.Auth\Libs.Auth.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Shared\Libs.Shared.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Storage\Libs.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>

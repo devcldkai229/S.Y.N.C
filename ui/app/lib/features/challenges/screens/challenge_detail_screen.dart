@@ -5,8 +5,10 @@ import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/context_navigation.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/data/repositories/challenge_repository.dart';
 import 'package:sync_app/features/challenges/models/challenge_mock_data.dart';
 import 'package:sync_app/features/challenges/models/challenge_models.dart';
+import 'package:sync_app/features/challenges/widgets/challenge_background.dart';
 import 'package:sync_app/features/challenges/state/challenge_join_state.dart';
 import 'package:sync_app/features/challenges/widgets/aws_location_map.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_join_flow.dart';
@@ -24,23 +26,58 @@ class ChallengeDetailScreen extends StatefulWidget {
 
 class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
   bool _descriptionExpanded = false;
+  CommunityChallenge? _challenge;
+  bool _loading = true;
+  String? _error;
 
-  MockChallenge? get _challenge => challengeById(widget.challengeId);
   ChallengeJoinState get _joinState => getIt<ChallengeJoinState>();
+  ChallengeRepository get _repository => getIt<ChallengeRepository>();
 
   @override
   void initState() {
     super.initState();
     _joinState.refreshStatus(widget.challengeId);
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final challenge = await _repository.getById(widget.challengeId);
+      if (mounted) setState(() => _challenge = challenge);
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Không tải được thử thách');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Thử thách')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final challenge = _challenge;
     if (challenge == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Thử thách')),
-        body: const Center(child: Text('Không tìm thấy thử thách')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error ?? 'Không tìm thấy thử thách'),
+              const SizedBox(height: 12),
+              FilledButton(onPressed: _load, child: const Text('Thử lại')),
+            ],
+          ),
+        ),
       );
     }
 
@@ -72,7 +109,8 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _MapPreview(challenge: challenge),
+                      _HeroBackground(challenge: challenge),
+                      if (challenge.hasLocation) _MapPreview(challenge: challenge),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
                         child: Transform.translate(
@@ -138,10 +176,58 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
   }
 }
 
+class _HeroBackground extends StatelessWidget {
+  const _HeroBackground({required this.challenge});
+
+  final CommunityChallenge challenge;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 200,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ChallengeBackground(backgroundUrl: challenge.backgroundUrl),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.15),
+                  Colors.black.withValues(alpha: 0.55),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Text(
+              challenge.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MapPreview extends StatelessWidget {
   const _MapPreview({required this.challenge});
 
-  final MockChallenge challenge;
+  final CommunityChallenge challenge;
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +293,7 @@ class _MapPreview extends StatelessWidget {
 class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.challenge});
 
-  final MockChallenge challenge;
+  final CommunityChallenge challenge;
 
   @override
   Widget build(BuildContext context) {

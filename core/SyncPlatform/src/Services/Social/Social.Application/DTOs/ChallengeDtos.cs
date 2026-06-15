@@ -17,6 +17,7 @@ public class CommunityChallengeDto
     public decimal? TargetValue { get; set; }
     public decimal? PointRewards { get; set; }
     public IReadOnlyList<string> Gifts { get; set; } = [];
+    public string? BackgroundUrl { get; set; }
     public int ParticipantCount { get; set; }
     public string? Address { get; set; }
     public GeoLocationDto? Location { get; set; }
@@ -39,6 +40,7 @@ public class AdminCreateCommunityChallengeDto
     public decimal TargetValue { get; set; }
     public decimal? PointRewards { get; set; }
     public List<string>? Gifts { get; set; }
+    public string? BackgroundUrl { get; set; }
     public string? Address { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
@@ -55,6 +57,7 @@ public class AdminUpdateCommunityChallengeDto
     public decimal TargetValue { get; set; }
     public decimal? PointRewards { get; set; }
     public List<string>? Gifts { get; set; }
+    public string? BackgroundUrl { get; set; }
     public string? Address { get; set; }
     public decimal? Latitude { get; set; }
     public decimal? Longitude { get; set; }
