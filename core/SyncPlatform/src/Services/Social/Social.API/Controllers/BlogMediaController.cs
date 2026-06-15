@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Social.Application.Common;
-using Social.Application.Configuration;
+using Libs.Storage.Configuration;
 using Social.Application.Services;
 
 namespace Social.API.Controllers;
@@ -13,15 +13,15 @@ namespace Social.API.Controllers;
 public class BlogMediaController : ControllerBase
 {
     private readonly IStorageService _storage;
-    private readonly MinioOptions _minioOptions;
+    private readonly ObjectStorageOptions _storageOptions;
 
-    public BlogMediaController(IStorageService storage, IOptions<MinioOptions> minioOptions)
+    public BlogMediaController(IStorageService storage, IOptions<ObjectStorageOptions> storageOptions)
     {
         _storage = storage;
-        _minioOptions = minioOptions.Value;
+        _storageOptions = storageOptions.Value;
     }
 
-    /// <summary>Upload cover image or inline media to MinIO; returns URLs for the client to attach.</summary>
+    /// <summary>Upload cover image or inline media to S3; returns URLs for the client to attach.</summary>
     [HttpPost("upload")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<string>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<ApiResponse<IReadOnlyList<string>>>> Upload(
@@ -36,11 +36,11 @@ public class BlogMediaController : ControllerBase
             if (file.Length <= 0)
                 return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse("Empty file is not allowed."));
 
-            var maxBytes = _minioOptions.MaxFileSizeMb * 1024L * 1024L;
+            var maxBytes = _storageOptions.MaxFileSizeMb * 1024L * 1024L;
             if (file.Length > maxBytes)
             {
                 return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse(
-                    $"File '{file.FileName}' is too large. Max allowed: {_minioOptions.MaxFileSizeMb}MB."));
+                    $"File '{file.FileName}' is too large. Max allowed: {_storageOptions.MaxFileSizeMb}MB."));
             }
 
             if (!IsAllowedContentType(file.ContentType))
@@ -76,9 +76,9 @@ public class BlogMediaController : ControllerBase
         if (string.IsNullOrWhiteSpace(contentType))
             return false;
 
-        if (_minioOptions.AllowedImageContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase))
+        if (_storageOptions.AllowedImageContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase))
             return true;
 
-        return _minioOptions.AllowedVideoContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase);
+        return _storageOptions.AllowedVideoContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase);
     }
 }

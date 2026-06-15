@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Social.Application.Common;
-using Social.Application.Configuration;
+using Libs.Storage.Configuration;
 using Social.Application.Exceptions;
 using Social.Application.Helpers;
 using Social.Application.Services;
@@ -22,14 +22,14 @@ namespace Social.API.Controllers;
 public class PostMediaController : ControllerBase
 {
     private readonly IStorageService _storage;
-    private readonly MinioOptions _minioOptions;
+    private readonly ObjectStorageOptions _storageOptions;
 
     public PostMediaController(
         IStorageService storage,
-        IOptions<MinioOptions> minioOptions)
+        IOptions<ObjectStorageOptions> storageOptions)
     {
         _storage = storage;
-        _minioOptions = minioOptions.Value;
+        _storageOptions = storageOptions.Value;
     }
 
     [HttpPost("upload")]
@@ -45,20 +45,20 @@ public class PostMediaController : ControllerBase
             return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse(
                 $"A post can have at most {PostMediaRules.MaxImages} images and {PostMediaRules.MaxVideos} video."));
 
-        // Basic pre-validation to fail fast before streaming to MinIO.
+        // Basic pre-validation to fail fast before streaming to S3.
         foreach (var f in files)
         {
             if (f.Length <= 0)
                 return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse("Empty file is not allowed."));
 
-            var maxBytes = _minioOptions.MaxFileSizeMb * 1024L * 1024L;
+            var maxBytes = _storageOptions.MaxFileSizeMb * 1024L * 1024L;
             if (f.Length > maxBytes)
                 return BadRequest(ApiResponse<IReadOnlyList<string>>.FailureResponse(
-                    $"File '{f.FileName}' is too large. Max allowed: {_minioOptions.MaxFileSizeMb}MB."));
+                    $"File '{f.FileName}' is too large. Max allowed: {_storageOptions.MaxFileSizeMb}MB."));
 
             try
             {
-                PostMediaRules.ValidateContentTypeAllowed(f.ContentType, _minioOptions);
+                PostMediaRules.ValidateContentTypeAllowed(f.ContentType, _storageOptions);
             }
             catch (BadRequestException ex)
             {

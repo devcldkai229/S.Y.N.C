@@ -25,22 +25,19 @@ class HomeBannerSlide {
 abstract final class HomeBannerSlides {
   static const items = [
     HomeBannerSlide(
-      assetPath: HomeAssets.banner1Mp4,
-      fallbackPath: HomeAssets.banner1Mp4Fallback,
-      title: 'Ưu đãi SYNC Foods',
-      route: AppRoutes.marketplaceHome,
-    ),
-    HomeBannerSlide(
-      assetPath: HomeAssets.banner2Jpg,
-      fallbackPath: HomeAssets.banner2JpgFallback,
-      title: 'Thử thách mới',
+      assetPath: HomeAssets.bannerNguoiSongVuiVe,
+      fallbackPath: HomeAssets.bannerFallback,
       route: AppRoutes.challengesMap,
     ),
     HomeBannerSlide(
-      assetPath: HomeAssets.marketplacePromo2,
-      fallbackPath: HomeAssets.bannerFallbackAlt,
-      title: 'Mẹo dinh dưỡng hôm nay',
-      route: AppRoutes.nutritionDiary,
+      assetPath: HomeAssets.bannerTieuHoaNhanh,
+      fallbackPath: HomeAssets.bannerFallback,
+      route: AppRoutes.marketplaceHome,
+    ),
+    HomeBannerSlide(
+      assetPath: HomeAssets.bannerThuocGym,
+      fallbackPath: HomeAssets.bannerFallback,
+      route: AppRoutes.marketplaceHome,
     ),
   ];
 }

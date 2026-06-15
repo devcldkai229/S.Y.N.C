@@ -38,6 +38,7 @@ public class SocialDatabaseSeeder : ISocialDatabaseSeeder
         }
 
         await PatchLegacyCdnUrlsAsync(cancellationToken);
+        await PatchChallengeBackgroundUrlsAsync(cancellationToken);
 
         var posts = _database.GetCollection<Post>("Posts");
         if (await posts.Find(x => x.Id == SocialSeedData.SeedMarkerPostId).AnyAsync(cancellationToken))
@@ -186,5 +187,32 @@ public class SocialDatabaseSeeder : ISocialDatabaseSeeder
         }
 
         _logger.LogInformation("Social seed: migrated {Count} posts from legacy CDN URLs.", legacyPosts.Count);
+    }
+
+    private async Task PatchChallengeBackgroundUrlsAsync(CancellationToken cancellationToken)
+    {
+        var collection = _database.GetCollection<CommunityChallenge>("CommunityChallenges");
+        var patched = 0;
+
+        foreach (var (id, backgroundUrl) in SocialSeedData.ChallengeBackgroundUrls)
+        {
+            var filter = Builders<CommunityChallenge>.Filter.And(
+                Builders<CommunityChallenge>.Filter.Eq(x => x.Id, id),
+                Builders<CommunityChallenge>.Filter.Or(
+                    Builders<CommunityChallenge>.Filter.Exists(x => x.BackgroundUrl, false),
+                    Builders<CommunityChallenge>.Filter.Eq(x => x.BackgroundUrl, null),
+                    Builders<CommunityChallenge>.Filter.Eq(x => x.BackgroundUrl, string.Empty)));
+
+            var update = Builders<CommunityChallenge>.Update
+                .Set(x => x.BackgroundUrl, backgroundUrl)
+                .Set(x => x.UpdatedAt, DateTimeOffset.UtcNow);
+
+            var result = await collection.UpdateOneAsync(filter, update, cancellationToken: cancellationToken);
+            if (result.ModifiedCount > 0)
+                patched++;
+        }
+
+        if (patched > 0)
+            _logger.LogInformation("Social seed: patched BackgroundUrl on {Count} community challenges.", patched);
     }
 }

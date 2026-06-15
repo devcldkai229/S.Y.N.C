@@ -153,6 +153,8 @@ public class CreateCodPaymentResult
     public bool Success { get; set; }
 
     public Guid? TransactionId { get; set; }
+
+    public string? FailureReason { get; set; }
 }
 
 public interface IPaymentClient

@@ -1,4 +1,4 @@
-using Iam.API.Configuration;
+using Libs.Storage.Configuration;
 using Iam.API.Services;
 using Iam.Application.Common;
 using Microsoft.AspNetCore.Authorization;
@@ -13,9 +13,9 @@ namespace Iam.API.Controllers;
 public class MeMediaController : ControllerBase
 {
     private readonly IMediaStorage _storage;
-    private readonly MinioOptions _options;
+    private readonly ObjectStorageOptions _options;
 
-    public MeMediaController(IMediaStorage storage, IOptions<MinioOptions> options)
+    public MeMediaController(IMediaStorage storage, IOptions<ObjectStorageOptions> options)
     {
         _storage = storage;
         _options = options.Value;

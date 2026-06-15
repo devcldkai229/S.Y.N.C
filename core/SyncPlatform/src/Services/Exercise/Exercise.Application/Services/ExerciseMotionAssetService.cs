@@ -116,8 +116,8 @@ public class ExerciseMotionAssetService : IExerciseMotionAssetService
 
             existingAsset.S3Key = mainKey;
             existingAsset.ThumbnailS3Key = thumbKey;
-            existingAsset.ResourceUrl = _storageOptions.PublicRead ? _storageService.ResolveObjectUrl(mainKey) : string.Empty;
-            existingAsset.ThumbnailUrl = thumbKey != null && _storageOptions.PublicRead
+            existingAsset.ResourceUrl = _storageService.ResolveObjectUrl(mainKey);
+            existingAsset.ThumbnailUrl = thumbKey != null
                 ? _storageService.ResolveObjectUrl(thumbKey)
                 : null;
             existingAsset.UnityPrefabId = dto.AssetType == AssetType.Unity3D ? dto.UnityPrefabId : null;

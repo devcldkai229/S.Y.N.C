@@ -113,9 +113,26 @@ app.MapControllers();
 app.MapHub<TrackingHub>(TrackingHub.HubPath);
 
 var orderSettings = app.Services.GetRequiredService<IOptions<OrderSettings>>().Value;
+var ahamoveSettings = app.Services.GetRequiredService<IOptions<AhamoveSettings>>().Value;
 if (!string.IsNullOrWhiteSpace(orderSettings.AhamoveWebhookUrl))
 {
-    app.Logger.LogInformation("Ahamove webhook URL (register in partner portal): {WebhookUrl}", orderSettings.AhamoveWebhookUrl);
+    app.Logger.LogInformation(
+        "Ahamove webhook URL (register in partner portal): {WebhookUrl}",
+        orderSettings.AhamoveWebhookUrl);
+    app.Logger.LogInformation(
+        "Ahamove webhook auth — header: apikey, token: WebhookApiKey from config (empty = accept all in dev)");
 }
+else
+{
+    app.Logger.LogWarning(
+        "Order:PublicBaseUrl is not set — Ahamove webhooks cannot reach this service. " +
+        "Set PublicBaseUrl to your ngrok URL (e.g. https://xxx.ngrok-free.dev).");
+}
+
+app.Logger.LogInformation(
+    "Ahamove mode — Enabled={Enabled}, UseSandboxSimulation={UseSandboxSimulation}, SimulateDeliveryProgress={SimulateDeliveryProgress}",
+    ahamoveSettings.Enabled,
+    ahamoveSettings.UseSandboxSimulation,
+    orderSettings.SimulateDeliveryProgress);
 
 app.Run();

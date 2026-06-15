@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
@@ -99,6 +102,44 @@ class _CustomWorkoutDetailScreenState extends State<CustomWorkoutDetailScreen> {
     String scheduleMode = _workout!.scheduleMode.isNotEmpty ? _workout!.scheduleMode : 'Fixed';
     String visibility = _workout!.visibility.isNotEmpty ? _workout!.visibility : 'Private';
     bool allowAiOptimization = _workout!.allowAiOptimization;
+    XFile? pickedCover;
+    
+    Future<void> pickCover(void Function(void Function()) setModalState) async {
+      final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (picked != null) {
+        setModalState(() => pickedCover = picked);
+      }
+    }
+
+    Widget buildCoverPreview() {
+      if (pickedCover != null) {
+        return FutureBuilder<Uint8List>(
+          future: pickedCover!.readAsBytes(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+            }
+            return Image.memory(snapshot.data!, fit: BoxFit.cover);
+          },
+        );
+      }
+      final existing = _workout!.coverRoadmapImageUrl;
+      if (existing != null && existing.isNotEmpty) {
+        return WorkoutCoverImage(
+          assetPath: WorkoutAssets.coverForWorkout(_workout!.workoutName),
+          networkUrl: existing,
+          height: 140,
+        );
+      }
+      return const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_photo_alternate_outlined, color: AppColors.primaryGreen, size: 32),
+          SizedBox(height: 8),
+          Text('Thêm ảnh bìa lộ trình', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+        ],
+      );
+    }
     
     showModalBottomSheet(
       context: context,
@@ -142,7 +183,46 @@ class _CustomWorkoutDetailScreenState extends State<CustomWorkoutDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Ảnh bìa',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => pickCover(setModalState),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        height: 140,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            buildCoverPreview(),
+                            if (pickedCover != null || (_workout!.coverRoadmapImageUrl?.isNotEmpty ?? false))
+                              Container(
+                                color: Colors.black26,
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'Đổi ảnh bìa',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   const Text(
                     'Tên lộ trình',
                     style: TextStyle(
@@ -277,11 +357,18 @@ class _CustomWorkoutDetailScreenState extends State<CustomWorkoutDetailScreen> {
                         setState(() => _loading = true);
 
                         try {
+                          String? coverUrl = _workout!.coverRoadmapImageUrl;
+                          if (pickedCover != null) {
+                            final urls = await _repository.uploadWorkoutCover(pickedCover!);
+                            if (urls.isNotEmpty) coverUrl = urls.first;
+                          }
+
                           final payload = {
                             'workoutName': name,
                             'scheduleMode': scheduleMode,
                             'visibility': visibility,
                             'allowAiOptimization': allowAiOptimization,
+                            if (coverUrl != null && coverUrl.isNotEmpty) 'coverRoadmapImageUrl': coverUrl,
                             'customBlocks': _workout!.blocks.map((b) => {
                               'exerciseId': b.exerciseId,
                               'sets': b.sets,
@@ -621,6 +708,7 @@ class _CustomWorkoutDetailScreenState extends State<CustomWorkoutDetailScreen> {
                 WorkoutHeroHeader(
                   title: workout.workoutName,
                   coverAsset: cover,
+                  networkCoverUrl: workout.coverRoadmapImageUrl,
                   subtitle: 'Lộ trình tùy chỉnh · ${_sessions.length} buổi/tuần',
                   tags: [
                     WorkoutTagChip(label: workout.scheduleMode == 'Fixed' ? 'Cố định' : 'Linh hoạt'),

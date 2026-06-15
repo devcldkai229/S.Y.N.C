@@ -8,7 +8,7 @@ import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/context_navigation.dart';
 import 'package:sync_app/core/utils/injection.dart';
-import 'package:sync_app/features/challenges/models/challenge_mock_data.dart';
+import 'package:sync_app/data/repositories/challenge_repository.dart';
 import 'package:sync_app/features/challenges/models/challenge_models.dart';
 import 'package:sync_app/features/challenges/state/challenge_join_state.dart';
 import 'package:sync_app/features/challenges/widgets/aws_location_map.dart';
@@ -36,24 +36,55 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
   static const _sheetMax = 0.85;
 
   ChallengeJoinState get _joinState => getIt<ChallengeJoinState>();
+  ChallengeRepository get _repository => getIt<ChallengeRepository>();
   final _sheetController = DraggableScrollableController();
   final _mapKey = GlobalKey<AwsLocationMapState>();
 
   ChallengeFilter _filter = ChallengeFilter.all;
+  List<CommunityChallenge> _challenges = [];
+  bool _loading = true;
+  String? _error;
 
-  List<MockChallenge> get _filteredChallenges {
-    if (_filter == ChallengeFilter.all) return mockChallenges;
-    return mockChallenges.where((c) => c.filter == _filter).toList();
+  List<CommunityChallenge> get _filteredChallenges {
+    if (_filter == ChallengeFilter.all) return _challenges;
+    return _challenges.where((c) => c.matchesFilter(_filter)).toList();
+  }
+
+  CommunityChallenge? _challengeById(String id) {
+    for (final c in _challenges) {
+      if (c.id == id) return c;
+    }
+    return null;
   }
 
   @override
   void initState() {
     super.initState();
-    if (widget.focusChallengeId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        final challenge = challengeById(widget.focusChallengeId!);
+    _loadChallenges().then((_) {
+      if (widget.focusChallengeId != null) {
+        final challenge = _challengeById(widget.focusChallengeId!);
         if (challenge != null) _focusChallenge(challenge);
-      });
+      }
+    });
+  }
+
+  Future<void> _loadChallenges() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final items = await _repository.getChallenges(pageSize: 50);
+      if (mounted) setState(() => _challenges = items);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _challenges = [];
+          _error = 'Không tải được danh sách thử thách';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -63,7 +94,7 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
     super.dispose();
   }
 
-  void _focusChallenge(MockChallenge challenge) {
+  void _focusChallenge(CommunityChallenge challenge) {
     _mapKey.currentState?.moveTo(challenge.location, zoom: 14);
     _showInfoSheet(challenge);
   }
@@ -183,29 +214,30 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
     }
   }
 
-  void _showInfoSheet(MockChallenge challenge) {
+  void _showInfoSheet(CommunityChallenge challenge) {
     _joinState.refreshStatus(challenge.id);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.48,
-        minChildSize: 0.36,
-        maxChildSize: 0.78,
+        initialChildSize: 0.52,
+        minChildSize: 0.38,
+        maxChildSize: 0.82,
         expand: false,
         builder: (_, scrollController) => ListenableBuilder(
           listenable: _joinState,
           builder: (context, _) => SingleChildScrollView(
             controller: scrollController,
             padding: EdgeInsets.only(
-              bottom: MediaQuery.paddingOf(ctx).bottom + 8,
+              bottom: MediaQuery.paddingOf(ctx).bottom + 12,
             ),
             child: ChallengeInfoCard(
                 challenge: challenge,
                 joinState: _joinState,
                 onViewRoute: () {
                   Navigator.pop(ctx);
+                  context.pop();
                   context.push(AppRoutes.challengeRoute(challenge.id));
                 },
                 onViewDetail: () {
@@ -283,7 +315,8 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
                       : Geolocator.openLocationSettings,
                   retryLocation: kIsWeb,
                 ),
-                markers: mockChallenges
+                markers: _challenges
+                    .where((c) => c.hasLocation)
                     .map(
                       (c) => MapMarkerData(
                         id: c.id,
@@ -307,10 +340,20 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
               maxSize: _sheetMax,
               filter: _filter,
               challenges: _filteredChallenges,
+              loading: _loading,
+              error: _error,
               listBottomPadding: _listBottomPadding(context),
               onFilterChanged: (f) => setState(() => _filter = f),
               onSeeAll: _expandChallengeSheet,
-              onChallengeTap: (id) => context.push(AppRoutes.challengeDetail(id)),
+              onRetry: _loadChallenges,
+              onChallengeTap: (id) {
+                final challenge = _challengeById(id);
+                if (challenge != null) {
+                  _focusChallenge(challenge);
+                  return;
+                }
+                context.push(AppRoutes.challengeDetail(id));
+              },
             ),
           ],
         ),
@@ -327,9 +370,12 @@ class _ChallengesDraggableSheet extends StatelessWidget {
     required this.maxSize,
     required this.filter,
     required this.challenges,
+    required this.loading,
+    this.error,
     required this.listBottomPadding,
     required this.onFilterChanged,
     required this.onSeeAll,
+    required this.onRetry,
     required this.onChallengeTap,
   });
 
@@ -338,10 +384,13 @@ class _ChallengesDraggableSheet extends StatelessWidget {
   final double initialSize;
   final double maxSize;
   final ChallengeFilter filter;
-  final List<MockChallenge> challenges;
+  final List<CommunityChallenge> challenges;
+  final bool loading;
+  final String? error;
   final double listBottomPadding;
   final ValueChanged<ChallengeFilter> onFilterChanged;
   final VoidCallback onSeeAll;
+  final VoidCallback onRetry;
   final ValueChanged<String> onChallengeTap;
 
   @override
@@ -415,7 +464,27 @@ class _ChallengesDraggableSheet extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (challenges.isEmpty)
+                if (loading)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    ),
+                  )
+                else if (error != null)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                      child: Column(
+                        children: [
+                          Text(error!, style: const TextStyle(color: AppColors.textMuted)),
+                          const SizedBox(height: 8),
+                          TextButton(onPressed: onRetry, child: const Text('Thử lại')),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (challenges.isEmpty)
                   const SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 32),

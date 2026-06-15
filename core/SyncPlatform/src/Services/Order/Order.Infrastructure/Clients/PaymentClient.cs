@@ -69,10 +69,28 @@ public class PaymentClient : IPaymentClient
     {
         var response = await _httpClient.PostAsJsonAsync("/api/internal/order-payments/cod", request, JsonOpts, cancellationToken);
         if (!response.IsSuccessStatusCode)
-            return new CreateCodPaymentResult { Success = false };
+            return new CreateCodPaymentResult
+            {
+                Success = false,
+                FailureReason = await ReadFailureMessageAsync(response, cancellationToken)
+                    ?? "Payment service rejected COD transaction.",
+            };
 
         var api = await response.Content.ReadFromJsonAsync<ApiResponse<CreateCodPaymentResult>>(JsonOpts, cancellationToken);
-        return api?.Data ?? new CreateCodPaymentResult { Success = false };
+        return api?.Data ?? new CreateCodPaymentResult { Success = false, FailureReason = "Empty COD payment response." };
+    }
+
+    private static async Task<string?> ReadFailureMessageAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var api = await response.Content.ReadFromJsonAsync<ApiResponse<object>>(JsonOpts, cancellationToken);
+            return api?.Message;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task<CreateVietQrPaymentResult> CreateVietQrPaymentAsync(

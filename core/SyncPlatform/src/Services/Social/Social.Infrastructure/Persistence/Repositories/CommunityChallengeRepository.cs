@@ -45,6 +45,55 @@ public class CommunityChallengeRepository : GenericRepository<CommunityChallenge
         return (items, total);
     }
 
+    public async Task<(IReadOnlyList<CommunityChallenge> Items, int TotalRecords)> GetBrowsablePagedAsync(
+        int pageNumber,
+        int pageSize,
+        ChallengeGoalType? goalType,
+        DateTimeOffset? startDateFrom,
+        DateTimeOffset? startDateTo,
+        DateTimeOffset? endDateFrom,
+        DateTimeOffset? endDateTo,
+        CancellationToken cancellationToken = default)
+    {
+        var visibleStatuses = new[]
+        {
+            ChallengeStatus.Active,
+            ChallengeStatus.Upcoming,
+            ChallengeStatus.InProgress,
+        };
+
+        var filters = new List<FilterDefinition<CommunityChallenge>>
+        {
+            Builders<CommunityChallenge>.Filter.In(x => x.Status, visibleStatuses),
+        };
+
+        if (goalType.HasValue)
+            filters.Add(Builders<CommunityChallenge>.Filter.Eq(x => x.GoalType, goalType.Value));
+
+        if (startDateFrom.HasValue)
+            filters.Add(Builders<CommunityChallenge>.Filter.Gte(x => x.StartDate, startDateFrom.Value));
+
+        if (startDateTo.HasValue)
+            filters.Add(Builders<CommunityChallenge>.Filter.Lte(x => x.StartDate, startDateTo.Value));
+
+        if (endDateFrom.HasValue)
+            filters.Add(Builders<CommunityChallenge>.Filter.Gte(x => x.EndDate, endDateFrom.Value));
+
+        if (endDateTo.HasValue)
+            filters.Add(Builders<CommunityChallenge>.Filter.Lte(x => x.EndDate, endDateTo.Value));
+
+        var filter = Builders<CommunityChallenge>.Filter.And(filters);
+        var total = (int)await Collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
+
+        var items = await Collection.Find(filter)
+            .SortByDescending(x => x.StartDate)
+            .Skip((pageNumber - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
+
     public async Task<(IReadOnlyList<CommunityChallenge> Items, int TotalRecords)> GetNearbyActiveAsync(
         double latitude,
         double longitude,
@@ -72,12 +121,13 @@ public class CommunityChallengeRepository : GenericRepository<CommunityChallenge
                 point,
                 maxDistance: maxDistanceMeters));
 
-        var total = (int)await Collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
-
-        var items = await Collection.Find(filter)
+        // CountDocuments + NearSphere is invalid in MongoDB; fetch then paginate in memory.
+        var allNearby = await Collection.Find(filter).ToListAsync(cancellationToken);
+        var total = allNearby.Count;
+        var items = allNearby
             .Skip((pageNumber - 1) * pageSize)
-            .Limit(pageSize)
-            .ToListAsync(cancellationToken);
+            .Take(pageSize)
+            .ToList();
 
         return (items, total);
     }

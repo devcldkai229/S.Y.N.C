@@ -29,7 +29,7 @@ public class ExerciseCatalogDto
     public string SafetyLevel { get; set; } = "Moderate";
     public bool IsActive { get; set; }
 
-    /// <summary>Presigned URL of the primary exercise image (fallback when no video).</summary>
+    /// <summary>Public URL of the primary exercise image (fallback when no video).</summary>
     public string? ThumbnailUrl { get; set; }
 }
 

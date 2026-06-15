@@ -1,3 +1,5 @@
+import 'package:sync_app/features/order/utils/order_display_status.dart';
+
 class OrderItem {
   const OrderItem({
     required this.id,
@@ -37,6 +39,7 @@ class OrderSummary {
     required this.partnerId,
     required this.orderCode,
     required this.status,
+    this.deliveryStatus,
     this.paymentStatus,
     required this.subtotalAmount,
     required this.deliveryFee,
@@ -58,6 +61,7 @@ class OrderSummary {
   final String partnerId;
   final String orderCode;
   final String status;
+  final String? deliveryStatus;
   final String? paymentStatus;
   final double subtotalAmount;
   final double deliveryFee;
@@ -74,8 +78,12 @@ class OrderSummary {
   final List<OrderItem> items;
   final DeliveryTracking? tracking;
 
-  bool get isActive =>
-      !const {'Delivered', 'Completed', 'Cancelled', 'Refunded'}.contains(status);
+  bool get isActive => OrderDisplayStatus.isActiveCode(displayStatus);
+
+  String get displayStatus => OrderDisplayStatus.code(
+        orderStatus: status,
+        deliveryStatus: deliveryStatus ?? tracking?.status,
+      );
 
   factory OrderSummary.fromJson(Map<String, dynamic> json) {
     final itemsRaw = json['items'];
@@ -84,6 +92,7 @@ class OrderSummary {
       partnerId: json['partnerId']?.toString() ?? '',
       orderCode: json['orderCode']?.toString() ?? '',
       status: json['status']?.toString() ?? 'Pending',
+      deliveryStatus: json['deliveryStatus']?.toString(),
       paymentStatus: json['paymentStatus']?.toString(),
       subtotalAmount: (json['subtotalAmount'] as num?)?.toDouble() ?? 0,
       deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0,

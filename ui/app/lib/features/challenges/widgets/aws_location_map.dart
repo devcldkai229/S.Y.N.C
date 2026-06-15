@@ -8,8 +8,11 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 import 'package:sync_app/core/config/aws_map_config.dart';
+import 'package:sync_app/features/order/utils/map_pin_bitmap_factory.dart';
 
 const _pickerCenterMinMoveMeters = 12.0;
+const _markerTapThresholdMeters = 80.0;
+const _distance = Distance();
 
 enum UserLocationCenterResult {
   success,
@@ -31,6 +34,7 @@ class MapMarkerData {
     this.annotationLabel,
     this.annotationColor,
     this.annotationIsCircle = false,
+    this.iconImageId,
   });
 
   final String id;
@@ -47,6 +51,9 @@ class MapMarkerData {
   /// MapLibre vector map: circle fill color (origin dot).
   final Color? annotationColor;
   final bool annotationIsCircle;
+
+  /// MapLibre: registered [MapPinBitmapFactory] image id (icon pin instead of dot).
+  final String? iconImageId;
 }
 
 class AwsLocationMap extends StatefulWidget {
@@ -102,13 +109,13 @@ class AwsLocationMapState extends State<AwsLocationMap> {
   StreamSubscription<Position>? _positionSub;
   bool _mapLibreStyleReady = false;
   final List<ml.Line> _mapLibreLines = [];
-  final List<ml.Circle> _mapLibreCircles = [];
-  final List<ml.Symbol> _mapLibreSymbols = [];
+  final Map<String, _MarkerHandle> _markerHandles = {};
+  final Map<String, MapMarkerData> _pendingDynamicMarkers = {};
+  ml.Circle? _userLocationCircle;
   Timer? _pickerCenterDebounce;
   LatLng? _lastPickerCenterNotified;
   LatLng? _lastCenteredLocation;
   bool _readyNotified = false;
-  static const _distance = Distance();
 
   /// Last point passed to [moveTo] / [centerOnUserLocation] (picker GPS / search).
   LatLng? get lastCenteredLocation => _lastCenteredLocation;
@@ -144,10 +151,24 @@ class AwsLocationMapState extends State<AwsLocationMap> {
         _mapLibreStyleReady &&
         (oldWidget.polylines != widget.polylines ||
             oldWidget.walkingConnector != widget.walkingConnector ||
-            oldWidget.markers != widget.markers ||
+            _markersChanged(oldWidget.markers, widget.markers) ||
             oldWidget.showUserLocation != widget.showUserLocation)) {
       unawaited(_syncMapLibreAnnotations());
     }
+  }
+
+  static bool _markersChanged(List<MapMarkerData> old, List<MapMarkerData> neu) {
+    if (old.length != neu.length) return true;
+    for (var i = 0; i < old.length; i++) {
+      if (old[i].id != neu[i].id) return true;
+      final a = old[i].point;
+      final b = neu[i].point;
+      if ((a.latitude - b.latitude).abs() > 1e-9 ||
+          (a.longitude - b.longitude).abs() > 1e-9) {
+        return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _initUserLocation() async {
@@ -246,6 +267,96 @@ class AwsLocationMapState extends State<AwsLocationMap> {
     );
   }
 
+  /// Forces MapLibre circles/symbols to match current [AwsLocationMap.markers].
+  void refreshAnnotations() {
+    if (_useVectorMap && _mapLibreStyleReady) {
+      unawaited(_syncMapLibreAnnotations());
+    }
+  }
+
+  /// Adds or updates a marker managed outside [AwsLocationMap.markers] (e.g. live shipper).
+  Future<void> upsertDynamicMarker(MapMarkerData marker) async {
+    if (!_mapLibreStyleReady || _mapLibreController == null) {
+      _pendingDynamicMarkers[marker.id] = marker;
+      if (!_useVectorMap && mounted) {
+        setState(() {});
+      }
+      return;
+    }
+
+    final existing = _markerHandles[marker.id];
+    if (existing != null && existing.isDynamic) {
+      existing.markerData = marker;
+      await updateMarkerPosition(marker.id, marker.point);
+      return;
+    }
+    await _createMarkerHandle(marker, isDynamic: true);
+  }
+
+  /// Moves an existing marker without rebuilding the map widget.
+  Future<void> updateMarkerPosition(String markerId, LatLng point) async {
+    final pending = _pendingDynamicMarkers[markerId];
+    if (pending != null) {
+      _pendingDynamicMarkers[markerId] = MapMarkerData(
+        id: pending.id,
+        point: point,
+        child: pending.child,
+        onTap: pending.onTap,
+        alignment: pending.alignment,
+        width: pending.width,
+        height: pending.height,
+        annotationLabel: pending.annotationLabel,
+        annotationColor: pending.annotationColor,
+        annotationIsCircle: pending.annotationIsCircle,
+        iconImageId: pending.iconImageId,
+      );
+      if (!_useVectorMap && mounted) {
+        setState(() {});
+      }
+      return;
+    }
+
+    final handle = _markerHandles[markerId];
+    if (handle == null) return;
+
+    handle.point = point;
+    final controller = _mapLibreController;
+    if (_useVectorMap && controller != null && _mapLibreStyleReady) {
+      if (handle.circle != null) {
+        await controller.updateCircle(
+          handle.circle!,
+          ml.CircleOptions(geometry: _toMl(point)),
+        );
+      }
+      if (handle.symbol != null) {
+        await controller.updateSymbol(
+          handle.symbol!,
+          ml.SymbolOptions(geometry: _toMl(point)),
+        );
+      }
+      return;
+    }
+
+    if (handle.isDynamic && mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> removeDynamicMarker(String markerId) async {
+    _pendingDynamicMarkers.remove(markerId);
+    final handle = _markerHandles[markerId];
+    if (handle == null || !handle.isDynamic) {
+      if (!_useVectorMap && mounted) {
+        setState(() {});
+      }
+      return;
+    }
+    await _removeMarkerHandle(markerId);
+    if (!_useVectorMap && mounted) {
+      setState(() {});
+    }
+  }
+
   Future<UserLocationCenterResult> centerOnUserLocation({double zoom = 15}) async {
     if (!kIsWeb) {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -333,7 +444,21 @@ class AwsLocationMapState extends State<AwsLocationMap> {
 
   Future<void> _onMapLibreStyleLoaded() async {
     _mapLibreStyleReady = true;
+    final controller = _mapLibreController;
+    if (controller != null) {
+      await MapPinBitmapFactory.registerAll(controller);
+    }
     await _syncMapLibreAnnotations();
+    await _flushPendingDynamicMarkers();
+  }
+
+  Future<void> _flushPendingDynamicMarkers() async {
+    if (_pendingDynamicMarkers.isEmpty) return;
+    final pending = Map<String, MapMarkerData>.from(_pendingDynamicMarkers);
+    _pendingDynamicMarkers.clear();
+    for (final marker in pending.values) {
+      await upsertDynamicMarker(marker);
+    }
   }
 
   Future<void> _syncMapLibreAnnotations() async {
@@ -343,15 +468,7 @@ class AwsLocationMapState extends State<AwsLocationMap> {
     for (final line in _mapLibreLines) {
       await controller.removeLine(line);
     }
-    for (final circle in _mapLibreCircles) {
-      await controller.removeCircle(circle);
-    }
-    for (final symbol in _mapLibreSymbols) {
-      await controller.removeSymbol(symbol);
-    }
     _mapLibreLines.clear();
-    _mapLibreCircles.clear();
-    _mapLibreSymbols.clear();
 
     if (widget.polylines.length >= 2) {
       final line = await controller.addLine(
@@ -377,39 +494,90 @@ class AwsLocationMapState extends State<AwsLocationMap> {
       _mapLibreLines.add(connector);
     }
 
+    final widgetIds = {for (final marker in widget.markers) marker.id};
+    for (final id in _markerHandles.keys.toList()) {
+      final handle = _markerHandles[id]!;
+      if (!handle.isDynamic && !widgetIds.contains(id)) {
+        await _removeMarkerHandle(id);
+      }
+    }
+
     for (final marker in widget.markers) {
-      if (marker.annotationIsCircle && marker.annotationColor != null) {
-        final circle = await controller.addCircle(
+      await _upsertStaticMarker(marker);
+    }
+
+    await _syncUserLocationCircle();
+  }
+
+  Future<void> _upsertStaticMarker(MapMarkerData marker) async {
+    final existing = _markerHandles[marker.id];
+    if (existing != null && !existing.isDynamic) {
+      if (!existing.samePoint(marker.point)) {
+        await updateMarkerPosition(marker.id, marker.point);
+      }
+      return;
+    }
+    await _createMarkerHandle(marker, isDynamic: false);
+  }
+
+  Future<void> _createMarkerHandle(MapMarkerData marker, {required bool isDynamic}) async {
+    final controller = _mapLibreController;
+    if (controller == null || !_mapLibreStyleReady) return;
+
+    final handle = _MarkerHandle(
+      isDynamic: isDynamic,
+      point: marker.point,
+      markerData: marker,
+    );
+
+    if (marker.iconImageId != null) {
+      handle.symbol = await controller.addSymbol(
+        ml.SymbolOptions(
+          geometry: _toMl(marker.point),
+          iconImage: marker.iconImageId,
+          iconSize: 1.0,
+          iconAnchor: 'bottom',
+        ),
+      );
+    } else if (marker.annotationIsCircle && marker.annotationColor != null) {
+      handle.circle = await controller.addCircle(
+        ml.CircleOptions(
+          geometry: _toMl(marker.point),
+          circleRadius: marker.annotationLabel != null ? 11 : 8,
+          circleColor: _colorToHex(marker.annotationColor!),
+          circleStrokeWidth: 2,
+          circleStrokeColor: '#FFFFFF',
+        ),
+      );
+
+      if (marker.annotationLabel != null && marker.annotationLabel!.isNotEmpty) {
+        handle.symbol = await controller.addSymbol(
+          ml.SymbolOptions(
+            geometry: _toMl(marker.point),
+            textField: marker.annotationLabel,
+            textSize: 11,
+            textColor: _colorToHex(marker.annotationColor!),
+            textHaloColor: '#FFFFFF',
+            textHaloWidth: 2.5,
+            textAnchor: 'top',
+            textOffset: const Offset(0, 1.4),
+          ),
+        );
+      }
+    } else if (marker.annotationLabel != null && marker.annotationLabel!.isNotEmpty) {
+      if (_labelUsesEmojiGlyphs(marker.annotationLabel!)) {
+        final fill = marker.annotationColor ?? const Color(0xFF16803A);
+        handle.circle = await controller.addCircle(
           ml.CircleOptions(
             geometry: _toMl(marker.point),
-            circleRadius: 8,
-            circleColor: _colorToHex(marker.annotationColor!),
-            circleStrokeWidth: 2,
+            circleRadius: 10,
+            circleColor: _colorToHex(fill),
+            circleStrokeWidth: 2.5,
             circleStrokeColor: '#FFFFFF',
           ),
         );
-        _mapLibreCircles.add(circle);
-        continue;
-      }
-
-      if (marker.annotationLabel != null && marker.annotationLabel!.isNotEmpty) {
-        // Grab/AWS glyph server does not ship emoji PBF ranges — use pin circles instead.
-        if (_labelUsesEmojiGlyphs(marker.annotationLabel!)) {
-          final fill = marker.annotationColor ?? const Color(0xFF16803A);
-          final circle = await controller.addCircle(
-            ml.CircleOptions(
-              geometry: _toMl(marker.point),
-              circleRadius: 10,
-              circleColor: _colorToHex(fill),
-              circleStrokeWidth: 2.5,
-              circleStrokeColor: '#FFFFFF',
-            ),
-          );
-          _mapLibreCircles.add(circle);
-          continue;
-        }
-
-        final symbol = await controller.addSymbol(
+      } else {
+        handle.symbol = await controller.addSymbol(
           ml.SymbolOptions(
             geometry: _toMl(marker.point),
             textField: marker.annotationLabel,
@@ -420,22 +588,80 @@ class AwsLocationMapState extends State<AwsLocationMap> {
             textAnchor: marker.id == 'route-callout' ? 'bottom' : 'center',
           ),
         );
-        _mapLibreSymbols.add(symbol);
       }
     }
 
-    if (widget.showUserLocation && _userLocation != null) {
-      final userCircle = await controller.addCircle(
-        ml.CircleOptions(
-          geometry: _toMl(_userLocation!),
-          circleRadius: 8,
-          circleColor: '#2563EB',
-          circleStrokeWidth: 2,
-          circleStrokeColor: '#FFFFFF',
-        ),
-      );
-      _mapLibreCircles.add(userCircle);
+    _markerHandles[marker.id] = handle;
+    if (isDynamic && !_useVectorMap && mounted) {
+      setState(() {});
     }
+  }
+
+  Future<void> _removeMarkerHandle(String markerId) async {
+    final handle = _markerHandles.remove(markerId);
+    if (handle == null) return;
+
+    final controller = _mapLibreController;
+    if (controller == null) return;
+
+    if (handle.circle != null) {
+      await controller.removeCircle(handle.circle!);
+    }
+    if (handle.symbol != null) {
+      await controller.removeSymbol(handle.symbol!);
+    }
+  }
+
+  Future<void> _syncUserLocationCircle() async {
+    final controller = _mapLibreController;
+    if (controller == null || !_mapLibreStyleReady) return;
+
+    if (!widget.showUserLocation || _userLocation == null) {
+      if (_userLocationCircle != null) {
+        await controller.removeCircle(_userLocationCircle!);
+        _userLocationCircle = null;
+      }
+      return;
+    }
+
+    if (_userLocationCircle != null) {
+      await controller.updateCircle(
+        _userLocationCircle!,
+        ml.CircleOptions(geometry: _toMl(_userLocation!)),
+      );
+      return;
+    }
+
+    _userLocationCircle = await controller.addCircle(
+      ml.CircleOptions(
+        geometry: _toMl(_userLocation!),
+        circleRadius: 8,
+        circleColor: '#2563EB',
+        circleStrokeWidth: 2,
+        circleStrokeColor: '#FFFFFF',
+      ),
+    );
+  }
+
+  void _handleMapTap(LatLng point) {
+    widget.onTap?.call(point);
+    _tryInvokeMarkerTap(point);
+  }
+
+  void _tryInvokeMarkerTap(LatLng point) {
+    MapMarkerData? nearest;
+    var nearestMeters = double.infinity;
+
+    for (final marker in widget.markers) {
+      if (marker.onTap == null) continue;
+      final meters = _distance.as(LengthUnit.Meter, marker.point, point);
+      if (meters <= _markerTapThresholdMeters && meters < nearestMeters) {
+        nearestMeters = meters;
+        nearest = marker;
+      }
+    }
+
+    nearest?.onTap?.call();
   }
 
   @override
@@ -459,13 +685,6 @@ class AwsLocationMapState extends State<AwsLocationMap> {
         LatLng(AwsMapConfig.defaultLat, AwsMapConfig.defaultLng);
     final styleUrl = AwsMapConfig.styleDescriptorUrl!;
 
-    assert(
-      () {
-        debugPrint('[AwsLocationMap] MapLibre style: $styleUrl');
-        return true;
-      }(),
-    );
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final height = constraints.maxHeight.isFinite && constraints.maxHeight > 0
@@ -476,7 +695,10 @@ class AwsLocationMapState extends State<AwsLocationMap> {
           width: constraints.maxWidth,
           height: height,
           child: ml.MapLibreMap(
+            key: const ValueKey('sync_maplibre'),
             styleString: styleUrl,
+            // Symbol taps on web can report null feature id → maplibre_gl crash.
+            annotationConsumeTapEvents: const [ml.AnnotationType.fill],
             initialCameraPosition: ml.CameraPosition(
               target: _toMl(center),
               zoom: widget.initialZoom,
@@ -490,10 +712,9 @@ class AwsLocationMapState extends State<AwsLocationMap> {
             onMapCreated: _onMapLibreCreated,
             onStyleLoadedCallback: _onMapLibreStyleLoaded,
             onCameraIdle: widget.pickerMode ? _notifyPickerCenter : null,
-            onMapClick: widget.onTap == null
-                ? null
-                : (_, latLng) =>
-                    widget.onTap!(LatLng(latLng.latitude, latLng.longitude)),
+            onMapClick: widget.interactive
+                ? (_, latLng) => _handleMapTap(LatLng(latLng.latitude, latLng.longitude))
+                : null,
           ),
         );
       },
@@ -527,9 +748,9 @@ class AwsLocationMapState extends State<AwsLocationMap> {
                 if (hasGesture) _notifyPickerCenter();
               }
             : null,
-        onTap: widget.onTap == null
+        onTap: widget.onTap == null && widget.markers.every((m) => m.onTap == null)
             ? null
-            : (_, point) => widget.onTap!(point),
+            : (_, point) => _handleMapTap(point),
       ),
       children: [
         fm.TileLayer(
@@ -570,20 +791,51 @@ class AwsLocationMapState extends State<AwsLocationMap> {
             ],
           ),
         fm.MarkerLayer(
-          markers: widget.markers
-              .map(
-                (m) => fm.Marker(
-                  point: m.point,
-                  width: m.width,
-                  height: m.height,
-                  alignment: m.alignment,
-                  child: GestureDetector(
-                    onTap: m.onTap,
-                    child: m.child,
-                  ),
+          markers: [
+            ...widget.markers.map(
+              (m) => fm.Marker(
+                point: m.point,
+                width: m.width,
+                height: m.height,
+                alignment: m.alignment,
+                child: GestureDetector(
+                  onTap: m.onTap,
+                  child: m.child,
                 ),
-              )
-              .toList(),
+              ),
+            ),
+            ..._markerHandles.values
+                .where((handle) => handle.isDynamic && handle.markerData != null)
+                .map(
+                  (handle) {
+                    final m = handle.markerData!;
+                    return fm.Marker(
+                      key: ValueKey('dynamic-${m.id}'),
+                      point: handle.point,
+                      width: m.width,
+                      height: m.height,
+                      alignment: m.alignment,
+                      child: GestureDetector(
+                        onTap: m.onTap,
+                        child: m.child,
+                      ),
+                    );
+                  },
+                ),
+            ..._pendingDynamicMarkers.values.map(
+              (m) => fm.Marker(
+                key: ValueKey('pending-${m.id}'),
+                point: m.point,
+                width: m.width,
+                height: m.height,
+                alignment: m.alignment,
+                child: GestureDetector(
+                  onTap: m.onTap,
+                  child: m.child,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -591,6 +843,24 @@ class AwsLocationMapState extends State<AwsLocationMap> {
 }
 
 ml.LatLng _toMl(LatLng point) => ml.LatLng(point.latitude, point.longitude);
+
+class _MarkerHandle {
+  _MarkerHandle({
+    required this.isDynamic,
+    required this.point,
+    this.markerData,
+  });
+
+  final bool isDynamic;
+  LatLng point;
+  MapMarkerData? markerData;
+  ml.Circle? circle;
+  ml.Symbol? symbol;
+
+  bool samePoint(LatLng other) =>
+      (point.latitude - other.latitude).abs() <= 1e-9 &&
+      (point.longitude - other.longitude).abs() <= 1e-9;
+}
 
 ml.LatLngBounds _boundsFromPoints(List<LatLng> points) {
   var minLat = points.first.latitude;

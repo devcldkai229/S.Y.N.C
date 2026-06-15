@@ -1,20 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
-import 'package:sync_app/features/challenges/models/challenge_mock_data.dart';
-import 'package:sync_app/features/home/data/home_assets.dart';
+import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/data/repositories/challenge_repository.dart';
+import 'package:sync_app/features/challenges/models/challenge_models.dart';
+import 'package:sync_app/features/challenges/widgets/challenge_background.dart';
 import 'package:sync_app/features/home/widgets/home_bento/home_bento_styles.dart';
 
-class HomeChallengesRow extends StatelessWidget {
+class HomeChallengesRow extends StatefulWidget {
   const HomeChallengesRow({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final active = mockChallenges
-        .where((c) => c.status == 'InProgress' || c.status == 'Active')
-        .take(3)
-        .toList();
+  State<HomeChallengesRow> createState() => _HomeChallengesRowState();
+}
 
+class _HomeChallengesRowState extends State<HomeChallengesRow> {
+  List<CommunityChallenge> _challenges = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final repo = getIt<ChallengeRepository>();
+      final all = await repo.getChallenges(pageSize: 10);
+      final visible = all
+          .where((c) => c.status == 'InProgress' || c.status == 'Active' || c.status == 'Upcoming')
+          .take(3)
+          .toList();
+      if (mounted) setState(() => _challenges = visible);
+    } catch (_) {
+      if (mounted) setState(() => _challenges = []);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -35,25 +62,41 @@ class HomeChallengesRow extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 168,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: active.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final c = active[index];
-              final isLive = c.status == 'InProgress';
-              return ChallengeCard(
-                title: c.title,
-                progress: isLive ? 0.5 : 0.15,
-                progressLabel: isLive ? '15/30 ngày' : 'Sắp bắt đầu',
-                badge: isLive ? 'ĐANG DIỄN RA' : 'SẮP DIỄN RA',
-                onTap: () => context.push(AppRoutes.challengeDetail(c.id)),
-              );
-            },
+        if (_loading)
+          const SizedBox(
+            height: 168,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          )
+        else if (_challenges.isEmpty)
+          SizedBox(
+            height: 120,
+            child: Center(
+              child: Text(
+                'Chưa có thử thách nào',
+                style: TextStyle(color: HomeBentoColors.textPrimary.withValues(alpha: 0.5)),
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 168,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _challenges.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final c = _challenges[index];
+                return ChallengeCard(
+                  title: c.title,
+                  backgroundUrl: c.backgroundUrl,
+                  progress: c.progressFraction,
+                  progressLabel: c.homeProgressLabel,
+                  badge: c.homeBadge,
+                  onTap: () => context.push(AppRoutes.challengeDetail(c.id)),
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }
@@ -66,6 +109,7 @@ class ChallengeCard extends StatelessWidget {
     required this.progress,
     required this.progressLabel,
     required this.badge,
+    this.backgroundUrl,
     this.onTap,
   });
 
@@ -73,6 +117,7 @@ class ChallengeCard extends StatelessWidget {
   final double progress;
   final String progressLabel;
   final String badge;
+  final String? backgroundUrl;
   final VoidCallback? onTap;
 
   static const _cardWidth = 260.0;
@@ -88,17 +133,7 @@ class ChallengeCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              Image.asset(
-                HomeAssets.challengeCover,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Image.asset(
-                  HomeAssets.challengeCoverFallback,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: HomeBentoColors.forestGreen,
-                  ),
-                ),
-              ),
+              ChallengeBackground(backgroundUrl: backgroundUrl),
               DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(

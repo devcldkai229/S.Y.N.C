@@ -1,17 +1,19 @@
+using Libs.Shared.Storage;
+
 namespace Libs.Shared.Seed;
 
 /// <summary>
-/// Public MinIO URLs for local dev seed data (bucket: social-assets, public-read in Development).
-/// Matches <c>Minio:PublicUrl</c> + <c>Minio:BucketName</c> in Social/Exercise appsettings.
+/// Public media URLs for local dev seed data (bucket: sync-public-assets for Social seed assets).
+/// IAM / Roadmap user uploads use <see cref="StorageBuckets.PrivateAssets"/> via gateway proxy.
 /// </summary>
 public static class DevSeedMediaUrls
 {
-    public const string PublicBase = "http://localhost:9000";
-    public const string Bucket = "social-assets";
+    public const string PublicBase = "http://localhost:5057/api/v1/media";
+    public const string Bucket = StorageBuckets.PublicAssets;
     public const string LegacyCdnHost = "https://cdn.sync.local";
 
     public static string Object(string key) =>
-        $"{PublicBase}/{Bucket}/{key.TrimStart('/')}";
+        PublicMediaUrls.Object(PublicBase, key);
 
     public static string Avatar(string fileName) => Object($"avatars/{fileName}");
 
@@ -19,19 +21,25 @@ public static class DevSeedMediaUrls
 
     public static string SocialPost(string fileName) => Object($"social/{fileName}");
 
-    /// <summary>Rewrites legacy cdn.sync.local URLs to MinIO public URLs.</summary>
+    /// <summary>Rewrites legacy cdn.sync.local and old bucket names to the public-assets proxy path.</summary>
     public static string MigrateLegacyUrl(string url)
     {
-        if (string.IsNullOrWhiteSpace(url) || !url.Contains(LegacyCdnHost, StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(url))
             return url;
 
-        return url.Replace(
-            $"{LegacyCdnHost}/",
-            $"{PublicBase}/{Bucket}/",
-            StringComparison.OrdinalIgnoreCase);
+        var migrated = url;
+        if (migrated.Contains(LegacyCdnHost, StringComparison.OrdinalIgnoreCase))
+        {
+            migrated = migrated.Replace(
+                $"{LegacyCdnHost}/",
+                $"{PublicBase}/{Bucket}/",
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        return PublicMediaUrls.NormalizeBucketInUrl(migrated);
     }
 
-    /// <summary>Object keys uploaded by <see cref="Social.Infrastructure.Persistence.Seed.MinioDevAssetSeeder"/>.</summary>
+    /// <summary>Object keys uploaded by Social S3 dev asset seeder at startup.</summary>
     public static IReadOnlyList<string> SeedObjectKeys { get; } =
     [
         "avatars/demo-user.png",

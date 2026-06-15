@@ -70,6 +70,7 @@ class FocusExercisePage extends StatelessWidget {
         ActiveWorkoutMediaPanel(
           detail: detail,
           loading: loadingDetail && isCurrentPage,
+          exerciseName: block.exerciseName,
           videoController: isCurrentPage ? videoController : null,
           videoReady: isCurrentPage && videoReady,
           videoError: isCurrentPage ? videoError : null,

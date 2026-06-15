@@ -7,6 +7,7 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/data/repositories/workout_repository.dart';
+import 'package:sync_app/features/workouts/widgets/exercise_catalog/catalog_exercise_thumbnail.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 
 class CreateCustomWorkoutScreen extends StatefulWidget {
@@ -1298,15 +1299,7 @@ class _SelectExerciseBottomSheetState extends State<_SelectExerciseBottomSheet> 
             ),
             child: Row(
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryGreen.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.fitness_center, color: AppColors.primaryGreen, size: 20),
-                ),
+                CatalogExerciseThumbnail(exercise: exercise, width: 48, height: 48, borderRadius: 10),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

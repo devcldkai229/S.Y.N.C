@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Social.Domain\Social.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Contract\Contract.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Storage\Libs.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>

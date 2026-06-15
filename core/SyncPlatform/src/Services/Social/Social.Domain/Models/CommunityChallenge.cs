@@ -30,6 +30,12 @@ public class CommunityChallenge : BaseMongoEntity
     [BsonIgnoreIfNull]
     public string[]? Gifts { get; set; }
 
+    /// <summary>
+    /// S3 URL for challenge background (image or video).
+    /// </summary>
+    [BsonIgnoreIfNull]
+    public string? BackgroundUrl { get; set; }
+
     [BsonIgnoreIfNull]
     public decimal? TargetValue { get; set; }
 

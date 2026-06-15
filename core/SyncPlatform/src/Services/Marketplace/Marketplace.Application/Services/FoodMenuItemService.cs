@@ -66,9 +66,9 @@ public class FoodMenuItemService : IFoodMenuItemService
                 PageSize = 500,
             };
             var (nearby, _) = await _partnerRepository.SearchPagedAsync(partnerCriteria, cancellationToken);
-            criteria.PartnerIds = nearby.Select(x => x.Partner.Id).ToList();
-            if (criteria.PartnerIds.Count == 0)
-                return ([], new PaginationMetadata(pageNumber, pageSize, 0));
+            var partnerIds = nearby.Select(x => x.Partner.Id).ToList();
+            if (partnerIds.Count > 0)
+                criteria.PartnerIds = partnerIds;
         }
 
         var (items, total) = await _repository.SearchPagedAsync(criteria, cancellationToken);
@@ -97,9 +97,9 @@ public class FoodMenuItemService : IFoodMenuItemService
                 PageSize = 500,
             };
             var (nearby, _) = await _partnerRepository.SearchPagedAsync(partnerCriteria, cancellationToken);
-            criteria.PartnerIds = nearby.Select(x => x.Partner.Id).ToList();
-            if (criteria.PartnerIds.Count == 0)
-                return [];
+            var partnerIds = nearby.Select(x => x.Partner.Id).ToList();
+            if (partnerIds.Count > 0)
+                criteria.PartnerIds = partnerIds;
         }
 
         var items = await _repository.GetRandomAsync(criteria, count, cancellationToken);

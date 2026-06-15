@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:sync_app/core/utils/exercise_media_url_resolver.dart';
+import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 import 'package:sync_app/features/workouts/theme/workout_theme.dart';
 import 'package:sync_app/features/workouts/utils/workout_assets.dart';
@@ -136,7 +138,7 @@ class WorkoutCoverImage extends StatelessWidget {
         width: double.infinity,
         child: networkUrl != null && networkUrl!.isNotEmpty
             ? CachedNetworkImage(
-                imageUrl: networkUrl!,
+                imageUrl: MediaUrlResolver.resolve(networkUrl) ?? networkUrl!,
                 fit: BoxFit.cover,
                 errorWidget: (_, __, ___) => _assetImage(),
               )
@@ -206,8 +208,9 @@ class ExerciseThumbnail extends StatelessWidget {
 
   Widget _buildContent(String? localGif) {
     if (networkUrl != null && networkUrl!.isNotEmpty) {
+      final resolved = ExerciseMediaUrlResolver.resolve(networkUrl);
       return CachedNetworkImage(
-        imageUrl: networkUrl!,
+        imageUrl: resolved ?? networkUrl!,
         fit: BoxFit.cover,
         errorWidget: (_, __, ___) => _localOrBrand(localGif),
       );
@@ -552,12 +555,14 @@ class WorkoutHeroHeader extends StatelessWidget {
     super.key,
     required this.title,
     required this.coverAsset,
+    this.networkCoverUrl,
     this.subtitle,
     this.tags = const [],
   });
 
   final String title;
   final String coverAsset;
+  final String? networkCoverUrl;
   final String? subtitle;
   final List<Widget> tags;
 
@@ -566,7 +571,11 @@ class WorkoutHeroHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        WorkoutCoverImage(assetPath: coverAsset, height: 180),
+        WorkoutCoverImage(
+          assetPath: coverAsset,
+          networkUrl: networkCoverUrl,
+          height: 180,
+        ),
         const SizedBox(height: 16),
         Text(title, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: WorkoutTheme.textPrimary)),
         if (subtitle != null) ...[

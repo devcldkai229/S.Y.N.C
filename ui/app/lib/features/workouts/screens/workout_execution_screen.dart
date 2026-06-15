@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sync_app/core/utils/exercise_media_url_resolver.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/core/utils/injection.dart';
@@ -201,7 +202,10 @@ class _WorkoutExecutionScreenState extends State<WorkoutExecutionScreen> {
     final videos = detail?.videoAssets;
     if (videos == null || videos.isEmpty) return;
 
-    final controller = VideoPlayerController.networkUrl(Uri.parse(videos.first.resourceUrl));
+    final videoUrl = ExerciseMediaUrlResolver.resolve(videos.first.resourceUrl);
+    if (videoUrl == null || videoUrl.isEmpty) return;
+
+    final controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
     _videoController = controller;
 
     try {

@@ -37,6 +37,7 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
     try {
       final saved = await getIt<CheckoutRemoteDataSource>().getCurrentAddress();
       if (saved == null) return null;
+      if (_isInvalidCoords(saved.lat, saved.lng)) return null;
       return DeliveryLocation(
         lat: saved.lat,
         lng: saved.lng,
@@ -47,6 +48,9 @@ class _MarketplaceListingScreenState extends State<MarketplaceListingScreen> {
       return null;
     }
   }
+
+  static bool _isInvalidCoords(double lat, double lng) =>
+      lat.abs() < 0.01 && lng.abs() < 0.01;
 
   Future<void> _load() async {
     setState(() {

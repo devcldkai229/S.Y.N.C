@@ -1,4 +1,4 @@
-using Social.Application.Configuration;
+using Libs.Storage.Configuration;
 using Social.Application.Exceptions;
 
 namespace Social.Application.Helpers;
@@ -64,7 +64,7 @@ public static class PostMediaRules
             throw new BadRequestException("At least one image or video is required when media is provided.");
     }
 
-    public static void ValidateContentTypeAllowed(string? contentType, MinioOptions options)
+    public static void ValidateContentTypeAllowed(string? contentType, ObjectStorageOptions options)
     {
         if (string.IsNullOrWhiteSpace(contentType))
             return;

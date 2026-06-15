@@ -18,6 +18,7 @@ import 'package:sync_app/features/order/state/delivery_fee_config.dart';
 import 'package:sync_app/features/order/widgets/price_breakdown.dart';
 import 'package:sync_app/features/marketplace/widgets/home/marketplace_location_picker_sheet.dart';
 import 'package:sync_app/features/order/widgets/voucher_warehouse_sheet.dart';
+import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -32,6 +33,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final _paymentApi = getIt<PaymentRemoteDataSource>();
   final _checkoutApi = getIt<CheckoutRemoteDataSource>();
   final _deliveryFeeConfig = getIt<DeliveryFeeConfig>();
+  final _profileApi = getIt<ProfileApiService>();
 
   final _name = TextEditingController();
   final _phone = TextEditingController();
@@ -46,6 +48,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   VoucherValidation? _appliedVoucher;
   double? _deliveryFee;
   late final String _idempotencyKey;
+  bool _nameLockedFromProfile = false;
+  bool _phoneLockedFromProfile = false;
 
   @override
   void initState() {
@@ -68,7 +72,33 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       });
       return;
     }
-    await Future.wait([_initLocation(), _loadWallet(), _loadDeliveryFee()]);
+    await Future.wait([
+      _initLocation(),
+      _loadWallet(),
+      _loadDeliveryFee(),
+      _loadRecipientFromProfile(),
+    ]);
+  }
+
+  Future<void> _loadRecipientFromProfile() async {
+    try {
+      final settings = await _profileApi.getProfileSettings();
+      if (!mounted) return;
+
+      final name = settings.basic.fullName.trim();
+      final phone = settings.basic.phoneNumber?.trim();
+
+      setState(() {
+        if (name.isNotEmpty) {
+          _name.text = name;
+          _nameLockedFromProfile = true;
+        }
+        if (phone != null && phone.isNotEmpty) {
+          _phone.text = phone;
+          _phoneLockedFromProfile = true;
+        }
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadDeliveryFee() async {
@@ -128,6 +158,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (_address.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chọn địa chỉ giao hàng')),
+      );
+      return;
+    }
+    if (_name.text.trim().isEmpty || _phone.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập tên và số điện thoại người nhận')),
       );
       return;
     }
@@ -286,8 +322,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             decoration: const InputDecoration(hintText: 'Chưa chọn địa chỉ'),
           ),
           const SizedBox(height: 12),
-          TextField(controller: _name, decoration: const InputDecoration(labelText: 'Tên người nhận')),
-          TextField(controller: _phone, decoration: const InputDecoration(labelText: 'Số điện thoại')),
+          TextField(
+            controller: _name,
+            readOnly: _nameLockedFromProfile,
+            decoration: InputDecoration(
+              labelText: 'Tên người nhận',
+              hintText: _nameLockedFromProfile ? null : 'Nhập tên người nhận',
+            ),
+          ),
+          TextField(
+            controller: _phone,
+            readOnly: _phoneLockedFromProfile,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(
+              labelText: 'Số điện thoại',
+              hintText: _phoneLockedFromProfile ? null : 'Nhập số điện thoại',
+            ),
+          ),
           const SizedBox(height: 20),
           const Text('Phương thức thanh toán', style: TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),

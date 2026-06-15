@@ -1,26 +1,26 @@
-{
-  "$schema": "https://json.schemastore.org/appsettings.json",
-  "InternalApiKey": "dev_internal_api_key_sync_platform",
-  "ConnectionStrings": {
-    "RoadmapDatabase": "mongodb://localhost:27018"
-  },
-  "MongoDB": {
-    "RoadmapDatabaseName": "sync_roadmap"
-  },
-  "Minio": {
-    "Endpoint": "localhost:9000",
-    "AccessKey": "minioadmin",
-    "SecretKey": "minioadmin123",
-    "BucketName": "social-assets",
-    "UseSsl": false,
-    "PublicUrl": "http://localhost:9000",
-    "AutoCreateBucket": true,
-    "MaxFileSizeMb": 10
-  },
-  "Roadmap": {
-    "Seed": {
-      "Enabled": true,
-      "SeedDemoData": true
-    }
-  }
-}
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
+  "ConnectionStrings": {
+    "RoadmapDatabase": "mongodb://localhost:27018"
+  },
+  "MongoDB": {
+    "RoadmapDatabaseName": "sync_roadmap"
+  },
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-private-assets",
+    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
+    "MaxFileSizeMb": 10
+  },
+  "Roadmap": {
+    "Seed": {
+      "Enabled": true,
+      "SeedDemoData": true
+    }
+  }
+}
+

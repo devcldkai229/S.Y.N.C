@@ -16,14 +16,13 @@
       "BackfillShareCodesOnStartup": false
     }
   },
-  "Minio": {
-    "Endpoint": "localhost:9000",
-    "AccessKey": "minioadmin",
-    "SecretKey": "minioadmin123",
-    "BucketName": "social-assets",
-    "UseSsl": false,
-    "PublicUrl": "http://localhost:9000",
-    "AutoCreateBucket": true,
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-public-assets",
+    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
     "MaxFileSizeMb": 50
   }
 }

@@ -84,6 +84,7 @@ abstract final class ApiPaths {
 
   // Community challenges (Social via Gateway)
   static const challenges = '/v1/challenges';
+  static const challengesNearby = '/v1/challenges/nearby';
   static String challengeById(String id) => '/v1/challenges/$id';
   static String challengeJoin(String id) => '/v1/challenges/$id/join';
   static String challengeLeave(String id) => '/v1/challenges/$id/leave';

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/features/challenges/models/challenge_models.dart';
+import 'package:sync_app/features/challenges/widgets/challenge_background.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_rewards_section.dart';
 
 class ChallengeListTile extends StatelessWidget {
@@ -10,7 +11,7 @@ class ChallengeListTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final MockChallenge challenge;
+  final CommunityChallenge challenge;
   final VoidCallback onTap;
 
   @override
@@ -38,15 +39,32 @@ class ChallengeListTile extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: challenge.goalColor.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(challenge.goalEmoji, style: const TextStyle(fontSize: 22)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ChallengeBackground(backgroundUrl: challenge.backgroundUrl),
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.1),
+                              Colors.black.withValues(alpha: 0.45),
+                            ],
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Text(challenge.goalEmoji, style: const TextStyle(fontSize: 22)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 12),

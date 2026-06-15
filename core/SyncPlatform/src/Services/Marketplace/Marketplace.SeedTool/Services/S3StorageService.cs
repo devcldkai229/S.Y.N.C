@@ -1,5 +1,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using Libs.Shared.Storage;
 using Marketplace.SeedTool.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -65,15 +66,12 @@ public sealed class S3StorageService : IStorageService
         if (string.IsNullOrWhiteSpace(objectKey))
             return string.Empty;
 
-        if (_options.PublicRead)
-            return $"https://{_options.Bucket}.s3.{_region}.amazonaws.com/{objectKey}";
+        if (_options.PublicRead && !string.IsNullOrWhiteSpace(_options.PublicBaseUrl))
+            return PublicMediaUrls.Object(_options.PublicBaseUrl, objectKey);
 
-        return _s3.GetPreSignedURL(new GetPreSignedUrlRequest
-        {
-            BucketName = _options.Bucket,
-            Key = objectKey,
-            Verb = HttpVerb.GET,
-            Expires = DateTime.UtcNow.AddMinutes(_options.PresignedUrlExpiryMinutes),
-        });
+        if (_options.PublicRead)
+            return $"https://{_options.Bucket}.s3.{_region}.amazonaws.com/{objectKey.TrimStart('/')}";
+
+        return objectKey;
     }
 }

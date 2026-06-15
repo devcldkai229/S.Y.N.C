@@ -86,23 +86,40 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         dropoffLng: _dropoff.longitude,
       );
 
-      _sub = _tracking.watch(session).listen((u) {
-        if (!mounted) return;
-        setState(() {
-          _update = u;
-          _stepTimes.putIfAbsent(u.orderStatus, () => u.timestamp);
-        });
-      });
+      _sub = _tracking.watch(session).listen(_applyTrackingUpdate);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = 'Không tải được đơn hàng. Vui lòng thử lại.');
     }
   }
 
+  void _applyTrackingUpdate(TrackingUpdate u) {
+    if (!mounted) return;
+    final prev = _update;
+    if (prev != null &&
+        prev.orderStatus == u.orderStatus &&
+        prev.deliveryStatus == u.deliveryStatus &&
+        prev.statusMessage == u.statusMessage &&
+        prev.etaMinutes == u.etaMinutes &&
+        TrackingMapCoords.sameLatLngValues(
+          prev.shipperLat,
+          prev.shipperLng,
+          u.shipperLat,
+          u.shipperLng,
+        )) {
+      return;
+    }
+    setState(() {
+      _update = u;
+      _stepTimes.putIfAbsent(u.orderStatus, () => u.timestamp);
+    });
+  }
+
   @override
   void dispose() {
     _sub?.cancel();
-    _tracking.stop();
+    _sub = null;
+    unawaited(_tracking.stop());
     super.dispose();
   }
 
@@ -170,6 +187,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               height: mapHeight,
               width: double.infinity,
               child: LiveTrackingMap(
+                key: ValueKey(widget.orderId),
                 pickup: _pickup,
                 destination: _dropoff,
                 shipper: shipperPoint,

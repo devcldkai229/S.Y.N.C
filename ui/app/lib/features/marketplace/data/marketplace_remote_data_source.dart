@@ -54,7 +54,7 @@ class MarketplaceRemoteDataSource {
           'count': count,
           if (lat != null) 'latitude': lat,
           if (lng != null) 'longitude': lng,
-          'radiusKm': 15,
+          if (lat != null && lng != null) 'radiusKm': 15,
         },
       );
       return _parseList(response.data, FoodMenuItem.fromJson);
@@ -96,7 +96,7 @@ class MarketplaceRemoteDataSource {
         if (dietaryTags != null && dietaryTags.isNotEmpty) 'dietaryTags': dietaryTags,
         if (lat != null) 'latitude': lat,
         if (lng != null) 'longitude': lng,
-        'radiusKm': 15,
+        if (lat != null && lng != null) 'radiusKm': 15,
         'pageNumber': page,
         'pageSize': pageSize,
       },

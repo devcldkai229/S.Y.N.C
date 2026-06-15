@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:random_avatar/random_avatar.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/shared/utils/random_avatar_url.dart';
 
 /// Network avatar with initials fallback when URL is missing or fails to decode.
@@ -49,7 +50,7 @@ class SyncAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final url = imageUrl?.trim();
+    final url = MediaUrlResolver.resolve(imageUrl);
     final randomAvatarSeed = RandomAvatarUrl.extractSeed(url);
 
     final Widget child;

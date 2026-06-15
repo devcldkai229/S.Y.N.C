@@ -35,6 +35,13 @@ public sealed class AhamoveAdapter : IDeliveryProvider
     {
         if (!_settings.Enabled || _settings.UseSandboxSimulation)
         {
+            _logger.LogWarning(
+                "Ahamove sandbox mode for order {OrderId} — Enabled={Enabled}, UseSandboxSimulation={UseSandboxSimulation}. " +
+                "Set Enabled=true and UseSandboxSimulation=false to create real Ahamove orders.",
+                request.OrderId,
+                _settings.Enabled,
+                _settings.UseSandboxSimulation);
+
             return new DeliveryBookingResult
             {
                 Success = true,
@@ -89,7 +96,8 @@ public sealed class AhamoveAdapter : IDeliveryProvider
                 ["requests"] = Array.Empty<object>(),
             };
 
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/orders");
+            // Ahamove Partner API v3: POST {BaseUrl}/orders/create
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/orders/create");
             httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {token}");
             httpRequest.Content = new StringContent(
                 JsonSerializer.Serialize(orderBody),
@@ -190,7 +198,10 @@ public sealed class AhamoveAdapter : IDeliveryProvider
     public DeliveryWebhookPayload? ParseAndVerifyWebhook(string rawBody, string? signatureHeader)
     {
         if (!VerifyWebhookAuth(signatureHeader))
+        {
+            _logger.LogWarning("Ahamove webhook auth failed — check WebhookApiKey and apikey header.");
             return null;
+        }
 
         try
         {

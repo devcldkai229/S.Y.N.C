@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Social.Application.Common;
-using Social.Application.Configuration;
+using Libs.Storage.Configuration;
 using Social.Application.DTOs;
 using Social.Application.Services;
 using Social.Domain.Enums;
@@ -16,19 +16,19 @@ public class StoryController : ControllerBase
 {
     private readonly IStoryService _stories;
     private readonly ICurrentUserContext _currentUser;
-    private readonly MinioOptions _minioOptions;
+    private readonly ObjectStorageOptions _storageOptions;
 
     public StoryController(
         IStoryService stories,
         ICurrentUserContext currentUser,
-        IOptions<MinioOptions> minioOptions)
+        IOptions<ObjectStorageOptions> storageOptions)
     {
         _stories = stories;
         _currentUser = currentUser;
-        _minioOptions = minioOptions.Value;
+        _storageOptions = storageOptions.Value;
     }
 
-    /// <summary>Upload media to MinIO and create a story (24h expiry).</summary>
+    /// <summary>Upload media to S3 and create a story (24h expiry).</summary>
     [HttpPost]
     [Authorize]
     [Consumes("multipart/form-data")]
@@ -45,10 +45,10 @@ public class StoryController : ControllerBase
             if (file.Length <= 0)
                 return BadRequest(ApiResponse<StoryDto>.FailureResponse("Empty file is not allowed."));
 
-            var maxBytes = _minioOptions.MaxFileSizeMb * 1024L * 1024L;
+            var maxBytes = _storageOptions.MaxFileSizeMb * 1024L * 1024L;
             if (file.Length > maxBytes)
                 return BadRequest(ApiResponse<StoryDto>.FailureResponse(
-                    $"File is too large. Max allowed: {_minioOptions.MaxFileSizeMb}MB."));
+                    $"File is too large. Max allowed: {_storageOptions.MaxFileSizeMb}MB."));
 
             if (!IsAllowedContentType(file.ContentType))
                 return BadRequest(ApiResponse<StoryDto>.FailureResponse(
@@ -175,9 +175,9 @@ public class StoryController : ControllerBase
         if (string.IsNullOrWhiteSpace(contentType))
             return false;
 
-        if (_minioOptions.AllowedImageContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase))
+        if (_storageOptions.AllowedImageContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase))
             return true;
 
-        return _minioOptions.AllowedVideoContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase);
+        return _storageOptions.AllowedVideoContentTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase);
     }
 }

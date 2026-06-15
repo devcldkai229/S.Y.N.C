@@ -9,7 +9,7 @@ class ChallengeMapMarker extends StatelessWidget {
     this.compact = false,
   });
 
-  final MockChallenge challenge;
+  final CommunityChallenge challenge;
   final bool compact;
 
   @override

@@ -92,10 +92,10 @@ app.UseSyncJwtAuthentication();
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
 
-using (var minioScope = app.Services.CreateScope())
+using (var s3Scope = app.Services.CreateScope())
 {
-    await minioScope.ServiceProvider
-        .GetRequiredService<Social.Infrastructure.Persistence.Seed.MinioDevAssetSeeder>()
+    await s3Scope.ServiceProvider
+        .GetRequiredService<Social.Infrastructure.Persistence.Seed.S3DevAssetSeeder>()
         .SeedPlaceholdersAsync();
 }
 

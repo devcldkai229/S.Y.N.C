@@ -16,7 +16,7 @@ class ChallengeInfoCard extends StatelessWidget {
     this.compact = false,
   });
 
-  final MockChallenge challenge;
+  final CommunityChallenge challenge;
   final ChallengeJoinState joinState;
   final VoidCallback? onViewDetail;
   final VoidCallback? onViewRoute;

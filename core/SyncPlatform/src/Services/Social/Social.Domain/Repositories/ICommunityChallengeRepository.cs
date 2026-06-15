@@ -17,6 +17,16 @@ public interface ICommunityChallengeRepository : IGenericRepository<CommunityCha
         ChallengeStatus? requiredStatus = null,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<CommunityChallenge> Items, int TotalRecords)> GetBrowsablePagedAsync(
+        int pageNumber,
+        int pageSize,
+        ChallengeGoalType? goalType,
+        DateTimeOffset? startDateFrom,
+        DateTimeOffset? startDateTo,
+        DateTimeOffset? endDateFrom,
+        DateTimeOffset? endDateTo,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<CommunityChallenge> Items, int TotalRecords)> GetNearbyActiveAsync(
         double latitude,
         double longitude,

@@ -11,7 +11,7 @@ public interface IStorageService
 
     Task DeleteFileByKeyAsync(string objectKey, CancellationToken cancellationToken = default);
 
-    /// <summary>Resolves a public URL or presigned GET URL for an object key.</summary>
+    /// <summary>Stable public URL for an object key (via media proxy or direct S3 when public-read).</summary>
     string ResolveObjectUrl(string objectKey);
 
     /// <summary>Opens an object stream for proxy download.</summary>
