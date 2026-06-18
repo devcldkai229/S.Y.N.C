@@ -1,7 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:sync_app/features/marketplace/data/marketplace_catalog.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_models.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
+import 'package:sync_app/features/marketplace/widgets/marketplace_network_image.dart';
 
 class PartnerCard extends StatelessWidget {
   const PartnerCard({super.key, required this.partner, required this.onTap});
@@ -22,8 +23,9 @@ class PartnerCard extends StatelessWidget {
             if (partner.coverImageUrl != null)
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                child: CachedNetworkImage(
-                  imageUrl: partner.coverImageUrl!,
+                child: MarketplaceNetworkImage(
+                  imageUrl: partner.coverImageUrl,
+                  assetFallback: MarketplaceCatalog.kitchenPlaceholder,
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,

@@ -1,4 +1,6 @@
+using Libs.Storage.Services;
 using Social.Application.DTOs;
+using Social.Application.Helpers;
 using Social.Domain.Helpers;
 using Social.Domain.Models;
 
@@ -6,21 +8,25 @@ namespace Social.Application.Mappers;
 
 public static class SocialMapper
 {
-    public static PostDto ToDto(this Post entity, bool isLikedByMe = false) =>
+    public static PostDto ToDto(this Post entity, bool isLikedByMe = false, IMediaUrlResolver? media = null) =>
         new()
         {
             Id = entity.Id,
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt,
             AuthorId = entity.AuthorId,
-            AuthorSnapshot = new AuthorSnapshotDto
-            {
-                FullName = entity.AuthorSnapshot.FullName,
-                AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
-            },
+            AuthorSnapshot = media is null
+                ? new AuthorSnapshotDto
+                {
+                    FullName = entity.AuthorSnapshot.FullName,
+                    AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
+                }
+                : SocialMediaPresentation.ToAuthorDto(entity.AuthorSnapshot, media),
             PostType = entity.PostType,
             Content = entity.Content,
-            MediaUrls = entity.MediaUrls,
+            MediaUrls = media is null
+                ? entity.MediaUrls
+                : SocialMediaPresentation.ResolveMediaUrls(entity.MediaUrls, media),
             ReferenceId = entity.ReferenceId,
             Metrics = new PostMetricsDto
             {
@@ -108,19 +114,21 @@ public static class SocialMapper
             Status = dto.Status,
         };
 
-    public static StoryDto ToDto(this Story entity, bool isLikedByMe = false) =>
+    public static StoryDto ToDto(this Story entity, bool isLikedByMe = false, IMediaUrlResolver? media = null) =>
         new()
         {
             Id = entity.Id,
             CreatedAt = entity.CreatedAt,
             ExpiresAt = entity.ExpiresAt,
             AuthorId = entity.AuthorId,
-            AuthorSnapshot = new AuthorSnapshotDto
-            {
-                FullName = entity.AuthorSnapshot.FullName,
-                AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
-            },
-            MediaUrl = entity.MediaUrl,
+            AuthorSnapshot = media is null
+                ? new AuthorSnapshotDto
+                {
+                    FullName = entity.AuthorSnapshot.FullName,
+                    AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
+                }
+                : SocialMediaPresentation.ToAuthorDto(entity.AuthorSnapshot, media),
+            MediaUrl = media?.ResolveForDisplay(entity.MediaUrl) ?? entity.MediaUrl,
             MediaType = entity.MediaType,
             Caption = entity.Caption,
             ViewCount = entity.ViewCount,
@@ -139,7 +147,7 @@ public static class SocialMapper
             FollowedAt = entity.FollowedAt,
         };
 
-    public static CommentDto ToDto(this Comment entity) =>
+    public static CommentDto ToDto(this Comment entity, IMediaUrlResolver? media = null) =>
         new()
         {
             Id = entity.Id,
@@ -149,30 +157,36 @@ public static class SocialMapper
             Content = entity.Content,
             AuthorSnapshot = entity.AuthorSnapshot is null
                 ? null
-                : new AuthorSnapshotDto
-                {
-                    FullName = entity.AuthorSnapshot.FullName,
-                    AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
-                },
+                : media is null
+                    ? new AuthorSnapshotDto
+                    {
+                        FullName = entity.AuthorSnapshot.FullName,
+                        AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
+                    }
+                    : SocialMediaPresentation.ToAuthorDto(entity.AuthorSnapshot, media),
             ParentCommentId = entity.ParentCommentId,
         };
 
-    public static BlogDto ToDto(this Blog entity, bool isLikedByMe = false) =>
+    public static BlogDto ToDto(this Blog entity, bool isLikedByMe = false, IMediaUrlResolver? media = null) =>
         new()
         {
             Id = entity.Id,
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt,
             AuthorId = entity.AuthorId,
-            AuthorSnapshot = new AuthorSnapshotDto
-            {
-                FullName = entity.AuthorSnapshot.FullName,
-                AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
-            },
+            AuthorSnapshot = media is null
+                ? new AuthorSnapshotDto
+                {
+                    FullName = entity.AuthorSnapshot.FullName,
+                    AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
+                }
+                : SocialMediaPresentation.ToAuthorDto(entity.AuthorSnapshot, media),
             Title = entity.Title,
             Slug = entity.Slug,
-            CoverImageUrl = entity.CoverImageUrl,
-            MediaUrls = entity.MediaUrls ?? [],
+            CoverImageUrl = media?.ResolveForDisplay(entity.CoverImageUrl) ?? entity.CoverImageUrl,
+            MediaUrls = media is null
+                ? entity.MediaUrls ?? []
+                : SocialMediaPresentation.ResolveMediaUrls(entity.MediaUrls, media),
             Content = entity.Content,
             Tags = entity.Tags,
             Status = entity.Status,

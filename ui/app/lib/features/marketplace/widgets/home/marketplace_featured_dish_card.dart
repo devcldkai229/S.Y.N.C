@@ -1,9 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sync_app/features/marketplace/data/marketplace_catalog.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_home_models.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
 import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
+import 'package:sync_app/features/marketplace/widgets/marketplace_network_image.dart';
 
 class MarketplaceFeaturedRow extends StatelessWidget {
   const MarketplaceFeaturedRow({super.key, required this.dishes, required this.onDishTap});
@@ -55,8 +56,9 @@ class MarketplaceFeaturedDishCard extends StatelessWidget {
               children: [
                 Hero(
                   tag: 'marketplace-food-${item.id}',
-                  child: CachedNetworkImage(
+                  child: MarketplaceNetworkImage(
                     imageUrl: dish.imageUrl,
+                    assetFallback: MarketplaceCatalog.dishPlaceholder,
                     height: 108,
                     width: double.infinity,
                     fit: BoxFit.cover,

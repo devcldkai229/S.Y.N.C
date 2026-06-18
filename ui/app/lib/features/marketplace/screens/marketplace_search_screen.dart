@@ -1,8 +1,8 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/features/marketplace/data/marketplace_catalog.dart';
 import 'package:sync_app/features/marketplace/data/marketplace_repository.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_home_models.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_listing_filter.dart';
@@ -10,6 +10,7 @@ import 'package:sync_app/features/marketplace/models/marketplace_models.dart';
 import 'package:sync_app/features/marketplace/services/marketplace_location_service.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
 import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
+import 'package:sync_app/features/marketplace/widgets/marketplace_network_image.dart';
 import 'package:sync_app/features/order/data/checkout_remote_data_source.dart';
 import 'package:sync_app/shared/widgets/sync_shimmer_box.dart';
 
@@ -207,7 +208,13 @@ class _DishTile extends StatelessWidget {
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: image != null
-            ? CachedNetworkImage(imageUrl: image, width: 48, height: 48, fit: BoxFit.cover)
+            ? MarketplaceNetworkImage(
+                imageUrl: image,
+                assetFallback: MarketplaceCatalog.dishPlaceholder,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+              )
             : Container(
                 width: 48,
                 height: 48,

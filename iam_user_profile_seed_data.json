@@ -1,0 +1,186 @@
+{
+  "_meta": {
+    "description": "SYNC IAM achievement seed data. This file only contains Achievement records already defined by IamSeedData.GetAchievements(); no new achievement code is invented.",
+    "sourceCodeFile": "src/Services/Iam/Iam.Infrastructure/Persistence/Seed/IamSeedData.cs",
+    "generatedAt": "2026-06-15T08:30:00Z",
+    "count": 13,
+    "importOrder": [
+      "achievements"
+    ],
+    "notes": [
+      "Values of Code/Name/Description/XPReward/CoinReward/RequirementJson match existing IAM seed code.",
+      "IconUrl is resolved using DevSeedMediaUrls.Achievement(fileName): http://localhost:9000/social-assets/achievements/{fileName}."
+    ]
+  },
+  "achievements": [
+    {
+      "id": "d1000001-0000-0000-0000-000000000001",
+      "code": "FIRST_LOGIN",
+      "name": "Chào SYNC",
+      "description": "Đăng nhập lần đầu vào ứng dụng.",
+      "xpReward": 50,
+      "coinReward": 10,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/first-login.png",
+      "requirementJson": "{\"type\":\"event\",\"event\":\"user.login\",\"count\":1}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000004",
+      "code": "FIRST_WORKOUT",
+      "name": "Buổi tập đầu tiên",
+      "description": "Hoàn thành buổi tập đầu tiên trên SYNC.",
+      "xpReward": 100,
+      "coinReward": 25,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/first-workout.png",
+      "requirementJson": "{\"type\":\"event\",\"event\":\"workout.completed\",\"count\":1}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000005",
+      "code": "ROADMAP_MILESTONE",
+      "name": "Cột mốc Roadmap",
+      "description": "Hoàn thành một mốc quan trọng trên lộ trình cá nhân.",
+      "xpReward": 300,
+      "coinReward": 75,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/roadmap.png",
+      "requirementJson": "{\"type\":\"event\",\"event\":\"roadmap.milestone.completed\",\"count\":1}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000006",
+      "code": "FIRST_SOCIAL_POST",
+      "name": "Voice đầu tiên",
+      "description": "Đăng bài viết đầu tiên lên cộng đồng SYNC.",
+      "xpReward": 75,
+      "coinReward": 20,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/social-post.png",
+      "requirementJson": "{\"type\":\"event\",\"event\":\"social.post.created\",\"count\":1}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000002",
+      "code": "STREAK_7",
+      "name": "Week Warrior",
+      "description": "Duy trì streak tập luyện 7 ngày liên tiếp.",
+      "xpReward": 200,
+      "coinReward": 50,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/streak-7.png",
+      "requirementJson": "{\"type\":\"streak\",\"days\":7}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000003",
+      "code": "STREAK_30",
+      "name": "Monthly Machine",
+      "description": "Duy trì streak 30 ngày — thói quen đã hình thành.",
+      "xpReward": 1000,
+      "coinReward": 250,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/streak-30.png",
+      "requirementJson": "{\"type\":\"streak\",\"days\":30}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000007",
+      "code": "STREAK_100",
+      "name": "Streak Legend",
+      "description": "100 ngày không ngừng nghỉ — bạn là huyền thoại.",
+      "xpReward": 3000,
+      "coinReward": 1000,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/streak-100.png",
+      "requirementJson": "{\"type\":\"streak\",\"days\":100}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000008",
+      "code": "PERFECT_3",
+      "name": "Triple Threat",
+      "description": "Hoàn thành 100% mục tiêu cả ăn lẫn tập 3 ngày liên tiếp.",
+      "xpReward": 150,
+      "coinReward": 40,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/perfect-3.png",
+      "requirementJson": "{\"type\":\"perfect_days\",\"days\":3}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000009",
+      "code": "PERFECT_7",
+      "name": "Perfect Week",
+      "description": "Một tuần hoàn hảo — tập đủ, ăn đúng, không bỏ ngày nào.",
+      "xpReward": 500,
+      "coinReward": 120,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/perfect-7.png",
+      "requirementJson": "{\"type\":\"perfect_days\",\"days\":7}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000010",
+      "code": "PERFECT_30",
+      "name": "Flawless Month",
+      "description": "30 ngày hoàn hảo liên tiếp — kỷ luật tuyệt đối.",
+      "xpReward": 2000,
+      "coinReward": 600,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/perfect-30.png",
+      "requirementJson": "{\"type\":\"perfect_days\",\"days\":30}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000011",
+      "code": "LEVEL_5",
+      "name": "Rising Star",
+      "description": "Đạt cấp độ 5 — bạn đang tiến bộ thấy rõ.",
+      "xpReward": 0,
+      "coinReward": 100,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/level-5.png",
+      "requirementJson": "{\"type\":\"level\",\"level\":5}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000012",
+      "code": "LEVEL_10",
+      "name": "Dedicated Athlete",
+      "description": "Đạt cấp độ 10 — sự kiên trì của bạn đáng ngưỡng mộ.",
+      "xpReward": 0,
+      "coinReward": 300,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/level-10.png",
+      "requirementJson": "{\"type\":\"level\",\"level\":10}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    },
+    {
+      "id": "d1000001-0000-0000-0000-000000000013",
+      "code": "LEVEL_25",
+      "name": "Elite Athlete",
+      "description": "Đạt cấp độ 25 — bạn thuộc tầng lớp elite.",
+      "xpReward": 0,
+      "coinReward": 1000,
+      "iconUrl": "http://localhost:9000/social-assets/achievements/level-25.png",
+      "requirementJson": "{\"type\":\"level\",\"level\":25}",
+      "createdAt": "2026-01-15T08:00:00Z",
+      "updatedAt": "2026-06-14T08:00:00Z",
+      "deletedAt": null
+    }
+  ]
+}

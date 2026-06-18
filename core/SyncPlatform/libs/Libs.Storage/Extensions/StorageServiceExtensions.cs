@@ -15,6 +15,7 @@ public static class StorageServiceExtensions
         services.Configure<ObjectStorageOptions>(configuration.GetSection(ObjectStorageOptions.SectionName));
         services.AddAWSService<IAmazonS3>();
         services.AddSingleton<S3ObjectStorage>();
+        services.AddSingleton<IMediaUrlResolver, MediaUrlResolver>();
         return services;
     }
 }

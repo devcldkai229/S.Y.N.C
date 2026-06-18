@@ -42,6 +42,12 @@ public sealed class KitchenSeedDto
 
     public string CoverImageQuery { get; set; } = string.Empty;
 
+    [JsonPropertyName("LogoUrl")]
+    public string? LogoUrl { get; set; }
+
+    [JsonPropertyName("CoverImageUrl")]
+    public string? CoverImageUrl { get; set; }
+
     public OperatingHoursSeedDto OperatingHours { get; set; } = new();
 
     public List<DishSeedDto> Menu { get; set; } = [];
@@ -92,6 +98,9 @@ public sealed class DishSeedDto
     public string ImageQuery { get; set; } = string.Empty;
 
     public string S3Key { get; set; } = string.Empty;
+
+    [JsonPropertyName("ImageUrls")]
+    public List<string>? ImageUrls { get; set; }
 }
 
 public sealed class NutritionSeedDto

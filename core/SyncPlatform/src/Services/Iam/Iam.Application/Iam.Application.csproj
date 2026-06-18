@@ -4,6 +4,7 @@
     <ProjectReference Include="..\Iam.Domain\Iam.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Contract\Contract.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Libs.Auth\Libs.Auth.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Storage\Libs.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>

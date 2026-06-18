@@ -10,10 +10,9 @@
     "Region": "ap-southeast-1"
   },
   "Storage": {
-    "Bucket": "sync-public-assets",
+    "Bucket": "sync-objs",
     "KeyPrefix": "food_catalog/",
-    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
-    "PublicRead": true
+    "PublicRead": false
   },
   "Pexels": {
     "ApiKey": "<pexels-api-key>",

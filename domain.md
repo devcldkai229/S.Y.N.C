@@ -1,7 +1,7 @@
 # Domain Model — Sync Lifestyle Automation Platform
 
 > Trích xuất toàn bộ entities và enums từ tất cả services.  
-> Storage: **PostgreSQL** (IAM, Payment) · **MongoDB** (Exercise, Roadmap, Notification, Social) · **Go** (Biometric)
+> Storage: **PostgreSQL** (IAM, Payment, Order) · **MongoDB** (Exercise, Roadmap, Notification, Social, Marketplace, Nutrition) · **Redis** (Order — cart/tracking cache, không phải domain entity) · **Go** (Biometric)
 
 ---
 
@@ -18,13 +18,25 @@
 | UpdatedAt | DateTimeOffset? |
 | DeletedAt | DateTimeOffset? |
 
-**`BaseMongoEntity`** — dùng cho các service MongoDB (Exercise, Roadmap, Notification, Social)
+**`BaseMongoEntity`** — mỗi service MongoDB có bản kế thừa riêng (Exercise, Roadmap, Notification, Social, Marketplace, Nutrition)
 
 | Property | Type |
 |----------|------|
 | Id | Guid |
 | CreatedAt | DateTimeOffset |
 | UpdatedAt | DateTimeOffset? |
+
+### Value Objects (Shared)
+
+**`NutritionSnapshot`** — embedded trong Marketplace (`FoodMenuItem`, `AffiliateProduct`)
+
+| Property | Type |
+|----------|------|
+| Calories | int |
+| ProteinGram | decimal |
+| CarbGram | decimal |
+| FatGram | decimal |
+| ServingDescription | string? |
 
 ### Enums (Shared — dùng chung)
 
@@ -38,12 +50,15 @@
 | **RoadmapStatus** | Active=0, Paused=1, Completed=2, Abandoned=3 |
 | **SessionStatus** | Scheduled=0, Completed=1, Skipped=2, InProgress=3 |
 | **Visibility** | Public=0, Private=1 |
+| **MealType** | Breakfast=0, Lunch=1, Dinner=2, Snack=3, PreWorkout=4, PostWorkout=5 |
+| **FoodCategory** | Grains=0, Protein=1, Vegetable=2, Fruit=3, Dairy=4, Fat=5, Beverage=6, Snack=7, PreparedMeal=8, Supplement=9, FastFood=10 |
+| **DietaryTag** | Vegetarian=0, Vegan=1, Keto=2, LowCarb=3, HighProtein=4, LowFat=5, GlutenFree=6, Halal=7, DairyFree=8 |
 
 ---
 
 ## Service: IAM
 
-> PostgreSQL · `BaseAuditableEntity`
+> PostgreSQL (schema `iam`) · `BaseAuditableEntity`
 
 ### Entities
 
@@ -56,10 +71,14 @@
 | PasswordHash | string |
 | FullName | string |
 | AvatarUrl | string? |
+| BackgroundImageUrl | string? |
 | Role | UserRole |
 | Status | UserStatus |
 | SubscriptionTier | SubscriptionTier |
 | EmailVerified | bool |
+| EmailVerificationToken | string? |
+| PasswordResetToken | string? |
+| PasswordResetTokenExpiresAt | DateTimeOffset? |
 | PhoneVerified | bool |
 | PreferredLanguage | string |
 | TimeZone | string |
@@ -128,8 +147,6 @@
 | ChurnRiskScore | decimal |
 | MotivationScore | decimal |
 | RecoveryScore | decimal |
-| StressScore | decimal |
-| SleepQualityScore | decimal |
 | NutritionComplianceScore | decimal |
 | WorkoutComplianceScore | decimal |
 | PeakEnergyTimeWindow | string? |
@@ -200,8 +217,11 @@
 | PushToken | string? |
 | AppVersion | string |
 | LastSeenAt | DateTimeOffset? |
+| RefreshTokenHash | string? |
+| RefreshTokenExpiryTime | DateTimeOffset? |
+| IsRevoked | bool |
 
-**`UserVoucher`**
+**`UserVoucher`** _(IAM — inventory voucher, khác Payment.UserVoucher)_
 
 | Property | Type |
 |----------|------|
@@ -218,7 +238,7 @@
 
 ### Value Objects
 
-**`AllergyItem`** _(record)_
+**`AllergyItem`** _(record, lưu JSONB trong `UserPreference`)_
 
 | Property | Type |
 |----------|------|
@@ -247,7 +267,7 @@
 
 ## Service: Payment
 
-> PostgreSQL · `BaseAuditableEntity`
+> PostgreSQL (schema `payment`) · `BaseAuditableEntity`
 
 ### Entities
 
@@ -281,6 +301,9 @@
 | Amount | decimal |
 | Currency | string |
 | ExternalReferenceId | string? |
+| OrderCode | long |
+| Provider | PaymentProvider |
+| RawProviderPayload | string? |
 | RelatedEntityType | string? |
 | RelatedEntityId | Guid? |
 | Description | string? |
@@ -289,6 +312,7 @@
 | SpendingAuthorizationType | SpendingAuthorizationType |
 | ProcessedAt | DateTimeOffset? |
 | FailedReason | string? |
+| CouponCode | string? |
 
 **`WalletLedger`**
 
@@ -318,6 +342,7 @@
 | PriorityAiResponses | bool |
 | MaxAiAutoOrdersPerMonth | int |
 | IsActive | bool |
+| GooglePlayProductId | string? |
 
 **`UserSubscription`**
 
@@ -332,21 +357,38 @@
 | LastBillingAt | DateTimeOffset? |
 | NextBillingAt | DateTimeOffset? |
 | CancellationReason | string? |
+| ManagedBy | PaymentProvider |
+| ExternalSubscriptionId | string? |
 
 **`PromotionCampaign`**
 
 | Property | Type |
 |----------|------|
 | Name | string |
+| Description | string? |
 | PromotionType | PromotionType |
 | Value | decimal |
+| MaxDiscountAmount | decimal? |
 | CouponCode | string? |
+| PartnerId | Guid? |
+| PerUserUsageLimit | int |
 | ApplicableProductTypesJson | string? |
 | MinimumSpend | decimal |
 | UsageLimit | int |
+| UsageCount | int |
 | StartsAt | DateTimeOffset |
 | EndsAt | DateTimeOffset |
 | IsActive | bool |
+
+**`UserVoucher`** _(Payment — redemption record, khác IAM.UserVoucher)_
+
+| Property | Type |
+|----------|------|
+| UserId | Guid |
+| PromotionCampaignId | Guid |
+| IsUsed | bool |
+| UsedAt | DateTimeOffset? |
+| UsedOnOrderId | Guid? |
 
 **`PaymentWebhookEvent`**
 
@@ -370,9 +412,142 @@
 | **WalletTransactionType** | Credit=0, Debit=1, Reward=2, Purchase=3, Refund=4 |
 | **SubscriptionStatus** | Trial=0, Active=1, PastDue=2, Cancelled=3, Expired=4, Paused=5 |
 | **PromotionType** | PercentageDiscount=0, FixedDiscount=1, FreeDelivery=2, BonusCoins=3 |
-| **PaymentMethod** | Wallet=0, Momo=1 |
+| **PaymentMethod** | Wallet=0, Momo=1, COD=2, VietQR=3 |
+| **PaymentProvider** | InternalWallet=1, GooglePlay=2, PayOS=3, Momo=4 |
 | **PaymentMethodStatus** | Active=0, Expired=1, Revoked=2, PendingVerification=3 |
 | **SpendingAuthorizationType** | ManualApproval=0, AiAutoApproved=1, ThresholdApproved=2, EmergencyBlocked=3 |
+
+---
+
+## Service: Order
+
+> PostgreSQL (schema `order`) · `BaseAuditableEntity`  
+> Redis: cart, delivery addresses, tracking cache (DTO, không phải domain entity)
+
+### Entities
+
+**`Order`**
+
+| Property | Type |
+|----------|------|
+| UserId | Guid |
+| PartnerId | Guid |
+| OrderCode | string |
+| Status | OrderStatus |
+| SubtotalAmount | decimal |
+| DeliveryFee | decimal |
+| DiscountAmount | decimal |
+| TotalAmount | decimal |
+| Currency | string |
+| PaymentTransactionId | Guid? |
+| PaymentStatus | PaymentStatus |
+| VoucherId | Guid? |
+| VoucherCode | string? |
+| DeliveryAddress | string? |
+| DeliveryLat | decimal? |
+| DeliveryLng | decimal? |
+| RecipientName | string? |
+| RecipientPhone | string? |
+| Notes | string? |
+| IsAiInitiated | bool |
+| AIReasoningSnapshotJson | string? |
+| PlacedAt | DateTimeOffset |
+| ConfirmedAt | DateTimeOffset? |
+| CompletedAt | DateTimeOffset? |
+| CancelledAt | DateTimeOffset? |
+| CancellationReason | string? |
+| CancelledBy | CancelledByType? |
+| Items | ICollection\<OrderItem\> |
+
+**`OrderItem`**
+
+| Property | Type |
+|----------|------|
+| OrderId | Guid |
+| FoodMenuItemId | Guid |
+| NameSnapshot | string |
+| ImageUrlSnapshot | string? |
+| UnitPrice | decimal |
+| Quantity | int |
+| Subtotal | decimal |
+| Notes | string? |
+
+**`DeliveryTracking`**
+
+| Property | Type |
+|----------|------|
+| OrderId | Guid |
+| Provider | string |
+| ExternalDeliveryId | string? |
+| ShipperName | string? |
+| ShipperPhone | string? |
+| ShipperPlateNumber | string? |
+| Status | DeliveryStatus |
+| LastKnownLat | decimal? |
+| LastKnownLng | decimal? |
+| LastLocationUpdatedAt | DateTimeOffset? |
+| EstimatedArrivalAt | DateTimeOffset? |
+| AssignedAt | DateTimeOffset? |
+| PickedUpAt | DateTimeOffset? |
+| DeliveredAt | DateTimeOffset? |
+
+**`CommissionRecord`**
+
+| Property | Type |
+|----------|------|
+| Source | CommissionSource |
+| OrderId | Guid? |
+| PartnerId | Guid |
+| RelatedProductId | Guid? |
+| ClickToken | string? |
+| ExternalReferenceId | string? |
+| GrossAmount | decimal |
+| CommissionRate | decimal |
+| CommissionAmount | decimal |
+| Status | CommissionStatus |
+| ConfirmedAt | DateTimeOffset? |
+| PaidAt | DateTimeOffset? |
+
+**`OrderStatusHistory`**
+
+| Property | Type |
+|----------|------|
+| OrderId | Guid |
+| FromStatus | OrderStatus? |
+| ToStatus | OrderStatus |
+| ChangedBy | string |
+| Note | string? |
+
+**`OrderIdempotencyKey`**
+
+| Property | Type |
+|----------|------|
+| UserId | Guid |
+| ClientRequestKey | string |
+| OrderId | Guid |
+
+**`DeliveryWebhookEvent`**
+
+| Property | Type |
+|----------|------|
+| Provider | string |
+| ExternalEventId | string |
+| EventType | string |
+| PayloadJson | string? |
+| Processed | bool |
+| ProcessedAt | DateTimeOffset? |
+| ErrorMessage | string? |
+
+### Enums
+
+| Enum | Values |
+|------|--------|
+| **OrderStatus** | Pending=0, Confirmed=1, Preparing=2, ReadyForPickup=3, PickedUp=4, Delivering=5, Delivered=6, Completed=7, Cancelled=8, Refunded=9 |
+| **PaymentStatus** | Unpaid=0, Paid=1, Refunded=2, Failed=3 |
+| **DeliveryStatus** | Pending=0, Assigned=1, HeadingToPickup=2, ArrivedAtPickup=3, PickedUp=4, Delivering=5, Arrived=6, Completed=7, Failed=8, Cancelled=9 |
+| **CommissionSource** | FoodDelivery=0, Affiliate=1 |
+| **CommissionStatus** | Pending=0, Confirmed=1, Paid=2, Cancelled=3 |
+| **CancelledByType** | User=0, Partner=1, System=2, Ahamove=3 |
 
 ---
 
@@ -397,7 +572,7 @@
 | PrimaryMuscles | List\<string\> |
 | SecondaryMuscles | List\<string\> |
 | EquipmentRequired | List\<string\> |
-| ExerciseType | string |
+| IsCompound | bool |
 | ForceType | string |
 | MechanicType | string |
 | BodyRegion | BodyRegion |
@@ -409,9 +584,10 @@
 | MovementTags | List\<string\> |
 | AiCoachingCues | List\<string\> |
 | CommonMistakes | List\<string\> |
-| SafetyLevel | string |
 | RequiresSpotter | bool |
-| IsAiRecommended | bool |
+| SafetyLevel | string |
+| NeedsReview | bool |
+| AiEnrichedAt | DateTimeOffset? |
 | IsActive | bool |
 
 **`ExerciseMotionAsset`**
@@ -420,19 +596,13 @@
 |----------|------|
 | ExerciseId | Guid |
 | AssetType | AssetType |
-| UnityPrefabId | string? |
-| UnityAnimationClip | string? |
-| VideoUrl | string? |
+| ResourceUrl | string |
 | ThumbnailUrl | string? |
 | S3Key | string? |
-| CdnUrl | string? |
+| ThumbnailS3Key | string? |
+| UnityPrefabId | string? |
+| UnityAnimationClip | string? |
 | AnimationDurationSeconds | int |
-| CameraAngles | List\<string\> |
-| SupportsRealtimePoseOverlay | bool |
-| PoseDetectionModel | string? |
-| SupportsARMode | bool |
-| SupportedPlatforms | List\<string\> |
-| QualityVariants | List\<string\> |
 
 **`WorkoutTemplate`**
 
@@ -544,7 +714,10 @@
 |----------|------|
 | UserId | Guid |
 | WorkoutName | string |
+| CoverRoadmapImageUrl | string? |
 | Visibility | Visibility |
+| ParentWorkoutId | Guid? |
+| SavesCount | int |
 | ScheduleMode | string |
 | AllowAiOptimization | bool |
 | CustomBlocks | List\<CustomBlock\> |
@@ -599,7 +772,6 @@
 | UserId | Guid |
 | CurrentRecoveryScore | int |
 | FatigueLevel | int |
-| SleepRecoveryScore | int |
 | MuscleSorenessScore | int |
 | CnsFatigueScore | int |
 | RecommendedTrainingIntensity | string |
@@ -676,6 +848,7 @@
 | GoalType | ChallengeGoalType? |
 | PointRewards | decimal? |
 | Gifts | string[]? |
+| BackgroundUrl | string? |
 | TargetValue | decimal? |
 | ParticipantCount | int |
 | Address | string? |
@@ -799,7 +972,7 @@
 
 ### Nested types
 
-**`AuthorSnapshot`** — denormalized author display data (tránh join IAM khi load feed)
+**`AuthorSnapshot`** — denormalized author display data
 
 | Property | Type |
 |----------|------|
@@ -832,7 +1005,222 @@
 
 ## Service: Marketplace
 
-> Chưa có domain entities / enums.
+> MongoDB · `BaseMongoEntity`  
+> Enums dùng từ **Libs.Shared**: `FoodCategory`, `DietaryTag`
+
+### Entities
+
+**`Partner`**
+
+| Property | Type |
+|----------|------|
+| OwnerUserId | Guid |
+| Name | string |
+| Slug | string |
+| Type | PartnerType |
+| Description | string? |
+| LogoUrl | string? |
+| CoverImageUrl | string? |
+| Email | string |
+| PhoneNumber | string? |
+| Address | string? |
+| Location | GeoJsonPoint\<GeoJson2DGeographicCoordinates\>? |
+| ServiceRadiusKm | decimal? |
+| OperatingHours | List\<OperatingHour\> |
+| CommissionRate | decimal |
+| Status | PartnerStatus |
+| RatingAverage | decimal |
+| RatingCount | int |
+| IsAiRecommendable | bool |
+
+**`Partner.OperatingHour`** _(nested)_
+
+| Property | Type |
+|----------|------|
+| DayOfWeek | int |
+| OpenTime | string |
+| CloseTime | string |
+| IsClosed | bool |
+
+**`FoodMenuItem`**
+
+| Property | Type |
+|----------|------|
+| PartnerId | Guid |
+| NameVi | string |
+| NameEn | string |
+| Slug | string |
+| Description | string |
+| ImageUrls | List\<string\> |
+| Category | FoodCategory |
+| Price | decimal |
+| Currency | string |
+| PrepTimeMinutes | int |
+| Nutrition | NutritionSnapshot |
+| DietaryTags | List\<DietaryTag\> |
+| SpiceLevel | SpiceLevel |
+| Availability | AvailabilityStatus |
+| IsAiRecommended | bool |
+| RatingAverage | decimal |
+| RatingCount | int |
+
+**`AffiliateProduct`**
+
+| Property | Type |
+|----------|------|
+| PartnerId | Guid? |
+| BrandName | string |
+| NameVi | string |
+| NameEn | string |
+| Slug | string |
+| Description | string |
+| ImageUrls | List\<string\> |
+| Category | AffiliateCategory |
+| Price | decimal |
+| Currency | string |
+| AffiliateUrl | string |
+| ExternalProductId | string? |
+| CommissionRate | decimal |
+| Nutrition | NutritionSnapshot? |
+| DietaryTags | List\<DietaryTag\>? |
+| Availability | AvailabilityStatus |
+| RatingAverage | decimal |
+| RatingCount | int |
+
+**`AffiliateClickEvent`**
+
+| Property | Type |
+|----------|------|
+| UserId | Guid |
+| AffiliateProductId | Guid |
+| PartnerId | Guid? |
+| ClickToken | string |
+| Source | string |
+| ClickedAt | DateTimeOffset |
+
+**`Review`**
+
+| Property | Type |
+|----------|------|
+| UserId | Guid |
+| AuthorSnapshot | AuthorSnapshot |
+| TargetType | ReviewTargetType |
+| TargetId | Guid |
+| Rating | int |
+| Comment | string? |
+| ImageUrls | List\<string\>? |
+| OrderId | Guid? |
+| IsVerifiedPurchase | bool |
+| PartnerReply | string? |
+
+### Nested types
+
+**`AuthorSnapshot`** _(Marketplace)_
+
+| Property | Type |
+|----------|------|
+| FullName | string |
+| AvatarUrl | string? |
+
+### Enums
+
+| Enum | Values |
+|------|--------|
+| **PartnerType** | CloudKitchen=0, Restaurant=1, AffiliateBrand=2 |
+| **PartnerStatus** | PendingApproval=0, Active=1, Suspended=2, Closed=3 |
+| **AvailabilityStatus** | Available=0, SoldOut=1, Hidden=2 |
+| **SpiceLevel** | None=0, Mild=1, Medium=2, Hot=3 |
+| **AffiliateCategory** | Supplement=0, Equipment=1, Apparel=2, Accessory=3, Wearable=4, Other=5 |
+| **ReviewTargetType** | Partner=0, FoodMenuItem=1, AffiliateProduct=2 |
+
+---
+
+## Service: Nutrition
+
+> MongoDB · `BaseMongoEntity`  
+> Enums dùng từ **Libs.Shared**: `MealType`, `FoodCategory`, `DietaryTag`
+
+### Entities
+
+**`FoodItem`**
+
+| Property | Type |
+|----------|------|
+| NameVi | string |
+| NameEn | string |
+| Slug | string |
+| Category | FoodCategory |
+| Brand | string? |
+| Barcode | string? |
+| ServingSizeGram | decimal |
+| ServingDescription | string? |
+| CaloriesPer100g | int |
+| ProteinPer100g | decimal |
+| CarbPer100g | decimal |
+| FatPer100g | decimal |
+| FiberPer100g | decimal? |
+| SugarPer100g | decimal? |
+| SodiumMgPer100g | decimal? |
+| DietaryTags | List\<DietaryTag\> |
+| ImageUrl | string? |
+| Source | FoodDataSource |
+| MarketplaceItemId | Guid? |
+| IsVerified | bool |
+| IsActive | bool |
+
+**`MealLog`**
+
+| Property | Type |
+|----------|------|
+| UserId | Guid |
+| MealType | MealType |
+| LoggedAt | DateTimeOffset |
+| Source | MealLogSource |
+| Items | List\<MealLogItem\> |
+| TotalCalories | int |
+| TotalProteinGram | decimal |
+| TotalCarbGram | decimal |
+| TotalFatGram | decimal |
+| PhotoUrl | string? |
+| Notes | string? |
+| RelatedOrderId | Guid? |
+
+**`MealLog.MealLogItem`** _(nested)_
+
+| Property | Type |
+|----------|------|
+| FoodItemId | Guid? |
+| FoodNameSnapshot | string |
+| QuantityGram | decimal |
+| Calories | int |
+| ProteinGram | decimal |
+| CarbGram | decimal |
+| FatGram | decimal |
+
+**`DailyNutritionSummary`**
+
+| Property | Type |
+|----------|------|
+| UserId | Guid |
+| Date | DateOnly |
+| TargetCalories | int |
+| ConsumedCalories | int |
+| TargetProteinGram | decimal |
+| ConsumedProteinGram | decimal |
+| TargetCarbGram | decimal |
+| ConsumedCarbGram | decimal |
+| TargetFatGram | decimal |
+| ConsumedFatGram | decimal |
+| WaterIntakeMl | int |
+| MealsLoggedCount | int |
+
+### Enums
+
+| Enum | Values |
+|------|--------|
+| **FoodDataSource** | System=0, UserSubmitted=1, Marketplace=2, External=3 |
+| **MealLogSource** | Manual=0, BarcodeScan=1, FromMarketplaceOrder=2, AiSuggested=3 |
+| **MeasurementUnit** | Gram=0, Milliliter=1, Serving=2, Piece=3, Cup=4, Tablespoon=5, Bowl=6 |
 
 ---
 
@@ -844,13 +1232,18 @@
 
 ## Thống kê
 
-| Service | Entities | Nested types | Enums |
-|---------|----------|--------------|-------|
-| Libs.Shared | 2 base | — | 8 |
-| IAM | 10 + 1 value object | — | 12 |
-| Payment | 7 | — | 8 |
-| Exercise | 3 | 1 | 0 (dùng Shared) |
-| Roadmap | 7 | 2 | 0 (dùng Shared) |
-| Notification | 2 | — | 4 |
-| Social | 12 | 2 | 9 |
-| **Total** | **43** | **5** | **41** |
+| Service | DB | Entities | Nested / Embedded | Enums |
+|---------|-----|----------|-------------------|-------|
+| Libs.Shared | — | 2 base + 1 VO | — | 11 |
+| IAM | PostgreSQL | 10 | 1 (`AllergyItem`) | 12 |
+| Payment | PostgreSQL | 8 | — | 9 |
+| Order | PostgreSQL | 7 | — | 6 |
+| Exercise | MongoDB | 3 | 1 | 0 (dùng Shared) |
+| Roadmap | MongoDB | 7 | 2 | 0 (dùng Shared) |
+| Notification | MongoDB | 2 | — | 4 |
+| Social | MongoDB | 12 | 2 | 9 |
+| Marketplace | MongoDB | 5 | 2 | 6 |
+| Nutrition | MongoDB | 3 | 1 | 3 |
+| **Total** | | **57 root entities** | **10** | **50** |
+
+> **Lưu ý:** `UserVoucher` tồn tại ở cả **IAM** (inventory voucher) và **Payment** (redemption record) — hai entity khác nhau, database khác nhau.

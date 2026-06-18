@@ -8,8 +8,8 @@ public class StorageOptions
 
     public string KeyPrefix { get; set; } = "food_catalog/";
 
-    /// <summary>Gateway media base, e.g. http://localhost:5057/api/v1/media</summary>
-    public string PublicBaseUrl { get; set; } = "http://localhost:5057/api/v1/media";
+    /// <summary>Gateway media base, e.g. http://localhost:5057/api/v1/media. Empty = direct S3 URL.</summary>
+    public string PublicBaseUrl { get; set; } = string.Empty;
 
     /// <summary>Public bucket — stored ImageUrls use stable gateway URLs, no presign.</summary>
     public bool PublicRead { get; set; } = true;

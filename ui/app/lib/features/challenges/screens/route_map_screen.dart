@@ -17,6 +17,8 @@ import 'package:sync_app/features/challenges/widgets/challenge_info_card.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_join_flow.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_map_marker.dart';
 import 'package:sync_app/features/challenges/widgets/route_callout_marker.dart';
+import 'package:sync_app/features/order/utils/map_pin_bitmap_factory.dart';
+import 'package:sync_app/features/order/widgets/tracking_map_pin.dart';
 
 class RouteMapScreen extends StatefulWidget {
   const RouteMapScreen({
@@ -42,6 +44,7 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
   List<LatLng> _walkingConnector = [];
   LatLng? _userPoint;
   LatLng? _calloutPoint;
+  String? _calloutImageId;
 
   CommunityChallenge? _challenge;
   bool _loadingChallenge = true;
@@ -79,6 +82,7 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
       _walkingConnector = [];
       _routeInfo = null;
       _calloutPoint = null;
+      _calloutImageId = null;
     });
 
     try {
@@ -108,16 +112,19 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
       final connector = gapM >= 30 ? [points.last, destination] : <LatLng>[];
 
       if (!mounted) return;
+      final calloutId = await _mapKey.currentState?.registerRouteCalloutImage(modeRoute);
       setState(() {
         _userPoint = userPoint;
         _routeInfo = modeRoute;
         _routePoints = points;
         _walkingConnector = connector;
         _calloutPoint = polylineMidpoint(points);
+        _calloutImageId = calloutId;
         _loadingRoute = false;
       });
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapKey.currentState?.refreshAnnotations();
         _mapKey.currentState?.fitToPoints([
           userPoint,
           destination,
@@ -145,44 +152,61 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
     if (userPoint == null) return [];
 
     final info = _routeInfo;
-    final calloutLabel = info == null
-        ? null
-        : '🛵 Xe máy\n${info.distanceLabel} · ${info.durationLabel}';
-
     final markers = <MapMarkerData>[
       MapMarkerData(
         id: 'origin',
         point: userPoint,
-        alignment: Alignment.center,
-        width: 40,
-        height: 40,
-        annotationIsCircle: true,
-        annotationColor: const Color(0xFF2563EB),
-        child: const _OriginMarker(),
+        alignment: Alignment.bottomCenter,
+        width: 88,
+        height: 64,
+        iconImageId: MapPinBitmapFactory.challengeOriginImageId,
+        child: const TrackingMapPin(
+          icon: Icons.person_pin_circle_rounded,
+          label: 'Bạn',
+          color: Color(0xFF2563EB),
+        ),
       ),
       MapMarkerData(
         id: 'destination',
         point: challenge.location,
-        alignment: Alignment.center,
-        width: 44,
-        height: 44,
-        annotationLabel: challenge.goalEmoji,
-        child: ChallengeMapMarker(challenge: challenge, compact: true),
+        alignment: Alignment.bottomCenter,
+        width: 88,
+        height: 64,
+        iconImageId: MapPinBitmapFactory.challengeDestinationImageId,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ChallengeMapMarker(challenge: challenge, compact: true),
+            const SizedBox(height: 2),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.35)),
+              ),
+              child: const Text(
+                'Tụ tập',
+                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.primaryGreen),
+              ),
+            ),
+          ],
+        ),
         onTap: () => setState(() => _showInfoCard = true),
       ),
     ];
 
     final callout = _calloutPoint;
-    if (callout != null && calloutLabel != null) {
+    if (callout != null && info != null) {
       markers.add(
         MapMarkerData(
           id: 'route-callout',
           point: callout,
           alignment: Alignment.bottomCenter,
-          width: 180,
-          height: 72,
-          annotationLabel: calloutLabel,
-          child: RouteCalloutMarker(routeInfo: info!),
+          width: 168,
+          height: 56,
+          iconImageId: _calloutImageId,
+          child: RouteCalloutMarker(routeInfo: info),
         ),
       );
     }
@@ -373,30 +397,6 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _OriginMarker extends StatelessWidget {
-  const _OriginMarker();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 16,
-      height: 16,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color(0xFF2563EB),
-        border: Border.all(color: Colors.white, width: 2.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
           ),
         ],
       ),

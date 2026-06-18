@@ -1,3 +1,4 @@
+using Libs.Storage.Services;
 using Social.Application.Common;
 using Social.Application.DTOs;
 using Social.Application.Exceptions;
@@ -15,11 +16,13 @@ public class BlogService : IBlogService
 
     private readonly IBlogRepository _blogs;
     private readonly IBlogInteractionRepository _interactions;
+    private readonly IMediaUrlResolver _media;
 
-    public BlogService(IBlogRepository blogs, IBlogInteractionRepository interactions)
+    public BlogService(IBlogRepository blogs, IBlogInteractionRepository interactions, IMediaUrlResolver media)
     {
         _blogs = blogs;
         _interactions = interactions;
+        _media = media;
     }
 
     public async Task<BlogDto> CreateAsync(
@@ -50,7 +53,7 @@ public class BlogService : IBlogService
         };
 
         await _blogs.CreateAsync(blog, cancellationToken);
-        return blog.ToDto(isLikedByMe: false);
+        return blog.ToDto(isLikedByMe: false, media: _media);
     }
 
     public async Task<BlogDto> UpdateAsync(
@@ -91,7 +94,7 @@ public class BlogService : IBlogService
             InteractionType.Like,
             cancellationToken);
 
-        return blog.ToDto(isLiked);
+        return blog.ToDto(isLiked, _media);
     }
 
     public async Task<BlogDto> PublishAsync(
@@ -117,7 +120,7 @@ public class BlogService : IBlogService
             InteractionType.Like,
             cancellationToken);
 
-        return blog.ToDto(isLiked);
+        return blog.ToDto(isLiked, _media);
     }
 
     public async Task<BlogDto> ArchiveAsync(
@@ -142,7 +145,7 @@ public class BlogService : IBlogService
             InteractionType.Like,
             cancellationToken);
 
-        return blog.ToDto(isLiked);
+        return blog.ToDto(isLiked, _media);
     }
 
     public async Task DeleteAsync(
@@ -176,7 +179,7 @@ public class BlogService : IBlogService
         var isLiked = viewerId.HasValue &&
             await _interactions.HasInteractionAsync(blogId, viewerId.Value, InteractionType.Like, cancellationToken);
 
-        return blog.ToDto(isLiked);
+        return blog.ToDto(isLiked, _media);
     }
 
     public async Task<BlogDto> GetBySlugAsync(
@@ -195,7 +198,7 @@ public class BlogService : IBlogService
         var isLiked = viewerId.HasValue &&
             await _interactions.HasInteractionAsync(blog.Id, viewerId.Value, InteractionType.Like, cancellationToken);
 
-        return blog.ToDto(isLiked);
+        return blog.ToDto(isLiked, _media);
     }
 
     public async Task<(IReadOnlyList<BlogDto> Items, PaginationMetadata Pagination)> GetPublishedFeedAsync(
@@ -217,7 +220,7 @@ public class BlogService : IBlogService
             : [];
 
         var dtos = items
-            .Select(b => b.ToDto(likedIds.Contains(b.Id)))
+            .Select(b => b.ToDto(likedIds.Contains(b.Id), _media))
             .ToList();
 
         return (dtos, BuildPagination(pageNumber, pageSize, total));
@@ -239,7 +242,7 @@ public class BlogService : IBlogService
         var likedIds = await _interactions.GetLikedBlogIdsAsync(viewerId, items.Select(x => x.Id), cancellationToken);
 
         var dtos = items
-            .Select(b => b.ToDto(likedIds.Contains(b.Id)))
+            .Select(b => b.ToDto(likedIds.Contains(b.Id), _media))
             .ToList();
 
         return (dtos, BuildPagination(pageNumber, pageSize, total));

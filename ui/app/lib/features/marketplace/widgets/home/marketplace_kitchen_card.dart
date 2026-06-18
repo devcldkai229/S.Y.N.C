@@ -1,9 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sync_app/features/marketplace/data/marketplace_catalog.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_home_models.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
 import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
+import 'package:sync_app/features/marketplace/widgets/marketplace_network_image.dart';
 
 class MarketplaceKitchenCard extends StatelessWidget {
   const MarketplaceKitchenCard({super.key, required this.kitchen, required this.onTap});
@@ -29,8 +30,9 @@ class MarketplaceKitchenCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                CachedNetworkImage(
-                  imageUrl: p.coverImageUrl ?? 'https://picsum.photos/seed/sync-kitchen-fallback/800/320',
+                MarketplaceNetworkImage(
+                  imageUrl: p.coverImageUrl,
+                  assetFallback: MarketplaceCatalog.kitchenPlaceholder,
                   height: 140,
                   width: double.infinity,
                   fit: BoxFit.cover,
@@ -69,8 +71,9 @@ class MarketplaceKitchenCard extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: CachedNetworkImage(
-                      imageUrl: p.logoUrl ?? 'https://picsum.photos/seed/sync-logo-fallback/80/80',
+                    child: MarketplaceNetworkImage(
+                      imageUrl: p.logoUrl,
+                      assetFallback: MarketplaceCatalog.kitchenPlaceholder,
                       width: 44,
                       height: 44,
                       fit: BoxFit.cover,

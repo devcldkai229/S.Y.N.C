@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:maplibre_gl/maplibre_gl.dart' as ml;
 import 'package:sync_app/core/config/aws_map_config.dart';
+import 'package:sync_app/features/challenges/models/challenge_route_models.dart';
 import 'package:sync_app/features/order/utils/map_pin_bitmap_factory.dart';
 
 const _pickerCenterMinMoveMeters = 12.0;
@@ -267,6 +268,13 @@ class AwsLocationMapState extends State<AwsLocationMap> {
     );
   }
 
+  /// Registers a route-distance callout bitmap for MapLibre and returns its image id.
+  Future<String?> registerRouteCalloutImage(TravelModeRouteInfo info) async {
+    final controller = _mapLibreController;
+    if (controller == null || !_mapLibreStyleReady) return null;
+    return MapPinBitmapFactory.registerRouteCallout(controller, info);
+  }
+
   /// Forces MapLibre circles/symbols to match current [AwsLocationMap.markers].
   void refreshAnnotations() {
     if (_useVectorMap && _mapLibreStyleReady) {
@@ -512,10 +520,13 @@ class AwsLocationMapState extends State<AwsLocationMap> {
   Future<void> _upsertStaticMarker(MapMarkerData marker) async {
     final existing = _markerHandles[marker.id];
     if (existing != null && !existing.isDynamic) {
-      if (!existing.samePoint(marker.point)) {
-        await updateMarkerPosition(marker.id, marker.point);
+      if (existing.sameMarker(marker)) {
+        if (!existing.samePoint(marker.point)) {
+          await updateMarkerPosition(marker.id, marker.point);
+        }
+        return;
       }
-      return;
+      await _removeMarkerHandle(marker.id);
     }
     await _createMarkerHandle(marker, isDynamic: false);
   }
@@ -535,7 +546,7 @@ class AwsLocationMapState extends State<AwsLocationMap> {
         ml.SymbolOptions(
           geometry: _toMl(marker.point),
           iconImage: marker.iconImageId,
-          iconSize: 1.0,
+          iconSize: marker.id == 'route-callout' ? 1.05 : 1.0,
           iconAnchor: 'bottom',
         ),
       );
@@ -860,6 +871,11 @@ class _MarkerHandle {
   bool samePoint(LatLng other) =>
       (point.latitude - other.latitude).abs() <= 1e-9 &&
       (point.longitude - other.longitude).abs() <= 1e-9;
+
+  bool sameMarker(MapMarkerData other) =>
+      markerData?.iconImageId == other.iconImageId &&
+      markerData?.annotationLabel == other.annotationLabel &&
+      markerData?.annotationIsCircle == other.annotationIsCircle;
 }
 
 ml.LatLngBounds _boundsFromPoints(List<LatLng> points) {

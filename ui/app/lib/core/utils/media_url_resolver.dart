@@ -40,6 +40,23 @@ abstract final class MediaUrlResolver {
   }
 
   static String? _extractObjectPath(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri != null && uri.host.contains('amazonaws.com')) {
+      final host = uri.host;
+      final objectKey = uri.path.replaceFirst(RegExp(r'^/+'), '');
+
+      final s3Marker = '.s3';
+      final s3Index = host.indexOf(s3Marker);
+      if (s3Index > 0 && objectKey.isNotEmpty) {
+        final bucket = host.substring(0, s3Index);
+        return '$bucket/$objectKey';
+      }
+
+      if ((host.startsWith('s3.') || host.startsWith('s3-')) && objectKey.contains('/')) {
+        return objectKey;
+      }
+    }
+
     for (final bucket in [publicBucket, privateBucket]) {
       final bucketSegment = '/$bucket/';
       final bucketIndex = url.indexOf(bucketSegment);

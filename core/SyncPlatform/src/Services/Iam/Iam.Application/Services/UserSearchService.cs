@@ -2,6 +2,7 @@ using Iam.Application.Common;
 using Iam.Application.DTOs;
 using Iam.Domain.Enums;
 using Iam.Domain.Repositories;
+using Libs.Storage.Services;
 
 namespace Iam.Application.Services;
 
@@ -10,10 +11,12 @@ public class UserSearchService : IUserSearchService
     private const int MaxPageSize = 50;
 
     private readonly IUserRepository _users;
+    private readonly IMediaUrlResolver _media;
 
-    public UserSearchService(IUserRepository users)
+    public UserSearchService(IUserRepository users, IMediaUrlResolver media)
     {
         _users = users;
+        _media = media;
     }
 
     public async Task<(IReadOnlyList<UserSearchItemDto> Items, PaginationMetadata Pagination)> SearchAsync(
@@ -41,7 +44,7 @@ public class UserSearchService : IUserSearchService
             {
                 Id = u.Id,
                 FullName = u.FullName,
-                AvatarUrl = u.AvatarUrl,
+                AvatarUrl = _media.ResolveForDisplay(u.AvatarUrl),
             })
             .ToList();
 

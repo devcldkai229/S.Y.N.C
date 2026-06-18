@@ -5,6 +5,7 @@ import 'package:sync_app/features/marketplace/utils/marketplace_cart_helpers.dar
 import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_models.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
+import 'package:sync_app/features/marketplace/widgets/marketplace_network_image.dart';
 import 'package:sync_app/features/marketplace/widgets/rating_stars.dart';
 
 class FoodMenuItemDetailScreen extends StatefulWidget {
@@ -63,12 +64,14 @@ class _FoodMenuItemDetailScreenState extends State<FoodMenuItemDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Container(
-            height: 200,
-            decoration: MarketplaceTheme.cardDecoration(),
-            child: item.imageUrls.isNotEmpty
-                ? Image.network(item.imageUrls.first, fit: BoxFit.cover)
-                : const Icon(Icons.restaurant, size: 64, color: MarketplaceTheme.primary),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: MarketplaceNetworkImage(
+              imageUrl: item.imageUrls.isNotEmpty ? item.imageUrls.first : null,
+              height: 200,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
           ),
           const SizedBox(height: 12),
           Row(

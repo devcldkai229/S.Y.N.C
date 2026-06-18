@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Marketplace.Infrastructure\Marketplace.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Seed\Libs.Seed.csproj" />
   </ItemGroup>
 
   <ItemGroup>

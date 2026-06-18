@@ -85,7 +85,7 @@ public sealed class SeedMarketplaceRunner
             logoKey,
             kitchen.LogoImageQuery,
             "square",
-            existing?.LogoUrl,
+            null,
             report,
             cancellationToken);
 
@@ -93,7 +93,7 @@ public sealed class SeedMarketplaceRunner
             coverKey,
             kitchen.CoverImageQuery,
             "landscape",
-            existing?.CoverImageUrl,
+            null,
             report,
             cancellationToken);
 
@@ -144,7 +144,7 @@ public sealed class SeedMarketplaceRunner
             s3Key,
             dish.ImageQuery,
             "landscape",
-            existingDish?.ImageUrls.FirstOrDefault(),
+            null,
             report,
             cancellationToken);
 

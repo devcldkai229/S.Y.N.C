@@ -244,50 +244,37 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
   Future<bool> _handleVietQrPayment(PlaceOrderResult result) async {
     if (!mounted) return false;
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Quét VietQR để thanh toán', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-            const SizedBox(height: 12),
-            if (result.qrCode != null && result.qrCode!.isNotEmpty)
-              SelectableText(result.qrCode!, style: const TextStyle(fontSize: 11)),
-            const SizedBox(height: 12),
-            if (result.checkoutUrl != null)
-              FilledButton(
-                onPressed: () async {
-                  final uri = Uri.parse(result.checkoutUrl!);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  }
-                },
-                child: const Text('Mở trang thanh toán PayOS'),
-              ),
-            const SizedBox(height: 8),
-            const Text('Sau khi chuyển khoản, giữ màn hình này để hệ thống xác nhận.', textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-    return _pollUntilPaid(result.order.id);
-  }
 
-  Future<bool> _pollUntilPaid(String orderId) async {
-    const attempts = 20;
-    for (var i = 0; i < attempts; i++) {
-      await Future<void>.delayed(const Duration(seconds: 3));
-      try {
-        final order = await _orderApi.getOrder(orderId);
-        if (order.paymentStatus == 'Paid' || order.status == 'Confirmed') {
-          return true;
-        }
-      } catch (_) {}
+    final paymentUrl = result.checkoutUrl ?? result.payUrl;
+    if (paymentUrl == null || paymentUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không nhận được liên kết thanh toán.')),
+      );
+      return false;
     }
-    return false;
+
+    final uri = Uri.parse(paymentUrl);
+    if (!await canLaunchUrl(uri)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể mở trang thanh toán.')),
+      );
+      return false;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+
+    if (!mounted) return false;
+    return await showModalBottomSheet<bool>(
+          context: context,
+          isDismissible: false,
+          enableDrag: false,
+          isScrollControlled: true,
+          builder: (ctx) => _VietQrPaymentWaitingSheet(
+            orderId: result.order.id,
+            paymentUrl: paymentUrl,
+            orderApi: _orderApi,
+          ),
+        ) ??
+        false;
   }
 
   @override
@@ -413,6 +400,89 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                 : Text('Đặt hàng · ${MarketplaceFormatters.formatVnd(total)}'),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _VietQrPaymentWaitingSheet extends StatefulWidget {
+  const _VietQrPaymentWaitingSheet({
+    required this.orderId,
+    required this.paymentUrl,
+    required this.orderApi,
+  });
+
+  final String orderId;
+  final String paymentUrl;
+  final OrderRemoteDataSource orderApi;
+
+  @override
+  State<_VietQrPaymentWaitingSheet> createState() => _VietQrPaymentWaitingSheetState();
+}
+
+class _VietQrPaymentWaitingSheetState extends State<_VietQrPaymentWaitingSheet> {
+  @override
+  void initState() {
+    super.initState();
+    _pollUntilPaid();
+  }
+
+  Future<void> _pollUntilPaid() async {
+    const attempts = 20;
+    for (var i = 0; i < attempts; i++) {
+      await Future<void>.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
+      try {
+        final order = await widget.orderApi.getOrder(widget.orderId);
+        if (order.paymentStatus == 'Paid' || order.status == 'Confirmed') {
+          if (mounted) Navigator.of(context).pop(true);
+          return;
+        }
+      } catch (_) {}
+    }
+    if (mounted) Navigator.of(context).pop(false);
+  }
+
+  Future<void> _reopenPaymentPage() async {
+    final uri = Uri.parse(widget.paymentUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: 20 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(
+            width: 28,
+            height: 28,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Đang chờ xác nhận thanh toán...',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Hoàn tất thanh toán trên trình duyệt. Giữ màn hình này để hệ thống xác nhận.',
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: _reopenPaymentPage,
+            child: const Text('Mở lại trang thanh toán'),
+          ),
+        ],
       ),
     );
   }
