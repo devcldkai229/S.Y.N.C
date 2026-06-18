@@ -96,8 +96,8 @@ public sealed class AhamoveAdapter : IDeliveryProvider
                 ["requests"] = Array.Empty<object>(),
             };
 
-            // Ahamove Partner API v3: POST {BaseUrl}/orders/create
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/orders/create");
+            // Ahamove Partner API v3: POST {BaseUrl}/orders
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{baseUrl}/orders");
             httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {token}");
             httpRequest.Content = new StringContent(
                 JsonSerializer.Serialize(orderBody),

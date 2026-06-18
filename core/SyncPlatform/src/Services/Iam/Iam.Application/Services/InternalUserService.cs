@@ -1,15 +1,18 @@
 using Iam.Application.DTOs;
 using Iam.Domain.Repositories;
+using Libs.Storage.Services;
 
 namespace Iam.Application.Services;
 
 public class InternalUserService : IInternalUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IMediaUrlResolver _media;
 
-    public InternalUserService(IUserRepository userRepository)
+    public InternalUserService(IUserRepository userRepository, IMediaUrlResolver media)
     {
         _userRepository = userRepository;
+        _media = media;
     }
 
     public async Task<InternalAuthorSnapshotDto?> GetAuthorSnapshotAsync(
@@ -23,7 +26,7 @@ public class InternalUserService : IInternalUserService
         return new InternalAuthorSnapshotDto
         {
             FullName = user.FullName,
-            AvatarUrl = user.AvatarUrl,
+            AvatarUrl = _media.ResolveForDisplay(user.AvatarUrl),
         };
     }
 }

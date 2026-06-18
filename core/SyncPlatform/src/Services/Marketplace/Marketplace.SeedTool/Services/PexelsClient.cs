@@ -98,6 +98,8 @@ public sealed class PexelsClient
         {
             try
             {
+                await Task.Delay(_options.MinDelayMs, cancellationToken);
+
                 using var request = new HttpRequestMessage(
                     HttpMethod.Get,
                     $"{SearchUrl}?query={Uri.EscapeDataString(query)}&per_page=3&orientation={orientation}");
@@ -107,7 +109,8 @@ public sealed class PexelsClient
                 using var response = await _http.SendAsync(request, cancellationToken);
                 if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                 {
-                    var retryAfter = response.Headers.RetryAfter?.Delta ?? TimeSpan.FromSeconds(2 * attempt);
+                    var retryAfter = response.Headers.RetryAfter?.Delta
+                        ?? TimeSpan.FromSeconds(Math.Min(60, 5 * attempt));
                     _logger.LogWarning("Pexels rate limited; waiting {Seconds}s", retryAfter.TotalSeconds);
                     await Task.Delay(retryAfter, cancellationToken);
                     continue;
@@ -130,10 +133,7 @@ public sealed class PexelsClient
                     {
                         var imageUrl = large.GetString();
                         if (!string.IsNullOrWhiteSpace(imageUrl))
-                        {
-                            await Task.Delay(_options.MinDelayMs, cancellationToken);
                             return imageUrl;
-                        }
                     }
 
                     _logger.LogWarning("Pexels returned no photos for '{Query}'", query);

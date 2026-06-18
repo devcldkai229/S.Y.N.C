@@ -1,0 +1,16 @@
+{
+  "ConnectionStrings": {
+    "SocialDatabase": "mongodb://localhost:27018"
+  },
+  "MongoDB": {
+    "SocialDatabaseName": "sync_social"
+  },
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-objs",
+    "PublicRead": false
+  }
+}

@@ -1,0 +1,1689 @@
+{
+  "_meta": {
+    "collection": "posts",
+    "count": 80,
+    "generatedAt": "2026-06-15"
+  },
+  "posts": [
+    {
+      "id": "da73e0ee-48bf-565e-9f6f-72af0ad3ba48",
+      "createdAt": "2026-06-11T12:59:35Z",
+      "updatedAt": null,
+      "authorId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Hôm nay thử tăng mức tạ cho squat, không PR gì lớn nhưng form ổn hơn tuần trước. Nhìn lại video mới thấy mình xuống sâu hơn rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 7,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00001"
+    },
+    {
+      "id": "ae358009-6476-5084-8efd-13970c8a44f4",
+      "createdAt": "2026-05-12T13:27:51Z",
+      "updatedAt": null,
+      "authorId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Tập plank 3 hiệp, mỗi hiệp 45 giây. Ngắn thôi nhưng bụng run thật sự. Ai có tip giữ hông không bị sụp không? Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 6,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": false,
+      "shareCode": "SOC00002"
+    },
+    {
+      "id": "bbb4850b-22b8-5562-86b4-026fa925d9b2",
+      "createdAt": "2026-05-29T12:39:11Z",
+      "updatedAt": null,
+      "authorId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Cuối tuần này có ai muốn join thử thách đi bộ 10k bước quanh phố đi bộ không? Tập nhẹ mà vui. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 4,
+        "commentCount": 2,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00003"
+    },
+    {
+      "id": "84973550-1313-5982-a617-210e01db9ff2",
+      "createdAt": "2026-06-01T06:23:16Z",
+      "updatedAt": null,
+      "authorId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "postType": "StreakShare",
+      "content": "Buổi cardio zone 2 hôm nay khá ổn. Không đuối, không quá sung, vừa đủ để thấy mình đang xây nền.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 12,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00004"
+    },
+    {
+      "id": "ea991a0a-57b6-5265-93e6-6cb24adbe6ed",
+      "createdAt": "2026-06-11T10:37:46Z",
+      "updatedAt": null,
+      "authorId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Tập plank 3 hiệp, mỗi hiệp 45 giây. Ngắn thôi nhưng bụng run thật sự. Ai có tip giữ hông không bị sụp không?",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 9,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00005"
+    },
+    {
+      "id": "a8c8834c-0c13-500b-877e-80605f148365",
+      "createdAt": "2026-06-06T22:44:12Z",
+      "updatedAt": null,
+      "authorId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Cuối tuần này có ai muốn join thử thách đi bộ 10k bước quanh phố đi bộ không? Tập nhẹ mà vui. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00006"
+    },
+    {
+      "id": "9ba0d58b-f5dc-5227-b06a-eedb9201aa48",
+      "createdAt": "2026-05-23T03:48:50Z",
+      "updatedAt": null,
+      "authorId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai có món healthy nào dễ ăn mà không bị khô không? Ức gà ăn 3 ngày là bắt đầu hơi ngán rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00007"
+    },
+    {
+      "id": "1b23d065-93a2-5e37-b3b1-7f8c0bd1efde",
+      "createdAt": "2026-06-01T04:46:40Z",
+      "updatedAt": null,
+      "authorId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Sáng nay dậy hơi lười nhưng vẫn kéo được 35 phút upper body. Có ai cũng hay bị khó bắt đầu hơn là khó tập không?",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 6,
+        "commentCount": 4,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00008"
+    },
+    {
+      "id": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "createdAt": "2026-05-16T02:40:15Z",
+      "updatedAt": null,
+      "authorId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "postType": "StreakShare",
+      "content": "Hôm nay thử tăng mức tạ cho squat, không PR gì lớn nhưng form ổn hơn tuần trước. Nhìn lại video mới thấy mình xuống sâu hơn rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 14,
+        "commentCount": 8,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00009"
+    },
+    {
+      "id": "d6df9d82-e37a-54b9-9da2-1f01997509c0",
+      "createdAt": "2026-06-03T00:44:13Z",
+      "updatedAt": null,
+      "authorId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Buổi tập hôm nay hơi fail vì ngủ ít, nhưng vẫn giữ thói quen check-in. Có lẽ mai nên giảm volume một chút.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 0,
+        "shareCount": 0
+      },
+      "isPublic": false,
+      "shareCode": "SOC00010"
+    },
+    {
+      "id": "fd1dfdcf-698c-522a-8a34-ee6ac17f93b8",
+      "createdAt": "2026-05-13T04:27:33Z",
+      "updatedAt": null,
+      "authorId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Hôm nay tập pull day, bài lat pulldown cuối cùng mới thật sự cảm được lưng. Trước giờ toàn kéo bằng tay hơi nhiều. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 6,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00011"
+    },
+    {
+      "id": "48730ae2-1745-5e4d-8343-89db368a35e4",
+      "createdAt": "2026-06-05T18:29:21Z",
+      "updatedAt": null,
+      "authorId": "682239cf-8477-5df1-865a-c65236317783",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình thử meal prep 3 hộp cho tuần này. Nhận ra chuẩn bị trước thì ít gọi đồ linh tinh hơn hẳn.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 5,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00012"
+    },
+    {
+      "id": "0adc1963-199e-5a56-97d1-0c4363b0e9ff",
+      "createdAt": "2026-06-07T21:53:49Z",
+      "updatedAt": null,
+      "authorId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Buổi tập hôm nay hơi fail vì ngủ ít, nhưng vẫn giữ thói quen check-in. Có lẽ mai nên giảm volume một chút. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 5,
+        "commentCount": 7,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00013"
+    },
+    {
+      "id": "40eb55c5-1f93-5867-ac3c-4be24d67fb39",
+      "createdAt": "2026-06-06T18:12:32Z",
+      "updatedAt": null,
+      "authorId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mọi người hay nghe nhạc gì lúc tập? Mình đang cần playlist mới cho buổi push day.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 4,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00014"
+    },
+    {
+      "id": "a402c422-f827-588c-8f62-d1c3f5ae5181",
+      "createdAt": "2026-06-13T17:17:52Z",
+      "updatedAt": null,
+      "authorId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai ở khu Quận 7 hay chạy buổi sáng không? Mình muốn tìm người chạy cùng cho dễ duy trì.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 5,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00015"
+    },
+    {
+      "id": "88f074a4-dda7-53b9-a0ba-4d0157953a72",
+      "createdAt": "2026-05-11T12:36:28Z",
+      "updatedAt": null,
+      "authorId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Buổi tập hôm nay hơi fail vì ngủ ít, nhưng vẫn giữ thói quen check-in. Có lẽ mai nên giảm volume một chút.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 9,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00016"
+    },
+    {
+      "id": "2ba9e5f4-a301-52d9-b0be-68b23d948099",
+      "createdAt": "2026-06-02T11:30:11Z",
+      "updatedAt": null,
+      "authorId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình thử meal prep 3 hộp cho tuần này. Nhận ra chuẩn bị trước thì ít gọi đồ linh tinh hơn hẳn. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 4,
+        "shareCount": 0
+      },
+      "isPublic": false,
+      "shareCode": "SOC00017"
+    },
+    {
+      "id": "830125fc-27b6-5c71-8752-46d8df15a6c2",
+      "createdAt": "2026-05-23T09:01:53Z",
+      "updatedAt": null,
+      "authorId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình nhận ra ăn đủ carb trước buổi tập giúp tập khỏe hơn nhiều. Trước cứ cắt tinh bột quá nên vào buổi rất đuối.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 5,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00018"
+    },
+    {
+      "id": "bd6581aa-c248-5b55-b1dc-aa7e44b67e82",
+      "createdAt": "2026-05-13T10:43:32Z",
+      "updatedAt": null,
+      "authorId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "postType": "ChallengeCreation",
+      "content": "Chuỗi 14 ngày vẫn còn sống! Có ngày chỉ đi bộ nhẹ nhưng mình thấy quan trọng là không bỏ hẳn. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": "ceba7f97-0bf7-554e-9669-f9edf69e3689",
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00019"
+    },
+    {
+      "id": "c1fedaad-4f4d-5ce9-bc9f-56e6bfd81a97",
+      "createdAt": "2026-05-26T03:53:33Z",
+      "updatedAt": null,
+      "authorId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Hôm nay thèm trà sữa quá nên mình uống size nhỏ, bớt đường, rồi vẫn tập bình thường. Cân bằng chứ không cực đoan nữa.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 8,
+        "commentCount": 4,
+        "shareCount": 0
+      },
+      "isPublic": false,
+      "shareCode": "SOC00020"
+    },
+    {
+      "id": "80755f64-c2a0-5111-a509-ccb7f0e7917b",
+      "createdAt": "2026-06-11T11:14:47Z",
+      "updatedAt": null,
+      "authorId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Hôm nay thử tăng mức tạ cho squat, không PR gì lớn nhưng form ổn hơn tuần trước. Nhìn lại video mới thấy mình xuống sâu hơn rồi. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 9,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00021"
+    },
+    {
+      "id": "9ed39bc2-54f7-595a-b77e-5b41ab4c30a5",
+      "createdAt": "2026-05-23T04:14:36Z",
+      "updatedAt": null,
+      "authorId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình vừa unlock achievement đầu tiên trong app. Nhỏ thôi nhưng thấy có động lực hơn nhiều.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00022"
+    },
+    {
+      "id": "d17a1bbe-f415-5659-b33a-e7082b0c349d",
+      "createdAt": "2026-05-24T11:35:14Z",
+      "updatedAt": null,
+      "authorId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình mới chuyển sang tập sáng trước khi đi làm. 20 phút thôi nhưng tinh thần tỉnh hẳn. Không ngờ khác biệt nhiều vậy.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00023"
+    },
+    {
+      "id": "29729867-063a-551a-af65-1b0764afa36d",
+      "createdAt": "2026-05-27T01:34:39Z",
+      "updatedAt": null,
+      "authorId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Ai từng đau cổ tay khi chống đẩy chưa? Mình đang thử kê tay cao hơn nhưng muốn nghe thêm kinh nghiệm. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 10,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00024"
+    },
+    {
+      "id": "8aeb05c3-2e6b-5a2a-b520-bb254908dc18",
+      "createdAt": "2026-05-15T20:43:19Z",
+      "updatedAt": null,
+      "authorId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai có món healthy nào dễ ăn mà không bị khô không? Ức gà ăn 3 ngày là bắt đầu hơi ngán rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 8,
+        "commentCount": 0,
+        "shareCount": 0
+      },
+      "isPublic": false,
+      "shareCode": "SOC00025"
+    },
+    {
+      "id": "e55aff50-5f6a-535b-a635-94c215859ab5",
+      "createdAt": "2026-05-21T15:13:48Z",
+      "updatedAt": null,
+      "authorId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Cuối tuần này có ai muốn join thử thách đi bộ 10k bước quanh phố đi bộ không? Tập nhẹ mà vui.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 13,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00026"
+    },
+    {
+      "id": "d7dd5ca0-c985-5211-8c39-154f989592dc",
+      "createdAt": "2026-05-26T04:00:47Z",
+      "updatedAt": null,
+      "authorId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình bắt đầu lại sau 2 tuần nghỉ vì bận. Tập nhẹ hơn nhưng không thấy tội lỗi nữa, miễn là quay lại được.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 2,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00027"
+    },
+    {
+      "id": "5b35109f-270c-58c7-932f-8f9101665766",
+      "createdAt": "2026-05-28T02:23:57Z",
+      "updatedAt": null,
+      "authorId": "19baf8ca-68cc-5ec5-b89c-1c61231de6a8",
+      "authorSnapshot": {
+        "fullName": "Phạm Quốc Bảo",
+        "avatarUrl": null
+      },
+      "postType": "AchievementShare",
+      "content": "Sáng nay ăn yến mạch với chuối và sữa chua. Không quá fancy nhưng tập xong thấy ổn bụng.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 8,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00028"
+    },
+    {
+      "id": "3be90e53-959f-5292-bf65-fc2d01ab41d1",
+      "createdAt": "2026-06-03T23:20:42Z",
+      "updatedAt": null,
+      "authorId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Protein hôm nay mới được khoảng 70g, còn thiếu kha khá. Chắc tối làm thêm trứng hoặc sữa chua Hy Lạp.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00029"
+    },
+    {
+      "id": "ef66ec57-d08e-5a88-8268-cb03add54f7c",
+      "createdAt": "2026-05-28T19:36:52Z",
+      "updatedAt": null,
+      "authorId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Hôm nay là ngày thứ 7 giữ streak. Không phải ngày nào cũng tập nặng, nhưng ngày nào cũng có vận động. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 9,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00030"
+    },
+    {
+      "id": "f41a5015-608e-5469-9c47-4ec6c0a2cd16",
+      "createdAt": "2026-06-01T15:16:10Z",
+      "updatedAt": null,
+      "authorId": "ded2a6f5-2805-520b-b8a9-74ff3b6c4bfd",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Mai Chi",
+        "avatarUrl": null
+      },
+      "postType": "ChallengeCreation",
+      "content": "Ngày leg day đúng nghĩa: bước xuống cầu thang là thấy cuộc đời hơi chông gai rồi 😅",
+      "mediaUrls": [],
+      "referenceId": "c96add3a-b59c-5eaf-a904-7534cf0de5a7",
+      "metrics": {
+        "likeCount": 8,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00031"
+    },
+    {
+      "id": "bf8a3678-fea9-574a-a9ab-bbd57f23ee71",
+      "createdAt": "2026-05-25T00:02:39Z",
+      "updatedAt": null,
+      "authorId": "7a36f7ad-90db-52a5-91d2-77c89a4c7549",
+      "authorSnapshot": {
+        "fullName": "Mai Nhật Long",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình bắt đầu lại sau 2 tuần nghỉ vì bận. Tập nhẹ hơn nhưng không thấy tội lỗi nữa, miễn là quay lại được.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 12,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00032"
+    },
+    {
+      "id": "c0a17240-9c25-54fb-a83f-f10fb74f9d0d",
+      "createdAt": "2026-06-07T01:20:42Z",
+      "updatedAt": null,
+      "authorId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Streak 30 ngày! Không phải 30 ngày hoàn hảo, nhưng là 30 ngày mình không biến mất khỏi mục tiêu.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 4,
+        "commentCount": 2,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00033"
+    },
+    {
+      "id": "bef02109-1dbe-5aea-ab32-eee42c162b97",
+      "createdAt": "2026-05-26T13:56:13Z",
+      "updatedAt": null,
+      "authorId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Vừa hoàn thành bài workout đầu tiên sau khi tạo roadmap. Cảm giác có kế hoạch rõ ràng dễ thở hơn nhiều. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 5,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00034"
+    },
+    {
+      "id": "16d290c3-12d5-5f2f-a1a4-aa5f9b279d57",
+      "createdAt": "2026-05-24T02:13:10Z",
+      "updatedAt": null,
+      "authorId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình đang phân vân nên tập full body 3 buổi hay upper/lower 4 buổi. Lịch làm việc hơi thất thường.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 13,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00035"
+    },
+    {
+      "id": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "createdAt": "2026-05-26T12:10:24Z",
+      "updatedAt": null,
+      "authorId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "postType": "AchievementShare",
+      "content": "Sáng nay ăn yến mạch với chuối và sữa chua. Không quá fancy nhưng tập xong thấy ổn bụng. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 14,
+        "commentCount": 8,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00036"
+    },
+    {
+      "id": "733b6e5e-b91f-54eb-ab67-b82b0de9c4e1",
+      "createdAt": "2026-06-07T07:35:24Z",
+      "updatedAt": null,
+      "authorId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Sau 1 tháng, mình chống đẩy từ 5 cái lên được 14 cái liên tục. Chậm nhưng thật. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 10,
+        "commentCount": 4,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00037"
+    },
+    {
+      "id": "2b3e7c8a-93e2-55ab-abd2-2c2ad1bddadb",
+      "createdAt": "2026-06-06T11:38:38Z",
+      "updatedAt": null,
+      "authorId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Cuối tuần này có ai muốn join thử thách đi bộ 10k bước quanh phố đi bộ không? Tập nhẹ mà vui. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 4,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00038"
+    },
+    {
+      "id": "1d2ddc59-1a1a-50ae-9f89-63445a8767c8",
+      "createdAt": "2026-05-20T19:56:21Z",
+      "updatedAt": null,
+      "authorId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Hôm nay thèm trà sữa quá nên mình uống size nhỏ, bớt đường, rồi vẫn tập bình thường. Cân bằng chứ không cực đoan nữa.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 9,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00039"
+    },
+    {
+      "id": "365ba5e0-3f42-5e78-add6-1ac3e97ca0a1",
+      "createdAt": "2026-05-29T21:49:32Z",
+      "updatedAt": null,
+      "authorId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Tập plank 3 hiệp, mỗi hiệp 45 giây. Ngắn thôi nhưng bụng run thật sự. Ai có tip giữ hông không bị sụp không?",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 5,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00040"
+    },
+    {
+      "id": "4a8b50c3-6993-5c49-a600-ba69919243b7",
+      "createdAt": "2026-05-15T07:32:34Z",
+      "updatedAt": null,
+      "authorId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Hôm nay thử tăng mức tạ cho squat, không PR gì lớn nhưng form ổn hơn tuần trước. Nhìn lại video mới thấy mình xuống sâu hơn rồi. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 4,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00041"
+    },
+    {
+      "id": "e72b8907-8724-50f1-ad42-af6ed916ebd1",
+      "createdAt": "2026-06-13T23:02:30Z",
+      "updatedAt": null,
+      "authorId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Lần đầu hoàn thành đủ 3 buổi/tuần mà không bỏ giữa chừng. Cảm giác này đáng lưu lại.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 13,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00042"
+    },
+    {
+      "id": "4bbad823-3691-50b3-ae58-3dac1056c2b2",
+      "createdAt": "2026-06-02T21:47:48Z",
+      "updatedAt": null,
+      "authorId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "postType": "AchievementShare",
+      "content": "Tuần này ngủ tốt hơn, tập cũng khác hẳn. Có lẽ recovery mới là phần mình thiếu lâu nay.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 16,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00043"
+    },
+    {
+      "id": "c8b0f54e-e125-543c-ad01-b68d22149606",
+      "createdAt": "2026-05-23T16:02:20Z",
+      "updatedAt": null,
+      "authorId": "682239cf-8477-5df1-865a-c65236317783",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Buổi tập hôm nay hơi fail vì ngủ ít, nhưng vẫn giữ thói quen check-in. Có lẽ mai nên giảm volume một chút. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 6,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00044"
+    },
+    {
+      "id": "74b79d06-405d-5409-b20a-b161ef37c056",
+      "createdAt": "2026-05-10T11:54:34Z",
+      "updatedAt": null,
+      "authorId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Tối nay làm salad cá ngừ, thêm trứng luộc và bắp. Nhanh, rẻ, đủ đạm. Điểm trừ là rửa rau hơi lâu 😅",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 9,
+        "commentCount": 2,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00045"
+    },
+    {
+      "id": "9d08ecad-66a7-546b-8fa2-9e3490f45bfb",
+      "createdAt": "2026-06-06T16:45:56Z",
+      "updatedAt": null,
+      "authorId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Ai từng đau cổ tay khi chống đẩy chưa? Mình đang thử kê tay cao hơn nhưng muốn nghe thêm kinh nghiệm.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00046"
+    },
+    {
+      "id": "ccdbd9ca-bfcb-5611-b414-0fb20e024fec",
+      "createdAt": "2026-05-27T11:50:31Z",
+      "updatedAt": null,
+      "authorId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Tập plank 3 hiệp, mỗi hiệp 45 giây. Ngắn thôi nhưng bụng run thật sự. Ai có tip giữ hông không bị sụp không?",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 4,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00047"
+    },
+    {
+      "id": "530b9145-91ae-5d2b-bbf4-34e8344ea551",
+      "createdAt": "2026-05-20T18:39:22Z",
+      "updatedAt": null,
+      "authorId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Sáng nay dậy hơi lười nhưng vẫn kéo được 35 phút upper body. Có ai cũng hay bị khó bắt đầu hơn là khó tập không?",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 9,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00048"
+    },
+    {
+      "id": "32a84fa6-2f26-555d-965d-e8829145fa4f",
+      "createdAt": "2026-05-25T04:19:41Z",
+      "updatedAt": null,
+      "authorId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình mới dùng app để log set/reps, thấy việc nhìn lại lịch sử tập làm mình bớt tập theo cảm hứng hơn.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00049"
+    },
+    {
+      "id": "a108c829-57a9-503a-907e-574ca0398978",
+      "createdAt": "2026-05-10T08:32:44Z",
+      "updatedAt": null,
+      "authorId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Chuỗi 14 ngày vẫn còn sống! Có ngày chỉ đi bộ nhẹ nhưng mình thấy quan trọng là không bỏ hẳn.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 10,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00050"
+    },
+    {
+      "id": "dba5b9fc-f52b-56fc-8459-b791f8a286ad",
+      "createdAt": "2026-06-14T06:04:26Z",
+      "updatedAt": null,
+      "authorId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai có món healthy nào dễ ăn mà không bị khô không? Ức gà ăn 3 ngày là bắt đầu hơi ngán rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 8,
+        "commentCount": 4,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00051"
+    },
+    {
+      "id": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "createdAt": "2026-06-05T18:45:28Z",
+      "updatedAt": null,
+      "authorId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "postType": "AchievementShare",
+      "content": "Hôm nay tập pull day, bài lat pulldown cuối cùng mới thật sự cảm được lưng. Trước giờ toàn kéo bằng tay hơi nhiều. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 19,
+        "commentCount": 8,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00052"
+    },
+    {
+      "id": "c6a94aa3-c844-5c14-8537-2dc2f0839ca9",
+      "createdAt": "2026-05-10T19:48:59Z",
+      "updatedAt": null,
+      "authorId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Sáng nay dậy hơi lười nhưng vẫn kéo được 35 phút upper body. Có ai cũng hay bị khó bắt đầu hơn là khó tập không?",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 5,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00053"
+    },
+    {
+      "id": "6e90dd63-a0f1-5b0c-9652-0ecf27ae9a44",
+      "createdAt": "2026-05-16T03:31:32Z",
+      "updatedAt": null,
+      "authorId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Chuỗi 14 ngày vẫn còn sống! Có ngày chỉ đi bộ nhẹ nhưng mình thấy quan trọng là không bỏ hẳn. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 6,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00054"
+    },
+    {
+      "id": "b5c7b218-de4e-55c7-beaf-c16d7e539c44",
+      "createdAt": "2026-06-05T12:35:25Z",
+      "updatedAt": null,
+      "authorId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình mới dùng app để log set/reps, thấy việc nhìn lại lịch sử tập làm mình bớt tập theo cảm hứng hơn.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 10,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00055"
+    },
+    {
+      "id": "47e8fc01-7128-578e-a79c-ca673c512bde",
+      "createdAt": "2026-06-06T09:53:44Z",
+      "updatedAt": null,
+      "authorId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai ở khu Quận 7 hay chạy buổi sáng không? Mình muốn tìm người chạy cùng cho dễ duy trì. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 12,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00056"
+    },
+    {
+      "id": "ad51bbd9-1fd0-52d5-a168-2cf572a01a15",
+      "createdAt": "2026-05-25T08:29:18Z",
+      "updatedAt": null,
+      "authorId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Chuỗi 14 ngày vẫn còn sống! Có ngày chỉ đi bộ nhẹ nhưng mình thấy quan trọng là không bỏ hẳn. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 9,
+        "commentCount": 2,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00057"
+    },
+    {
+      "id": "263041e5-a925-56a4-ad4a-1bc4f3d9191d",
+      "createdAt": "2026-06-08T19:36:57Z",
+      "updatedAt": null,
+      "authorId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai có món healthy nào dễ ăn mà không bị khô không? Ức gà ăn 3 ngày là bắt đầu hơi ngán rồi. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00058"
+    },
+    {
+      "id": "a79a9b14-6129-5038-868d-a07f5a6b5c83",
+      "createdAt": "2026-05-28T08:07:26Z",
+      "updatedAt": null,
+      "authorId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Protein hôm nay mới được khoảng 70g, còn thiếu kha khá. Chắc tối làm thêm trứng hoặc sữa chua Hy Lạp.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 8,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00059"
+    },
+    {
+      "id": "f2bcfa1e-ee16-55cc-b5ac-94778ffe70b7",
+      "createdAt": "2026-05-20T17:22:52Z",
+      "updatedAt": null,
+      "authorId": "19baf8ca-68cc-5ec5-b89c-1c61231de6a8",
+      "authorSnapshot": {
+        "fullName": "Phạm Quốc Bảo",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình thử meal prep 3 hộp cho tuần này. Nhận ra chuẩn bị trước thì ít gọi đồ linh tinh hơn hẳn. Mình ghi lại đây để tự nhắc bản thân tiếp tục.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 8,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00060"
+    },
+    {
+      "id": "364bb8b1-d33e-5303-bd74-33dbe04255f7",
+      "createdAt": "2026-05-13T14:45:25Z",
+      "updatedAt": null,
+      "authorId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Lần đầu hoàn thành đủ 3 buổi/tuần mà không bỏ giữa chừng. Cảm giác này đáng lưu lại.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 0,
+        "shareCount": 0
+      },
+      "isPublic": false,
+      "shareCode": "SOC00061"
+    },
+    {
+      "id": "b489741a-5b5e-5409-8e12-a2ba5d2ce3e9",
+      "createdAt": "2026-05-31T14:17:20Z",
+      "updatedAt": null,
+      "authorId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "postType": "StreakShare",
+      "content": "Hôm nay là ngày thứ 7 giữ streak. Không phải ngày nào cũng tập nặng, nhưng ngày nào cũng có vận động.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 15,
+        "commentCount": 2,
+        "shareCount": 0
+      },
+      "isPublic": false,
+      "shareCode": "SOC00062"
+    },
+    {
+      "id": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "createdAt": "2026-05-21T02:30:29Z",
+      "updatedAt": null,
+      "authorId": "ded2a6f5-2805-520b-b8a9-74ff3b6c4bfd",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Mai Chi",
+        "avatarUrl": null
+      },
+      "postType": "AchievementShare",
+      "content": "Mình nhận ra ăn đủ carb trước buổi tập giúp tập khỏe hơn nhiều. Trước cứ cắt tinh bột quá nên vào buổi rất đuối.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 10,
+        "commentCount": 8,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00063"
+    },
+    {
+      "id": "4e20b7ef-3f25-525b-afc7-2184353b3d5a",
+      "createdAt": "2026-05-13T16:14:35Z",
+      "updatedAt": null,
+      "authorId": "7a36f7ad-90db-52a5-91d2-77c89a4c7549",
+      "authorSnapshot": {
+        "fullName": "Mai Nhật Long",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai có món healthy nào dễ ăn mà không bị khô không? Ức gà ăn 3 ngày là bắt đầu hơi ngán rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 5,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00064"
+    },
+    {
+      "id": "1efa8635-32b6-578f-b5d6-2ebf55bf3274",
+      "createdAt": "2026-05-20T17:38:33Z",
+      "updatedAt": null,
+      "authorId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "postType": "AchievementShare",
+      "content": "Hôm nay thử tăng mức tạ cho squat, không PR gì lớn nhưng form ổn hơn tuần trước. Nhìn lại video mới thấy mình xuống sâu hơn rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 16,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00065"
+    },
+    {
+      "id": "04e2967c-2c72-50a4-a753-590cb927177e",
+      "createdAt": "2026-05-29T21:11:28Z",
+      "updatedAt": null,
+      "authorId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "postType": "StreakShare",
+      "content": "Cân nặng tuần này không giảm nhưng vòng eo giảm 1cm. Có vẻ không nên chỉ nhìn mỗi con số trên cân.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 17,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00066"
+    },
+    {
+      "id": "6eceac42-6b2c-58e8-9f29-9317796c6865",
+      "createdAt": "2026-06-01T06:59:29Z",
+      "updatedAt": null,
+      "authorId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "postType": "StreakShare",
+      "content": "Vừa hoàn thành buổi chạy nhẹ 4km ở công viên. Pace không đẹp lắm nhưng cảm giác thở đều hơn hẳn.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 20,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00067"
+    },
+    {
+      "id": "fb37d734-b60d-59f7-8efc-8ac7623545b9",
+      "createdAt": "2026-05-10T13:29:56Z",
+      "updatedAt": null,
+      "authorId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Streak 30 ngày! Không phải 30 ngày hoàn hảo, nhưng là 30 ngày mình không biến mất khỏi mục tiêu.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 12,
+        "commentCount": 4,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00068"
+    },
+    {
+      "id": "c487ee13-40c2-55d0-b8c4-e3d2ef633f23",
+      "createdAt": "2026-06-09T16:36:11Z",
+      "updatedAt": null,
+      "authorId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình thử meal prep 3 hộp cho tuần này. Nhận ra chuẩn bị trước thì ít gọi đồ linh tinh hơn hẳn.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 4,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00069"
+    },
+    {
+      "id": "7d798d11-b6ea-59aa-b406-83867aa23ff6",
+      "createdAt": "2026-05-20T17:32:35Z",
+      "updatedAt": null,
+      "authorId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Streak 30 ngày! Không phải 30 ngày hoàn hảo, nhưng là 30 ngày mình không biến mất khỏi mục tiêu.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 13,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00070"
+    },
+    {
+      "id": "49f5ecc6-6f8f-585a-a6a3-7481c40eda2d",
+      "createdAt": "2026-05-22T11:46:22Z",
+      "updatedAt": null,
+      "authorId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình vừa unlock achievement đầu tiên trong app. Nhỏ thôi nhưng thấy có động lực hơn nhiều.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 6,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00071"
+    },
+    {
+      "id": "ea41256f-0453-5316-ba99-b1dd059b4f19",
+      "createdAt": "2026-05-16T20:18:51Z",
+      "updatedAt": null,
+      "authorId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai có món healthy nào dễ ăn mà không bị khô không? Ức gà ăn 3 ngày là bắt đầu hơi ngán rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 13,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00072"
+    },
+    {
+      "id": "1837dc4a-b588-532b-a6b6-0c71e02f1ad5",
+      "createdAt": "2026-06-02T18:45:43Z",
+      "updatedAt": null,
+      "authorId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Chuỗi 14 ngày vẫn còn sống! Có ngày chỉ đi bộ nhẹ nhưng mình thấy quan trọng là không bỏ hẳn.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 11,
+        "commentCount": 1,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00073"
+    },
+    {
+      "id": "1ff5add8-c9bb-519f-8483-eda952c9a64c",
+      "createdAt": "2026-05-17T14:22:25Z",
+      "updatedAt": null,
+      "authorId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Protein hôm nay mới được khoảng 70g, còn thiếu kha khá. Chắc tối làm thêm trứng hoặc sữa chua Hy Lạp.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 4,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00074"
+    },
+    {
+      "id": "74b2caa4-864d-5df0-817b-1615cbc4b1f3",
+      "createdAt": "2026-05-17T15:34:51Z",
+      "updatedAt": null,
+      "authorId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Ngày leg day đúng nghĩa: bước xuống cầu thang là thấy cuộc đời hơi chông gai rồi 😅",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 4,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00075"
+    },
+    {
+      "id": "78f7b233-b8b0-5763-b6fa-59385c163f1c",
+      "createdAt": "2026-05-15T22:09:46Z",
+      "updatedAt": null,
+      "authorId": "682239cf-8477-5df1-865a-c65236317783",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "postType": "StreakShare",
+      "content": "Sau 1 tháng, mình chống đẩy từ 5 cái lên được 14 cái liên tục. Chậm nhưng thật.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 7,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00076"
+    },
+    {
+      "id": "90b2b1f6-9f66-5d71-8f8e-564efe9dfaaa",
+      "createdAt": "2026-05-28T12:34:30Z",
+      "updatedAt": null,
+      "authorId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Hôm nay thử tăng mức tạ cho squat, không PR gì lớn nhưng form ổn hơn tuần trước. Nhìn lại video mới thấy mình xuống sâu hơn rồi.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 12,
+        "commentCount": 3,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00077"
+    },
+    {
+      "id": "1b809c1c-b7ba-5c88-8e92-362de7be62ec",
+      "createdAt": "2026-06-02T16:43:26Z",
+      "updatedAt": null,
+      "authorId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Vừa hoàn thành buổi chạy nhẹ 4km ở công viên. Pace không đẹp lắm nhưng cảm giác thở đều hơn hẳn. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 12,
+        "commentCount": 0,
+        "shareCount": 0
+      },
+      "isPublic": false,
+      "shareCode": "SOC00078"
+    },
+    {
+      "id": "b4039135-350b-55b1-bacd-d4071de71f6c",
+      "createdAt": "2026-05-18T09:33:38Z",
+      "updatedAt": null,
+      "authorId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Mình bắt đầu lại sau 2 tuần nghỉ vì bận. Tập nhẹ hơn nhưng không thấy tội lỗi nữa, miễn là quay lại được.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 13,
+        "commentCount": 2,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00079"
+    },
+    {
+      "id": "fe71307d-2b9f-52fe-8dbb-6c7589a2f339",
+      "createdAt": "2026-05-30T00:33:54Z",
+      "updatedAt": null,
+      "authorId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "postType": "Standard",
+      "content": "Có ai ở khu Quận 7 hay chạy buổi sáng không? Mình muốn tìm người chạy cùng cho dễ duy trì. Ai có kinh nghiệm thì góp ý giúp mình nha.",
+      "mediaUrls": [],
+      "referenceId": null,
+      "metrics": {
+        "likeCount": 13,
+        "commentCount": 5,
+        "shareCount": 0
+      },
+      "isPublic": true,
+      "shareCode": "SOC00080"
+    }
+  ]
+}

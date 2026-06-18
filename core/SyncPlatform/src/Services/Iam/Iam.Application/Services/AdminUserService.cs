@@ -3,16 +3,19 @@ using Iam.Application.Exceptions;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
 using Iam.Domain.Repositories;
+using Libs.Storage.Services;
 
 namespace Iam.Application.Services;
 
 public class AdminUserService : IAdminUserService
 {
     private readonly IUserRepository _users;
+    private readonly IMediaUrlResolver _media;
 
-    public AdminUserService(IUserRepository users)
+    public AdminUserService(IUserRepository users, IMediaUrlResolver media)
     {
         _users = users;
+        _media = media;
     }
 
     public async Task<IReadOnlyList<AdminUserListItemDto>> GetAllAsync(
@@ -50,12 +53,12 @@ public class AdminUserService : IAdminUserService
         return Map(user);
     }
 
-    private static AdminUserListItemDto Map(User u) => new()
+    private AdminUserListItemDto Map(User u) => new()
     {
         Id = u.Id,
         Email = u.Email,
         FullName = u.FullName,
-        AvatarUrl = u.AvatarUrl,
+        AvatarUrl = _media.ResolveForDisplay(u.AvatarUrl),
         Role = u.Role,
         Status = u.Status,
         SubscriptionTier = u.SubscriptionTier,

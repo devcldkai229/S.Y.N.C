@@ -1,3 +1,4 @@
+using Libs.Storage.Services;
 using Social.Application.Clients;
 using Social.Application.DTOs;
 using Social.Application.Exceptions;
@@ -19,6 +20,7 @@ public class StoryService : IStoryService
     private readonly IUserFollowRepository _follows;
     private readonly IStorageService _storage;
     private readonly ISocialNotificationClient _notifications;
+    private readonly IMediaUrlResolver _media;
 
     public StoryService(
         IStoryRepository stories,
@@ -26,7 +28,8 @@ public class StoryService : IStoryService
         IStoryViewRepository storyViews,
         IUserFollowRepository follows,
         IStorageService storage,
-        ISocialNotificationClient notifications)
+        ISocialNotificationClient notifications,
+        IMediaUrlResolver media)
     {
         _stories = stories;
         _storyInteractions = storyInteractions;
@@ -34,6 +37,7 @@ public class StoryService : IStoryService
         _follows = follows;
         _storage = storage;
         _notifications = notifications;
+        _media = media;
     }
 
     public async Task<StoryDto> CreateAsync(
@@ -93,7 +97,7 @@ public class StoryService : IStoryService
         };
 
         await _stories.CreateAsync(story, cancellationToken);
-        return story.ToDto(isLikedByMe: false);
+        return story.ToDto(isLikedByMe: false, media: _media);
     }
 
     public async Task<IReadOnlyList<StoryDto>> GetActiveByUserAsync(
@@ -113,7 +117,7 @@ public class StoryService : IStoryService
             var liked = viewerId.HasValue &&
                 await _storyInteractions.HasLikedAsync(story.Id, viewerId.Value, cancellationToken);
 
-            result.Add(story.ToDto(liked));
+            result.Add(story.ToDto(liked, _media));
         }
 
         return result;
@@ -150,7 +154,7 @@ public class StoryService : IStoryService
             foreach (var story in group.OrderBy(x => x.CreatedAt))
             {
                 var liked = await _storyInteractions.HasLikedAsync(story.Id, viewerId, cancellationToken);
-                storyDtos.Add(story.ToDto(liked));
+                storyDtos.Add(story.ToDto(liked, _media));
             }
 
             groups.Add(new StoryFeedGroupDto

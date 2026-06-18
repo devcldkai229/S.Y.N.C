@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Libs.Seed;
 using Marketplace.SeedTool.Models;
 
 namespace Marketplace.SeedTool.Services;
@@ -15,10 +16,6 @@ public sealed class SeedReader
     public MarketplaceSeedFile Read(string? path = null)
     {
         path ??= ResolveDefaultPath();
-
-        if (!File.Exists(path))
-            throw new FileNotFoundException($"Seed file not found: {path}");
-
         var json = File.ReadAllText(path);
         var doc = JsonDocument.Parse(json);
 
@@ -31,24 +28,45 @@ public sealed class SeedReader
         if (seed.Kitchens.Count == 0)
             throw new InvalidOperationException("Seed file contains no kitchens.");
 
+        EnrichImageQueries(seed);
         return seed;
     }
 
     private static string ResolveDefaultPath()
     {
-        var candidates = new[]
+        foreach (var fileName in new[] { "marketplace_final_final_final.json", "marketplace_seed_data.json" })
         {
-            Path.Combine(AppContext.BaseDirectory, "Seed", "marketplace_seed_data.json"),
-            Path.Combine(AppContext.BaseDirectory, "marketplace_seed_data.json"),
-            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "Seed", "marketplace_seed_data.json")),
-        };
-
-        foreach (var candidate in candidates)
-        {
-            if (File.Exists(candidate))
-                return candidate;
+            try
+            {
+                return SeedFileLocator.Resolve(fileName);
+            }
+            catch (FileNotFoundException)
+            {
+                // try next
+            }
         }
 
-        return candidates[0];
+        return SeedFileLocator.Resolve("marketplace_seed_data.json");
+    }
+
+    private static void EnrichImageQueries(MarketplaceSeedFile seed)
+    {
+        foreach (var kitchen in seed.Kitchens)
+        {
+            if (string.IsNullOrWhiteSpace(kitchen.LogoImageQuery))
+                kitchen.LogoImageQuery = $"{kitchen.Name} restaurant logo";
+
+            if (string.IsNullOrWhiteSpace(kitchen.CoverImageQuery))
+                kitchen.CoverImageQuery = $"{kitchen.Type} restaurant food interior";
+
+            foreach (var dish in kitchen.Menu)
+            {
+                if (string.IsNullOrWhiteSpace(dish.ImageQuery))
+                    dish.ImageQuery = $"{dish.NameEn} {dish.Category} food dish";
+
+                if (string.IsNullOrWhiteSpace(dish.S3Key))
+                    dish.S3Key = $"food_catalog/{kitchen.Slug}/{dish.Slug}.webp";
+            }
+        }
     }
 }

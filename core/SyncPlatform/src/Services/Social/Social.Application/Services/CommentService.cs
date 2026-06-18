@@ -1,3 +1,4 @@
+using Libs.Storage.Services;
 using Social.Application.Clients;
 using Social.Application.DTOs;
 using Social.Application.Exceptions;
@@ -13,17 +14,20 @@ public class CommentService : ICommentService
     private readonly IPostEngagementRepository _engagement;
     private readonly ICommentRepository _comments;
     private readonly ISocialNotificationClient _notifications;
+    private readonly IMediaUrlResolver _media;
 
     public CommentService(
         IPostRepository posts,
         IPostEngagementRepository engagement,
         ICommentRepository comments,
-        ISocialNotificationClient notifications)
+        ISocialNotificationClient notifications,
+        IMediaUrlResolver media)
     {
         _posts = posts;
         _engagement = engagement;
         _comments = comments;
         _notifications = notifications;
+        _media = media;
     }
 
     public async Task<CommentDto> CreateAsync(
@@ -54,7 +58,7 @@ public class CommentService : ICommentService
             comment.Id,
             cancellationToken);
 
-        return comment.ToDto();
+        return comment.ToDto(_media);
     }
 
     public async Task<CommentDto> CreateReplyAsync(
@@ -89,7 +93,7 @@ public class CommentService : ICommentService
             reply.Id,
             cancellationToken);
 
-        return reply.ToDto();
+        return reply.ToDto(_media);
     }
 
     public async Task<PagedResult<CommentDto>> GetByPostIdAsync(
@@ -116,7 +120,7 @@ public class CommentService : ICommentService
 
         return new PagedResult<CommentDto>
         {
-            Items = items.Select(x => x.ToDto()).ToList(),
+            Items = items.Select(x => x.ToDto(_media)).ToList(),
             Pagination = new Common.PaginationMetadata
             {
                 PageNumber = pageNumber,

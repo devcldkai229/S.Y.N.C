@@ -1,3 +1,4 @@
+using Libs.Storage.Services;
 using Social.Application.Clients;
 using Social.Application.Common;
 using Social.Application.DTOs;
@@ -23,6 +24,7 @@ public class PostService : IPostService
     private readonly IUserSocialSettingsRepository _socialSettings;
     private readonly IIamGamificationClient _gamification;
     private readonly ISocialNotificationClient _notifications;
+    private readonly IMediaUrlResolver _media;
 
     public PostService(
         IPostRepository posts,
@@ -30,7 +32,8 @@ public class PostService : IPostService
         IUserFollowRepository follows,
         IUserSocialSettingsRepository socialSettings,
         IIamGamificationClient gamification,
-        ISocialNotificationClient notifications)
+        ISocialNotificationClient notifications,
+        IMediaUrlResolver media)
     {
         _posts = posts;
         _engagement = engagement;
@@ -38,6 +41,7 @@ public class PostService : IPostService
         _socialSettings = socialSettings;
         _gamification = gamification;
         _notifications = notifications;
+        _media = media;
     }
 
     public async Task<PostDto> CreateAsync(
@@ -88,7 +92,7 @@ public class PostService : IPostService
                 cancellationToken);
         }
 
-        return entity.ToDto();
+        return entity.ToDto(media: _media);
     }
 
     private async Task NotifyFollowersAboutNewPostAsync(
@@ -117,7 +121,7 @@ public class PostService : IPostService
     {
         var entity = await _posts.GetByIdAsync(id, cancellationToken)
             ?? throw new NotFoundException($"Post {id} was not found.");
-        return entity.ToDto();
+        return entity.ToDto(media: _media);
     }
 
     public async Task<CursorFeedResult<PostDto>> GetPublicFeedCursorAsync(
@@ -145,7 +149,7 @@ public class PostService : IPostService
 
         return new CursorFeedResult<PostDto>
         {
-            Items = page.Select(x => x.ToDto(likedIds.Contains(x.Id))).ToList(),
+            Items = page.Select(x => x.ToDto(likedIds.Contains(x.Id), _media)).ToList(),
             NextCursor = nextCursor,
         };
     }
@@ -188,7 +192,7 @@ public class PostService : IPostService
 
         return new CursorFeedResult<PostDto>
         {
-            Items = page.Select(x => x.ToDto()).ToList(),
+            Items = page.Select(x => x.ToDto(media: _media)).ToList(),
             NextCursor = nextCursor,
         };
     }
@@ -204,7 +208,7 @@ public class PostService : IPostService
         if (!entity.IsPublic)
             throw new NotFoundException($"Post with share code '{shareCode}' was not found.");
 
-        return entity.ToDto();
+        return entity.ToDto(media: _media);
     }
 
     public async Task<LikePostResultDto> LikePostAsync(
@@ -344,7 +348,7 @@ public class PostService : IPostService
 
         return new PagedResult<PostDto>
         {
-            Items = page.Select(x => x.ToDto(likedIds.Contains(x.Id))).ToList(),
+            Items = page.Select(x => x.ToDto(likedIds.Contains(x.Id), _media)).ToList(),
             Pagination = new PaginationMetadata
             {
                 PageNumber = pageNumber,

@@ -1,9 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sync_app/features/marketplace/data/marketplace_catalog.dart';
 import 'package:sync_app/features/marketplace/models/marketplace_models.dart';
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
 import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
+import 'package:sync_app/features/marketplace/widgets/marketplace_network_image.dart';
 
 class MarketplaceAffiliateCard extends StatelessWidget {
   const MarketplaceAffiliateCard({
@@ -38,7 +39,13 @@ class MarketplaceAffiliateCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: imageUrl != null
-                  ? CachedNetworkImage(imageUrl: imageUrl, width: 72, height: 72, fit: BoxFit.cover)
+                  ? MarketplaceNetworkImage(
+                      imageUrl: imageUrl,
+                      assetFallback: MarketplaceCatalog.dishPlaceholder,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                    )
                   : Container(
                       width: 72,
                       height: 72,

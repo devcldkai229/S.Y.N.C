@@ -10,9 +10,9 @@ import 'package:sync_app/features/marketplace/utils/marketplace_cart_helpers.dar
 import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
 import 'package:sync_app/features/marketplace/utils/marketplace_partner_hours.dart';
 import 'package:sync_app/features/marketplace/widgets/marketplace_asset_image.dart';
+import 'package:sync_app/features/marketplace/widgets/marketplace_network_image.dart';
 import 'package:sync_app/features/order/data/checkout_remote_data_source.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class PartnerDetailScreen extends StatefulWidget {
   const PartnerDetailScreen({super.key, required this.partnerId});
@@ -106,8 +106,8 @@ class _PartnerDetailScreenState extends State<PartnerDetailScreen> {
                       flexibleSpace: FlexibleSpaceBar(
                         title: Text(partner.name, style: const TextStyle(fontSize: 16)),
                         background: partner.coverImageUrl != null
-                            ? CachedNetworkImage(
-                                imageUrl: partner.coverImageUrl!,
+                            ? MarketplaceNetworkImage(
+                                imageUrl: partner.coverImageUrl,
                                 fit: BoxFit.cover,
                               )
                             : Container(color: MarketplaceTheme.primary.withValues(alpha: 0.2)),
@@ -249,7 +249,7 @@ class _MenuItemTile extends StatelessWidget {
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: image != null
-            ? CachedNetworkImage(imageUrl: image, width: 56, height: 56, fit: BoxFit.cover)
+            ? MarketplaceNetworkImage(imageUrl: image, width: 56, height: 56, fit: BoxFit.cover)
             : const MarketplaceAssetImage(
                 assetPath: 'assets/marketplace/placeholders/dish_placeholder.png',
                 width: 56,
