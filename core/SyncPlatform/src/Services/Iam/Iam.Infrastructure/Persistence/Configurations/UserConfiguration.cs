@@ -21,12 +21,15 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                .IsUnique()
                .HasFilter("email_verification_token IS NOT NULL");
 
+        builder.Property(u => u.PasswordResetToken).HasMaxLength(64);
+
         builder.Property(u => u.PhoneNumber).HasMaxLength(32);
         builder.HasIndex(u => u.PhoneNumber).IsUnique().HasFilter("phone_number IS NOT NULL");
 
         builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(512);
         builder.Property(u => u.FullName).IsRequired().HasMaxLength(256);
         builder.Property(u => u.AvatarUrl).HasMaxLength(1024);
+        builder.Property(u => u.BackgroundImageUrl).HasMaxLength(1024);
         builder.Property(u => u.PreferredLanguage).IsRequired().HasMaxLength(8).HasDefaultValue("vi");
         builder.Property(u => u.TimeZone).IsRequired().HasMaxLength(64).HasDefaultValue("Asia/Ho_Chi_Minh");
 

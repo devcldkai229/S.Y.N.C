@@ -24,8 +24,16 @@ public class ConsoleEmailSender : IEmailSender
         var baseUrl = _settings.VerificationBaseUrl.TrimEnd('/');
         var link = $"{baseUrl}/api/v1/auth/verify-email?token={Uri.EscapeDataString(verificationToken)}";
         _logger.LogWarning(
-            "[EMAIL DISABLED] SMTP off — verification link for {Email}: {Link}",
-            toEmail, link);
+            "[EMAIL DISABLED] SMTP off — verification code for {Email}: {Code} | link: {Link}",
+            toEmail, verificationToken, link);
+        return Task.CompletedTask;
+    }
+
+    public Task SendPasswordResetEmailAsync(string toEmail, string resetCode, CancellationToken cancellationToken = default)
+    {
+        _logger.LogWarning(
+            "[EMAIL DISABLED] SMTP off — password reset code for {Email}: {Code}",
+            toEmail, resetCode);
         return Task.CompletedTask;
     }
 }

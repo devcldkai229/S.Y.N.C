@@ -20,6 +20,9 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
+  <!-- Google Sign-In (Web). Must be OAuth "Web application" client ID; also in IAM GoogleAuth:ClientIds -->
+  <meta name="google-signin-client_id" content="366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com">
+
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -31,6 +34,15 @@
 
   <title>sync_app</title>
   <link rel="manifest" href="manifest.json">
+  <!-- MapLibre GL JS (required for AWS Location vector maps on Flutter web) -->
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+  <link href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" rel="stylesheet" />
+  <style>
+    /* Suppress browser spell-check yellow underlines on Flutter web text */
+    ::spelling-error {
+      text-decoration: none !important;
+    }
+  </style>
 </head>
 <body>
   <!--

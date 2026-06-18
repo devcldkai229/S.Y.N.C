@@ -16,4 +16,8 @@ public interface IExerciseCatalogService
     Task UpdateAsync(Guid id, UpdateExerciseCatalogDto dto, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ExerciseCatalogDetailDto> GetDetailAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<Guid, string?>> GetThumbnailUrlsAsync(
+        IReadOnlyList<Guid> exerciseIds,
+        CancellationToken cancellationToken = default);
 }

@@ -15,6 +15,12 @@ public static class ApplicationServiceExtensions
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
         services.AddScoped<IBiometricProfileService, BiometricProfileService>();
         services.AddScoped<UserMeService>();
+        services.AddScoped<IAchievementService, AchievementService>();
+        services.AddScoped<IGamificationService, GamificationService>();
+        services.AddScoped<IShopService, ShopService>();
+        services.AddScoped<IInternalSmartPushService, InternalSmartPushService>();
+        services.AddScoped<IInternalBiometricService, InternalBiometricService>();
+        services.AddScoped<IInternalUserService, InternalUserService>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
@@ -26,6 +32,10 @@ public static class ApplicationServiceExtensions
             services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IPublicProfileService, PublicProfileService>();
+        services.AddScoped<IUserSearchService, UserSearchService>();
+        services.AddScoped<IAdminUserService, AdminUserService>();
+        services.AddScoped<ISubscriptionTierService, SubscriptionTierService>();
 
         return services;
     }

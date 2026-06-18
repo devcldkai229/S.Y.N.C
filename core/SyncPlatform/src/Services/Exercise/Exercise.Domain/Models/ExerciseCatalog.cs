@@ -1,4 +1,5 @@
 using Libs.Shared.Enums;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Exercise.Domain.Models;
 
@@ -27,6 +28,12 @@ public class ExerciseCatalog : BaseMongoEntity
     // true = Compound (Đa khớp), false = Isolation (Cô lập)
     public bool IsCompound { get; set; }
 
+    /// <summary>push | pull | static — from free-exercise-db force field.</summary>
+    public string ForceType { get; set; } = string.Empty;
+
+    /// <summary>compound | isolation — from free-exercise-db mechanic field.</summary>
+    public string MechanicType { get; set; } = string.Empty;
+
     public BodyRegion BodyRegion { get; set; }
 
     public int EstimatedCaloriesPerMinute { get; set; }
@@ -47,5 +54,15 @@ public class ExerciseCatalog : BaseMongoEntity
 
     public bool RequiresSpotter { get; set; }
 
+    /// <summary>Safe | Moderate | Caution | High — set by enrichment heuristics.</summary>
+    public string SafetyLevel { get; set; } = "Moderate";
+
+    /// <summary>AI-generated contraindications hidden from users until reviewed.</summary>
+    public bool NeedsReview { get; set; }
+
+    [BsonIgnoreIfNull]
+    public DateTimeOffset? AiEnrichedAt { get; set; }
+
     public bool IsActive { get; set; } = true;
+
 }

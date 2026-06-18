@@ -14,7 +14,10 @@ public static class ApplicationMappers
             Id = entity.Id,
             UserId = entity.UserId,
             WorkoutName = entity.WorkoutName,
+            CoverRoadmapImageUrl = entity.CoverRoadmapImageUrl,
             Visibility = entity.Visibility,
+            ParentWorkoutId = entity.ParentWorkoutId,
+            SavesCount = entity.SavesCount,
             ScheduleMode = entity.ScheduleMode,
             AllowAiOptimization = entity.AllowAiOptimization,
             CreatedAt = entity.CreatedAt,
@@ -33,6 +36,7 @@ public static class ApplicationMappers
     {
         entity.UserId = dto.UserId;
         entity.WorkoutName = dto.WorkoutName;
+        entity.CoverRoadmapImageUrl = dto.CoverRoadmapImageUrl;
         entity.ScheduleMode = dto.ScheduleMode;
         entity.Visibility = dto.Visibility;
         entity.AllowAiOptimization = dto.AllowAiOptimization;
@@ -121,11 +125,74 @@ public static class ApplicationMappers
             SetNumber = entity.SetNumber,
             TargetReps = entity.TargetReps,
             ActualReps = entity.ActualReps,
-            WeightKg = entity.WeightKg,
+            WeightKg = (double)entity.WeightKg,
             Rir = entity.Rir,
             RestTakenSeconds = entity.RestTakenSeconds,
             FormScore = entity.FormScore,
             Completed = entity.Completed
+        };
+    }
+
+    public static WorkoutExecutionDetailDto ToDetailDto(
+        this WorkoutExecutionLog log,
+        RoadmapSession session,
+        IReadOnlyList<ExerciseSetLog> setLogs)
+    {
+        return new WorkoutExecutionDetailDto
+        {
+            ExecutionId = log.Id,
+            SessionId = log.SessionId,
+            SessionTitle = session.SessionTitle,
+            StartedAt = log.StartedAt,
+            EnergyLevelBefore = log.EnergyLevelBefore,
+            Exercises = session.ExecutionBlocks
+                .OrderBy(b => b.Order)
+                .GroupBy(b => b.ExerciseId)
+                .Select(g =>
+                {
+                    var firstBlock = g.First();
+                    return new ExecutionExerciseDto
+                    {
+                        ExerciseId = g.Key,
+                        ExerciseName = firstBlock.ExerciseName,
+                        ExerciseAssetId = firstBlock.ExerciseAssetId,
+                        Order = firstBlock.Order,
+                        Sets = setLogs
+                            .Where(s => s.ExerciseId == g.Key)
+                            .OrderBy(s => s.SetNumber)
+                            .Select(s => s.ToDto())
+                            .ToList()
+                    };
+                })
+                .OrderBy(e => e.Order)
+                .ToList()
+        };
+    }
+
+    public static WorkoutExecutionSummaryDto ToSummaryDto(
+        this WorkoutExecutionLog log,
+        string sessionTitle,
+        int completedSetCount,
+        int totalSetCount)
+    {
+        return new WorkoutExecutionSummaryDto
+        {
+            ExecutionId = log.Id,
+            SessionId = log.SessionId,
+            SessionTitle = sessionTitle,
+            StartedAt = log.StartedAt,
+            CompletedAt = log.CompletedAt ?? DateTimeOffset.UtcNow,
+            ActualDurationMinutes = log.ActualDurationMinutes,
+            CompletionRate = log.CompletionRate,
+            CompletedSetCount = completedSetCount,
+            TotalSetCount = totalSetCount,
+            SkippedExerciseCount = log.SkippedExercises.Count,
+            PerceivedDifficulty = log.PerceivedDifficulty,
+            EnergyLevelBefore = log.EnergyLevelBefore,
+            EnergyLevelAfter = log.EnergyLevelAfter,
+            CaloriesBurned = log.CaloriesBurned,
+            AiCoachFeedback = log.AiCoachFeedback ?? string.Empty,
+            SessionFeedback = log.SessionFeedback
         };
     }
 
@@ -263,7 +330,6 @@ public static class ApplicationMappers
             UserId = entity.UserId,
             CurrentRecoveryScore = entity.CurrentRecoveryScore,
             FatigueLevel = entity.FatigueLevel,
-            SleepRecoveryScore = entity.SleepRecoveryScore,
             MuscleSorenessScore = entity.MuscleSorenessScore,
             CnsFatigueScore = entity.CnsFatigueScore,
             RecommendedTrainingIntensity = entity.RecommendedTrainingIntensity,
@@ -280,7 +346,6 @@ public static class ApplicationMappers
             UserId = dto.UserId,
             CurrentRecoveryScore = dto.CurrentRecoveryScore,
             FatigueLevel = dto.FatigueLevel,
-            SleepRecoveryScore = dto.SleepRecoveryScore,
             MuscleSorenessScore = dto.MuscleSorenessScore,
             CnsFatigueScore = dto.CnsFatigueScore,
             RecommendedTrainingIntensity = dto.RecommendedTrainingIntensity,
@@ -292,7 +357,6 @@ public static class ApplicationMappers
     {
         entity.CurrentRecoveryScore = dto.CurrentRecoveryScore;
         entity.FatigueLevel = dto.FatigueLevel;
-        entity.SleepRecoveryScore = dto.SleepRecoveryScore;
         entity.MuscleSorenessScore = dto.MuscleSorenessScore;
         entity.CnsFatigueScore = dto.CnsFatigueScore;
         entity.RecommendedTrainingIntensity = dto.RecommendedTrainingIntensity;
@@ -391,6 +455,10 @@ public static class ApplicationMappers
     public static void UpdateEntity(this UserCustomWorkout entity, UpdateUserCustomWorkoutDto dto)
     {
         entity.WorkoutName = dto.WorkoutName;
+        if (dto.CoverRoadmapImageUrl is not null)
+            entity.CoverRoadmapImageUrl = string.IsNullOrWhiteSpace(dto.CoverRoadmapImageUrl)
+                ? null
+                : dto.CoverRoadmapImageUrl.Trim();
         entity.ScheduleMode = dto.ScheduleMode;
         entity.Visibility = dto.Visibility;
         entity.AllowAiOptimization = dto.AllowAiOptimization;
@@ -402,6 +470,41 @@ public static class ApplicationMappers
             WeightKg = b.WeightKg,
             RestSeconds = b.RestSeconds
         }).ToList();
+    }
+
+    public static MyWorkoutDetailDto ToDetailDto(
+        this UserCustomWorkout entity,
+        List<RoadmapSession> sessions,
+        List<ScheduledWorkout> schedules)
+    {
+        return new MyWorkoutDetailDto
+        {
+            Id = entity.Id,
+            WorkoutName = entity.WorkoutName,
+            CoverRoadmapImageUrl = entity.CoverRoadmapImageUrl,
+            Visibility = entity.Visibility,
+            ParentWorkoutId = entity.ParentWorkoutId,
+            SavesCount = entity.SavesCount,
+            ScheduleMode = entity.ScheduleMode,
+            AllowAiOptimization = entity.AllowAiOptimization,
+            Sessions = sessions.Select(s => new WorkoutSessionDto
+            {
+                Id = s.Id,
+                SessionTitle = s.SessionTitle,
+                ExerciseCount = s.ExecutionBlocks.Count,
+                TotalSetCount = s.ExecutionBlocks.Sum(b => b.TargetSets)
+            }).ToList(),
+            WeeklySchedules = schedules.Select(sc => new ScheduledWorkoutDto
+            {
+                Id = sc.Id,
+                SessionId = sc.SessionId,
+                SessionTitle = sessions.FirstOrDefault(s => s.Id == sc.SessionId)?.SessionTitle ?? string.Empty,
+                ScheduledStartTime = sc.ScheduledStartTime,
+                ScheduledEndTime = sc.ScheduledEndTime,
+                RepeatPattern = sc.RepeatPattern,
+                Status = sc.Status
+            }).ToList()
+        };
     }
 
     // ── RoadmapSession Extensions ────────────────────────────────────────────

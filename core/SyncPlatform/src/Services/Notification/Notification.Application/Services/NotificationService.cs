@@ -12,13 +12,16 @@ public class NotificationService : INotificationService
 {
     private readonly INotificationMessageRepository _messageRepository;
     private readonly INotificationTemplateRepository _templateRepository;
+    private readonly INotificationRealtimePublisher _realtimePublisher;
 
     public NotificationService(
         INotificationMessageRepository messageRepository,
-        INotificationTemplateRepository templateRepository)
+        INotificationTemplateRepository templateRepository,
+        INotificationRealtimePublisher realtimePublisher)
     {
         _messageRepository = messageRepository;
         _templateRepository = templateRepository;
+        _realtimePublisher = realtimePublisher;
     }
 
     public async Task<(IReadOnlyList<NotificationMessageDto> Items, PaginationMetadata Pagination)> GetPagedByUserIdAsync(
@@ -118,7 +121,11 @@ public class NotificationService : INotificationService
         };
 
         await _messageRepository.CreateAsync(message, cancellationToken);
-        return message.ToDto();
+        var created = message.ToDto();
+        if (!isScheduled)
+            await _realtimePublisher.PublishToUserAsync(created.UserId, created, cancellationToken);
+
+        return created;
     }
 
     public async Task<NotificationMessageDto> SendTemplatedNotificationAsync(SendTemplatedNotificationDto dto, CancellationToken cancellationToken = default)
@@ -159,7 +166,11 @@ public class NotificationService : INotificationService
         };
 
         await _messageRepository.CreateAsync(message, cancellationToken);
-        return message.ToDto();
+        var created = message.ToDto();
+        if (!isScheduled)
+            await _realtimePublisher.PublishToUserAsync(created.UserId, created, cancellationToken);
+
+        return created;
     }
 
     public async Task CancelScheduledNotificationAsync(

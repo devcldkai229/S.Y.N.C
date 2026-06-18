@@ -1,0 +1,22 @@
+using Microsoft.Extensions.DependencyInjection;
+using Social.Application.Services;
+
+namespace Social.Application.Extensions;
+
+public static class ApplicationServiceExtensions
+{
+    public static IServiceCollection AddSocialApplication(this IServiceCollection services)
+    {
+        services.AddScoped<IPostService, PostService>();
+        services.AddScoped<IPostShareCodeBackfillService, PostShareCodeBackfillService>();
+        services.AddScoped<IInteractionService, InteractionService>();
+        services.AddScoped<ICommentService, CommentService>();
+        services.AddScoped<ICommunityChallengeService, CommunityChallengeService>();
+        services.AddScoped<IChallengeParticipationService, ChallengeParticipationService>();
+        services.AddScoped<IUserFollowService, UserFollowService>();
+        services.AddScoped<ISocialUserSearchService, SocialUserSearchService>();
+        services.AddScoped<IStoryService, StoryService>();
+        services.AddScoped<IBlogService, BlogService>();
+        return services;
+    }
+}

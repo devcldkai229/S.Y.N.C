@@ -28,4 +28,10 @@ public class UserPreference : BaseAuditableEntity
     public bool DataSharingConsent { get; set; }
 
     public bool MarketingConsent { get; set; }
+
+    public bool SmartPushEnabled { get; set; }
+
+    public bool AllowAiGeneratedNotification { get; set; }
+
+    public TimeSpan? PreferredReminderTime { get; set; }
 }

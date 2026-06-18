@@ -1,0 +1,13 @@
+{
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-public-assets",
+    "KeyPrefix": "exercises_catalog/",
+    "PublicRead": true,
+    "UseMediaProxy": true,
+    "MediaProxyBaseUrl": "http://localhost:5057/api/v1/exercise/exercises/media/"
+  }
+}

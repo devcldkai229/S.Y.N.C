@@ -1,0 +1,362 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.json (gitignored). YARP routes for local microservices.",
+
+  "Logging": {
+    "LogLevel": {
+      "Yarp": "Warning"
+    }
+  },
+  "Cors": {
+    "AllowedOrigins": [ "*" ]
+  },
+  "RateLimiting": {
+    "Enabled": false
+  },
+  "ReverseProxy": {
+    "Routes": {
+      "iam-auth-route": {
+        "ClusterId": "iam-cluster",
+        "Match": {
+          "Path": "/api/v1/auth/{**catch-all}"
+        }
+      },
+      "iam-route": {
+        "ClusterId": "iam-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/iam/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/iam" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "iam-users-public-profile-route": {
+        "ClusterId": "iam-cluster",
+        "Match": {
+          "Path": "/api/v1/users/{id}/public-profile"
+        }
+      },
+      "iam-users-search-route": {
+        "ClusterId": "iam-cluster",
+        "Match": {
+          "Path": "/api/v1/users/search"
+        }
+      },
+      "roadmap-route": {
+        "ClusterId": "roadmap-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/roadmap/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/roadmap" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "exercise-route": {
+        "ClusterId": "exercise-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/exercise/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/exercise" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "notifications-direct-route": {
+        "ClusterId": "notification-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/notifications/{**catch-all}"
+        }
+      },
+      "notification-route": {
+        "ClusterId": "notification-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/notification/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/notification" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "social-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/social/{**catch-all}"
+        }
+      },
+      "social-challenges-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/challenges/{**catch-all}"
+        }
+      },
+      "social-posts-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/posts/{**catch-all}"
+        }
+      },
+      "social-comments-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/comments/{**catch-all}"
+        }
+      },
+      "social-users-me-challenges-route": {
+        "ClusterId": "social-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/users/me/challenges/{**catch-all}"
+        }
+      },
+      "payment-subscription-plans-public-route": {
+        "ClusterId": "payment-cluster",
+        "Match": {
+          "Path": "/api/v1/payment/payments/subscription-plans",
+          "Methods": [ "GET" ]
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/payment" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "payment-payos-webhook-route": {
+        "ClusterId": "payment-cluster",
+        "Match": {
+          "Path": "/api/v1/payment/payments/payos/webhook"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/payment" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "payment-route": {
+        "ClusterId": "payment-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/payment/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/payment" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "nutrition-route": {
+        "ClusterId": "nutrition-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/nutrition/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/nutrition" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "marketplace-route": {
+        "ClusterId": "marketplace-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/marketplace/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/marketplace" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "order-route": {
+        "ClusterId": "order-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/order/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/order" },
+          { "PathPrefix": "/api/v1" }
+        ]
+      },
+      "order-ahamove-webhook-route": {
+        "ClusterId": "order-cluster",
+        "Match": {
+          "Path": "/webhooks/ahamove"
+        }
+      },
+      "order-tracking-hub-route": {
+        "ClusterId": "order-cluster",
+        "Match": {
+          "Path": "/hubs/tracking/{**catch-all}"
+        }
+      },
+      "payment-momo-webhook-route": {
+        "ClusterId": "payment-cluster",
+        "Match": {
+          "Path": "/webhooks/momo"
+        }
+      },
+      "media-route": {
+        "ClusterId": "social-cluster",
+        "Match": {
+          "Path": "/api/v1/media/{**catch-all}"
+        }
+      }
+    },
+    "Clusters": {
+      "iam-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "iam/primary": {
+            "Address": "http://localhost:5288"
+          }
+        }
+      },
+      "roadmap-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "roadmap/primary": {
+            "Address": "http://localhost:5118"
+          }
+        }
+      },
+      "exercise-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "exercise/primary": {
+            "Address": "http://localhost:5187"
+          }
+        }
+      },
+      "notification-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "notification/primary": {
+            "Address": "http://localhost:5106"
+          }
+        }
+      },
+      "social-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "social/primary": { "Address": "http://localhost:5120" }
+        }
+      },
+      "payment-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "payment/primary": {
+            "Address": "http://localhost:5084"
+          }
+        }
+      },
+      "nutrition-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "nutrition/primary": {
+            "Address": "http://localhost:5122"
+          }
+        }
+      },
+      "marketplace-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "marketplace/primary": {
+            "Address": "http://localhost:5119"
+          }
+        }
+      },
+      "order-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "order/primary": {
+            "Address": "http://localhost:5123"
+          }
+        }
+      }
+    }
+  }
+}

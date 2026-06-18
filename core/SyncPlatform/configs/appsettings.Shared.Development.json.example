@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_comment": "Development overrides shared across all Sync services. Use dev-only issuer/audience/secret so prod tokens cannot accidentally be accepted in development.",
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information"
+    }
+  },
+
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam-dev",
+    "Audience": "sync-lifestyle-clients-dev",
+    "SecretKey": "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
+  }
+}

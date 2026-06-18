@@ -1,14 +1,18 @@
 using Libs.Auth.Extensions;
+using Libs.Storage.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using Roadmap.API.Services;
 using Roadmap.Application.Common;
 using Roadmap.Application.Extensions;
+using Roadmap.API.Middleware;
 using Roadmap.Infrastructure.Extensions;
 using Roadmap.Infrastructure.Persistence;
+using Roadmap.Infrastructure.Persistence.Seed;
 using System.Text.Json.Serialization;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
@@ -31,6 +35,8 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddRoadmapApplication();
 builder.Services.AddRoadmapInfrastructure(builder.Configuration);
+builder.Services.AddS3ObjectStorage(builder.Configuration);
+builder.Services.AddSingleton<IWorkoutMediaStorage, S3WorkoutMediaStorage>();
 
 // JWT authentication + authorization policies + ICurrentUserContext (shared lib)
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
@@ -72,10 +78,12 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
+await RoadmapSeedData.RoadmapMongoSeeder.SeedAsync(mongoDb);
 
 app.MapSyncHealthChecks();
 app.MapControllers();

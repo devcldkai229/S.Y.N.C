@@ -20,49 +20,59 @@ builder.Services.AddSwaggerGen(options =>
 
 // JWT validated once at the edge; Bearer is forwarded to downstream services (defense in depth).
 // X-User-* headers are injected for correlation/logging — not for authorization.
-builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
+builder.Services.AddSyncJwtAuthentication(
+    builder.Configuration,
+    builder.Environment,
+    requireAuthenticationByDefault: false);
 
-builder.Services.AddRateLimiter(rl =>
+var rateLimitingEnabled = builder.Configuration.GetValue(
+    "RateLimiting:Enabled",
+    !builder.Environment.IsDevelopment());
+
+if (rateLimitingEnabled)
 {
-    rl.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+    builder.Services.AddRateLimiter(rl =>
     {
-        var user = ctx.User;
-        if (user.Identity?.IsAuthenticated == true)
+        rl.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
         {
-            var userId = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "authenticated-unknown";
+            var user = ctx.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.FindFirstValue(ClaimTypes.NameIdentifier) ?? "authenticated-unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: $"user:{userId}",
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 120,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 10,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                    });
+            }
+
+            var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip";
             return RateLimitPartition.GetFixedWindowLimiter(
-                partitionKey: $"user:{userId}",
+                partitionKey: $"anon:{ip}",
                 factory: _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 120,
+                    PermitLimit = 30,
                     Window = TimeSpan.FromMinutes(1),
-                    QueueLimit = 10,
+                    QueueLimit = 5,
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst
                 });
-        }
+        });
 
-        var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown-ip";
-        return RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: $"anon:{ip}",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 30,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 5,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst
-            });
+        rl.OnRejected = async (ctx, token) =>
+        {
+            ctx.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            ctx.HttpContext.Response.ContentType = "application/json";
+            ctx.HttpContext.Response.Headers["Retry-After"] = "60";
+            await ctx.HttpContext.Response.WriteAsync(
+                "{\"success\":false,\"message\":\"Too many requests. Please slow down and retry after 60 seconds.\",\"data\":null}",
+                token);
+        };
     });
-
-    rl.OnRejected = async (ctx, token) =>
-    {
-        ctx.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        ctx.HttpContext.Response.ContentType = "application/json";
-        ctx.HttpContext.Response.Headers["Retry-After"] = "60";
-        await ctx.HttpContext.Response.WriteAsync(
-            "{\"success\":false,\"message\":\"Too many requests. Please slow down and retry after 60 seconds.\",\"data\":null}",
-            token);
-    };
-});
+}
 
 builder.Services.AddCors(options =>
 {
@@ -103,7 +113,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
-app.UseRateLimiter();
+if (rateLimitingEnabled)
+    app.UseRateLimiter();
 app.UseSyncJwtAuthentication();
 
 app.MapHealthChecks("/health").AllowAnonymous();

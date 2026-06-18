@@ -23,10 +23,15 @@ public static class JwtAuthenticationExtensions
     /// <param name="services">DI container.</param>
     /// <param name="configuration">App configuration (expects a "Jwt" section).</param>
     /// <param name="environment">Host environment (used to relax HTTPS in Development).</param>
+    /// <param name="requireAuthenticationByDefault">
+    /// When true, all controller endpoints require a valid JWT unless marked [AllowAnonymous].
+    /// Set false for the API Gateway (YARP routes declare their own policies).
+    /// </param>
     public static IServiceCollection AddSyncJwtAuthentication(
         this IServiceCollection services,
         IConfiguration configuration,
-        IHostEnvironment environment)
+        IHostEnvironment environment,
+        bool requireAuthenticationByDefault = true)
     {
         var settings = configuration.GetSection(JwtAuthSettings.SectionName).Get<JwtAuthSettings>()
             ?? throw new InvalidOperationException(
@@ -68,6 +73,13 @@ public static class JwtAuthenticationExtensions
 
             o.Events = new JwtBearerEvents
             {
+                OnMessageReceived = ctx =>
+                {
+                    // Browsers send OPTIONS preflight without Authorization — skip JWT for CORS.
+                    if (HttpMethods.IsOptions(ctx.Request.Method))
+                        ctx.NoResult();
+                    return Task.CompletedTask;
+                },
                 OnChallenge = async ctx =>
                 {
                     if (ctx.Response.HasStarted) return;
@@ -90,11 +102,21 @@ public static class JwtAuthenticationExtensions
 
         services.AddAuthorization(options =>
         {
+            if (requireAuthenticationByDefault)
+            {
+                options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+            }
+
             options.AddPolicy(AuthPolicies.AuthenticatedUser, p =>
                 p.RequireAuthenticatedUser());
 
             options.AddPolicy(AuthPolicies.AdminOnly, p =>
                 p.RequireAuthenticatedUser().RequireRole("SystemAdmin"));
+
+            options.AddPolicy(AuthPolicies.PartnerOnly, p =>
+                p.RequireAuthenticatedUser().RequireRole("Partner"));
         });
 
         services.AddHttpContextAccessor();

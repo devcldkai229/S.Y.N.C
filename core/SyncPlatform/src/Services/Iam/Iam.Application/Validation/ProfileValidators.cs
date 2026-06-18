@@ -16,6 +16,9 @@ internal static class ProfileValidators
         if (request.AvatarUrl is { Length: > 1024 })
             errors[nameof(request.AvatarUrl)] = ["Avatar URL must be at most 1024 characters."];
 
+        if (request.BackgroundImageUrl is { Length: > 1024 })
+            errors[nameof(request.BackgroundImageUrl)] = ["Background image URL must be at most 1024 characters."];
+
         if (request.PreferredLanguage is { Length: > 8 })
             errors[nameof(request.PreferredLanguage)] = ["Preferred language must be at most 8 characters."];
 

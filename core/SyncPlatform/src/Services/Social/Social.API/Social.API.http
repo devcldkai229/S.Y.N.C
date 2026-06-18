@@ -1,0 +1,85 @@
+@Social_HostAddress = http://localhost:5120
+@Token = {{$dotenv JWT_TOKEN}}
+
+### Feed page 1 (cursor pagination)
+GET {{Social_HostAddress}}/api/v1/posts/feed?limit=20
+
+### Feed next page (cursor = CreatedAt of last post, ISO-8601)
+GET {{Social_HostAddress}}/api/v1/posts/feed?limit=20&cursor=2026-05-22T10:00:00.0000000+00:00
+
+### User wall (public posts by author)
+GET {{Social_HostAddress}}/api/v1/posts/user/{{userId}}?limit=20
+
+### My wall (JWT — includes private posts)
+GET {{Social_HostAddress}}/api/v1/posts/me/wall?limit=20
+Authorization: Bearer {{Token}}
+
+### User media gallery (only posts with media)
+GET {{Social_HostAddress}}/api/v1/posts/user/{{userId}}?limit=20&onlyMedia=true
+
+### Backfill share codes for legacy posts (Development / AllowShareCodeBackfillApi)
+POST {{Social_HostAddress}}/api/v1/posts/maintenance/backfill-share-codes
+Authorization: Bearer {{Token}}
+
+### Post by share code (deep link)
+GET {{Social_HostAddress}}/api/v1/posts/share/AB12CD34
+
+### Create post
+POST {{Social_HostAddress}}/api/v1/posts
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+{
+  "postType": "Standard",
+  "content": "Hello SYNC community!",
+  "mediaUrls": [],
+  "isPublic": true,
+  "authorSnapshot": {
+    "fullName": "Test User",
+    "avatarUrl": null
+  }
+}
+
+### Like post (atomic Interaction + $inc LikeCount)
+POST {{Social_HostAddress}}/api/v1/posts/{{postId}}/like
+Authorization: Bearer {{Token}}
+
+### Create comment
+POST {{Social_HostAddress}}/api/v1/posts/{{postId}}/comments
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+{
+  "content": "Hay quá!",
+  "authorSnapshot": { "fullName": "Test User", "avatarUrl": null }
+}
+
+### List comments (offset pagination)
+GET {{Social_HostAddress}}/api/v1/posts/{{postId}}/comments?pageNumber=1&pageSize=20
+
+### Create community challenge (JWT) — auto-posts to feed
+POST {{Social_HostAddress}}/api/v1/challenges
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+{
+  "title": "Chạy 50km tháng 5",
+  "description": "Cùng nhau chạy đủ 50km trong tháng này!",
+  "startDate": "2026-05-01T00:00:00Z",
+  "endDate": "2026-05-31T23:59:59Z",
+  "goalType": "TotalDistance",
+  "targetValue": 50,
+  "authorSnapshot": { "fullName": "Admin SYNC", "avatarUrl": null }
+}
+
+### Active challenges
+GET {{Social_HostAddress}}/api/v1/challenges/active
+
+### Share post (legacy interaction endpoint)
+POST {{Social_HostAddress}}/api/v1/posts/{{postId}}/interactions
+Authorization: Bearer {{Token}}
+Content-Type: application/json
+
+{
+  "interactionType": "Share"
+}

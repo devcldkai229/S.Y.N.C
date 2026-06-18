@@ -16,7 +16,7 @@ public interface IExerciseMotionAssetService
     Task UpdateAsync(Guid id, UpdateExerciseMotionAssetDto dto, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
-    Task<ExerciseMotionAssetDto> CreateWithUploadAsync(
+    Task<ExerciseMotionAssetDto> UpdateWithUploadAsync(
         CreateExerciseMotionAssetUploadDto dto,
         CancellationToken cancellationToken = default);
 }

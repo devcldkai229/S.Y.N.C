@@ -7,4 +7,7 @@ public static class AuthPolicies
 
     /// <summary>Authenticated AND role == SystemAdmin.</summary>
     public const string AdminOnly = "AdminOnly";
+
+    /// <summary>Authenticated AND role == Partner.</summary>
+    public const string PartnerOnly = "PartnerOnly";
 }

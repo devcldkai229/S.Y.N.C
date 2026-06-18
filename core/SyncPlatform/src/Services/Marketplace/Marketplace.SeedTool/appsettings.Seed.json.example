@@ -1,0 +1,22 @@
+{
+  "ConnectionStrings": {
+    "MarketplaceDatabase": "mongodb://localhost:27018"
+  },
+  "MongoDB": {
+    "MarketplaceDatabaseName": "sync_marketplace"
+  },
+  "AWS": {
+    "Profile": "<your-aws-profile>",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-objs",
+    "KeyPrefix": "food_catalog/",
+    "PublicRead": false
+  },
+  "Pexels": {
+    "ApiKey": "<pexels-api-key>",
+    "MinDelayMs": 350,
+    "MaxRetries": 3
+  }
+}

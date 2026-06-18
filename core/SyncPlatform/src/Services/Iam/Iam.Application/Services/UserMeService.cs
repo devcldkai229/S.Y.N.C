@@ -5,6 +5,7 @@ using Iam.Application.Exceptions;
 using Iam.Application.Mapping;
 using Iam.Application.Validation;
 using Libs.Auth.Context;
+using Libs.Storage.Services;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
 
@@ -14,11 +15,19 @@ public sealed class UserMeService
 {
     private readonly IUserMeRepository _repository;
     private readonly ICurrentUserContext _currentUser;
+    private readonly IAchievementService _achievementService;
+    private readonly IMediaUrlResolver _media;
 
-    public UserMeService(IUserMeRepository repository, ICurrentUserContext currentUser)
+    public UserMeService(
+        IUserMeRepository repository,
+        ICurrentUserContext currentUser,
+        IAchievementService achievementService,
+        IMediaUrlResolver media)
     {
         _repository = repository;
         _currentUser = currentUser;
+        _achievementService = achievementService;
+        _media = media;
     }
 
     public async Task<ProfileSettingsResponse> GetProfileSettingsAsync(CancellationToken cancellationToken = default)
@@ -27,7 +36,7 @@ public sealed class UserMeService
         var user = await _repository.GetUserWithProfilesAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(User), userId);
 
-        return UserMeMapper.ToProfileSettingsResponse(user);
+        return UserMeMapper.ToProfileSettingsResponse(user, _media);
     }
 
     public async Task<InventoryResponse> GetInventoryAsync(CancellationToken cancellationToken = default)
@@ -37,9 +46,14 @@ public sealed class UserMeService
         _ = await _repository.GetUserWithProfilesAsync(userId, cancellationToken)
             ?? throw new NotFoundException(nameof(User), userId);
 
+        // Auto-check and unlock any newly met profile-based achievements
+        await _achievementService.CheckAndUnlockAsync(userId, cancellationToken);
+
         var gamification = await _repository.GetGamificationAsync(userId, cancellationToken);
         var vouchers = await _repository.GetVouchersAsync(userId, cancellationToken);
         var achievements = await _repository.GetAchievementsAsync(userId, cancellationToken);
+        var allAchievements = await _repository.GetAllAchievementsAsync(cancellationToken);
+        var unlockedIds = await _repository.GetUnlockedAchievementIdsAsync(userId, cancellationToken);
 
         var voucherDtos = vouchers
             .OrderByDescending(v => v.AcquiredAt)
@@ -48,13 +62,22 @@ public sealed class UserMeService
 
         var achievementDtos = achievements
             .OrderByDescending(a => a.UnlockedAt)
-            .Select(UserMeMapper.ToAchievementDto)
+            .Select(a => UserMeMapper.ToAchievementDto(a, _media))
+            .ToList();
+
+        var inProgressDtos = allAchievements
+            .Where(a => !unlockedIds.Contains(a.Id))
+            .Select(a => UserMeMapper.ToProgressDto(a, gamification, _media))
+            .OfType<AchievementProgressDto>()
+            .Where(p => p.CurrentValue > 0)
+            .OrderByDescending(p => (double)p.CurrentValue / p.RequiredValue)
             .ToList();
 
         return new InventoryResponse(
             UserMeMapper.ToGamificationDto(gamification),
             voucherDtos,
             achievementDtos,
+            inProgressDtos,
             voucherDtos.Count,
             achievementDtos.Count);
     }
@@ -71,7 +94,14 @@ public sealed class UserMeService
             user.FullName = request.FullName.Trim();
 
         if (request.AvatarUrl is not null)
-            user.AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl) ? null : request.AvatarUrl.Trim();
+            user.AvatarUrl = string.IsNullOrWhiteSpace(request.AvatarUrl)
+                ? null
+                : _media.NormalizeForStorage(request.AvatarUrl.Trim());
+
+        if (request.BackgroundImageUrl is not null)
+            user.BackgroundImageUrl = string.IsNullOrWhiteSpace(request.BackgroundImageUrl)
+                ? null
+                : _media.NormalizeForStorage(request.BackgroundImageUrl.Trim());
 
         if (request.PreferredLanguage is not null)
             user.PreferredLanguage = request.PreferredLanguage.Trim();
@@ -82,7 +112,7 @@ public sealed class UserMeService
         user.UpdatedAt = DateTimeOffset.UtcNow;
         await _repository.SaveChangesAsync(cancellationToken);
 
-        return UserMeMapper.ToProfileSettingsResponse(user);
+        return UserMeMapper.ToProfileSettingsResponse(user, _media);
     }
 
     public async Task<ProfileSettingsResponse> UpdateFitnessProfileAsync(
@@ -107,7 +137,7 @@ public sealed class UserMeService
         user.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _repository.SaveChangesAsync(cancellationToken);
-        return UserMeMapper.ToProfileSettingsResponse(user);
+        return UserMeMapper.ToProfileSettingsResponse(user, _media);
     }
 
     public async Task<ProfileSettingsResponse> UpdateAccountPreferencesAsync(
@@ -128,7 +158,7 @@ public sealed class UserMeService
         user.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _repository.SaveChangesAsync(cancellationToken);
-        return UserMeMapper.ToProfileSettingsResponse(user);
+        return UserMeMapper.ToProfileSettingsResponse(user, _media);
     }
 
     private async Task<User> GetUserForUpdateAsync(CancellationToken cancellationToken)

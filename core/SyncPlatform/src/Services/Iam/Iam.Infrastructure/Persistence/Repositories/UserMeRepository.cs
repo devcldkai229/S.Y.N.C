@@ -43,6 +43,29 @@ public sealed class UserMeRepository : IUserMeRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(g => g.UserId == userId, cancellationToken);
 
+    public async Task<IReadOnlyList<Achievement>> GetAllAchievementsAsync(CancellationToken cancellationToken = default) =>
+        await _db.Achievements
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+
+    public async Task<HashSet<Guid>> GetUnlockedAchievementIdsAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        (await _db.UserAchievements
+            .AsNoTracking()
+            .Where(ua => ua.UserId == userId)
+            .Select(ua => ua.AchievementId)
+            .ToListAsync(cancellationToken))
+        .ToHashSet();
+
+    public Task<GamificationProfile?> GetGamificationForUpdateAsync(Guid userId, CancellationToken cancellationToken = default) =>
+        _db.GamificationProfiles
+            .FirstOrDefaultAsync(g => g.UserId == userId, cancellationToken);
+
+    public void AddUserAchievement(UserAchievement ua) =>
+        _db.UserAchievements.Add(ua);
+
+    public void AddVoucher(UserVoucher voucher) =>
+        _db.UserVouchers.Add(voucher);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         _db.SaveChangesAsync(cancellationToken);
 }

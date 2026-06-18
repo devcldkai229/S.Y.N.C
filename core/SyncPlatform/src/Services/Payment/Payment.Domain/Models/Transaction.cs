@@ -42,4 +42,7 @@ public class Transaction : BaseAuditableEntity
     public DateTimeOffset? ProcessedAt { get; set; }
 
     public string? FailedReason { get; set; }
+
+    /// <summary>Coupon code applied to this transaction, if any.</summary>
+    public string? CouponCode { get; set; }
 }

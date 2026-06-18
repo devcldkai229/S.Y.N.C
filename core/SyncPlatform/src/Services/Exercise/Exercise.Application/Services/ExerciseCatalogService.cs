@@ -13,13 +13,16 @@ public class ExerciseCatalogService : IExerciseCatalogService
 {
     private readonly IExerciseCatalogRepository _repository;
     private readonly IExerciseMotionAssetRepository _assetRepository;
+    private readonly IStorageService _storageService;
 
     public ExerciseCatalogService(
         IExerciseCatalogRepository repository,
-        IExerciseMotionAssetRepository assetRepository)
+        IExerciseMotionAssetRepository assetRepository,
+        IStorageService storageService)
     {
         _repository = repository;
         _assetRepository = assetRepository;
+        _storageService = storageService;
     }
 
     public async Task<(IReadOnlyList<ExerciseCatalogDto> Items, PaginationMetadata Pagination)> SearchActiveAsync(
@@ -59,7 +62,7 @@ public class ExerciseCatalogService : IExerciseCatalogService
         }
 
         var (entities, totalRecords) = await _repository.SearchActivePagedAsync(criteria, cancellationToken);
-        var dtos = entities.Select(e => e.ToDto()).ToList();
+        var dtos = await MapWithThumbnailsAsync(entities, cancellationToken);
         var pagination = new PaginationMetadata(pageNumber, pageSize, totalRecords);
 
         return (dtos, pagination);
@@ -70,7 +73,7 @@ public class ExerciseCatalogService : IExerciseCatalogService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null)
             throw new NotFoundException(nameof(ExerciseCatalog), id);
-        return entity.ToDto();
+        return await MapWithThumbnailAsync(entity, cancellationToken);
     }
 
     public async Task<ExerciseCatalogDto> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
@@ -78,7 +81,7 @@ public class ExerciseCatalogService : IExerciseCatalogService
         var entity = await _repository.GetByCodeAsync(code, cancellationToken);
         if (entity == null)
             throw new NotFoundException(nameof(ExerciseCatalog), code);
-        return entity.ToDto();
+        return await MapWithThumbnailAsync(entity, cancellationToken);
     }
 
     public async Task<ExerciseCatalogDto> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
@@ -86,7 +89,7 @@ public class ExerciseCatalogService : IExerciseCatalogService
         var entity = await _repository.GetBySlugAsync(slug, cancellationToken);
         if (entity == null)
             throw new NotFoundException(nameof(ExerciseCatalog), slug);
-        return entity.ToDto();
+        return await MapWithThumbnailAsync(entity, cancellationToken);
     }
 
     public async Task<ExerciseCatalogDto> CreateAsync(CreateExerciseCatalogDto dto, CancellationToken cancellationToken = default)
@@ -132,8 +135,54 @@ public class ExerciseCatalogService : IExerciseCatalogService
             throw new NotFoundException(nameof(ExerciseCatalog), id);
 
         var assets = await _assetRepository.GetByExerciseIdAsync(id, cancellationToken);
-        var assetDtos = assets.Select(a => a.ToDto()).ToList();
+        var assetDtos = assets.Select(a => a.ToDto(_storageService)).ToList();
 
         return entity.ToDetailDto(assetDtos);
+    }
+
+    private async Task<ExerciseCatalogDto> MapWithThumbnailAsync(
+        ExerciseCatalog entity,
+        CancellationToken cancellationToken)
+    {
+        var thumbnails = await _assetRepository.GetPrimaryImagesByExerciseIdsAsync([entity.Id], cancellationToken);
+        thumbnails.TryGetValue(entity.Id, out var asset);
+        var thumbnailUrl = asset?.ResolveDisplayImageUrl(_storageService);
+        return entity.ToDto(thumbnailUrl);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, string?>> GetThumbnailUrlsAsync(
+        IReadOnlyList<Guid> exerciseIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (exerciseIds.Count == 0)
+            return new Dictionary<Guid, string?>();
+
+        var ids = exerciseIds.Distinct().ToList();
+        var thumbnails = await _assetRepository.GetPrimaryImagesByExerciseIdsAsync(ids, cancellationToken);
+
+        return ids.ToDictionary(
+            id => id,
+            id => thumbnails.TryGetValue(id, out var asset)
+                ? asset.ResolveDisplayImageUrl(_storageService)
+                : null);
+    }
+
+    private async Task<IReadOnlyList<ExerciseCatalogDto>> MapWithThumbnailsAsync(
+        IReadOnlyList<ExerciseCatalog> entities,
+        CancellationToken cancellationToken)
+    {
+        if (entities.Count == 0) return [];
+
+        var ids = entities.Select(e => e.Id).ToList();
+        var thumbnails = await _assetRepository.GetPrimaryImagesByExerciseIdsAsync(ids, cancellationToken);
+
+        return entities
+            .Select(entity =>
+            {
+                thumbnails.TryGetValue(entity.Id, out var asset);
+                var thumbnailUrl = asset?.ResolveDisplayImageUrl(_storageService);
+                return entity.ToDto(thumbnailUrl);
+            })
+            .ToList();
     }
 }

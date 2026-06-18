@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1.",
+
+  "IamService": {
+    "BaseUrl": "http://localhost:5288"
+  },
+  "ConnectionStrings": {
+    "SocialDatabase": "mongodb://localhost:27018"
+  },
+  "MongoDB": {
+    "SocialDatabaseName": "sync_social"
+  },
+  "Social": {
+    "Seed": {
+      "Enabled": true,
+      "SeedDemoData": true
+    },
+    "Maintenance": {
+      "AllowShareCodeBackfillApi": false,
+      "BackfillShareCodesOnStartup": false
+    }
+  },
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-public-assets",
+    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
+    "MaxFileSizeMb": 50
+  },
+  "AwsLocation": {
+    "Region": "ap-southeast-1",
+    "RouteCalculatorName": "sync-route-calculator",
+    "DataProvider": "Grab",
+    "Profile": "default"
+  }
+}

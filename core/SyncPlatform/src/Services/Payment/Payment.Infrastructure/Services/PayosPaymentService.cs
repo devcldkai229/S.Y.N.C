@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Net.payOS;
+using Payment.Application.Clients;
 using Payment.Application.DTOs;
 using Payment.Application.Exceptions;
 using Payment.Application.Options;
@@ -31,18 +32,24 @@ public class PayosPaymentService : IPayosPaymentService
     private readonly PaymentDbContext _db;
     private readonly PayOS _payOS;
     private readonly PayosSettings _settings;
+    private readonly IIamSubscriptionClient _iamClient;
+    private readonly IOrderPaymentNotifyClient _orderNotifyClient;
     private readonly ILogger<PayosPaymentService> _logger;
 
     public PayosPaymentService(
         PaymentDbContext db,
         PayOS payOS,
         IOptions<PayosSettings> settings,
+        IIamSubscriptionClient iamClient,
+        IOrderPaymentNotifyClient orderNotifyClient,
         ILogger<PayosPaymentService> logger)
     {
-        _db = db;
-        _payOS = payOS;
-        _settings = settings.Value;
-        _logger = logger;
+        _db        = db;
+        _payOS     = payOS;
+        _settings  = settings.Value;
+        _iamClient = iamClient;
+        _orderNotifyClient = orderNotifyClient;
+        _logger    = logger;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -67,15 +74,19 @@ public class PayosPaymentService : IPayosPaymentService
         if (!plan.IsActive)
             throw new BadRequestException("Subscription plan is not currently active.");
 
-        var (amount, durationDays) = request.BillingCycle switch
+        var (baseAmount, durationDays) = request.BillingCycle switch
         {
             BillingCycle.Monthly => (plan.MonthlyPrice, _settings.MonthlyDurationDays),
             BillingCycle.Yearly  => (plan.YearlyPrice,  _settings.YearlyDurationDays),
             _ => throw new BadRequestException("Invalid billing cycle.")
         };
 
-        if (amount <= 0)
+        if (baseAmount <= 0)
             throw new BadRequestException("Selected billing cycle has no valid price configured.");
+
+        // ── Validate & apply coupon ─────────────────────────────────────────
+        var (finalAmount, appliedCouponCode) = await ApplyCouponAsync(
+            baseAmount, request.CouponCode, cancellationToken);
 
         // ── Generate unique numeric OrderCode (PayOS requires `long`) ───────
         // Unix-ms * 1000 + 0..999 random → microsecond-like uniqueness,
@@ -89,17 +100,21 @@ public class PayosPaymentService : IPayosPaymentService
             UserId                    = userId,
             TransactionType           = TransactionType.Subscription,
             Status                    = TransactionStatus.Pending,
-            PaymentMethod             = PaymentMethod.Momo,           // bank/QR redirect (no PayOS member in enum yet)
+            PaymentMethod             = PaymentMethod.VietQR,
             Provider                  = PaymentProvider.PayOS,
-            Amount                    = amount,
+            Amount                    = finalAmount,
             Currency                  = plan.Currency,
             OrderCode                 = orderCode,
             RelatedEntityType         = nameof(SubscriptionPlan),
             RelatedEntityId           = plan.Id,
             Description               = $"SYNC {plan.Name} ({request.BillingCycle}, {durationDays}d)",
             SpendingAuthorizationType = SpendingAuthorizationType.ManualApproval,
-            IsAiInitiated             = false
+            IsAiInitiated             = false,
+            CouponCode                = appliedCouponCode
         };
+
+        // Dùng finalAmount thay vì amount trong phần còn lại
+        var amount = finalAmount;
         _db.Transactions.Add(transaction);
         await _db.SaveChangesAsync(cancellationToken);
 
@@ -318,7 +333,7 @@ public class PayosPaymentService : IPayosPaymentService
 
             transaction.Status = TransactionStatus.Succeeded;
 
-            // e) Activate / extend UserSubscription if this Transaction is for a SubscriptionPlan
+            // e) Activate subscription or confirm meal order payment
             if (transaction.RelatedEntityType == nameof(SubscriptionPlan)
                 && transaction.RelatedEntityId is { } planId)
             {
@@ -329,6 +344,14 @@ public class PayosPaymentService : IPayosPaymentService
                     webhookData.paymentLinkId,
                     now,
                     cancellationToken);
+
+                await SyncTierToIamAsync(transaction.UserId, "Premium", cancellationToken);
+                await IncrementCouponUsageAsync(transaction.CouponCode, cancellationToken);
+            }
+            else if (transaction.RelatedEntityType == "Order"
+                     && transaction.RelatedEntityId is Guid mealOrderId)
+            {
+                await _orderNotifyClient.ConfirmOrderPaymentAsync(mealOrderId, transaction.Id, cancellationToken);
             }
 
             // f) Mark webhook event as processed
@@ -360,6 +383,78 @@ public class PayosPaymentService : IPayosPaymentService
             _logger.LogError(ex, "Unexpected error while processing PayOS webhook for OrderCode={OrderCode}", externalEventId);
             throw new AppExceptionWrapper("An unexpected error occurred while processing the webhook.", ex);
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 3. DEV-ONLY: POST /api/v1/payments/dev/confirm/{orderCode}
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public async Task<PayosWebhookProcessResult> ActivateForDevAsync(
+        long orderCode,
+        CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var transaction = await _db.Transactions
+            .FirstOrDefaultAsync(
+                t => t.OrderCode == orderCode && t.Provider == PaymentProvider.PayOS,
+                cancellationToken);
+
+        if (transaction is null)
+            return new PayosWebhookProcessResult
+            {
+                Outcome   = WebhookProcessOutcome.TransactionNotFound,
+                OrderCode = orderCode,
+                Message   = "Transaction not found for this orderCode."
+            };
+
+        if (transaction.Status is TransactionStatus.Succeeded
+            or TransactionStatus.Failed
+            or TransactionStatus.Refunded
+            or TransactionStatus.Cancelled)
+            return new PayosWebhookProcessResult
+            {
+                Outcome   = WebhookProcessOutcome.TransactionAlreadyFinal,
+                OrderCode = orderCode,
+                Message   = $"Transaction already in final state ({transaction.Status})."
+            };
+
+        transaction.Status      = TransactionStatus.Succeeded;
+        transaction.ProcessedAt = now;
+        transaction.UpdatedAt   = now;
+
+        if (transaction.RelatedEntityType == nameof(SubscriptionPlan)
+            && transaction.RelatedEntityId is { } planId)
+        {
+            await ActivateSubscriptionAsync(
+                transaction.UserId,
+                planId,
+                transaction.Amount,
+                "dev-confirm",
+                now,
+                cancellationToken);
+
+            await SyncTierToIamAsync(transaction.UserId, "Premium", cancellationToken);
+            await IncrementCouponUsageAsync(transaction.CouponCode, cancellationToken);
+        }
+        else if (transaction.RelatedEntityType == "Order"
+                 && transaction.RelatedEntityId is Guid mealOrderId)
+        {
+            await _orderNotifyClient.ConfirmOrderPaymentAsync(mealOrderId, transaction.Id, cancellationToken);
+        }
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation(
+            "[DEV] Simulated payment confirmed. OrderCode={OrderCode}, UserId={UserId}",
+            orderCode, transaction.UserId);
+
+        return new PayosWebhookProcessResult
+        {
+            Outcome   = WebhookProcessOutcome.Processed,
+            OrderCode = orderCode,
+            Message   = "[DEV] Payment simulated successfully."
+        };
     }
 
     // ── Internal helpers ────────────────────────────────────────────────────
@@ -418,6 +513,93 @@ public class PayosPaymentService : IPayosPaymentService
         existing.ManagedBy              = PaymentProvider.PayOS;
         existing.ExternalSubscriptionId = externalSubscriptionId;
         existing.UpdatedAt              = now;
+    }
+
+    private async Task<(decimal finalAmount, string? couponCode)> ApplyCouponAsync(
+        decimal baseAmount,
+        string? rawCode,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(rawCode))
+            return (baseAmount, null);
+
+        var code = rawCode.Trim().ToUpper();
+        var now  = DateTimeOffset.UtcNow;
+
+        if (code.StartsWith("SYNC-10-"))
+        {
+            var discount = Math.Round(baseAmount * 10m / 100m, 0, MidpointRounding.AwayFromZero);
+            var finalAmount = Math.Max(0, baseAmount - discount);
+            return (finalAmount, code);
+        }
+        if (code.StartsWith("SYNC-20-"))
+        {
+            var discount = Math.Round(baseAmount * 20m / 100m, 0, MidpointRounding.AwayFromZero);
+            var finalAmount = Math.Max(0, baseAmount - discount);
+            return (finalAmount, code);
+        }
+
+        var campaign = await _db.PromotionCampaigns
+            .FirstOrDefaultAsync(p =>
+                p.CouponCode == code &&
+                p.IsActive &&
+                p.StartsAt <= now &&
+                p.EndsAt   >= now,
+                cancellationToken);
+
+        if (campaign is null)
+            throw new BadRequestException($"Coupon code '{code}' is invalid or has expired.");
+
+        if (campaign.UsageLimit > 0 && campaign.UsageCount >= campaign.UsageLimit)
+            throw new BadRequestException($"Coupon code '{code}' has reached its usage limit.");
+
+        if (baseAmount < campaign.MinimumSpend)
+            throw new BadRequestException(
+                $"Order total must be at least {campaign.MinimumSpend} to use this coupon.");
+
+        var discountAmt = campaign.PromotionType switch
+        {
+            PromotionType.PercentageDiscount => Math.Round(baseAmount * campaign.Value / 100, 0, MidpointRounding.AwayFromZero),
+            PromotionType.FixedDiscount      => campaign.Value,
+            _                                => 0m
+        };
+
+        var finalAmt = Math.Max(0, baseAmount - discountAmt);
+        return (finalAmt, code);
+    }
+
+    private async Task IncrementCouponUsageAsync(string? couponCode, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(couponCode)) return;
+
+        var code = couponCode.Trim().ToUpper();
+        if (code.StartsWith("SYNC-10-") || code.StartsWith("SYNC-20-"))
+            return;
+
+        var campaign = await _db.PromotionCampaigns
+            .FirstOrDefaultAsync(p => p.CouponCode == couponCode, cancellationToken);
+
+        if (campaign is null) return;
+
+        campaign.UsageCount += 1;
+        campaign.UpdatedAt   = DateTimeOffset.UtcNow;
+    }
+
+    private async Task SyncTierToIamAsync(Guid userId, string tier, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _iamClient.SetTierAsync(userId, tier, cancellationToken);
+            _logger.LogInformation("Synced tier={Tier} to IAM for UserId={UserId}.", tier, userId);
+        }
+        catch (Exception ex)
+        {
+            // Nuốt lỗi để không làm fail webhook/dev-confirm — IAM có thể tạm unavailable.
+            // Tier sẽ được đối chiếu lại khi có job reconcile sau này.
+            _logger.LogWarning(ex,
+                "Failed to sync tier={Tier} to IAM for UserId={UserId}. Will require manual reconciliation.",
+                tier, userId);
+        }
     }
 
     /// <summary>Concrete subclass so we can wrap unexpected exceptions and route them through GlobalExceptionHandler.</summary>

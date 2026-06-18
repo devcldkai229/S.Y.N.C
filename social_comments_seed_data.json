@@ -1,0 +1,4351 @@
+{
+  "_meta": {
+    "collection": "comments",
+    "count": 334,
+    "generatedAt": "2026-06-15"
+  },
+  "comments": [
+    {
+      "id": "7fc5d891-f27e-5542-96d0-9c5fd17e3d5f",
+      "createdAt": "2026-06-11T12:12:50Z",
+      "updatedAt": null,
+      "postId": "da73e0ee-48bf-565e-9f6f-72af0ad3ba48",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "08a9f5ff-4036-50f5-88db-eeafaf283f0c",
+      "createdAt": "2026-05-31T07:04:28Z",
+      "updatedAt": null,
+      "postId": "da73e0ee-48bf-565e-9f6f-72af0ad3ba48",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "1137bff7-a8ab-5de8-aa0f-9f339aaba3df",
+      "createdAt": "2026-06-03T18:00:41Z",
+      "updatedAt": null,
+      "postId": "da73e0ee-48bf-565e-9f6f-72af0ad3ba48",
+      "userId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "734e8f45-86e1-55c0-a3e0-6dd9f15fe7f1",
+      "createdAt": "2026-06-07T10:50:21Z",
+      "updatedAt": null,
+      "postId": "da73e0ee-48bf-565e-9f6f-72af0ad3ba48",
+      "userId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0632d70b-caab-5534-a4c0-36c25e7f4339",
+      "createdAt": "2026-06-03T18:49:13Z",
+      "updatedAt": null,
+      "postId": "da73e0ee-48bf-565e-9f6f-72af0ad3ba48",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d8a43024-ef79-579e-91ab-cd7699fe33c2",
+      "createdAt": "2026-06-04T15:18:37Z",
+      "updatedAt": null,
+      "postId": "da73e0ee-48bf-565e-9f6f-72af0ad3ba48",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "4dd50336-05e6-52f5-8d82-4ab07622f544",
+      "createdAt": "2026-05-13T11:11:21Z",
+      "updatedAt": null,
+      "postId": "da73e0ee-48bf-565e-9f6f-72af0ad3ba48",
+      "userId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "parentCommentId": "734e8f45-86e1-55c0-a3e0-6dd9f15fe7f1"
+    },
+    {
+      "id": "2b3510f8-1085-525d-9953-ebefe14749c7",
+      "createdAt": "2026-06-01T22:34:37Z",
+      "updatedAt": null,
+      "postId": "ae358009-6476-5084-8efd-13970c8a44f4",
+      "userId": "7a36f7ad-90db-52a5-91d2-77c89a4c7549",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Mai Nhật Long",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "4c290d82-baf2-56c5-a9eb-35971b67b5e0",
+      "createdAt": "2026-05-25T01:54:51Z",
+      "updatedAt": null,
+      "postId": "ae358009-6476-5084-8efd-13970c8a44f4",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "64f21292-de56-58ba-8ade-0374a5a3ebbe",
+      "createdAt": "2026-05-26T14:52:52Z",
+      "updatedAt": null,
+      "postId": "ae358009-6476-5084-8efd-13970c8a44f4",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "50ec192a-dda2-52f9-abf7-8b333665b8af",
+      "createdAt": "2026-05-21T17:05:29Z",
+      "updatedAt": null,
+      "postId": "bbb4850b-22b8-5562-86b4-026fa925d9b2",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2f29cd98-45a3-5654-91d4-b7c9b5915d47",
+      "createdAt": "2026-05-30T18:35:40Z",
+      "updatedAt": null,
+      "postId": "bbb4850b-22b8-5562-86b4-026fa925d9b2",
+      "userId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "content": "Cảm ơn bạn, mình sẽ thử cách đó nha.",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "parentCommentId": "50ec192a-dda2-52f9-abf7-8b333665b8af"
+    },
+    {
+      "id": "f82606e0-4af2-52e0-805e-6b753153c525",
+      "createdAt": "2026-05-23T01:40:39Z",
+      "updatedAt": null,
+      "postId": "84973550-1313-5982-a617-210e01db9ff2",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "1a2fe923-c73c-55cb-9142-3a0ac24b2d16",
+      "createdAt": "2026-05-29T13:39:21Z",
+      "updatedAt": null,
+      "postId": "84973550-1313-5982-a617-210e01db9ff2",
+      "userId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "334aa62d-389c-564c-95f4-2f088444998a",
+      "createdAt": "2026-05-16T01:24:27Z",
+      "updatedAt": null,
+      "postId": "84973550-1313-5982-a617-210e01db9ff2",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a577c9bc-9bc7-59cb-a37e-45320cfeea45",
+      "createdAt": "2026-05-10T22:51:53Z",
+      "updatedAt": null,
+      "postId": "84973550-1313-5982-a617-210e01db9ff2",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "422e3d46-8f0a-5517-84d8-1b7f3136aff4",
+      "createdAt": "2026-06-13T02:06:55Z",
+      "updatedAt": null,
+      "postId": "84973550-1313-5982-a617-210e01db9ff2",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": "1a2fe923-c73c-55cb-9142-3a0ac24b2d16"
+    },
+    {
+      "id": "de5a847d-eef6-5477-bdc2-72acbe08bc8d",
+      "createdAt": "2026-05-17T06:16:25Z",
+      "updatedAt": null,
+      "postId": "ea991a0a-57b6-5265-93e6-6cb24adbe6ed",
+      "userId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0421bdad-7ca8-52a9-b73a-1c2b849793f5",
+      "createdAt": "2026-05-21T02:08:53Z",
+      "updatedAt": null,
+      "postId": "ea991a0a-57b6-5265-93e6-6cb24adbe6ed",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "24078330-bd7b-56f0-ab91-23a8c36d23b6",
+      "createdAt": "2026-05-19T02:03:19Z",
+      "updatedAt": null,
+      "postId": "ea991a0a-57b6-5265-93e6-6cb24adbe6ed",
+      "userId": "3deebf89-0714-5ee9-bac4-726c4fe0174a",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Lê Bảo Trâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "bd19c7d3-01ea-5f59-8198-904a8f0fb2a3",
+      "createdAt": "2026-05-10T08:21:33Z",
+      "updatedAt": null,
+      "postId": "ea991a0a-57b6-5265-93e6-6cb24adbe6ed",
+      "userId": "9c720154-0fd6-5d0c-856c-8f30c02cb5e1",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quốc Toàn",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f6faec2e-7afd-5752-a786-ce54c013a7e4",
+      "createdAt": "2026-05-31T22:47:54Z",
+      "updatedAt": null,
+      "postId": "ea991a0a-57b6-5265-93e6-6cb24adbe6ed",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5f50475d-e5be-5c87-aa21-48a15bd30b84",
+      "createdAt": "2026-05-24T18:33:28Z",
+      "updatedAt": null,
+      "postId": "a8c8834c-0c13-500b-877e-80605f148365",
+      "userId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "4c413c8a-7f11-547d-aaab-e48d67a0aa70",
+      "createdAt": "2026-05-20T07:00:43Z",
+      "updatedAt": null,
+      "postId": "a8c8834c-0c13-500b-877e-80605f148365",
+      "userId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "3c588d64-0805-5db3-b24f-9774cad3e7aa",
+      "createdAt": "2026-05-17T15:21:34Z",
+      "updatedAt": null,
+      "postId": "a8c8834c-0c13-500b-877e-80605f148365",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5d74fc64-9668-52a6-941a-1c63eb544a71",
+      "createdAt": "2026-05-26T04:28:26Z",
+      "updatedAt": null,
+      "postId": "a8c8834c-0c13-500b-877e-80605f148365",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d8b59ecd-5eb7-5b60-b25c-d5079b1810eb",
+      "createdAt": "2026-05-31T17:19:51Z",
+      "updatedAt": null,
+      "postId": "a8c8834c-0c13-500b-877e-80605f148365",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": "3c588d64-0805-5db3-b24f-9774cad3e7aa"
+    },
+    {
+      "id": "f57e27aa-399d-5306-a136-8e4736e31490",
+      "createdAt": "2026-06-09T20:49:14Z",
+      "updatedAt": null,
+      "postId": "9ba0d58b-f5dc-5227-b06a-eedb9201aa48",
+      "userId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2bd84a96-19e7-55b6-8ecb-8ac69a7bb495",
+      "createdAt": "2026-05-28T16:40:18Z",
+      "updatedAt": null,
+      "postId": "9ba0d58b-f5dc-5227-b06a-eedb9201aa48",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d7a4c45e-7189-57cf-8db7-9eaa7e6493ea",
+      "createdAt": "2026-06-11T20:05:57Z",
+      "updatedAt": null,
+      "postId": "9ba0d58b-f5dc-5227-b06a-eedb9201aa48",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "936908f8-fe6f-55d4-8437-6607db3ead0e",
+      "createdAt": "2026-05-16T22:48:24Z",
+      "updatedAt": null,
+      "postId": "9ba0d58b-f5dc-5227-b06a-eedb9201aa48",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "57e9a153-3d81-5523-8e88-d9a8f0447563",
+      "createdAt": "2026-06-02T01:53:53Z",
+      "updatedAt": null,
+      "postId": "9ba0d58b-f5dc-5227-b06a-eedb9201aa48",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d7657568-6461-5b59-bfe2-2c046c9021a3",
+      "createdAt": "2026-06-01T00:34:13Z",
+      "updatedAt": null,
+      "postId": "9ba0d58b-f5dc-5227-b06a-eedb9201aa48",
+      "userId": "8cda8f74-ce6f-5129-b28a-7e7db4638216",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Ngô Thành Đạt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6c065dae-6bf7-5c72-a416-807691695de5",
+      "createdAt": "2026-05-16T08:15:56Z",
+      "updatedAt": null,
+      "postId": "1b23d065-93a2-5e37-b3b1-7f8c0bd1efde",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "bfad677e-d504-59fa-a55a-f31af0ec6f8c",
+      "createdAt": "2026-05-26T08:41:54Z",
+      "updatedAt": null,
+      "postId": "1b23d065-93a2-5e37-b3b1-7f8c0bd1efde",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "af52564c-9bac-5792-961c-58551682697a",
+      "createdAt": "2026-05-13T19:00:21Z",
+      "updatedAt": null,
+      "postId": "1b23d065-93a2-5e37-b3b1-7f8c0bd1efde",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5ccf0762-7296-5581-950a-d8b0547d9db7",
+      "createdAt": "2026-05-24T06:14:12Z",
+      "updatedAt": null,
+      "postId": "1b23d065-93a2-5e37-b3b1-7f8c0bd1efde",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e09a7211-c81e-56db-9d29-3fce457c113c",
+      "createdAt": "2026-06-14T15:24:18Z",
+      "updatedAt": null,
+      "postId": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "72f3f14e-5503-5a67-a9e1-b1e78fd99164",
+      "createdAt": "2026-05-22T03:47:28Z",
+      "updatedAt": null,
+      "postId": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "userId": "3deebf89-0714-5ee9-bac4-726c4fe0174a",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Lê Bảo Trâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "79ca1d97-68b3-5f8d-b16b-144bd7810f52",
+      "createdAt": "2026-06-08T16:48:26Z",
+      "updatedAt": null,
+      "postId": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f8851a8e-e98b-53ed-b64d-fa9cc37b71e7",
+      "createdAt": "2026-05-30T21:07:44Z",
+      "updatedAt": null,
+      "postId": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "786162cc-49a2-5af2-b5de-053a1a6b444a",
+      "createdAt": "2026-06-13T04:43:15Z",
+      "updatedAt": null,
+      "postId": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "c250cb0a-03b5-5d2e-b5e6-f6eacdc8c6cb",
+      "createdAt": "2026-06-01T05:00:15Z",
+      "updatedAt": null,
+      "postId": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "dc971c06-5d9a-5326-b7f4-263bc1c16565",
+      "createdAt": "2026-05-28T22:12:30Z",
+      "updatedAt": null,
+      "postId": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "userId": "1c1de04b-97ef-5c99-bc9a-d13d88f24653",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Chu Anh Khoa",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0af182d7-d792-5b93-9a36-5f555f5d3c81",
+      "createdAt": "2026-05-17T22:00:32Z",
+      "updatedAt": null,
+      "postId": "31b26242-a8d7-569c-b4db-c49565857d69",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "952867cb-d077-581e-b399-066399766af9",
+      "createdAt": "2026-05-18T23:34:41Z",
+      "updatedAt": null,
+      "postId": "fd1dfdcf-698c-522a-8a34-ee6ac17f93b8",
+      "userId": "3deebf89-0714-5ee9-bac4-726c4fe0174a",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Lê Bảo Trâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "af69a103-dd31-5c2e-92b9-ff4fb73af5f5",
+      "createdAt": "2026-05-19T11:52:39Z",
+      "updatedAt": null,
+      "postId": "fd1dfdcf-698c-522a-8a34-ee6ac17f93b8",
+      "userId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "13f0c1dc-def0-55bd-bfea-3d0608bba321",
+      "createdAt": "2026-05-16T11:33:48Z",
+      "updatedAt": null,
+      "postId": "fd1dfdcf-698c-522a-8a34-ee6ac17f93b8",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2660df47-9798-58f3-a552-a93e9b4b158d",
+      "createdAt": "2026-05-25T14:32:41Z",
+      "updatedAt": null,
+      "postId": "fd1dfdcf-698c-522a-8a34-ee6ac17f93b8",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ed8c2ad0-876a-5a67-ad4e-eaf8bccb0cdc",
+      "createdAt": "2026-06-11T17:11:44Z",
+      "updatedAt": null,
+      "postId": "fd1dfdcf-698c-522a-8a34-ee6ac17f93b8",
+      "userId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f5fefad3-a30a-5e22-be4e-858092695474",
+      "createdAt": "2026-05-11T14:40:59Z",
+      "updatedAt": null,
+      "postId": "fd1dfdcf-698c-522a-8a34-ee6ac17f93b8",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Haha đúng rồi, quan trọng là quay lại được.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": "af69a103-dd31-5c2e-92b9-ff4fb73af5f5"
+    },
+    {
+      "id": "57c96796-dfa0-5803-bd2d-2861b6aa1eca",
+      "createdAt": "2026-05-15T07:52:39Z",
+      "updatedAt": null,
+      "postId": "48730ae2-1745-5e4d-8343-89db368a35e4",
+      "userId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "fa64de47-b178-50fe-9c3c-9bdb5c1cfdcd",
+      "createdAt": "2026-05-31T01:40:44Z",
+      "updatedAt": null,
+      "postId": "48730ae2-1745-5e4d-8343-89db368a35e4",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "bd7e0f4e-03a9-5579-86ba-54870f787593",
+      "createdAt": "2026-06-06T18:59:31Z",
+      "updatedAt": null,
+      "postId": "48730ae2-1745-5e4d-8343-89db368a35e4",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ec2e4383-0b72-586e-baa1-6ef8415e96b9",
+      "createdAt": "2026-05-26T01:19:49Z",
+      "updatedAt": null,
+      "postId": "48730ae2-1745-5e4d-8343-89db368a35e4",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "903f6bae-54a0-5229-b351-8adb893c602d",
+      "createdAt": "2026-06-13T09:40:39Z",
+      "updatedAt": null,
+      "postId": "48730ae2-1745-5e4d-8343-89db368a35e4",
+      "userId": "8cda8f74-ce6f-5129-b28a-7e7db4638216",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Ngô Thành Đạt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "1b91f1be-3091-5ede-93d3-5c0c91700ead",
+      "createdAt": "2026-05-23T15:51:30Z",
+      "updatedAt": null,
+      "postId": "0adc1963-199e-5a56-97d1-0c4363b0e9ff",
+      "userId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f94d5838-137e-5da1-b099-3f8a52909cb8",
+      "createdAt": "2026-05-25T23:52:35Z",
+      "updatedAt": null,
+      "postId": "0adc1963-199e-5a56-97d1-0c4363b0e9ff",
+      "userId": "ded2a6f5-2805-520b-b8a9-74ff3b6c4bfd",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Mai Chi",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "48c08f96-d7af-5c92-8574-86a1dc994129",
+      "createdAt": "2026-05-16T22:11:26Z",
+      "updatedAt": null,
+      "postId": "0adc1963-199e-5a56-97d1-0c4363b0e9ff",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "379891dd-89e9-52b9-af93-225fed1b393c",
+      "createdAt": "2026-05-11T04:41:37Z",
+      "updatedAt": null,
+      "postId": "0adc1963-199e-5a56-97d1-0c4363b0e9ff",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e6ac1d11-d8c4-53b3-afa6-9e398373e738",
+      "createdAt": "2026-05-27T12:45:32Z",
+      "updatedAt": null,
+      "postId": "0adc1963-199e-5a56-97d1-0c4363b0e9ff",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "cbcafbf9-4bb3-5ce6-a733-9d04ed9d374a",
+      "createdAt": "2026-06-09T22:07:19Z",
+      "updatedAt": null,
+      "postId": "0adc1963-199e-5a56-97d1-0c4363b0e9ff",
+      "userId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2cde6161-caf2-595d-a599-5f7dc8aacbc9",
+      "createdAt": "2026-05-16T06:32:15Z",
+      "updatedAt": null,
+      "postId": "0adc1963-199e-5a56-97d1-0c4363b0e9ff",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Haha đúng rồi, quan trọng là quay lại được.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": "cbcafbf9-4bb3-5ce6-a733-9d04ed9d374a"
+    },
+    {
+      "id": "d8328e2c-3fa2-5362-b0e3-ee68ea70b29e",
+      "createdAt": "2026-05-22T22:08:42Z",
+      "updatedAt": null,
+      "postId": "40eb55c5-1f93-5867-ac3c-4be24d67fb39",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "42b29bb3-45b5-564b-852f-6668f195aa0a",
+      "createdAt": "2026-05-15T05:01:59Z",
+      "updatedAt": null,
+      "postId": "40eb55c5-1f93-5867-ac3c-4be24d67fb39",
+      "userId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "932fcf9b-7082-58bd-86c6-a0796d7ef66d",
+      "createdAt": "2026-05-21T01:51:11Z",
+      "updatedAt": null,
+      "postId": "40eb55c5-1f93-5867-ac3c-4be24d67fb39",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d026b9b3-4b3c-5d7c-9f02-886f39beae9f",
+      "createdAt": "2026-05-11T18:06:11Z",
+      "updatedAt": null,
+      "postId": "40eb55c5-1f93-5867-ac3c-4be24d67fb39",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "1c9e3190-972b-597d-bafa-10a4d8d2a96f",
+      "createdAt": "2026-06-08T05:59:48Z",
+      "updatedAt": null,
+      "postId": "40eb55c5-1f93-5867-ac3c-4be24d67fb39",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Mình note lại rồi, mai áp dụng thử.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": "932fcf9b-7082-58bd-86c6-a0796d7ef66d"
+    },
+    {
+      "id": "9bafe5d6-0a9c-5263-ad95-395b0434644f",
+      "createdAt": "2026-05-15T21:33:31Z",
+      "updatedAt": null,
+      "postId": "a402c422-f827-588c-8f62-d1c3f5ae5181",
+      "userId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "11b01350-318c-5c87-9d89-eec760204c93",
+      "createdAt": "2026-06-05T05:00:22Z",
+      "updatedAt": null,
+      "postId": "a402c422-f827-588c-8f62-d1c3f5ae5181",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f5f074f6-f433-59cf-baaa-7a63e9e552da",
+      "createdAt": "2026-06-14T05:23:50Z",
+      "updatedAt": null,
+      "postId": "a402c422-f827-588c-8f62-d1c3f5ae5181",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "218c799e-2bbb-5141-b45f-e98a62913281",
+      "createdAt": "2026-06-12T14:30:22Z",
+      "updatedAt": null,
+      "postId": "a402c422-f827-588c-8f62-d1c3f5ae5181",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "899ed245-9ec8-515c-b6fd-1d56216c58a0",
+      "createdAt": "2026-05-19T08:46:26Z",
+      "updatedAt": null,
+      "postId": "a402c422-f827-588c-8f62-d1c3f5ae5181",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "87939b44-e35d-5829-82d7-5e23a4fccdd9",
+      "createdAt": "2026-05-12T00:15:49Z",
+      "updatedAt": null,
+      "postId": "a402c422-f827-588c-8f62-d1c3f5ae5181",
+      "userId": "9c720154-0fd6-5d0c-856c-8f30c02cb5e1",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quốc Toàn",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8ca0b17e-513d-55c1-b2bf-0ca1988774f4",
+      "createdAt": "2026-06-05T06:04:19Z",
+      "updatedAt": null,
+      "postId": "88f074a4-dda7-53b9-a0ba-4d0157953a72",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d7470be3-9789-50ae-af9d-4f9c3dfc6642",
+      "createdAt": "2026-06-08T22:38:25Z",
+      "updatedAt": null,
+      "postId": "2ba9e5f4-a301-52d9-b0be-68b23d948099",
+      "userId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5c24e0be-05ab-5ce6-ab65-5ca2c76d6671",
+      "createdAt": "2026-05-15T11:09:29Z",
+      "updatedAt": null,
+      "postId": "2ba9e5f4-a301-52d9-b0be-68b23d948099",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "03be0580-0ea8-5fbc-b4ef-ecca7b175ba2",
+      "createdAt": "2026-05-16T19:03:27Z",
+      "updatedAt": null,
+      "postId": "2ba9e5f4-a301-52d9-b0be-68b23d948099",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "05fa533a-478b-5472-9f5e-65b9b81fe00b",
+      "createdAt": "2026-05-14T12:07:30Z",
+      "updatedAt": null,
+      "postId": "2ba9e5f4-a301-52d9-b0be-68b23d948099",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Cảm ơn bạn, mình sẽ thử cách đó nha.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": "03be0580-0ea8-5fbc-b4ef-ecca7b175ba2"
+    },
+    {
+      "id": "0847bf59-bd89-5c1e-a66a-144ad20fe978",
+      "createdAt": "2026-06-01T01:25:13Z",
+      "updatedAt": null,
+      "postId": "830125fc-27b6-5c71-8752-46d8df15a6c2",
+      "userId": "2f826a30-86f5-5a0c-a5f6-945c8c15c2dd",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Tạ Khánh An",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "204f4abd-39aa-5a7b-ace7-31f32d833819",
+      "createdAt": "2026-06-07T02:34:50Z",
+      "updatedAt": null,
+      "postId": "830125fc-27b6-5c71-8752-46d8df15a6c2",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "cfe6387c-18f6-5714-9537-64511efc651a",
+      "createdAt": "2026-05-12T16:10:17Z",
+      "updatedAt": null,
+      "postId": "830125fc-27b6-5c71-8752-46d8df15a6c2",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "db30c0c5-4475-5a9a-b085-f150b9bdf339",
+      "createdAt": "2026-06-06T23:11:45Z",
+      "updatedAt": null,
+      "postId": "830125fc-27b6-5c71-8752-46d8df15a6c2",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "73adf5b2-6cd4-5ac5-a5e6-124466ba33f7",
+      "createdAt": "2026-05-17T02:30:31Z",
+      "updatedAt": null,
+      "postId": "830125fc-27b6-5c71-8752-46d8df15a6c2",
+      "userId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "268ad724-aafd-59f7-999f-fb7e3d9c2585",
+      "createdAt": "2026-05-12T20:40:41Z",
+      "updatedAt": null,
+      "postId": "830125fc-27b6-5c71-8752-46d8df15a6c2",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Chuẩn luôn, mình đang cố không ép bản thân quá.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": "73adf5b2-6cd4-5ac5-a5e6-124466ba33f7"
+    },
+    {
+      "id": "0410cef9-e726-5a13-968e-ff622fe4b79d",
+      "createdAt": "2026-05-19T12:25:17Z",
+      "updatedAt": null,
+      "postId": "bd6581aa-c248-5b55-b1dc-aa7e44b67e82",
+      "userId": "9c720154-0fd6-5d0c-856c-8f30c02cb5e1",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quốc Toàn",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5e92ce74-cb3a-5e3d-99da-703023216cf6",
+      "createdAt": "2026-06-07T22:33:16Z",
+      "updatedAt": null,
+      "postId": "bd6581aa-c248-5b55-b1dc-aa7e44b67e82",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d02e6495-f2e4-582a-b197-d311fc49c2de",
+      "createdAt": "2026-06-01T12:17:47Z",
+      "updatedAt": null,
+      "postId": "bd6581aa-c248-5b55-b1dc-aa7e44b67e82",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": "5e92ce74-cb3a-5e3d-99da-703023216cf6"
+    },
+    {
+      "id": "31dcc211-a497-5a93-9679-6898f4db78b7",
+      "createdAt": "2026-05-29T19:21:24Z",
+      "updatedAt": null,
+      "postId": "c1fedaad-4f4d-5ce9-bc9f-56e6bfd81a97",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "342ae578-45ed-5dff-8696-3148feba4655",
+      "createdAt": "2026-06-11T08:31:24Z",
+      "updatedAt": null,
+      "postId": "c1fedaad-4f4d-5ce9-bc9f-56e6bfd81a97",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a73037ee-8b94-5824-81dc-b5362a83992d",
+      "createdAt": "2026-05-11T21:40:56Z",
+      "updatedAt": null,
+      "postId": "c1fedaad-4f4d-5ce9-bc9f-56e6bfd81a97",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d9355940-14d1-5f1a-ab10-afbf02022abd",
+      "createdAt": "2026-05-30T23:21:32Z",
+      "updatedAt": null,
+      "postId": "c1fedaad-4f4d-5ce9-bc9f-56e6bfd81a97",
+      "userId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "content": "Cảm ơn bạn, mình sẽ thử cách đó nha.",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "parentCommentId": "342ae578-45ed-5dff-8696-3148feba4655"
+    },
+    {
+      "id": "ddc32640-540d-5a29-a8de-baf78f19d9ae",
+      "createdAt": "2026-05-27T09:35:38Z",
+      "updatedAt": null,
+      "postId": "80755f64-c2a0-5111-a509-ccb7f0e7917b",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "43547165-823c-5385-bfdc-aff06548d658",
+      "createdAt": "2026-06-08T08:02:56Z",
+      "updatedAt": null,
+      "postId": "80755f64-c2a0-5111-a509-ccb7f0e7917b",
+      "userId": "e9dd615f-d36e-5852-bce8-bf6d6581b722",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Trần Khánh Duy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0e63a212-6ccb-5439-b585-290899c2e72d",
+      "createdAt": "2026-05-11T07:14:32Z",
+      "updatedAt": null,
+      "postId": "80755f64-c2a0-5111-a509-ccb7f0e7917b",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Mình note lại rồi, mai áp dụng thử.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": "43547165-823c-5385-bfdc-aff06548d658"
+    },
+    {
+      "id": "c0ab169d-5035-59fd-9d2f-1c088e127fd5",
+      "createdAt": "2026-06-14T04:01:43Z",
+      "updatedAt": null,
+      "postId": "9ed39bc2-54f7-595a-b77e-5b41ab4c30a5",
+      "userId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f0c6530b-2dcd-52d4-a4f0-25f9ba5bbd77",
+      "createdAt": "2026-06-01T03:02:49Z",
+      "updatedAt": null,
+      "postId": "9ed39bc2-54f7-595a-b77e-5b41ab4c30a5",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "166141e6-f943-5f89-9296-67de132bf5d0",
+      "createdAt": "2026-05-23T10:33:00Z",
+      "updatedAt": null,
+      "postId": "9ed39bc2-54f7-595a-b77e-5b41ab4c30a5",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "7a523a9d-4e85-57c7-9e63-aabce672b538",
+      "createdAt": "2026-06-15T02:30:24Z",
+      "updatedAt": null,
+      "postId": "9ed39bc2-54f7-595a-b77e-5b41ab4c30a5",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "31b35367-913f-5f19-9d33-b45f9d5b663f",
+      "createdAt": "2026-06-01T03:24:20Z",
+      "updatedAt": null,
+      "postId": "9ed39bc2-54f7-595a-b77e-5b41ab4c30a5",
+      "userId": "2f826a30-86f5-5a0c-a5f6-945c8c15c2dd",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Tạ Khánh An",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6faca9a6-f20b-50f6-bdb2-3aafaec219e3",
+      "createdAt": "2026-05-24T23:53:29Z",
+      "updatedAt": null,
+      "postId": "9ed39bc2-54f7-595a-b77e-5b41ab4c30a5",
+      "userId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "parentCommentId": "c0ab169d-5035-59fd-9d2f-1c088e127fd5"
+    },
+    {
+      "id": "52164962-45bd-5a10-857b-e578fb95d69b",
+      "createdAt": "2026-05-13T01:34:15Z",
+      "updatedAt": null,
+      "postId": "d17a1bbe-f415-5659-b33a-e7082b0c349d",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b814d4fa-b8fc-56db-9ad3-13abc529c694",
+      "createdAt": "2026-05-18T07:39:51Z",
+      "updatedAt": null,
+      "postId": "d17a1bbe-f415-5659-b33a-e7082b0c349d",
+      "userId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "dd32c1d8-5e2c-5226-b5cc-a75b4cad7c09",
+      "createdAt": "2026-06-13T10:56:12Z",
+      "updatedAt": null,
+      "postId": "d17a1bbe-f415-5659-b33a-e7082b0c349d",
+      "userId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2f5736aa-ed23-514a-a56a-92fe34ec3465",
+      "createdAt": "2026-06-14T15:29:51Z",
+      "updatedAt": null,
+      "postId": "d17a1bbe-f415-5659-b33a-e7082b0c349d",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "028b3146-cc10-52c7-a100-55cb55130fe0",
+      "createdAt": "2026-06-08T10:59:19Z",
+      "updatedAt": null,
+      "postId": "d17a1bbe-f415-5659-b33a-e7082b0c349d",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0a916b70-ab1a-571e-b89e-8493db088894",
+      "createdAt": "2026-06-05T03:05:23Z",
+      "updatedAt": null,
+      "postId": "29729867-063a-551a-af65-1b0764afa36d",
+      "userId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "555abb41-36ac-5fd3-bdc2-15862af37c0f",
+      "createdAt": "2026-05-19T17:41:38Z",
+      "updatedAt": null,
+      "postId": "29729867-063a-551a-af65-1b0764afa36d",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "4766276a-b05b-5b9f-9d08-ae72e401aae3",
+      "createdAt": "2026-06-08T21:58:51Z",
+      "updatedAt": null,
+      "postId": "29729867-063a-551a-af65-1b0764afa36d",
+      "userId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "71c2f956-8324-527f-bd10-b954d2c4ef38",
+      "createdAt": "2026-05-17T06:25:59Z",
+      "updatedAt": null,
+      "postId": "29729867-063a-551a-af65-1b0764afa36d",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "7e22c67a-a4a9-527c-9e80-9fbd048fc036",
+      "createdAt": "2026-06-10T19:55:50Z",
+      "updatedAt": null,
+      "postId": "29729867-063a-551a-af65-1b0764afa36d",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f7fffad2-55ca-556f-baa4-b7179816163e",
+      "createdAt": "2026-05-13T18:48:18Z",
+      "updatedAt": null,
+      "postId": "e55aff50-5f6a-535b-a635-94c215859ab5",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2717da50-5174-599e-b714-fb8030614f5f",
+      "createdAt": "2026-06-10T00:19:22Z",
+      "updatedAt": null,
+      "postId": "e55aff50-5f6a-535b-a635-94c215859ab5",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8ce83c75-b26d-5237-882d-35c03a7d0736",
+      "createdAt": "2026-05-28T16:18:36Z",
+      "updatedAt": null,
+      "postId": "e55aff50-5f6a-535b-a635-94c215859ab5",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "4fba416a-2288-5804-b7ae-81e398d93df7",
+      "createdAt": "2026-05-16T02:19:49Z",
+      "updatedAt": null,
+      "postId": "e55aff50-5f6a-535b-a635-94c215859ab5",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "eaa6132b-02cf-5b2c-b244-6a9fc27a547c",
+      "createdAt": "2026-05-12T11:38:19Z",
+      "updatedAt": null,
+      "postId": "e55aff50-5f6a-535b-a635-94c215859ab5",
+      "userId": "ded2a6f5-2805-520b-b8a9-74ff3b6c4bfd",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Mai Chi",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "cfaf7933-28d1-52cd-93c5-f413a0caa9a4",
+      "createdAt": "2026-05-20T01:07:18Z",
+      "updatedAt": null,
+      "postId": "e55aff50-5f6a-535b-a635-94c215859ab5",
+      "userId": "e9dd615f-d36e-5852-bce8-bf6d6581b722",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Trần Khánh Duy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "162c1b4f-67b4-5620-a292-0b84cd1625bb",
+      "createdAt": "2026-05-25T09:43:38Z",
+      "updatedAt": null,
+      "postId": "d7dd5ca0-c985-5211-8c39-154f989592dc",
+      "userId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "38c4747b-4e51-5a5d-ad35-f70275299848",
+      "createdAt": "2026-05-17T06:06:25Z",
+      "updatedAt": null,
+      "postId": "d7dd5ca0-c985-5211-8c39-154f989592dc",
+      "userId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "parentCommentId": "162c1b4f-67b4-5620-a292-0b84cd1625bb"
+    },
+    {
+      "id": "f1fd1046-a713-5001-a418-11d08c48a09e",
+      "createdAt": "2026-05-22T18:02:36Z",
+      "updatedAt": null,
+      "postId": "5b35109f-270c-58c7-932f-8f9101665766",
+      "userId": "ded2a6f5-2805-520b-b8a9-74ff3b6c4bfd",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Mai Chi",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8b1fa9fd-603b-57d3-92a9-6d580dc6bd4e",
+      "createdAt": "2026-06-08T14:28:52Z",
+      "updatedAt": null,
+      "postId": "5b35109f-270c-58c7-932f-8f9101665766",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0b0c5b43-1deb-5e03-9ae6-cfedc9995d0b",
+      "createdAt": "2026-05-23T22:58:38Z",
+      "updatedAt": null,
+      "postId": "5b35109f-270c-58c7-932f-8f9101665766",
+      "userId": "2f826a30-86f5-5a0c-a5f6-945c8c15c2dd",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Tạ Khánh An",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a3d145cc-34c2-5b4b-89c2-c78544e7ed20",
+      "createdAt": "2026-05-10T23:55:38Z",
+      "updatedAt": null,
+      "postId": "5b35109f-270c-58c7-932f-8f9101665766",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8242a373-6057-5b25-9f44-db7b9c19a751",
+      "createdAt": "2026-05-11T20:11:58Z",
+      "updatedAt": null,
+      "postId": "5b35109f-270c-58c7-932f-8f9101665766",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "363e9ca3-f7e4-512e-a54c-fab44a45e48a",
+      "createdAt": "2026-05-18T09:05:44Z",
+      "updatedAt": null,
+      "postId": "5b35109f-270c-58c7-932f-8f9101665766",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ce484934-9744-5d27-a1ff-e812ded37cd1",
+      "createdAt": "2026-06-10T13:30:12Z",
+      "updatedAt": null,
+      "postId": "5b35109f-270c-58c7-932f-8f9101665766",
+      "userId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6725b6df-9571-5fe4-952a-9ef92e16bbc9",
+      "createdAt": "2026-06-06T01:45:54Z",
+      "updatedAt": null,
+      "postId": "5b35109f-270c-58c7-932f-8f9101665766",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Mình note lại rồi, mai áp dụng thử.",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": "ce484934-9744-5d27-a1ff-e812ded37cd1"
+    },
+    {
+      "id": "6c4995c4-c851-5c31-977b-45b44b136774",
+      "createdAt": "2026-06-08T15:36:14Z",
+      "updatedAt": null,
+      "postId": "3be90e53-959f-5292-bf65-fc2d01ab41d1",
+      "userId": "3deebf89-0714-5ee9-bac4-726c4fe0174a",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Lê Bảo Trâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "86fa0d0b-d4e8-5d71-ad60-9f001d761729",
+      "createdAt": "2026-05-17T02:50:54Z",
+      "updatedAt": null,
+      "postId": "3be90e53-959f-5292-bf65-fc2d01ab41d1",
+      "userId": "7a36f7ad-90db-52a5-91d2-77c89a4c7549",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Mai Nhật Long",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "17e6d925-b4a3-5f79-94bc-41ddb2e3e59e",
+      "createdAt": "2026-05-13T13:26:25Z",
+      "updatedAt": null,
+      "postId": "3be90e53-959f-5292-bf65-fc2d01ab41d1",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "25d2cebb-90b0-5b1c-99a4-5ff0f8cd6a24",
+      "createdAt": "2026-05-21T01:52:28Z",
+      "updatedAt": null,
+      "postId": "3be90e53-959f-5292-bf65-fc2d01ab41d1",
+      "userId": "8cda8f74-ce6f-5129-b28a-7e7db4638216",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Ngô Thành Đạt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "c7957f0f-ccea-568b-b7f1-e122f739c0bf",
+      "createdAt": "2026-06-12T12:36:37Z",
+      "updatedAt": null,
+      "postId": "3be90e53-959f-5292-bf65-fc2d01ab41d1",
+      "userId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0dc886d1-f3dc-5975-a244-09d4477ec14c",
+      "createdAt": "2026-06-11T15:49:00Z",
+      "updatedAt": null,
+      "postId": "3be90e53-959f-5292-bf65-fc2d01ab41d1",
+      "userId": "1c1de04b-97ef-5c99-bc9a-d13d88f24653",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Chu Anh Khoa",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5bbdade4-25b8-5ea4-aa56-e102b4f8bc16",
+      "createdAt": "2026-05-17T17:24:17Z",
+      "updatedAt": null,
+      "postId": "ef66ec57-d08e-5a88-8268-cb03add54f7c",
+      "userId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ad733ce6-5022-5feb-a7a4-d118b887395e",
+      "createdAt": "2026-06-02T03:33:37Z",
+      "updatedAt": null,
+      "postId": "ef66ec57-d08e-5a88-8268-cb03add54f7c",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "79317a30-bc9e-5670-bf7b-6dfb80ff8e71",
+      "createdAt": "2026-05-10T14:15:53Z",
+      "updatedAt": null,
+      "postId": "ef66ec57-d08e-5a88-8268-cb03add54f7c",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "41261976-e9cd-5294-8702-3286e7b2a292",
+      "createdAt": "2026-05-25T08:48:28Z",
+      "updatedAt": null,
+      "postId": "ef66ec57-d08e-5a88-8268-cb03add54f7c",
+      "userId": "1c1de04b-97ef-5c99-bc9a-d13d88f24653",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Chu Anh Khoa",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "02ea4781-b233-5300-a63f-d792eb4bb9e1",
+      "createdAt": "2026-05-30T15:24:10Z",
+      "updatedAt": null,
+      "postId": "ef66ec57-d08e-5a88-8268-cb03add54f7c",
+      "userId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6bb4c64d-2434-58f6-9349-359ab312bd31",
+      "createdAt": "2026-05-14T20:21:45Z",
+      "updatedAt": null,
+      "postId": "ef66ec57-d08e-5a88-8268-cb03add54f7c",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "7f7054ff-364a-5a55-aa6d-45e069b374fc",
+      "createdAt": "2026-05-12T17:19:18Z",
+      "updatedAt": null,
+      "postId": "f41a5015-608e-5469-9c47-4ec6c0a2cd16",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a61b3110-cb18-5e1b-aca5-8837023ff55f",
+      "createdAt": "2026-05-18T11:19:12Z",
+      "updatedAt": null,
+      "postId": "f41a5015-608e-5469-9c47-4ec6c0a2cd16",
+      "userId": "7a36f7ad-90db-52a5-91d2-77c89a4c7549",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Mai Nhật Long",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "29e2bc2b-99c4-549c-a3d7-888996a5ae49",
+      "createdAt": "2026-05-21T09:52:43Z",
+      "updatedAt": null,
+      "postId": "f41a5015-608e-5469-9c47-4ec6c0a2cd16",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a5248a9d-2989-5ce7-8e89-9c9e2c779aae",
+      "createdAt": "2026-05-28T12:23:57Z",
+      "updatedAt": null,
+      "postId": "f41a5015-608e-5469-9c47-4ec6c0a2cd16",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "bc8bcce3-a529-5017-84ac-1d98710ab86d",
+      "createdAt": "2026-06-02T03:18:36Z",
+      "updatedAt": null,
+      "postId": "f41a5015-608e-5469-9c47-4ec6c0a2cd16",
+      "userId": "ded2a6f5-2805-520b-b8a9-74ff3b6c4bfd",
+      "content": "Haha đúng rồi, quan trọng là quay lại được.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Mai Chi",
+        "avatarUrl": null
+      },
+      "parentCommentId": "a5248a9d-2989-5ce7-8e89-9c9e2c779aae"
+    },
+    {
+      "id": "5674c6c8-9d44-52bc-82cd-3afeee17e1b3",
+      "createdAt": "2026-05-31T08:11:56Z",
+      "updatedAt": null,
+      "postId": "bf8a3678-fea9-574a-a9ab-bbd57f23ee71",
+      "userId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "55bd51d2-9c17-583d-8f83-6684496a78e0",
+      "createdAt": "2026-06-13T20:03:52Z",
+      "updatedAt": null,
+      "postId": "c0a17240-9c25-54fb-a83f-f10fb74f9d0d",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2ad6f641-0b9e-5f89-8866-5f53e964f8ed",
+      "createdAt": "2026-06-07T19:07:42Z",
+      "updatedAt": null,
+      "postId": "c0a17240-9c25-54fb-a83f-f10fb74f9d0d",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2d588ec3-6e29-5ab8-836b-0d4f1fe66533",
+      "createdAt": "2026-05-14T15:07:20Z",
+      "updatedAt": null,
+      "postId": "bef02109-1dbe-5aea-ab32-eee42c162b97",
+      "userId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "98dcc83f-b1aa-5be6-a7e7-e684265cf6d5",
+      "createdAt": "2026-05-27T02:43:52Z",
+      "updatedAt": null,
+      "postId": "16d290c3-12d5-5f2f-a1a4-aa5f9b279d57",
+      "userId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5a06c9d8-f409-504e-aa6a-01487da886cc",
+      "createdAt": "2026-05-20T07:55:14Z",
+      "updatedAt": null,
+      "postId": "16d290c3-12d5-5f2f-a1a4-aa5f9b279d57",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d929c032-f867-5069-929c-6ba9751f0cf0",
+      "createdAt": "2026-05-22T03:01:20Z",
+      "updatedAt": null,
+      "postId": "16d290c3-12d5-5f2f-a1a4-aa5f9b279d57",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d72d6768-d966-587f-84fb-c8ab6b62ba6b",
+      "createdAt": "2026-06-08T18:46:34Z",
+      "updatedAt": null,
+      "postId": "16d290c3-12d5-5f2f-a1a4-aa5f9b279d57",
+      "userId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "51621b8a-dece-51cb-90eb-c4d40616ba97",
+      "createdAt": "2026-05-10T13:30:44Z",
+      "updatedAt": null,
+      "postId": "16d290c3-12d5-5f2f-a1a4-aa5f9b279d57",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b7e2cc24-30a0-5793-aa1d-94273653f5c3",
+      "createdAt": "2026-05-11T03:53:29Z",
+      "updatedAt": null,
+      "postId": "16d290c3-12d5-5f2f-a1a4-aa5f9b279d57",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ae4cfd29-fc62-5d45-81bf-2c55c3af71f0",
+      "createdAt": "2026-06-05T23:09:48Z",
+      "updatedAt": null,
+      "postId": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e9d4d554-d6c5-5f0d-b246-354f3059a48b",
+      "createdAt": "2026-06-14T17:10:59Z",
+      "updatedAt": null,
+      "postId": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "userId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d3673a45-44c7-5375-b757-a098d4cfc96c",
+      "createdAt": "2026-06-03T14:17:11Z",
+      "updatedAt": null,
+      "postId": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8904d174-b202-5701-be40-d6c6b179006b",
+      "createdAt": "2026-05-21T05:02:25Z",
+      "updatedAt": null,
+      "postId": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "userId": "7a36f7ad-90db-52a5-91d2-77c89a4c7549",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Mai Nhật Long",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "05e525e4-acfe-5689-a7d7-3b5f9f4ea533",
+      "createdAt": "2026-06-12T21:55:53Z",
+      "updatedAt": null,
+      "postId": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "00980d69-ce78-55c8-8e5c-8d83e7e2cedd",
+      "createdAt": "2026-06-04T14:57:56Z",
+      "updatedAt": null,
+      "postId": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b01f4c65-3764-56d6-aa82-fee6643dc732",
+      "createdAt": "2026-05-24T04:02:28Z",
+      "updatedAt": null,
+      "postId": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e19fccb0-8a7a-5fe3-b5a3-45563bceb1d8",
+      "createdAt": "2026-05-10T11:01:11Z",
+      "updatedAt": null,
+      "postId": "fc580524-eab9-5725-a268-a487bf4c6926",
+      "userId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "9d93a408-cad7-5be9-9ebb-dab2aceffe4e",
+      "createdAt": "2026-05-13T05:10:15Z",
+      "updatedAt": null,
+      "postId": "733b6e5e-b91f-54eb-ab67-b82b0de9c4e1",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a06a6366-19a8-58d8-8d89-7abb329aaedd",
+      "createdAt": "2026-06-10T08:56:52Z",
+      "updatedAt": null,
+      "postId": "733b6e5e-b91f-54eb-ab67-b82b0de9c4e1",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "cee25f14-cc5f-59b4-9622-ea3bdd18c616",
+      "createdAt": "2026-06-03T08:32:23Z",
+      "updatedAt": null,
+      "postId": "733b6e5e-b91f-54eb-ab67-b82b0de9c4e1",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "c1fa4a49-18d6-564d-9d3e-af4cf2400bd8",
+      "createdAt": "2026-06-09T10:22:16Z",
+      "updatedAt": null,
+      "postId": "733b6e5e-b91f-54eb-ab67-b82b0de9c4e1",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "69b898a7-297c-5889-a8ff-92a990813ffe",
+      "createdAt": "2026-05-14T09:05:22Z",
+      "updatedAt": null,
+      "postId": "2b3e7c8a-93e2-55ab-abd2-2c2ad1bddadb",
+      "userId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "bec96b01-aba1-565e-9ea5-3d59a3818643",
+      "createdAt": "2026-06-13T14:50:52Z",
+      "updatedAt": null,
+      "postId": "1d2ddc59-1a1a-50ae-9f89-63445a8767c8",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "dbceeea6-80ba-5a30-8392-41f8b37e4a5a",
+      "createdAt": "2026-06-04T22:51:19Z",
+      "updatedAt": null,
+      "postId": "1d2ddc59-1a1a-50ae-9f89-63445a8767c8",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0ac63274-4114-5b1a-9009-4bc61c7ff9e1",
+      "createdAt": "2026-06-06T00:56:27Z",
+      "updatedAt": null,
+      "postId": "1d2ddc59-1a1a-50ae-9f89-63445a8767c8",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "09e51801-e385-5ae5-a695-84d2328a439a",
+      "createdAt": "2026-05-30T04:25:32Z",
+      "updatedAt": null,
+      "postId": "1d2ddc59-1a1a-50ae-9f89-63445a8767c8",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "4f3eabf0-c9d9-5e47-95cc-a93016afc0df",
+      "createdAt": "2026-06-01T00:30:29Z",
+      "updatedAt": null,
+      "postId": "1d2ddc59-1a1a-50ae-9f89-63445a8767c8",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Cảm ơn bạn, mình sẽ thử cách đó nha.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": "bec96b01-aba1-565e-9ea5-3d59a3818643"
+    },
+    {
+      "id": "9ccbd185-ef23-591f-84f9-21ceb639649a",
+      "createdAt": "2026-05-28T11:25:14Z",
+      "updatedAt": null,
+      "postId": "365ba5e0-3f42-5e78-add6-1ac3e97ca0a1",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "84f514f3-5109-52a8-a8f2-3246d400f1d2",
+      "createdAt": "2026-06-04T10:54:55Z",
+      "updatedAt": null,
+      "postId": "365ba5e0-3f42-5e78-add6-1ac3e97ca0a1",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a48f1fab-dde4-5832-9984-afddc7e7f918",
+      "createdAt": "2026-06-06T17:47:48Z",
+      "updatedAt": null,
+      "postId": "365ba5e0-3f42-5e78-add6-1ac3e97ca0a1",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "29513d8b-1b46-515a-84e1-95f82e41af63",
+      "createdAt": "2026-05-25T17:30:56Z",
+      "updatedAt": null,
+      "postId": "365ba5e0-3f42-5e78-add6-1ac3e97ca0a1",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f39b2115-3d7f-592f-84d6-0a9076301d35",
+      "createdAt": "2026-05-11T21:02:18Z",
+      "updatedAt": null,
+      "postId": "365ba5e0-3f42-5e78-add6-1ac3e97ca0a1",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Haha đúng rồi, quan trọng là quay lại được.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": "29513d8b-1b46-515a-84e1-95f82e41af63"
+    },
+    {
+      "id": "843a31a2-3d49-5645-bbdb-0972496926ba",
+      "createdAt": "2026-05-22T06:02:45Z",
+      "updatedAt": null,
+      "postId": "4a8b50c3-6993-5c49-a600-ba69919243b7",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "16c0cba3-ff58-5ff2-a89b-dff6269675b0",
+      "createdAt": "2026-06-12T20:08:34Z",
+      "updatedAt": null,
+      "postId": "4a8b50c3-6993-5c49-a600-ba69919243b7",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "14dddfda-7b3b-5d70-8c4a-c5a68bbacfe6",
+      "createdAt": "2026-05-23T19:39:46Z",
+      "updatedAt": null,
+      "postId": "4a8b50c3-6993-5c49-a600-ba69919243b7",
+      "userId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ce61b6d7-ba62-5b50-8486-89af0ef0b46c",
+      "createdAt": "2026-05-10T16:05:58Z",
+      "updatedAt": null,
+      "postId": "4a8b50c3-6993-5c49-a600-ba69919243b7",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "7aec6f65-2b21-57ca-8515-0a147c4a2ad8",
+      "createdAt": "2026-06-06T14:27:20Z",
+      "updatedAt": null,
+      "postId": "4a8b50c3-6993-5c49-a600-ba69919243b7",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6bd2229e-1471-5edf-b9ce-75017d8392e6",
+      "createdAt": "2026-06-09T21:48:25Z",
+      "updatedAt": null,
+      "postId": "e72b8907-8724-50f1-ad42-af6ed916ebd1",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "c8f39aca-59e1-576c-9b46-f49e1cf1335d",
+      "createdAt": "2026-05-20T17:13:31Z",
+      "updatedAt": null,
+      "postId": "e72b8907-8724-50f1-ad42-af6ed916ebd1",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e7105e35-88b8-554a-9408-de7053d20dd0",
+      "createdAt": "2026-06-01T03:23:12Z",
+      "updatedAt": null,
+      "postId": "e72b8907-8724-50f1-ad42-af6ed916ebd1",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "fdd03092-2425-5b61-a894-906191c2df97",
+      "createdAt": "2026-05-10T23:59:45Z",
+      "updatedAt": null,
+      "postId": "4bbad823-3691-50b3-ae58-3dac1056c2b2",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "9cbc7b49-35b7-5989-a414-8f53f9e95c47",
+      "createdAt": "2026-06-15T06:30:00Z",
+      "updatedAt": null,
+      "postId": "4bbad823-3691-50b3-ae58-3dac1056c2b2",
+      "userId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "fb450f17-36e9-57d6-b5e6-726b730f0581",
+      "createdAt": "2026-05-20T00:09:15Z",
+      "updatedAt": null,
+      "postId": "4bbad823-3691-50b3-ae58-3dac1056c2b2",
+      "userId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8a1377c1-4516-55a9-a5f2-74b016f3748e",
+      "createdAt": "2026-05-20T11:43:40Z",
+      "updatedAt": null,
+      "postId": "4bbad823-3691-50b3-ae58-3dac1056c2b2",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6add82a2-49bc-5af0-b2ec-cfad1b78dbe2",
+      "createdAt": "2026-05-21T19:21:24Z",
+      "updatedAt": null,
+      "postId": "4bbad823-3691-50b3-ae58-3dac1056c2b2",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a072c443-ff3d-530e-a1a1-d848428f5071",
+      "createdAt": "2026-05-29T02:43:38Z",
+      "updatedAt": null,
+      "postId": "c8b0f54e-e125-543c-ad01-b68d22149606",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "965da940-7763-5321-8412-dd728337adb0",
+      "createdAt": "2026-05-13T18:24:21Z",
+      "updatedAt": null,
+      "postId": "74b79d06-405d-5409-b20a-b161ef37c056",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "da9bfcd3-6580-58ad-8827-fba063353bf7",
+      "createdAt": "2026-06-14T21:37:27Z",
+      "updatedAt": null,
+      "postId": "74b79d06-405d-5409-b20a-b161ef37c056",
+      "userId": "e9dd615f-d36e-5852-bce8-bf6d6581b722",
+      "content": "Chuẩn luôn, mình đang cố không ép bản thân quá.",
+      "authorSnapshot": {
+        "fullName": "Trần Khánh Duy",
+        "avatarUrl": null
+      },
+      "parentCommentId": "965da940-7763-5321-8412-dd728337adb0"
+    },
+    {
+      "id": "46d9a9e8-399f-59ca-b6f2-19e908e3154d",
+      "createdAt": "2026-06-04T08:05:10Z",
+      "updatedAt": null,
+      "postId": "9d08ecad-66a7-546b-8fa2-9e3490f45bfb",
+      "userId": "8cda8f74-ce6f-5129-b28a-7e7db4638216",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Ngô Thành Đạt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f42ade7a-d327-5481-8acb-cef88e48c39a",
+      "createdAt": "2026-05-20T13:49:38Z",
+      "updatedAt": null,
+      "postId": "9d08ecad-66a7-546b-8fa2-9e3490f45bfb",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "bf8f1305-7f8d-5d33-a273-dbd3b91beec0",
+      "createdAt": "2026-05-12T05:01:48Z",
+      "updatedAt": null,
+      "postId": "9d08ecad-66a7-546b-8fa2-9e3490f45bfb",
+      "userId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5974ceb2-9b6a-5665-9f46-299b3b58f732",
+      "createdAt": "2026-06-01T16:31:16Z",
+      "updatedAt": null,
+      "postId": "ccdbd9ca-bfcb-5611-b414-0fb20e024fec",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6ce85e28-73f9-577c-87d6-96b27b21bca5",
+      "createdAt": "2026-05-18T08:46:48Z",
+      "updatedAt": null,
+      "postId": "ccdbd9ca-bfcb-5611-b414-0fb20e024fec",
+      "userId": "9c720154-0fd6-5d0c-856c-8f30c02cb5e1",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Lâm Quốc Toàn",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "bdc32f9a-9630-5d6f-8442-a7a8a1bd585c",
+      "createdAt": "2026-05-14T16:47:30Z",
+      "updatedAt": null,
+      "postId": "ccdbd9ca-bfcb-5611-b414-0fb20e024fec",
+      "userId": "8cda8f74-ce6f-5129-b28a-7e7db4638216",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Ngô Thành Đạt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5f8335a0-83a5-5039-b836-e690804e7dc6",
+      "createdAt": "2026-05-30T04:40:51Z",
+      "updatedAt": null,
+      "postId": "ccdbd9ca-bfcb-5611-b414-0fb20e024fec",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "11677d36-bccc-5ec8-9c7a-d1247043cbfc",
+      "createdAt": "2026-05-24T11:22:51Z",
+      "updatedAt": null,
+      "postId": "530b9145-91ae-5d2b-bbf4-34e8344ea551",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d966bd0b-63d4-5d5e-a623-95892501c146",
+      "createdAt": "2026-06-13T10:12:24Z",
+      "updatedAt": null,
+      "postId": "530b9145-91ae-5d2b-bbf4-34e8344ea551",
+      "userId": "3deebf89-0714-5ee9-bac4-726c4fe0174a",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Lê Bảo Trâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "41dbe89d-3f92-50a1-8b4b-c5b8d453ce95",
+      "createdAt": "2026-06-11T15:50:43Z",
+      "updatedAt": null,
+      "postId": "530b9145-91ae-5d2b-bbf4-34e8344ea551",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "90e1afca-be57-5963-b9d9-954d88ec412e",
+      "createdAt": "2026-05-31T23:12:56Z",
+      "updatedAt": null,
+      "postId": "530b9145-91ae-5d2b-bbf4-34e8344ea551",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "00aeac9d-5c36-5c10-9ce4-2abb4aedf187",
+      "createdAt": "2026-05-28T12:43:19Z",
+      "updatedAt": null,
+      "postId": "530b9145-91ae-5d2b-bbf4-34e8344ea551",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "665ad38c-cc57-5334-824e-d746a9709ae8",
+      "createdAt": "2026-05-22T11:06:11Z",
+      "updatedAt": null,
+      "postId": "530b9145-91ae-5d2b-bbf4-34e8344ea551",
+      "userId": "a4e92249-bd5e-5d14-b801-1d2a740cbff2",
+      "content": "Mình note lại rồi, mai áp dụng thử.",
+      "authorSnapshot": {
+        "fullName": "Lê Thanh Vy",
+        "avatarUrl": null
+      },
+      "parentCommentId": "41dbe89d-3f92-50a1-8b4b-c5b8d453ce95"
+    },
+    {
+      "id": "4fc8d602-1866-5ac0-b61a-3985f95ec146",
+      "createdAt": "2026-05-14T18:11:25Z",
+      "updatedAt": null,
+      "postId": "32a84fa6-2f26-555d-965d-e8829145fa4f",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "252adad3-3e32-5d00-aa67-6c5871e5e45a",
+      "createdAt": "2026-05-19T23:35:43Z",
+      "updatedAt": null,
+      "postId": "a108c829-57a9-503a-907e-574ca0398978",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6297e41d-f371-505c-8ec6-430b744bdc05",
+      "createdAt": "2026-05-26T10:27:29Z",
+      "updatedAt": null,
+      "postId": "a108c829-57a9-503a-907e-574ca0398978",
+      "userId": "9c720154-0fd6-5d0c-856c-8f30c02cb5e1",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quốc Toàn",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f5c4859e-de12-5e46-8010-407b6e085b0d",
+      "createdAt": "2026-05-20T13:51:32Z",
+      "updatedAt": null,
+      "postId": "a108c829-57a9-503a-907e-574ca0398978",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Mình note lại rồi, mai áp dụng thử.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": "6297e41d-f371-505c-8ec6-430b744bdc05"
+    },
+    {
+      "id": "b978ffed-f699-556e-9f7c-fbb13d326d92",
+      "createdAt": "2026-05-18T00:52:49Z",
+      "updatedAt": null,
+      "postId": "dba5b9fc-f52b-56fc-8459-b791f8a286ad",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "dfe2e678-9673-544a-9657-c007f23feb1d",
+      "createdAt": "2026-05-31T23:34:45Z",
+      "updatedAt": null,
+      "postId": "dba5b9fc-f52b-56fc-8459-b791f8a286ad",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "9e627a47-72ec-5373-b4da-037dd8c49c5e",
+      "createdAt": "2026-05-24T08:38:25Z",
+      "updatedAt": null,
+      "postId": "dba5b9fc-f52b-56fc-8459-b791f8a286ad",
+      "userId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6f859794-2395-5f35-b710-f100c8517490",
+      "createdAt": "2026-06-14T07:01:18Z",
+      "updatedAt": null,
+      "postId": "dba5b9fc-f52b-56fc-8459-b791f8a286ad",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "eba09568-612f-56ba-bb6e-18d723cd8d26",
+      "createdAt": "2026-05-14T22:23:37Z",
+      "updatedAt": null,
+      "postId": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e6317c95-e6ba-5995-9efd-d1c90da5bf8f",
+      "createdAt": "2026-05-17T17:01:25Z",
+      "updatedAt": null,
+      "postId": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "userId": "3deebf89-0714-5ee9-bac4-726c4fe0174a",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Lê Bảo Trâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f4be9169-6e7f-5bea-96da-a4e5d141c35f",
+      "createdAt": "2026-05-23T18:31:27Z",
+      "updatedAt": null,
+      "postId": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "userId": "34de86e9-01fe-566d-bd87-b69d8548aeb8",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Đặng Hoài Phong",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "34d3a2c2-65b1-5de7-8015-db702ab290f2",
+      "createdAt": "2026-05-23T05:52:33Z",
+      "updatedAt": null,
+      "postId": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "userId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "cd1388ac-d065-5c87-a348-e617e6e223d0",
+      "createdAt": "2026-05-27T03:44:47Z",
+      "updatedAt": null,
+      "postId": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "userId": "19baf8ca-68cc-5ec5-b89c-1c61231de6a8",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Phạm Quốc Bảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "4a2ecc36-db22-51bc-8073-8faa24b7813c",
+      "createdAt": "2026-06-12T01:53:31Z",
+      "updatedAt": null,
+      "postId": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "userId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "9b0e345e-4c6f-57c8-8b91-4c219966fac7",
+      "createdAt": "2026-05-18T09:56:36Z",
+      "updatedAt": null,
+      "postId": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "1a5582a7-ba53-5ba5-acad-651158fdad3d",
+      "createdAt": "2026-05-25T16:47:28Z",
+      "updatedAt": null,
+      "postId": "a8cd4ee6-3a25-5824-87b8-58a2e11c59f3",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": "eba09568-612f-56ba-bb6e-18d723cd8d26"
+    },
+    {
+      "id": "971b6053-20fa-521e-b1e2-cccca0f6626b",
+      "createdAt": "2026-05-28T07:04:15Z",
+      "updatedAt": null,
+      "postId": "c6a94aa3-c844-5c14-8537-2dc2f0839ca9",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b40bc1f6-6092-5ed3-8280-dbee14977023",
+      "createdAt": "2026-05-14T11:26:23Z",
+      "updatedAt": null,
+      "postId": "6e90dd63-a0f1-5b0c-9652-0ecf27ae9a44",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "3d10b06c-de75-596d-a2cb-60341d999704",
+      "createdAt": "2026-06-06T09:11:24Z",
+      "updatedAt": null,
+      "postId": "6e90dd63-a0f1-5b0c-9652-0ecf27ae9a44",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a38f0da8-5d38-54e4-b267-85b01e18a69c",
+      "createdAt": "2026-06-04T19:23:35Z",
+      "updatedAt": null,
+      "postId": "6e90dd63-a0f1-5b0c-9652-0ecf27ae9a44",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5240c0b5-31ff-5c31-adc7-20246a696fe8",
+      "createdAt": "2026-05-25T20:26:28Z",
+      "updatedAt": null,
+      "postId": "6e90dd63-a0f1-5b0c-9652-0ecf27ae9a44",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "52ee36d7-fcce-530b-9eb7-28b91c823d52",
+      "createdAt": "2026-06-07T14:22:28Z",
+      "updatedAt": null,
+      "postId": "6e90dd63-a0f1-5b0c-9652-0ecf27ae9a44",
+      "userId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ed223056-fa4a-551a-8411-b4a166accc52",
+      "createdAt": "2026-06-13T16:21:12Z",
+      "updatedAt": null,
+      "postId": "b5c7b218-de4e-55c7-beaf-c16d7e539c44",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "027e568f-2f91-54a8-b272-7d3828bfb6c6",
+      "createdAt": "2026-06-13T06:31:17Z",
+      "updatedAt": null,
+      "postId": "b5c7b218-de4e-55c7-beaf-c16d7e539c44",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "1bb722f7-a292-5601-b635-c65099dbbe8f",
+      "createdAt": "2026-05-15T02:16:55Z",
+      "updatedAt": null,
+      "postId": "b5c7b218-de4e-55c7-beaf-c16d7e539c44",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2385ed4b-268a-50e1-8b6f-cbad6627b030",
+      "createdAt": "2026-05-20T22:13:14Z",
+      "updatedAt": null,
+      "postId": "b5c7b218-de4e-55c7-beaf-c16d7e539c44",
+      "userId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "55f6b5fa-8180-5b98-91fe-5d1ce70ca87b",
+      "createdAt": "2026-05-19T21:28:30Z",
+      "updatedAt": null,
+      "postId": "b5c7b218-de4e-55c7-beaf-c16d7e539c44",
+      "userId": "9c720154-0fd6-5d0c-856c-8f30c02cb5e1",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quốc Toàn",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "da7c1df0-0cc8-5de6-bbac-96803d5c4973",
+      "createdAt": "2026-05-29T16:05:31Z",
+      "updatedAt": null,
+      "postId": "47e8fc01-7128-578e-a79c-ca673c512bde",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "168fd948-be9f-565e-aa20-f2b51d179b47",
+      "createdAt": "2026-05-30T09:26:20Z",
+      "updatedAt": null,
+      "postId": "47e8fc01-7128-578e-a79c-ca673c512bde",
+      "userId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d26cc00d-713f-5a96-b3dc-979abfc463e1",
+      "createdAt": "2026-05-16T01:08:28Z",
+      "updatedAt": null,
+      "postId": "47e8fc01-7128-578e-a79c-ca673c512bde",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "4136a34d-b963-5c63-9009-7a317665ed77",
+      "createdAt": "2026-06-10T18:50:43Z",
+      "updatedAt": null,
+      "postId": "47e8fc01-7128-578e-a79c-ca673c512bde",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "203c9948-aa4e-5fe1-a1f4-7ccf54806537",
+      "createdAt": "2026-06-14T18:35:29Z",
+      "updatedAt": null,
+      "postId": "47e8fc01-7128-578e-a79c-ca673c512bde",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Respect streak của bạn luôn, mình mới tới ngày 5 thôi 😅",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "66850698-b62f-5ed0-a278-ef0362fca82c",
+      "createdAt": "2026-05-24T03:15:37Z",
+      "updatedAt": null,
+      "postId": "47e8fc01-7128-578e-a79c-ca673c512bde",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Cảm ơn bạn, mình sẽ thử cách đó nha.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": "4136a34d-b963-5c63-9009-7a317665ed77"
+    },
+    {
+      "id": "f7a79888-239f-50b5-83b3-64db7a2a7951",
+      "createdAt": "2026-06-14T01:38:44Z",
+      "updatedAt": null,
+      "postId": "ad51bbd9-1fd0-52d5-a168-2cf572a01a15",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "7109ef7d-e045-50fa-8ac3-22a17fb6f6a4",
+      "createdAt": "2026-05-16T21:01:35Z",
+      "updatedAt": null,
+      "postId": "ad51bbd9-1fd0-52d5-a168-2cf572a01a15",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "c3fed851-78a8-5629-af68-739cb0bd26e9",
+      "createdAt": "2026-05-23T02:30:16Z",
+      "updatedAt": null,
+      "postId": "263041e5-a925-56a4-ad4a-1bc4f3d9191d",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b7c367a1-3566-56ad-93fa-0ff920439be4",
+      "createdAt": "2026-06-14T08:35:36Z",
+      "updatedAt": null,
+      "postId": "263041e5-a925-56a4-ad4a-1bc4f3d9191d",
+      "userId": "94ecaf6a-b1cb-58ec-99b5-c3eb4e882192",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Vũ Hải Yến",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "9900d77a-9027-5257-9f3f-4afb87602453",
+      "createdAt": "2026-05-30T05:33:33Z",
+      "updatedAt": null,
+      "postId": "263041e5-a925-56a4-ad4a-1bc4f3d9191d",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "aab53ee1-031a-5d5a-816a-1dbe2db7b404",
+      "createdAt": "2026-05-23T09:38:25Z",
+      "updatedAt": null,
+      "postId": "263041e5-a925-56a4-ad4a-1bc4f3d9191d",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "13bfdd27-5e6c-50f4-8e19-46298feb30e6",
+      "createdAt": "2026-06-14T18:50:31Z",
+      "updatedAt": null,
+      "postId": "263041e5-a925-56a4-ad4a-1bc4f3d9191d",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Haha đúng rồi, quan trọng là quay lại được.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": "b7c367a1-3566-56ad-93fa-0ff920439be4"
+    },
+    {
+      "id": "f91ae133-d696-5fcc-8c29-570819023e50",
+      "createdAt": "2026-05-15T19:47:52Z",
+      "updatedAt": null,
+      "postId": "a79a9b14-6129-5038-868d-a07f5a6b5c83",
+      "userId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "15e49275-2218-568e-b4a3-925cb13bc4a2",
+      "createdAt": "2026-06-10T06:03:52Z",
+      "updatedAt": null,
+      "postId": "a79a9b14-6129-5038-868d-a07f5a6b5c83",
+      "userId": "19baf8ca-68cc-5ec5-b89c-1c61231de6a8",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Phạm Quốc Bảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "142e7437-2af1-5d19-af2f-8f601f507684",
+      "createdAt": "2026-06-05T09:09:34Z",
+      "updatedAt": null,
+      "postId": "a79a9b14-6129-5038-868d-a07f5a6b5c83",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a47cc1ee-c6b1-59da-8c4a-13c339f159c3",
+      "createdAt": "2026-05-15T01:35:31Z",
+      "updatedAt": null,
+      "postId": "a79a9b14-6129-5038-868d-a07f5a6b5c83",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8d78fb05-3d40-5c0e-9f7e-76a6be191b47",
+      "createdAt": "2026-05-22T23:56:57Z",
+      "updatedAt": null,
+      "postId": "a79a9b14-6129-5038-868d-a07f5a6b5c83",
+      "userId": "1c1de04b-97ef-5c99-bc9a-d13d88f24653",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Chu Anh Khoa",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e23d1da8-0977-51d6-8063-02a8ebebfddc",
+      "createdAt": "2026-06-12T17:04:47Z",
+      "updatedAt": null,
+      "postId": "a79a9b14-6129-5038-868d-a07f5a6b5c83",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d6252481-3a67-5c98-81e4-0ac86640a03b",
+      "createdAt": "2026-06-14T12:53:10Z",
+      "updatedAt": null,
+      "postId": "f2bcfa1e-ee16-55cc-b5ac-94778ffe70b7",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "2114a7d0-0e05-5865-912a-574b27ee74f7",
+      "createdAt": "2026-06-14T13:26:39Z",
+      "updatedAt": null,
+      "postId": "f2bcfa1e-ee16-55cc-b5ac-94778ffe70b7",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "9545a29f-3a8b-5aa7-9b2e-19a5da0e9d53",
+      "createdAt": "2026-05-19T00:30:11Z",
+      "updatedAt": null,
+      "postId": "f2bcfa1e-ee16-55cc-b5ac-94778ffe70b7",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "7f377de2-3202-5e88-9ac9-139a6b71e5d1",
+      "createdAt": "2026-06-02T19:32:49Z",
+      "updatedAt": null,
+      "postId": "f2bcfa1e-ee16-55cc-b5ac-94778ffe70b7",
+      "userId": "2f826a30-86f5-5a0c-a5f6-945c8c15c2dd",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Tạ Khánh An",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d4a72da8-e192-5dee-a0cf-bc6f020a203c",
+      "createdAt": "2026-05-28T02:33:27Z",
+      "updatedAt": null,
+      "postId": "f2bcfa1e-ee16-55cc-b5ac-94778ffe70b7",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d495e86d-10e1-534f-a187-92c3de25de9a",
+      "createdAt": "2026-06-02T04:09:34Z",
+      "updatedAt": null,
+      "postId": "b489741a-5b5e-5409-8e12-a2ba5d2ce3e9",
+      "userId": "1c1de04b-97ef-5c99-bc9a-d13d88f24653",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Chu Anh Khoa",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e3070d88-9b71-532f-a601-42e1dbef6838",
+      "createdAt": "2026-05-18T21:57:26Z",
+      "updatedAt": null,
+      "postId": "b489741a-5b5e-5409-8e12-a2ba5d2ce3e9",
+      "userId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "40022ee2-61d0-579d-b56c-01c5d8fee28d",
+      "createdAt": "2026-06-14T05:26:56Z",
+      "updatedAt": null,
+      "postId": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "3eebc232-a0c4-560f-99db-05e3c8ac5eab",
+      "createdAt": "2026-05-20T06:09:21Z",
+      "updatedAt": null,
+      "postId": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "userId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d8080fe3-cf0d-56e7-8d6a-8e537a89e951",
+      "createdAt": "2026-05-16T01:08:20Z",
+      "updatedAt": null,
+      "postId": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "userId": "b87a3d59-d396-524a-a541-5b388d41c3e0",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Cao Minh Quân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a9899c53-1d42-5b10-b150-17034290efea",
+      "createdAt": "2026-06-11T01:19:27Z",
+      "updatedAt": null,
+      "postId": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "dbc4c60f-2ecb-5a11-a8d9-cb5285b4ab1d",
+      "createdAt": "2026-05-30T13:55:30Z",
+      "updatedAt": null,
+      "postId": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "1ebd2f2b-b476-5f0a-bdc6-dc9fd886d4b0",
+      "createdAt": "2026-05-20T02:03:27Z",
+      "updatedAt": null,
+      "postId": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "efa4deaf-75f8-5a1f-8d86-23da86056267",
+      "createdAt": "2026-05-27T17:26:35Z",
+      "updatedAt": null,
+      "postId": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "13a3d539-9f5b-5607-8f27-4e368ecf0491",
+      "createdAt": "2026-05-13T23:01:26Z",
+      "updatedAt": null,
+      "postId": "2d10ac58-c805-56da-ae13-7a1a549e2199",
+      "userId": "2f826a30-86f5-5a0c-a5f6-945c8c15c2dd",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Tạ Khánh An",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5a705954-a067-56f1-80f1-df57602f29ae",
+      "createdAt": "2026-05-17T21:18:25Z",
+      "updatedAt": null,
+      "postId": "4e20b7ef-3f25-525b-afc7-2184353b3d5a",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "112083f5-b211-5743-a43d-89a84d080970",
+      "createdAt": "2026-05-21T11:12:10Z",
+      "updatedAt": null,
+      "postId": "1efa8635-32b6-578f-b5d6-2ebf55bf3274",
+      "userId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "28146b04-bdfa-5e83-946d-7051be95a8f7",
+      "createdAt": "2026-05-18T12:53:15Z",
+      "updatedAt": null,
+      "postId": "1efa8635-32b6-578f-b5d6-2ebf55bf3274",
+      "userId": "889ed732-59fd-5e04-b764-1ebb9957f397",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Trương Bảo Ngọc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6b844467-ad3c-5571-973c-762f57919062",
+      "createdAt": "2026-05-27T20:48:33Z",
+      "updatedAt": null,
+      "postId": "1efa8635-32b6-578f-b5d6-2ebf55bf3274",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Có cần khởi động cổ tay kỹ hơn không? Mình làm vậy thấy đỡ đau.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "221bbbde-983f-5487-8e17-ca074874dcb0",
+      "createdAt": "2026-05-30T19:14:25Z",
+      "updatedAt": null,
+      "postId": "1efa8635-32b6-578f-b5d6-2ebf55bf3274",
+      "userId": "e9dd615f-d36e-5852-bce8-bf6d6581b722",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Trần Khánh Duy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "88b84bd8-8f41-5e9d-8b5c-6f9d28ff7deb",
+      "createdAt": "2026-05-16T23:02:28Z",
+      "updatedAt": null,
+      "postId": "1efa8635-32b6-578f-b5d6-2ebf55bf3274",
+      "userId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "127306b3-8cd1-5405-8721-a5fb40a6a20d",
+      "createdAt": "2026-06-07T05:46:58Z",
+      "updatedAt": null,
+      "postId": "1efa8635-32b6-578f-b5d6-2ebf55bf3274",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "94b4134d-7adc-56d0-886a-250934fdee4c",
+      "createdAt": "2026-06-02T08:36:21Z",
+      "updatedAt": null,
+      "postId": "04e2967c-2c72-50a4-a753-590cb927177e",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a8059f9b-2df0-58dc-af1f-6e358813fa8a",
+      "createdAt": "2026-06-03T14:35:49Z",
+      "updatedAt": null,
+      "postId": "04e2967c-2c72-50a4-a753-590cb927177e",
+      "userId": "db00cd1f-a3fe-5b4d-bb77-1cebebd37e2b",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Phạm Minh Khang",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b725582c-5884-5c3d-8e4e-18925a867071",
+      "createdAt": "2026-06-06T13:15:58Z",
+      "updatedAt": null,
+      "postId": "04e2967c-2c72-50a4-a753-590cb927177e",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5723bb70-7104-50a0-af4e-bb76633b2e0a",
+      "createdAt": "2026-06-09T16:29:35Z",
+      "updatedAt": null,
+      "postId": "04e2967c-2c72-50a4-a753-590cb927177e",
+      "userId": "7a36f7ad-90db-52a5-91d2-77c89a4c7549",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Mai Nhật Long",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "97949b61-42c0-583d-8326-30d8025904c7",
+      "createdAt": "2026-05-14T09:04:20Z",
+      "updatedAt": null,
+      "postId": "04e2967c-2c72-50a4-a753-590cb927177e",
+      "userId": "111c4835-8276-5997-ac04-c35d5f32a402",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Anh Tú",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b3b049f0-681e-5a17-a2f8-6cb4ea8ec80d",
+      "createdAt": "2026-05-29T18:55:21Z",
+      "updatedAt": null,
+      "postId": "04e2967c-2c72-50a4-a753-590cb927177e",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": "a8059f9b-2df0-58dc-af1f-6e358813fa8a"
+    },
+    {
+      "id": "acb21b0e-9e94-5827-9736-3c26c21dc76d",
+      "createdAt": "2026-05-23T08:14:41Z",
+      "updatedAt": null,
+      "postId": "6eceac42-6b2c-58e8-9f29-9317796c6865",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8113a136-4c19-560a-bb00-1f2bedebeae2",
+      "createdAt": "2026-06-07T15:21:34Z",
+      "updatedAt": null,
+      "postId": "6eceac42-6b2c-58e8-9f29-9317796c6865",
+      "userId": "19baf8ca-68cc-5ec5-b89c-1c61231de6a8",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Phạm Quốc Bảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "75a28a39-34c1-554d-8d94-b043174ee023",
+      "createdAt": "2026-05-22T16:18:13Z",
+      "updatedAt": null,
+      "postId": "6eceac42-6b2c-58e8-9f29-9317796c6865",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "a9d20a61-bf2c-5cf9-8e21-27806f59188a",
+      "createdAt": "2026-05-27T23:40:34Z",
+      "updatedAt": null,
+      "postId": "6eceac42-6b2c-58e8-9f29-9317796c6865",
+      "userId": "d6a59803-4d5e-5929-8f73-114cb16a752d",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Trần Hoàng Nam",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "20033776-06fc-54fa-beea-242b7864b6e4",
+      "createdAt": "2026-05-21T18:52:52Z",
+      "updatedAt": null,
+      "postId": "6eceac42-6b2c-58e8-9f29-9317796c6865",
+      "userId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "content": "Chuẩn luôn, mình đang cố không ép bản thân quá.",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "parentCommentId": "75a28a39-34c1-554d-8d94-b043174ee023"
+    },
+    {
+      "id": "da6d5299-0ed3-5dc3-9171-228ac9e7e4be",
+      "createdAt": "2026-06-11T15:01:52Z",
+      "updatedAt": null,
+      "postId": "fb37d734-b60d-59f7-8efc-8ac7623545b9",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "52b9348f-bdca-5034-9239-ba7ccd1be1cc",
+      "createdAt": "2026-05-28T06:09:00Z",
+      "updatedAt": null,
+      "postId": "fb37d734-b60d-59f7-8efc-8ac7623545b9",
+      "userId": "57e6e730-3136-551d-9e93-c09d10da4b1d",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Hà My",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "fc09dc82-ba29-5791-a222-b224d5838283",
+      "createdAt": "2026-05-22T18:18:57Z",
+      "updatedAt": null,
+      "postId": "fb37d734-b60d-59f7-8efc-8ac7623545b9",
+      "userId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "589c69a9-35d8-5e85-bd35-fce7c5f997b5",
+      "createdAt": "2026-06-10T20:21:47Z",
+      "updatedAt": null,
+      "postId": "fb37d734-b60d-59f7-8efc-8ac7623545b9",
+      "userId": "2ff0361e-034e-555c-b703-568f67fae535",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Trương Như Ý",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ccb2778a-4a74-538e-8a13-e2385cc0627f",
+      "createdAt": "2026-05-24T04:37:56Z",
+      "updatedAt": null,
+      "postId": "c487ee13-40c2-55d0-b8c4-e3d2ef633f23",
+      "userId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "20bd8411-be90-54f5-ab8d-1917e3226394",
+      "createdAt": "2026-06-08T13:08:49Z",
+      "updatedAt": null,
+      "postId": "c487ee13-40c2-55d0-b8c4-e3d2ef633f23",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Nhìn đơn giản nhưng thực tế làm đều mới khó đó.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e87c3f80-4e2d-5e29-b967-446a8e8f3730",
+      "createdAt": "2026-06-14T15:55:40Z",
+      "updatedAt": null,
+      "postId": "c487ee13-40c2-55d0-b8c4-e3d2ef633f23",
+      "userId": "9c720154-0fd6-5d0c-856c-8f30c02cb5e1",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quốc Toàn",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "00b1e91b-0846-5069-bc85-b263cd6f2d0c",
+      "createdAt": "2026-05-22T07:52:53Z",
+      "updatedAt": null,
+      "postId": "c487ee13-40c2-55d0-b8c4-e3d2ef633f23",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "fbd8abbd-bc15-5a77-b51f-8163c18af2dd",
+      "createdAt": "2026-06-04T02:48:48Z",
+      "updatedAt": null,
+      "postId": "c487ee13-40c2-55d0-b8c4-e3d2ef633f23",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b871121f-dd72-5708-b7e4-da8fa10e709b",
+      "createdAt": "2026-06-11T23:25:25Z",
+      "updatedAt": null,
+      "postId": "c487ee13-40c2-55d0-b8c4-e3d2ef633f23",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Chuẩn luôn, mình đang cố không ép bản thân quá.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": "ccb2778a-4a74-538e-8a13-e2385cc0627f"
+    },
+    {
+      "id": "57726c26-7de4-54b5-b104-611be379800f",
+      "createdAt": "2026-05-27T19:53:45Z",
+      "updatedAt": null,
+      "postId": "7d798d11-b6ea-59aa-b406-83867aa23ff6",
+      "userId": "bf34dbce-301a-5f7e-816b-624191962f0f",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Dương Hải Đăng",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "227ce35a-b97a-5877-ad49-8cc0c8fb6a5d",
+      "createdAt": "2026-05-11T02:41:24Z",
+      "updatedAt": null,
+      "postId": "7d798d11-b6ea-59aa-b406-83867aa23ff6",
+      "userId": "8c5eca82-a3c1-5a03-8933-a311906f4f77",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Võ Thanh Tâm",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ff513fea-119b-5a3c-8dda-3d9785e9bce0",
+      "createdAt": "2026-05-12T18:38:35Z",
+      "updatedAt": null,
+      "postId": "7d798d11-b6ea-59aa-b406-83867aa23ff6",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "e868d5f4-f123-5631-a2c5-ae65672bf7b4",
+      "createdAt": "2026-05-10T13:11:25Z",
+      "updatedAt": null,
+      "postId": "7d798d11-b6ea-59aa-b406-83867aa23ff6",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "80ad778d-df1b-5af4-b6b7-7de2fa0d8e1a",
+      "createdAt": "2026-05-25T08:51:49Z",
+      "updatedAt": null,
+      "postId": "7d798d11-b6ea-59aa-b406-83867aa23ff6",
+      "userId": "d10ffd46-4c9f-5e88-bd9c-9b0b6cf0f4db",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Phan Minh Châu",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "042ab246-3219-5350-ac91-062a1ebc41bb",
+      "createdAt": "2026-06-14T01:23:57Z",
+      "updatedAt": null,
+      "postId": "7d798d11-b6ea-59aa-b406-83867aa23ff6",
+      "userId": "ded2a6f5-2805-520b-b8a9-74ff3b6c4bfd",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Mai Chi",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "40928433-9793-58f1-a8a9-cc6fdf5a0a64",
+      "createdAt": "2026-05-13T04:36:17Z",
+      "updatedAt": null,
+      "postId": "49f5ecc6-6f8f-585a-a6a3-7481c40eda2d",
+      "userId": "199b9b96-bca0-5aca-a042-47eb6c0e855a",
+      "content": "Mình cũng thích tập sáng, cảm giác cả ngày nhẹ đầu hơn.",
+      "authorSnapshot": {
+        "fullName": "Nguyễn Minh Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "6dd6bb90-b306-5fef-a971-096458254412",
+      "createdAt": "2026-05-16T12:41:41Z",
+      "updatedAt": null,
+      "postId": "49f5ecc6-6f8f-585a-a6a3-7481c40eda2d",
+      "userId": "de5facb0-f4ff-50aa-b238-b52ea1ab335f",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Võ Ngọc Hân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b98955ca-a1e4-546d-8f8a-34d0d0c925ca",
+      "createdAt": "2026-06-05T06:48:13Z",
+      "updatedAt": null,
+      "postId": "49f5ecc6-6f8f-585a-a6a3-7481c40eda2d",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d4225c36-9d16-5a7d-8428-c5d3d08b7feb",
+      "createdAt": "2026-06-02T19:31:18Z",
+      "updatedAt": null,
+      "postId": "49f5ecc6-6f8f-585a-a6a3-7481c40eda2d",
+      "userId": "fefc0dcf-360c-5e50-a8b7-2116ae0ca477",
+      "content": "Mình cũng đang ở giai đoạn này, quan trọng là đừng bỏ hẳn là được.",
+      "authorSnapshot": {
+        "fullName": "Vũ Lan Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "53ea0fab-1a5e-5b26-8acb-583127ebfaa2",
+      "createdAt": "2026-06-05T19:28:38Z",
+      "updatedAt": null,
+      "postId": "49f5ecc6-6f8f-585a-a6a3-7481c40eda2d",
+      "userId": "fa478276-de94-5a41-b8e8-923572c10923",
+      "content": "Nghe hợp lý đó, hôm nào thử theo cách này xem sao.",
+      "authorSnapshot": {
+        "fullName": "Tạ Mỹ Duyên",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "db64a09a-1ea9-5578-ba8f-d70b36a4ba21",
+      "createdAt": "2026-05-31T13:41:25Z",
+      "updatedAt": null,
+      "postId": "49f5ecc6-6f8f-585a-a6a3-7481c40eda2d",
+      "userId": "2f826a30-86f5-5a0c-a5f6-945c8c15c2dd",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Tạ Khánh An",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "94a2c9da-1c06-55f3-91a9-82050b2d9bef",
+      "createdAt": "2026-06-07T07:37:29Z",
+      "updatedAt": null,
+      "postId": "ea41256f-0453-5316-ba99-b1dd059b4f19",
+      "userId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "276b12a6-9f3c-5fa7-9bf2-af53924ec0c5",
+      "createdAt": "2026-06-09T10:03:46Z",
+      "updatedAt": null,
+      "postId": "ea41256f-0453-5316-ba99-b1dd059b4f19",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Ăn uống như vậy là ổn rồi, miễn duy trì được lâu dài.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "3c22ac4d-43de-5928-b702-0afa814cc7a2",
+      "createdAt": "2026-05-23T08:32:14Z",
+      "updatedAt": null,
+      "postId": "ea41256f-0453-5316-ba99-b1dd059b4f19",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Nghe hợp lý, chắc mình cần ngủ sớm hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": "94a2c9da-1c06-55f3-91a9-82050b2d9bef"
+    },
+    {
+      "id": "62ffeb28-e105-5626-b748-ad0d49a57d01",
+      "createdAt": "2026-06-08T19:09:56Z",
+      "updatedAt": null,
+      "postId": "1837dc4a-b588-532b-a6b6-0c71e02f1ad5",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Form ổn hơn từng chút là tốt rồi, đừng vội quá.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "96b589b0-219a-5671-ae14-47d09c352469",
+      "createdAt": "2026-05-25T18:52:35Z",
+      "updatedAt": null,
+      "postId": "1ff5add8-c9bb-519f-8483-eda952c9a64c",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "cdcdaccc-784a-5261-bd5c-1f5210a056f5",
+      "createdAt": "2026-06-12T04:06:32Z",
+      "updatedAt": null,
+      "postId": "1ff5add8-c9bb-519f-8483-eda952c9a64c",
+      "userId": "19baf8ca-68cc-5ec5-b89c-1c61231de6a8",
+      "content": "Bài này nên lưu lại để tự nhắc bản thân luôn.",
+      "authorSnapshot": {
+        "fullName": "Phạm Quốc Bảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "ea12dc0d-3436-5472-b931-fc7f043c54ca",
+      "createdAt": "2026-05-16T07:04:37Z",
+      "updatedAt": null,
+      "postId": "1ff5add8-c9bb-519f-8483-eda952c9a64c",
+      "userId": "10748f60-57d6-5671-9df3-ad78e66fc005",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Lâm Quang Vinh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0a4d3aa8-35ad-5e81-90ec-9cf132a92915",
+      "createdAt": "2026-05-13T11:04:33Z",
+      "updatedAt": null,
+      "postId": "74b2caa4-864d-5df0-817b-1615cbc4b1f3",
+      "userId": "49a290fc-af32-5517-a544-dde3d52f7c2f",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Bùi Ngọc Mai",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f4901472-f84b-5d94-bb11-2db8f12fc529",
+      "createdAt": "2026-05-17T03:01:28Z",
+      "updatedAt": null,
+      "postId": "74b2caa4-864d-5df0-817b-1615cbc4b1f3",
+      "userId": "d2bee203-0bf2-55c5-a90d-37e349bbeb2f",
+      "content": "Cố lên nha, đọc bài này thấy có động lực ghê.",
+      "authorSnapshot": {
+        "fullName": "Phan Thu Hà",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b80c9f60-bf4d-539b-8cbb-94e18d2d6097",
+      "createdAt": "2026-05-19T17:11:32Z",
+      "updatedAt": null,
+      "postId": "74b2caa4-864d-5df0-817b-1615cbc4b1f3",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "0563e13a-410e-5d1b-b617-8214d895e66b",
+      "createdAt": "2026-05-29T15:20:45Z",
+      "updatedAt": null,
+      "postId": "74b2caa4-864d-5df0-817b-1615cbc4b1f3",
+      "userId": "582e8b8d-4946-5f1d-b4a3-755e7097f3c5",
+      "content": "Đọc xong thấy muốn mở app log buổi hôm nay liền.",
+      "authorSnapshot": {
+        "fullName": "Dương Quốc Thịnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "7d69c04d-4e38-5294-b7be-4bd730ed0a68",
+      "createdAt": "2026-06-08T04:21:43Z",
+      "updatedAt": null,
+      "postId": "74b2caa4-864d-5df0-817b-1615cbc4b1f3",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Bữa nào chạy chung thử nha, mình cũng ở gần khu đó.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "8edfe2e8-c99b-592e-81c1-b75a94e2fd0b",
+      "createdAt": "2026-06-01T14:40:44Z",
+      "updatedAt": null,
+      "postId": "78f7b233-b8b0-5763-b6fa-59385c163f1c",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Chậm mà chắc, tiến bộ vậy là đáng mừng rồi.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "f451ef01-2c87-5e20-9d0e-159729096058",
+      "createdAt": "2026-06-05T03:36:39Z",
+      "updatedAt": null,
+      "postId": "78f7b233-b8b0-5763-b6fa-59385c163f1c",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Mình vote meal prep, tiết kiệm thời gian và ít ăn bừa hơn thật.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "d8b5241c-8c39-582c-b329-34320bb58a1a",
+      "createdAt": "2026-05-31T06:51:24Z",
+      "updatedAt": null,
+      "postId": "78f7b233-b8b0-5763-b6fa-59385c163f1c",
+      "userId": "7dcb1b78-ce74-5e47-a8b2-fbdad35c2f91",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Bùi Khánh Linh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "04bc5eab-c150-599c-885c-02940fa696b8",
+      "createdAt": "2026-05-31T14:40:35Z",
+      "updatedAt": null,
+      "postId": "78f7b233-b8b0-5763-b6fa-59385c163f1c",
+      "userId": "c13e3b68-3326-565c-b166-c574c456e9b9",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Chu Gia Bách",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "71236312-ada0-5f8b-8182-361ccc37e9cf",
+      "createdAt": "2026-05-15T19:29:34Z",
+      "updatedAt": null,
+      "postId": "78f7b233-b8b0-5763-b6fa-59385c163f1c",
+      "userId": "8bd87bd5-f1eb-5caf-8c25-41f5f2ecc5c5",
+      "content": "Mình từng bị y chang, giảm volume một tuần là đỡ hẳn.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Quỳnh Như",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "343c7eb2-f939-5cf4-ac1c-756d1ef61e75",
+      "createdAt": "2026-05-25T17:11:48Z",
+      "updatedAt": null,
+      "postId": "90b2b1f6-9f66-5d71-8f8e-564efe9dfaaa",
+      "userId": "c9a769b1-ac73-5bdc-bc30-8633d62c38e3",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Hoàng Tuấn Kiệt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "5c5d8e00-3ca1-5ec9-b396-80261e2ab57c",
+      "createdAt": "2026-05-28T10:49:37Z",
+      "updatedAt": null,
+      "postId": "90b2b1f6-9f66-5d71-8f8e-564efe9dfaaa",
+      "userId": "19baf8ca-68cc-5ec5-b89c-1c61231de6a8",
+      "content": "Playlist của mình toàn nhạc hơi căng, tập chân nghe rất hợp 😂",
+      "authorSnapshot": {
+        "fullName": "Phạm Quốc Bảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "db46fdbb-7fe5-5e07-b6b9-64235d970cee",
+      "createdAt": "2026-06-14T12:00:15Z",
+      "updatedAt": null,
+      "postId": "90b2b1f6-9f66-5d71-8f8e-564efe9dfaaa",
+      "userId": "338102cd-98a7-54fb-a812-68bf9fc87d15",
+      "content": "Cảm ơn bạn, mình sẽ thử cách đó nha.",
+      "authorSnapshot": {
+        "fullName": "Đỗ Phương Thảo",
+        "avatarUrl": null
+      },
+      "parentCommentId": "343c7eb2-f939-5cf4-ac1c-756d1ef61e75"
+    },
+    {
+      "id": "b0bfb361-86b9-5c8d-8965-bb467526903d",
+      "createdAt": "2026-05-24T21:56:36Z",
+      "updatedAt": null,
+      "postId": "b4039135-350b-55b1-bacd-d4071de71f6c",
+      "userId": "682239cf-8477-5df1-865a-c65236317783",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Mai Phúc Lộc",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "9628e52a-7ba9-52a0-803f-1dd2eb1fe90f",
+      "createdAt": "2026-05-24T07:03:48Z",
+      "updatedAt": null,
+      "postId": "b4039135-350b-55b1-bacd-d4071de71f6c",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Chuẩn luôn, mình đang cố không ép bản thân quá.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": "b0bfb361-86b9-5c8d-8965-bb467526903d"
+    },
+    {
+      "id": "5c8b1c25-4628-5fab-a22b-7c4b34960c90",
+      "createdAt": "2026-06-01T03:37:50Z",
+      "updatedAt": null,
+      "postId": "fe71307d-2b9f-52fe-8dbb-6c7589a2f339",
+      "userId": "e0d7061c-fb03-53ea-8ce4-81e08ac3dceb",
+      "content": "Nếu mệt thì giảm cường độ cũng được, miễn là vẫn lắng nghe cơ thể.",
+      "authorSnapshot": {
+        "fullName": "Ngô Đức Anh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "b8e482e1-17c1-541d-860e-15ada3bd64ba",
+      "createdAt": "2026-06-05T15:45:45Z",
+      "updatedAt": null,
+      "postId": "fe71307d-2b9f-52fe-8dbb-6c7589a2f339",
+      "userId": "8cda8f74-ce6f-5129-b28a-7e7db4638216",
+      "content": "Bạn thử thêm khoai lang trước buổi tập xem, mình thấy khá ổn.",
+      "authorSnapshot": {
+        "fullName": "Ngô Thành Đạt",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "056fb02d-2806-597d-b27e-d73aebfb86aa",
+      "createdAt": "2026-05-13T02:49:00Z",
+      "updatedAt": null,
+      "postId": "fe71307d-2b9f-52fe-8dbb-6c7589a2f339",
+      "userId": "f6f61b03-8c95-5acf-b8b2-314f7c56c20e",
+      "content": "Câu này đúng quá, không phải ngày nào cũng phải hoàn hảo.",
+      "authorSnapshot": {
+        "fullName": "Cao Đức Mạnh",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "1880644e-bf22-53c4-b466-e62aacc39732",
+      "createdAt": "2026-05-15T11:07:37Z",
+      "updatedAt": null,
+      "postId": "fe71307d-2b9f-52fe-8dbb-6c7589a2f339",
+      "userId": "e92e4ec1-d5c3-58af-bce5-957322298cf7",
+      "content": "Cẩn thận ngủ thiếu nha, mình thiếu ngủ là buổi tập tụt hẳn.",
+      "authorSnapshot": {
+        "fullName": "Đặng Gia Huy",
+        "avatarUrl": null
+      },
+      "parentCommentId": null
+    },
+    {
+      "id": "afa51609-3de4-5262-96af-ed5729cfbb92",
+      "createdAt": "2026-05-16T15:09:30Z",
+      "updatedAt": null,
+      "postId": "fe71307d-2b9f-52fe-8dbb-6c7589a2f339",
+      "userId": "356a5932-247c-5a53-be7d-877c05158b6d",
+      "content": "Mình note lại rồi, mai áp dụng thử.",
+      "authorSnapshot": {
+        "fullName": "Huỳnh Kim Ngân",
+        "avatarUrl": null
+      },
+      "parentCommentId": "b8e482e1-17c1-541d-860e-15ada3bd64ba"
+    }
+  ]
+}

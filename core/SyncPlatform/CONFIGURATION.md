@@ -1,63 +1,59 @@
 # Sync Platform — Configuration
 
-## Mô hình (an toàn khi `git push`)
+## Mô hình
 
-| Loại file | Trên Git | Bạn điền secret |
-|-----------|----------|-----------------|
-| `appsettings.json` | Có — **giá trị rỗng** `""` | Sau pull, hoặc dùng `.local.json` |
-| `appsettings.Development.json` | Có — **giá trị rỗng** | Sau pull, hoặc dùng `.local.json` |
-| `appsettings.*.local.json` | **Không** (gitignore) | Khuyên dùng cho secret thật |
-| `.env` | **Không** (gitignore) | UI / tooling |
+| File | Trên Git | Mục đích |
+|------|----------|----------|
+| `*.json.example` | **Có** | Template cấu trúc, secret rỗng |
+| `appsettings.json` | **Không** (gitignore) | Cấu hình local / mặc định |
+| `appsettings.Development.json` | **Không** (gitignore) | Override khi `ASPNETCORE_ENVIRONMENT=Development` |
+| `configs/appsettings.Shared*.json` | **Không** (gitignore) | JWT + logging dùng chung |
 
-**Không cần** đổi tên `*.example.json` — pull xong chỉ việc điền giá trị (hoặc tạo file `.local.json`).
+Mỗi dev giữ bản `appsettings*.json` riêng trên máy — **không push** lên remote, tránh xung đột secret giữa các dev.
 
-## Setup một lần sau clone
+## Setup sau clone
 
 Từ **root repo**:
 
 ```powershell
-.\scripts\install-git-hooks.ps1
+.\core\SyncPlatform\scripts\setup-appsettings.ps1
 ```
 
-Hook `pre-commit` sẽ **chặn commit** nếu `appsettings*.json` có password / API key / connection string không rỗng.
+Script copy `*.json.example` → `*.json` (bỏ qua file đã tồn tại). Dùng `-Force` để ghi đè.
 
-Bạn vẫn có thể `git add .` và `git push` bình thường khi chỉ commit code + file config **để trống secret**.
+Sau đó điền secret trong:
 
-## Điền secret để chạy local
-
-1. `configs/appsettings.Shared.Development.json` → `Jwt:SecretKey` (≥ 32 ký tự).
-2. Mỗi service `appsettings.Development.json` → connection strings, PayOS, Google, SMTP, …
-
-**Khuyến nghị:** tạo `appsettings.Development.local.json` (gitignored) trong từng project:
-
-```json
-{
-  "ConnectionStrings": {
-    "IamDatabase": "Host=localhost;Port=5432;Database=sync_iam;Username=postgres;Password=YOUR_PASSWORD"
-  },
-  "Jwt": {
-    "SecretKey": "your-dev-jwt-secret-at-least-32-characters-long"
-  }
-}
-```
-
-ASP.NET Core tự merge file `.local.json` sau `appsettings.Development.json`.
-
-## Kiểm tra thủ công trước push
-
-```powershell
-.\core\SyncPlatform\scripts\validate-committed-appsettings.ps1
-```
+1. `configs/appsettings.Shared.Development.json` → `Jwt:SecretKey` (≥ 32 ký tự)
+2. Mỗi service `appsettings.Development.json` → connection strings, PayOS, Google, SMTP, AWS S3 (`Storage` + `AWS`), …
 
 ## Production
 
-Dùng biến môi trường (`Jwt__SecretKey`, `ConnectionStrings__IamDatabase`, …) hoặc secret store — không đưa secret vào JSON trên Git.
+Dùng biến môi trường (`Jwt__SecretKey`, `ConnectionStrings__IamDatabase`, …) hoặc secret store.
 
 ## Chạy tất cả service
 
 ```powershell
 cd core/SyncPlatform
+.\scripts\setup-appsettings.ps1
+.\scripts\run-all.ps1 -Infra   # lần đầu: Docker Postgres/Mongo
 .\scripts\run-all.ps1
 ```
 
-`run-all.ps1` kiểm tra `Jwt:SecretKey` đã được cấu hình (từ file tracked hoặc `.local.json`).
+Yêu cầu: **.NET 10 SDK**, Docker (Postgres `:5434`, Mongo `:27018` — tránh trùng MongoDB cài sẵn trên Windows `:27017`), `Jwt:SecretKey` trong `configs/appsettings.Shared.Development.json`.
+
+`run-all.ps1` build toàn bộ service trước khi mở cửa sổ — lỗi build hiện ngay terminal chính (không chỉ timeout health check).
+
+## IAM / Roadmap / Exercise seed (tự động)
+
+Khi chạy từng API (`Iam.API`, `Roadmap.API`, `Exercise.API`), seed **tự apply lúc startup** (giống `ExerciseSeedData.ExerciseMongoSeeder`) — không cần script SQL riêng.
+
+**IAM** (`IamSeedData.IamDbSeeder`): migrate Postgres + achievements + users (idempotent).
+
+| Email | Password | Role |
+|-------|----------|------|
+| `demo@sync.local` | `Sync@12345` | User |
+| `admin@sync.local` | `Sync@12345` | SystemAdmin |
+| `partner@sync.local` | `Sync@12345` | Partner |
+| `dev.seed@sync.local` | `Sync@12345` | User |
+
+Mật khẩu cố định trong code: `IamSeedData.DefaultDevPassword`. Mỗi lần restart IAM, hash mật khẩu của các email trên được đồng bộ lại.

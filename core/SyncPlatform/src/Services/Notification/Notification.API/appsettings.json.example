@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
+  "ConnectionStrings": {
+    "NotificationDatabase": "mongodb://localhost:27018"
+  },
+  "MongoDB": {
+    "NotificationDatabaseName": "sync_notification"
+  },
+  "SmartPush": {
+    "Enabled": true,
+    "ScanIntervalSeconds": 60
+  },
+  "IamService": {
+    "BaseUrl": "http://localhost:5288",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
+  "RoadmapService": {
+    "BaseUrl": "http://localhost:5118",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
+  "DeepSeek": {
+    "BaseUrl": "https://api.deepseek.com",
+    "ApiKey": "883371b278d",
+    "Model": "deepseek-chat"
+  }
+}

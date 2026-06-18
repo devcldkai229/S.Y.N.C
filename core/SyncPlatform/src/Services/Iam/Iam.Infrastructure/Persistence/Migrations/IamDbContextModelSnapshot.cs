@@ -103,14 +103,6 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(6,4)")
                         .HasColumnName("recovery_score");
 
-                    b.Property<decimal>("SleepQualityScore")
-                        .HasColumnType("numeric(6,4)")
-                        .HasColumnName("sleep_quality_score");
-
-                    b.Property<decimal>("StressScore")
-                        .HasColumnType("numeric(6,4)")
-                        .HasColumnName("stress_score");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -367,6 +359,10 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("deleted_at");
 
+                    b.Property<DateTimeOffset?>("LastActivityDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_activity_date");
+
                     b.Property<int>("LongestStreak")
                         .HasColumnType("integer")
                         .HasColumnName("longest_streak");
@@ -406,6 +402,11 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)")
                         .HasColumnName("avatar_url");
+
+                    b.Property<string>("BackgroundImageUrl")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("background_image_url");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -451,6 +452,15 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("PasswordResetToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("password_reset_token");
+
+                    b.Property<DateTimeOffset?>("PasswordResetTokenExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_token_expires_at");
 
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(32)
@@ -745,6 +755,10 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("allergies");
 
+                    b.Property<bool>("AllowAiGeneratedNotification")
+                        .HasColumnType("boolean")
+                        .HasColumnName("allow_ai_generated_notification");
+
                     b.Property<bool>("AutoOrderEnabled")
                         .HasColumnType("boolean")
                         .HasColumnName("auto_order_enabled");
@@ -790,6 +804,14 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("motivation_style");
+
+                    b.Property<TimeSpan?>("PreferredReminderTime")
+                        .HasColumnType("interval")
+                        .HasColumnName("preferred_reminder_time");
+
+                    b.Property<bool>("SmartPushEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("smart_push_enabled");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

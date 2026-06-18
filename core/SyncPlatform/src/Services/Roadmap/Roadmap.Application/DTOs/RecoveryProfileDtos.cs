@@ -6,7 +6,6 @@ public class RecoveryProfileDto
     public Guid UserId { get; set; }
     public int CurrentRecoveryScore { get; set; }
     public int FatigueLevel { get; set; }
-    public int SleepRecoveryScore { get; set; }
     public int MuscleSorenessScore { get; set; }
     public int CnsFatigueScore { get; set; }
     public string RecommendedTrainingIntensity { get; set; } = string.Empty;
@@ -20,7 +19,6 @@ public class CreateRecoveryProfileDto
     public Guid UserId { get; set; }
     public int CurrentRecoveryScore { get; set; }
     public int FatigueLevel { get; set; }
-    public int SleepRecoveryScore { get; set; }
     public int MuscleSorenessScore { get; set; }
     public int CnsFatigueScore { get; set; }
     public string RecommendedTrainingIntensity { get; set; } = string.Empty;
@@ -31,7 +29,6 @@ public class UpdateRecoveryProfileDto
 {
     public int CurrentRecoveryScore { get; set; }
     public int FatigueLevel { get; set; }
-    public int SleepRecoveryScore { get; set; }
     public int MuscleSorenessScore { get; set; }
     public int CnsFatigueScore { get; set; }
     public string RecommendedTrainingIntensity { get; set; } = string.Empty;

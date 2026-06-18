@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Exercise.Domain\Exercise.Domain.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Contract\Contract.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Shared\Libs.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

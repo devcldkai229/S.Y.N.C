@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
+  "ConnectionStrings": {
+    "RoadmapDatabase": "mongodb://localhost:27018"
+  },
+  "MongoDB": {
+    "RoadmapDatabaseName": "sync_roadmap"
+  },
+  "Roadmap": {
+    "Seed": {
+      "Enabled": true,
+      "SeedDemoData": true
+    }
+  }
+}

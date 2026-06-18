@@ -1,9 +1,14 @@
 using System.Text.Json.Serialization;
 using Iam.API.Exceptions;
+using Iam.API.Middleware;
+using Iam.API.Services;
+using Libs.Storage.Extensions;
 using Iam.Application.Abstractions;
 using Iam.Application.Common;
 using Iam.Application.Extensions;
 using Iam.Infrastructure.Extensions;
+using Iam.Infrastructure.Persistence;
+using Iam.Infrastructure.Persistence.Seed;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
@@ -25,6 +30,8 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddIamApplication(builder.Configuration);
 builder.Services.AddIamInfrastructure(builder.Configuration);
+builder.Services.AddS3ObjectStorage(builder.Configuration);
+builder.Services.AddSingleton<IMediaStorage, S3MediaStorage>();
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddSyncHealthChecks();
 
@@ -50,6 +57,13 @@ builder.Services.AddControllers()
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<IamDbContext>();
+    var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    await IamSeedData.IamDbSeeder.SeedAsync(db, passwordHasher);
+}
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -63,6 +77,7 @@ else
     app.UseHttpsRedirection();
 }
 
+app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 app.MapSyncHealthChecks();
 app.MapControllers();

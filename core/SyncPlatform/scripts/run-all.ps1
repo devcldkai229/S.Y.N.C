@@ -1,39 +1,27 @@
-# Run all Sync Platform APIs in separate terminal windows (Development).
-# Stops any existing processes on service ports before launching.
+# Kill processes on service ports, build, then launch all APIs (Development).
 # Usage:
 #   .\scripts\run-all.ps1
-#   .\scripts\run-all.ps1 -Build
-#   .\scripts\run-all.ps1 -Infra
+#   .\scripts\run-all.ps1 -SkipBuild
 
 param(
-    [switch]$Build,
-    [switch]$Infra
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
 $SyncRoot = Split-Path -Parent $PSScriptRoot
-$RepoRoot = Resolve-Path (Join-Path $SyncRoot "..\..")
-$StartServiceScript = Join-Path $PSScriptRoot "start-service.ps1"
 
-function Get-ConfigSecretKey {
-    param([string]$Path)
-    if (-not (Test-Path $Path)) { return $null }
-    try {
-        return (Get-Content -Raw $Path | ConvertFrom-Json).Jwt.SecretKey
-    }
-    catch { return $null }
-}
-
-$secretKey = Get-ConfigSecretKey (Join-Path $SyncRoot "configs\appsettings.Shared.Development.local.json")
-if ([string]::IsNullOrWhiteSpace($secretKey)) {
-    $secretKey = Get-ConfigSecretKey (Join-Path $SyncRoot "configs\appsettings.Shared.Development.json")
-}
-if ([string]::IsNullOrWhiteSpace($secretKey) -or $secretKey.Length -lt 32) {
-    Write-Host "Jwt:SecretKey not set (min 32 chars)." -ForegroundColor Red
-    Write-Host "Use configs\appsettings.Shared.Development.local.json (gitignored) or fill Development.json locally." -ForegroundColor Yellow
-    Write-Host "See CONFIGURATION.md" -ForegroundColor Yellow
-    exit 1
-}
+$services = @(
+    @{ Name = "IAM";          Dir = "src\Services\Iam\Iam.API";                     Port = 5288 },
+    @{ Name = "Payment";      Dir = "src\Services\Payment\Payment.API";             Port = 5084 },
+    @{ Name = "Roadmap";      Dir = "src\Services\Roadmap\Roadmap.API";             Port = 5118 },
+    @{ Name = "Exercise";     Dir = "src\Services\Exercise\Exercise.API";           Port = 5187 },
+    @{ Name = "Notification"; Dir = "src\Services\Notification\Notification.API"; Port = 5106 },
+    @{ Name = "Social";       Dir = "src\Services\Social\Social.API";               Port = 5120 },
+    @{ Name = "Nutrition";    Dir = "src\Services\Nutrition\Nutrition.API";         Port = 5122 },
+    @{ Name = "Marketplace";  Dir = "src\Services\Marketplace\Marketplace.API";     Port = 5119 },
+    @{ Name = "Order";        Dir = "src\Services\Order\Order.API";                 Port = 5123 },
+    @{ Name = "Gateway";      Dir = "src\Gateway";                                  Port = 5057 }
+)
 
 function Get-LaunchShell {
     if (Get-Command pwsh -ErrorAction SilentlyContinue) {
@@ -42,71 +30,68 @@ function Get-LaunchShell {
     return "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 }
 
-$launchShell = Get-LaunchShell
+function New-ServiceStartCommand {
+    param(
+        [string]$Name,
+        [string]$ProjectDir,
+        [int]$Port,
+        [bool]$UseNoBuild
+    )
 
-$services = @(
-    @{ Name = "IAM";          Dir = "src\Services\Iam\Iam.API";                     Port = 5288 },
-    @{ Name = "Payment";      Dir = "src\Services\Payment\Payment.API";             Port = 5084 },
-    @{ Name = "Roadmap";      Dir = "src\Services\Roadmap\Roadmap.API";             Port = 5118 },
-    @{ Name = "Exercise";     Dir = "src\Services\Exercise\Exercise.API";           Port = 5187 },
-    @{ Name = "Notification"; Dir = "src\Services\Notification\Notification.API"; Port = 5106 },
-    @{ Name = "Gateway";      Dir = "src\Gateway";                                  Port = 5057 }
-)
+    $noBuildArg = if ($UseNoBuild) { " --no-build" } else { "" }
+    $gatewayUrls = if ($Name -eq "Gateway") {
+        "`$env:ASPNETCORE_URLS = 'http://0.0.0.0:$Port';"
+    } else { "" }
 
-if ($Infra) {
-    Write-Host "Starting Docker infra (Postgres, MongoDB, ...)..." -ForegroundColor Cyan
-    Push-Location (Join-Path $RepoRoot "infra\docker")
-    docker compose up -d
-    if ($LASTEXITCODE -ne 0) { Pop-Location; throw "docker compose failed" }
-    Pop-Location
-    Write-Host "Waiting 5s for databases..." -ForegroundColor DarkGray
-    Start-Sleep -Seconds 5
+    @"
+`$Host.UI.RawUI.WindowTitle = 'Sync - $Name (:$Port)'
+Set-Location '$ProjectDir'
+`$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$gatewayUrls
+Write-Host '>>> $Name API - http://localhost:$Port' -ForegroundColor Green
+if ('$Name' -eq 'Gateway') {
+    Write-Host '    Entry point (YARP) - LAN: http://<your-pc-ip>:$Port/health' -ForegroundColor DarkGray
+} else {
+    Write-Host '    Swagger: http://localhost:$Port/swagger' -ForegroundColor DarkGray
+    Write-Host '    Health:  http://localhost:$Port/health' -ForegroundColor DarkGray
+}
+dotnet run --launch-profile http$noBuildArg
+if (`$LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host 'Service failed to start. Re-run: .\scripts\run-all.ps1' -ForegroundColor Red
+}
+"@
 }
 
-if ($Build) {
-    Write-Host "Building all API projects..." -ForegroundColor Cyan
+$launchShell = Get-LaunchShell
+
+Write-Host "Stopping ports (release file locks before build)..." -ForegroundColor Cyan
+& (Join-Path $PSScriptRoot "stop-all.ps1")
+Start-Sleep -Seconds 3
+
+if (-not $SkipBuild) {
+    Write-Host "Building..." -ForegroundColor Cyan
     foreach ($svc in $services) {
         $projectDir = Join-Path $SyncRoot $svc.Dir
         $csproj = Get-ChildItem $projectDir -Filter "*.csproj" -ErrorAction Stop |
             Select-Object -First 1 -ExpandProperty FullName
-        dotnet build $csproj -v q --nologo
-        if ($LASTEXITCODE -ne 0) { throw "Build failed: $($svc.Name)" }
+        Write-Host "  $($svc.Name)" -ForegroundColor DarkGray
+        dotnet build $csproj -v minimal --nologo
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "Build failed for $($svc.Name). Fix errors above, then re-run run-all.ps1." -ForegroundColor Red
+            exit 1
+        }
     }
-    Write-Host "Build OK." -ForegroundColor Green
 }
 
-Write-Host ""
-Write-Host "Stopping existing processes on service ports..." -ForegroundColor Cyan
-& (Join-Path $PSScriptRoot "stop-all.ps1")
-Start-Sleep -Seconds 2
-
-Write-Host ""
-Write-Host "Shell: $launchShell" -ForegroundColor DarkGray
-Write-Host "Starting services (each in a new window)..." -ForegroundColor Cyan
-Write-Host ""
-
+Write-Host "Starting services..." -ForegroundColor Cyan
+$useNoBuild = -not $SkipBuild
 foreach ($svc in $services) {
     $projectDir = (Resolve-Path (Join-Path $SyncRoot $svc.Dir)).Path
-
-    $args = @(
-        "-NoExit",
-        "-ExecutionPolicy", "Bypass",
-        "-File", $StartServiceScript,
-        "-Name", $svc.Name,
-        "-ProjectDir", $projectDir,
-        "-Port", $svc.Port
-    )
-
-    Start-Process -FilePath $launchShell -ArgumentList $args -ErrorAction Stop
+    $command = New-ServiceStartCommand -Name $svc.Name -ProjectDir $projectDir -Port $svc.Port -UseNoBuild:$useNoBuild
+    Start-Process -FilePath $launchShell -ArgumentList @("-NoExit", "-Command", $command)
     Start-Sleep -Milliseconds 500
 }
 
-Write-Host "All processes launched." -ForegroundColor Green
-Write-Host ""
-Write-Host "Gateway (entry point): http://localhost:5057" -ForegroundColor Yellow
-Write-Host "IAM Swagger:           http://localhost:5288/swagger" -ForegroundColor Yellow
-Write-Host "Payment Swagger:       http://localhost:5084/swagger" -ForegroundColor Yellow
-Write-Host "Roadmap Swagger:       http://localhost:5118/swagger" -ForegroundColor Yellow
-Write-Host "Exercise Swagger:      http://localhost:5187/swagger" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "Stop: close each window or run .\scripts\stop-all.ps1" -ForegroundColor DarkGray
+Write-Host "Done. Gateway: http://localhost:5057" -ForegroundColor Green
+Write-Host "Stop: .\scripts\stop-all.ps1" -ForegroundColor DarkGray

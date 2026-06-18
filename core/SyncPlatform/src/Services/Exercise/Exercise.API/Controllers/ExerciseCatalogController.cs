@@ -31,6 +31,18 @@ public class ExerciseCatalogController : ControllerBase
             "Exercises retrieved successfully."));
     }
 
+    [HttpGet("thumbnails")]
+    public async Task<ActionResult<ApiResponse<Dictionary<string, string?>>>> GetThumbnails(
+        [FromQuery] Guid[] ids,
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.GetThumbnailUrlsAsync(ids, cancellationToken);
+        var payload = result.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value);
+        return Ok(ApiResponse<Dictionary<string, string?>>.SuccessResponse(
+            payload,
+            "Exercise thumbnail URLs retrieved successfully."));
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ApiResponse<ExerciseCatalogDto>>> GetById(Guid id, CancellationToken cancellationToken)
     {

@@ -21,4 +21,7 @@ public class GamificationProfile : BaseAuditableEntity
     public long AchievementPoints { get; set; }
 
     public int ConsecutivePerfectDays { get; set; }
+
+    /// <summary>UTC date of the last time the user logged an activity. Used to calculate streaks.</summary>
+    public DateTimeOffset? LastActivityDate { get; set; }
 }

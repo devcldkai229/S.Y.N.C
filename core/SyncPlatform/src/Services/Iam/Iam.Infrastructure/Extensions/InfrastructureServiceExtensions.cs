@@ -1,5 +1,6 @@
-using Iam.Domain.Repositories;
 using Iam.Application.Abstractions;
+using Iam.Domain.Repositories;
+using Iam.Infrastructure.Clients;
 using Iam.Infrastructure.Persistence;
 using Iam.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,19 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
         services.AddScoped<IBiometricProfileRepository, BiometricProfileRepository>();
         services.AddScoped<IUserMeRepository, UserMeRepository>();
+        services.AddScoped<IInternalSmartPushRepository, InternalSmartPushRepository>();
+
+        services.AddHttpClient<INotificationClient, NotificationClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["NotificationService:BaseUrl"] ?? "http://localhost:5106";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(5);
+
+            var apiKey = config["NotificationService:InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
 
         return services;
     }

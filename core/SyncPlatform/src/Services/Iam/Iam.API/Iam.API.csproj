@@ -20,6 +20,8 @@
     <ProjectReference Include="..\Iam.Application\Iam.Application.csproj" />
     <ProjectReference Include="..\Iam.Infrastructure\Iam.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\..\libs\Libs.Auth\Libs.Auth.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Shared\Libs.Shared.csproj" />
+    <ProjectReference Include="..\..\..\..\libs\Libs.Storage\Libs.Storage.csproj" />
   </ItemGroup>
 
   <ItemGroup>

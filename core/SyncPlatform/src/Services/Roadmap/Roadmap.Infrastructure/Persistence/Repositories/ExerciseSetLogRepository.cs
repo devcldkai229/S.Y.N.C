@@ -28,4 +28,11 @@ public class ExerciseSetLogRepository : GenericRepository<ExerciseSetLog>, IExer
 
         await Collection.InsertManyAsync(list, cancellationToken: cancellationToken);
     }
+
+    public async Task DeleteManyByExecutionIdAsync(
+        Guid executionId,
+        CancellationToken cancellationToken = default)
+    {
+        await Collection.DeleteManyAsync(x => x.ExecutionId == executionId, cancellationToken);
+    }
 }

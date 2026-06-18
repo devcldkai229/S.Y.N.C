@@ -73,6 +73,17 @@ public class BiometricProfileController : ControllerBase
         return Ok(ApiResponse<BiometricProfileDto>.SuccessResponse(result, "Safety guardrails saved successfully."));
     }
 
+    [HttpPost("onboarding/complete")]
+    public async Task<ActionResult<ApiResponse<OnboardingCompleteResultDto>>> CompleteOnboarding(
+        CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.RequireUserId();
+        var result = await _service.CompleteOnboardingAsync(userId, cancellationToken);
+        return Ok(ApiResponse<OnboardingCompleteResultDto>.SuccessResponse(
+            result,
+            "Onboarding completed. Calorie targets and baseline profiles are ready."));
+    }
+
     [HttpPatch("weight")]
     public async Task<ActionResult<ApiResponse<BiometricProfileDto>>> LogWeight(
         [FromBody] UpdateWeightDto dto,

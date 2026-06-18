@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1. Do NOT commit secrets.",
+
+  "Order": {
+    "SimulateDeliveryProgress": false,
+    "PublicBaseUrl": "https://your-ngrok-subdomain.ngrok-free.dev",
+    "LocationPollIntervalSeconds": 12
+  },
+  "Ahamove": {
+    "Enabled": true,
+    "UseSandboxSimulation": false,
+    "ApiKey": "<sandbox api key from Ahamove partner portal>",
+    "Mobile": "84xxxxxxxxx",
+    "BaseUrl": "https://partner-apistg.ahamove.com/v3",
+    "ServiceId": "SGN-BIKE",
+    "PaymentMethod": "CASH",
+    "WebhookApiKey": "<secret you choose — same value in Ahamove webhook config>"
+  }
+}

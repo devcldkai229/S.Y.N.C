@@ -1,15 +1,19 @@
+using System.Text.Json;
 using Iam.Application.DTOs;
+using Iam.Application.Models;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
+using Libs.Storage.Services;
 
 namespace Iam.Application.Mapping;
 
 internal static class UserMeMapper
 {
-    public static BasicProfileDto ToBasicDto(User user) =>
+    public static BasicProfileDto ToBasicDto(User user, IMediaUrlResolver media) =>
         new(
             user.FullName,
-            user.AvatarUrl,
+            media.ResolveForDisplay(user.AvatarUrl),
+            media.ResolveForDisplay(user.BackgroundImageUrl),
             user.Email,
             user.PhoneNumber,
             user.PreferredLanguage,
@@ -94,12 +98,12 @@ internal static class UserMeMapper
                 preference.DataSharingConsent,
                 preference.MarketingConsent);
 
-    public static ProfileSettingsResponse ToProfileSettingsResponse(User user)
+    public static ProfileSettingsResponse ToProfileSettingsResponse(User user, IMediaUrlResolver media)
     {
         var (percent, hints) = Validation.ProfileCompletenessCalculator.Calculate(user);
         return new ProfileSettingsResponse(
             user.Id,
-            ToBasicDto(user),
+            ToBasicDto(user, media),
             ToFitnessDto(user.BiometricProfile),
             ToPreferencesDto(user.UserPreference),
             percent,
@@ -136,7 +140,7 @@ internal static class UserMeMapper
             isExpired);
     }
 
-    public static AchievementInventoryItemDto ToAchievementDto(UserAchievement userAchievement) =>
+    public static AchievementInventoryItemDto ToAchievementDto(UserAchievement userAchievement, IMediaUrlResolver media) =>
         new(
             userAchievement.AchievementId,
             userAchievement.Achievement.Code,
@@ -144,6 +148,52 @@ internal static class UserMeMapper
             userAchievement.Achievement.Description,
             userAchievement.Achievement.XPReward,
             userAchievement.Achievement.CoinReward,
-            userAchievement.Achievement.IconUrl,
+            media.ResolveForDisplay(userAchievement.Achievement.IconUrl) ?? string.Empty,
             userAchievement.UnlockedAt);
+
+    private static readonly JsonSerializerOptions _jsonOpts = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
+    /// Maps an unearned achievement to a progress DTO using the user's GamificationProfile.
+    /// Returns null for event-based achievements (no measurable threshold).
+    /// </summary>
+    public static AchievementProgressDto? ToProgressDto(
+        Achievement achievement,
+        GamificationProfile? profile,
+        IMediaUrlResolver media)
+    {
+        if (profile is null || string.IsNullOrWhiteSpace(achievement.RequirementJson))
+            return null;
+
+        try
+        {
+            var req = JsonSerializer.Deserialize<AchievementRequirement>(achievement.RequirementJson, _jsonOpts);
+            if (req is null) return null;
+
+            (int current, int required) = req.Type switch
+            {
+                "streak" when req.Days.HasValue => (profile.CurrentStreak, req.Days.Value),
+                "perfect_days" when req.Days.HasValue => (profile.ConsecutivePerfectDays, req.Days.Value),
+                "level" when req.Level.HasValue => (profile.CurrentLevel, req.Level.Value),
+                _ => (-1, -1),
+            };
+
+            if (required <= 0) return null;
+
+            return new AchievementProgressDto(
+                achievement.Id,
+                achievement.Code,
+                achievement.Name,
+                achievement.Description,
+                achievement.XPReward,
+                achievement.CoinReward,
+                media.ResolveForDisplay(achievement.IconUrl) ?? string.Empty,
+                Math.Min(current, required),
+                required);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

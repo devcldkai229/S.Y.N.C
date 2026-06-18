@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "ConnectionStrings": {
+    "SocialDatabase": "mongodb://localhost:27018"
+  },
+  "MongoDB": {
+    "SocialDatabaseName": "sync_social"
+  },
+  "Social": {
+    "Seed": {
+      "Enabled": true,
+      "SeedDemoData": true
+    },
+    "Maintenance": {
+      "AllowShareCodeBackfillApi": true,
+      "BackfillShareCodesOnStartup": false
+    }
+  },
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-public-assets",
+    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
+    "MaxFileSizeMb": 50
+  }
+}

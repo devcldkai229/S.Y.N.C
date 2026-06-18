@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1. Fill secrets in appsettings.Development.json.",
+
+  "Logging": {
+    "LogLevel": {
+      "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
+    }
+  },
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
+  "NotificationService": {
+    "BaseUrl": "http://localhost:5106",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
+  "ConnectionStrings": {
+    "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
+  },
+  "GoogleAuth": {
+    "ClientIds": [
+      "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",
+      "366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com"
+    ]
+  },
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-private-assets",
+    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
+    "MaxFileSizeMb": 10
+  },
+  "Email": {
+    "VerificationBaseUrl": "http://localhost:5288",
+    "Smtp": {
+      "Enabled": true,
+      "Host": "smtp.gmail.com",
+      "Port": 587,
+      "UserName": "kag40222@gmail.com",
+      "Password": "jegh ucpq tcom akcz",
+      "FromEmail": "kag40222@gmail.com",
+      "FromName": "Sync",
+      "UseSsl": true
+    }
+  }
+}
