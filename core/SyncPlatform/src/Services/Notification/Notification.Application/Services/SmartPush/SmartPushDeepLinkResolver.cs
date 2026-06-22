@@ -9,7 +9,9 @@ public class SmartPushDeepLinkResolver : ISmartPushDeepLinkResolver
         "sync://workout/today",
         "sync://roadmap/current",
         "sync://recovery/today",
-        "sync://profile/progress"
+        "sync://profile/progress",
+        "sync://nutrition/today",
+        "sync://workout/tomorrow"
     };
 
     public string ResolveDeepLink(SmartPushContextDto context, SmartPushDecision decision)
@@ -33,6 +35,11 @@ public class SmartPushDeepLinkResolver : ISmartPushDeepLinkResolver
             "FinishWorkoutReminder" => "sync://workout/today",
             "ScheduledWorkoutReminder" => "sync://workout/today",
             "StreakProtectionReminder" => "sync://workout/today",
+            "StreakCelebrateReminder" => "sync://profile/progress",
+            "StreakEncourageReminder" => "sync://workout/today",
+            "TomorrowWorkoutPreview" => "sync://workout/tomorrow",
+            "TodayWorkoutSummary" => "sync://profile/progress",
+            var trigger when trigger.StartsWith("Nutrition", StringComparison.OrdinalIgnoreCase) => "sync://nutrition/today",
             "ProgressEncouragement" => "sync://profile/progress",
             _ => "sync://roadmap/current"
         };

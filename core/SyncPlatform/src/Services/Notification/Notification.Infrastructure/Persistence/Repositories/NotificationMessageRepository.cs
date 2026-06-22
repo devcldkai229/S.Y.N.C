@@ -124,4 +124,52 @@ public class NotificationMessageRepository : GenericRepository<NotificationMessa
         var count = await Collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
         return count > 0;
     }
+
+    public async Task<IReadOnlyList<string>> GetScheduledTopicsForDateAsync(
+        Guid userId,
+        string userLocalDate,
+        CancellationToken cancellationToken)
+    {
+        var builder = Builders<NotificationMessage>.Filter;
+        var filter = builder.Eq(x => x.UserId, userId)
+                     & builder.Eq(x => x.UserLocalDate, userLocalDate)
+                     & builder.Ne(x => x.Status, NotificationStatus.Cancelled)
+                     & builder.Ne(x => x.Status, NotificationStatus.Failed);
+
+        var messages = await Collection.Find(filter).ToListAsync(cancellationToken);
+        return messages
+            .Where(x => !string.IsNullOrEmpty(x.SmartPushTopic))
+            .Select(x => x.SmartPushTopic!)
+            .ToList();
+    }
+
+    public async Task<NotificationMessage?> ClaimPendingMessageAsync(
+        Guid messageId,
+        CancellationToken cancellationToken)
+    {
+        var builder = Builders<NotificationMessage>.Filter;
+        var filter = builder.Eq(x => x.Id, messageId)
+                     & builder.Eq(x => x.Status, NotificationStatus.Pending);
+
+        var update = Builders<NotificationMessage>.Update
+            .Set(x => x.Status, NotificationStatus.Processing)
+            .Set(x => x.UpdatedAt, DateTimeOffset.UtcNow);
+
+        return await Collection.FindOneAndUpdateAsync(
+            filter,
+            update,
+            new FindOneAndUpdateOptions<NotificationMessage> { ReturnDocument = ReturnDocument.After },
+            cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<NotificationMessage>> GetDuePendingMessagesAsync(
+        DateTimeOffset time,
+        CancellationToken cancellationToken)
+    {
+        var builder = Builders<NotificationMessage>.Filter;
+        var filter = builder.Eq(x => x.Status, NotificationStatus.Pending)
+                     & builder.Lte(x => x.ScheduledFor, time);
+
+        return await Collection.Find(filter).ToListAsync(cancellationToken);
+    }
 }
