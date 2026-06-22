@@ -198,6 +198,40 @@ public class NotificationService : INotificationService
         await _messageRepository.UpdateAsync(messageId, message, cancellationToken);
     }
 
+    public async Task ProcessScheduledNotificationsAsync(CancellationToken cancellationToken)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var dueMessages = await _messageRepository.GetDuePendingMessagesAsync(now, cancellationToken);
+
+        foreach (var msg in dueMessages)
+        {
+            var claimedMessage = await _messageRepository.ClaimPendingMessageAsync(msg.Id, cancellationToken);
+            if (claimedMessage == null)
+            {
+                continue;
+            }
+
+            try
+            {
+                claimedMessage.Status = NotificationStatus.Sent;
+                claimedMessage.SentAt = DateTimeOffset.UtcNow;
+                claimedMessage.UpdatedAt = DateTimeOffset.UtcNow;
+
+                await _messageRepository.UpdateAsync(claimedMessage.Id, claimedMessage, cancellationToken);
+
+                await _realtimePublisher.PublishToUserAsync(claimedMessage.UserId, claimedMessage.ToDto(), cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                claimedMessage.Status = NotificationStatus.Failed;
+                claimedMessage.ErrorMessage = ex.Message;
+                claimedMessage.UpdatedAt = DateTimeOffset.UtcNow;
+
+                await _messageRepository.UpdateAsync(claimedMessage.Id, claimedMessage, cancellationToken);
+            }
+        }
+    }
+
     private string FormatTemplateString(string template, Dictionary<string, string> variables)
     {
         if (string.IsNullOrEmpty(template)) return string.Empty;

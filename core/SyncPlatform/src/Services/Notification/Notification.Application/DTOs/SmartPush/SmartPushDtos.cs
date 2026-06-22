@@ -30,6 +30,7 @@ public record IamSmartPushContextDto(
 public record TodayWorkoutActivityDto(
     Guid UserId,
     bool HasWorkoutScheduledToday,
+    Guid? SessionId,
     string? TodayWorkoutName,
     bool HasStartedWorkoutToday,
     bool CompletedWorkoutToday,
@@ -41,7 +42,29 @@ public record TodayWorkoutActivityDto(
     int EnergyLevelBefore,
     int EnergyLevelAfter,
     int CaloriesBurned,
-    int SkippedExercisesCount
+    int SkippedExercisesCount,
+    int CompletedSetsCount,
+    int TotalLoggedSetsCount,
+    bool HasWorkoutScheduledTomorrow,
+    string? TomorrowWorkoutName,
+    List<string> TomorrowExerciseNames,
+    string? TodayWorkoutAiCoachFeedback,
+    string? TodayWorkoutSessionFeedback
+);
+
+public record TodayNutritionDto(
+    Guid UserId,
+    DateOnly Date,
+    int TargetCalories,
+    int ConsumedCalories,
+    decimal TargetProteinGram,
+    decimal ConsumedProteinGram,
+    decimal TargetCarbGram,
+    decimal ConsumedCarbGram,
+    decimal TargetFatGram,
+    decimal ConsumedFatGram,
+    int WaterIntakeMl,
+    int MealsLoggedCount
 );
 
 public record SmartPushContextDto(
@@ -74,7 +97,22 @@ public record SmartPushContextDto(
     int EnergyLevelAfter,
     int CaloriesBurned,
     int SkippedExercisesCount,
-    string? SubscriptionTier = null
+    string? SubscriptionTier,
+    bool HasWorkoutScheduledTomorrow,
+    string? TomorrowWorkoutName,
+    List<string> TomorrowExerciseNames,
+    string? TodayWorkoutAiCoachFeedback,
+    string? TodayWorkoutSessionFeedback,
+    int NutritionTargetCalories,
+    int NutritionConsumedCalories,
+    decimal NutritionTargetProtein,
+    decimal NutritionConsumedProtein,
+    decimal NutritionTargetCarbs,
+    decimal NutritionConsumedCarbs,
+    decimal NutritionTargetFat,
+    decimal NutritionConsumedFat,
+    int NutritionWaterIntakeMl,
+    int NutritionMealsLoggedCount
 );
 
 public record GeneratedPushMessageDto(

@@ -46,4 +46,13 @@ public class NotificationMessage : BaseMongoEntity
 
     [BsonIgnoreIfNull]
     public string? ErrorMessage { get; set; }
+
+    [BsonIgnoreIfNull]
+    public string? SmartPushTopic { get; set; }
+
+    [BsonIgnoreIfNull]
+    public string? SmartPushDecisionCode { get; set; }
+
+    [BsonIgnoreIfNull]
+    public string? UserLocalDate { get; set; }
 }

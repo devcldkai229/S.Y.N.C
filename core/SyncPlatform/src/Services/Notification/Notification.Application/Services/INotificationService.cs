@@ -23,4 +23,6 @@ public interface INotificationService
     Task<NotificationMessageDto> SendTemplatedNotificationAsync(SendTemplatedNotificationDto dto, CancellationToken cancellationToken = default);
 
     Task CancelScheduledNotificationAsync(Guid messageId, CancellationToken cancellationToken = default);
+
+    Task ProcessScheduledNotificationsAsync(CancellationToken cancellationToken);
 }
