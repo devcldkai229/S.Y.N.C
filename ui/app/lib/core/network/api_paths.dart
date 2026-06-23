@@ -135,6 +135,11 @@ abstract final class ApiPaths {
   static String checkoutCartItem(String foodMenuItemId) =>
       '/v1/order/checkout/cart/items/$foodMenuItemId';
 
+  // AIAgent (gateway: /api/v1/ai/* → AIAgent service :5300)
+  static const aiGenerateSessionExercises =
+      '/v1/ai/workout/generate-session-exercises';
+  static const aiSwapExercise = '/v1/ai/workout/swap-exercise';
+
   // Order
   static const orderOrders = '/v1/order/orders';
   static const orderActiveCount = '/v1/order/orders/active-count';

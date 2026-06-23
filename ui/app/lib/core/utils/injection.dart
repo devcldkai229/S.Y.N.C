@@ -15,6 +15,8 @@ import 'package:sync_app/data/repositories/onboarding_repository.dart';
 import 'package:sync_app/data/repositories/profile_repository.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/data/repositories/workout_repository.dart';
+import 'package:sync_app/data/repositories/ai_workout_repository.dart';
+import 'package:sync_app/features/workouts/services/ai_workout_api_service.dart';
 import 'package:sync_app/features/challenges/data/challenge_remote_data_source.dart';
 import 'package:sync_app/features/challenges/state/challenge_join_state.dart';
 import 'package:sync_app/features/social/data/social_remote_data_source.dart';
@@ -51,6 +53,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => ProfileApiService(getIt()));
   getIt.registerLazySingleton(() => SubscriptionApiService(getIt()));
   getIt.registerLazySingleton(() => WorkoutApiService(getIt()));
+  getIt.registerLazySingleton(() => AiWorkoutApiService(getIt()));
   getIt.registerLazySingleton(() => NotificationRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => OnboardingRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => SocialRemoteDataSource(getIt()));
@@ -59,6 +62,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => HomeRepository(getIt(), getIt()));
   getIt.registerLazySingleton(() => ProfileRepository(getIt()));
   getIt.registerLazySingleton(() => WorkoutRepository(getIt()));
+  getIt.registerLazySingleton(() => AiWorkoutRepository(getIt()));
   getIt.registerLazySingleton(() => NotificationRepository(getIt()));
   getIt.registerLazySingleton(() => NotificationInboxNotifier());
   getIt.registerLazySingleton(() => NotificationRealtimeService(getIt(), getIt()));
