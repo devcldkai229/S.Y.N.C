@@ -1,0 +1,26 @@
+# Web framework
+fastapi>=0.115.0,<1.0
+uvicorn[standard]>=0.34.0,<1.0
+
+# LLM (DeepSeek via OpenAI-compatible SDK)
+openai>=1.60.0,<2.0
+
+# Local embedding
+sentence-transformers>=3.0.0,<4.0
+
+# Database
+sqlalchemy[asyncio]>=2.0.0,<3.0
+asyncpg>=0.30.0,<1.0
+pgvector>=0.3.0,<1.0
+alembic>=1.15.0,<2.0
+
+# Auth
+PyJWT[crypto]>=2.9.0,<3.0
+
+# HTTP client (inter-service calls)
+httpx>=0.28.0,<1.0
+
+# Utils
+pydantic>=2.11.0,<3.0
+pydantic-settings>=2.9.0,<3.0
+numpy>=1.26.0,<3.0

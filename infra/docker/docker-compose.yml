@@ -74,6 +74,57 @@ services:
       timeout: 5s
       retries: 5
 
+  sync-ai-postgres:
+    image: pgvector/pgvector:pg17
+    container_name: sync-ai-postgres
+    environment:
+      POSTGRES_USER: ai_user
+      POSTGRES_PASSWORD: ai_secure_pass
+      POSTGRES_DB: sync_ai_agent
+    ports:
+      - "5435:5432"
+    volumes:
+      - sync_ai_postgres_data:/var/lib/postgresql/data
+    networks:
+      - sync-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_user -d sync_ai_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  aiagent:
+    build:
+      context: ../../core/SyncPlatform/src/Services/AIAgent
+      dockerfile: Dockerfile
+    container_name: sync-aiagent
+    environment:
+      DATABASE_URL: postgresql+asyncpg://ai_user:ai_secure_pass@sync-ai-postgres:5432/sync_ai_agent
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: https://api.deepseek.com
+      DEEPSEEK_MODEL: deepseek-chat
+      # Model is baked into the image at build time → skip HuggingFace network checks
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      # `$` escaped as `$$` so Compose does not treat it as variable interpolation
+      JWT_SECRET_KEY: "uANeK_nCAd:N$$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{"
+      JWT_ISSUER: sync-lifestyle-iam-dev
+      JWT_AUDIENCE: sync-lifestyle-clients-dev
+      # host.docker.internal lets the container reach .NET services running on the host
+      EXERCISE_SERVICE_URL: http://host.docker.internal:5187
+      IAM_SERVICE_URL: http://host.docker.internal:5288
+      ROADMAP_SERVICE_URL: http://host.docker.internal:5118
+    ports:
+      - "5300:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - sync-network
+    depends_on:
+      - sync-ai-postgres
+    restart: unless-stopped
+
   minio:
     image: minio/minio
     container_name: codestreak_minio
@@ -100,3 +151,4 @@ volumes:
   sync_rabbitmq_data:
   sync_redis_data:
   sync_minio_data:
+  sync_ai_postgres_data:
