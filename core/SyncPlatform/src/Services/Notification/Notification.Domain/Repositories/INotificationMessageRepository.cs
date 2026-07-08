@@ -21,4 +21,17 @@ public interface INotificationMessageRepository : IGenericRepository<Notificatio
         DateTimeOffset utcNow,
         string timeZoneId,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<string>> GetScheduledTopicsForDateAsync(
+        Guid userId,
+        string userLocalDate,
+        CancellationToken cancellationToken);
+
+    Task<NotificationMessage?> ClaimPendingMessageAsync(
+        Guid messageId,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<NotificationMessage>> GetDuePendingMessagesAsync(
+        DateTimeOffset time,
+        CancellationToken cancellationToken);
 }

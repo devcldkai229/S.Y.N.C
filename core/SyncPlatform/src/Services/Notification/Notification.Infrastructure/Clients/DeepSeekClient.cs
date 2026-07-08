@@ -39,7 +39,7 @@ public class DeepSeekClient : IDeepSeekClient
         }
 
         var personaTone = GetPersonaToneInstruction(context.AgentPersona);
-        var systemPrompt = $"Bạn viết push notification tiếng Việt cho app fitness + nutrition. Trả JSON duy nhất: {{\"title\":\"\",\"body\":\"\"}}. Luật: - title <= 40 ký tự. - body <= 100 từ. - Không chê bai, không gây áp lực, không claim y tế. - {personaTone} - burnout cao: nhẹ nhàng, gợi ý 10-15 phút. - started=true và completed=false: khuyến khích quay lại tập tiếp. - streak>=7: nhắc giữ chuỗi như một thành tích đáng tự hào.";
+        var systemPrompt = $"Bạn viết push notification tiếng Việt cho app fitness + nutrition. Trả JSON duy nhất: {{\"title\":\"\",\"body\":\"\"}}. Luật: - title <= 40 ký tự. - body <= 100 từ. - Không chê bai, không gây áp lực, không claim y tế. - {personaTone} - burnout cao: nhẹ nhàng, gợi ý 10-15 phút. - streak: nhắc giữ chuỗi hoặc chúc mừng chuỗi. - exercise: nhắc lịch tập ngày mai hoặc tổng hợp kết quả hôm nay. - nutrition: nhắc uống nước, nạp đạm hoặc log bữa ăn.";
         
         var compactContext = BuildCompactContext(context, decision);
         var contextJson = JsonSerializer.Serialize(compactContext, JsonOpts);
@@ -129,44 +129,92 @@ Context:
 
     private static object BuildCompactContext(SmartPushContextDto context, SmartPushDecision decision)
     {
+        var baseContext = new
+        {
+            trigger = decision.TriggerType,
+            name = context.FullName,
+            agentPersona = context.AgentPersona
+        };
+
         return decision.TriggerType switch
         {
-            "RecoveryGentleReminder" => new
+            "StreakProtectionReminder" or "StreakCelebrateReminder" or "StreakEncourageReminder" => new
             {
-                trigger = decision.TriggerType,
-                name = context.FullName,
-                burnout = context.BurnoutRiskScore,
-                style = context.MotivationStyle,
-                goal = context.FitnessGoal,
-                agentPersona = context.AgentPersona
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
+                streak = context.CurrentStreak
+            },
+            "NutritionWaterReminder" => new
+            {
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
+                waterIntake = context.NutritionWaterIntakeMl
+            },
+            "NutritionProteinReminder" => new
+            {
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
+                targetProt = context.NutritionTargetProtein,
+                consumedProt = context.NutritionConsumedProtein
+            },
+            "NutritionCalorieUnder" => new
+            {
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
+                targetCal = context.NutritionTargetCalories,
+                consumedCal = context.NutritionConsumedCalories
+            },
+            "NutritionLogMeals" => new
+            {
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
+                mealsLogged = context.NutritionMealsLoggedCount
+            },
+            "TomorrowWorkoutPreview" => new
+            {
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
+                tomorrowWorkoutName = context.TomorrowWorkoutName,
+                tomorrowExercises = context.TomorrowExerciseNames
+            },
+            "TodayWorkoutSummary" => new
+            {
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
+                completion = context.CompletionRate,
+                duration = context.ActualDurationMinutes,
+                calories = context.CaloriesBurned,
+                aiCoachFeedback = context.TodayWorkoutAiCoachFeedback
             },
             "FinishWorkoutReminder" => new
             {
-                trigger = decision.TriggerType,
-                name = context.FullName,
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
                 completion = context.CompletionRate,
-                duration = context.ActualDurationMinutes,
-                energyBefore = context.EnergyLevelBefore,
-                energyAfter = context.EnergyLevelAfter,
-                style = context.MotivationStyle,
-                agentPersona = context.AgentPersona
+                duration = context.ActualDurationMinutes
             },
-            "StreakProtectionReminder" => new
+            "RecoveryGentleReminder" => new
             {
-                trigger = decision.TriggerType,
-                name = context.FullName,
-                streak = context.CurrentStreak,
-                longest = context.LongestStreak,
-                style = context.MotivationStyle,
-                goal = context.FitnessGoal,
-                agentPersona = context.AgentPersona
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
+                burnout = context.BurnoutRiskScore
             },
             _ => new
             {
-                trigger = decision.TriggerType,
-                name = context.FullName,
+                baseContext.trigger,
+                baseContext.name,
+                baseContext.agentPersona,
                 style = context.MotivationStyle,
-                agentPersona = context.AgentPersona
+                goal = context.FitnessGoal
             }
         };
     }

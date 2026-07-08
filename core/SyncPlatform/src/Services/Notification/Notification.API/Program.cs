@@ -39,7 +39,8 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddNotificationApplication();
 builder.Services.AddNotificationInfrastructure(builder.Configuration);
-builder.Services.AddHostedService<SmartPushNotificationWorker>();
+builder.Services.AddHostedService<SmartPushPlannerWorker>();
+builder.Services.AddHostedService<ScheduledNotificationDispatcherWorker>();
 
 builder.Services.AddCors(options =>
 {

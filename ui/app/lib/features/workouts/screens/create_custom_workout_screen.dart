@@ -7,6 +7,7 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/data/repositories/workout_repository.dart';
+import 'package:sync_app/data/repositories/ai_workout_repository.dart';
 import 'package:sync_app/features/workouts/widgets/exercise_catalog/catalog_exercise_thumbnail.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 
@@ -19,12 +20,14 @@ class CreateCustomWorkoutScreen extends StatefulWidget {
 
 class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
   final WorkoutRepository _repository = getIt<WorkoutRepository>();
+  final AiWorkoutRepository _aiRepository = getIt<AiWorkoutRepository>();
 
   int _currentStep = 0; // 0: Basic Info, 1: Schedule, 2: Sessions List, 3: Success
   int _editingSessionIndex = -1; // Index of session being designed/scheduled
   bool _isDesigningSession = false; // Sub-state to show Exercise Designer
   bool _isSchedulingSession = false; // Sub-state to show Session Scheduler
   bool _submitting = false;
+  bool _aiLoading = false; // AI generate / swap in progress
   XFile? _coverImage;
 
   // Step 1: Basic Info
@@ -143,7 +146,7 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
           'recoveryRequirementScore': 5,
           'notificationEnabled': session.reminderEnabled,
           'notificationMinutesBefore': session.reminderMinutesBefore,
-          'aiGenerated': false,
+          'aiGenerated': session.aiGenerated,
           'sessionStatus': 'Scheduled',
           'executionBlocks': session.exercises.asMap().entries.map((entry) {
             final idx = entry.key;
@@ -250,7 +253,7 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
           ),
           body: _buildCurrentStepView(),
         ),
-        if (_submitting)
+        if (_submitting || _aiLoading)
           Container(
             color: Colors.black.withValues(alpha: 0.4),
             child: const Center(
@@ -749,7 +752,27 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
         Container(
           padding: const EdgeInsets.all(20),
           color: AppColors.cardBackground,
-          child: _buildBottomButton('Hoàn tất', _submitCustomWorkout),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _aiLoading ? null : _aiGenerateAllSessions,
+                  icon: const Icon(Icons.auto_awesome, size: 18),
+                  label: const Text('AI tạo bài cho tất cả buổi', style: TextStyle(fontWeight: FontWeight.w800)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.brightGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildBottomButton('Hoàn tất', _submitCustomWorkout),
+            ],
+          ),
         ),
       ],
     );
@@ -806,9 +829,210 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
     );
   }
 
+  // === AI helpers ===
+  List<String> _sessionExerciseCodes(_SessionData session) => session.exercises
+      .map((e) => e.exercise.exerciseCode)
+      .where((c) => c.isNotEmpty)
+      .toList();
+
+  Future<void> _aiGenerateExercises(_SessionData session) async {
+    if (_aiLoading) return;
+    setState(() => _aiLoading = true);
+    try {
+      final result = await _aiRepository.generateSessionExercises(
+        goal: _goal,
+        sessionTitle: session.name,
+        excludeCodes: _sessionExerciseCodes(session),
+      );
+      if (!mounted) return;
+      if (result.exercises.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('AI chưa tạo được bài tập nào. Thử lại nhé.')),
+        );
+        return;
+      }
+      setState(() {
+        for (final e in result.exercises) {
+          session.exercises.add(
+            _ExerciseInput(exercise: e.item)
+              ..sets = e.sets
+              ..reps = e.reps
+              ..restSeconds = e.restSeconds
+              ..notes = e.notes,
+          );
+        }
+        session.aiGenerated = true;
+      });
+      final msg = result.coachingMessage.isNotEmpty
+          ? result.coachingMessage
+          : 'AI đã thêm ${result.exercises.length} bài tập.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: AppColors.primaryGreen),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi AI: ${mapApiError(e)}'), backgroundColor: Colors.red.shade600),
+      );
+    } finally {
+      if (mounted) setState(() => _aiLoading = false);
+    }
+  }
+
+  Future<void> _aiGenerateAllSessions() async {
+    if (_aiLoading) return;
+    final targets = _sessions.where((s) => s.exercises.isEmpty).toList();
+    if (targets.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Các buổi đều đã có bài tập. Xoá bớt nếu muốn AI tạo lại.')),
+      );
+      return;
+    }
+    setState(() => _aiLoading = true);
+    var ok = 0;
+    final failed = <String>[];
+    for (final session in targets) {
+      try {
+        final result = await _aiRepository.generateSessionExercises(
+          goal: _goal,
+          sessionTitle: session.name,
+          excludeCodes: _sessionExerciseCodes(session),
+        );
+        if (result.exercises.isNotEmpty) {
+          for (final e in result.exercises) {
+            session.exercises.add(
+              _ExerciseInput(exercise: e.item)
+                ..sets = e.sets
+                ..reps = e.reps
+                ..restSeconds = e.restSeconds
+                ..notes = e.notes,
+            );
+          }
+          session.aiGenerated = true;
+          ok++;
+        }
+      } catch (_) {
+        failed.add(session.name);
+      }
+    }
+    if (!mounted) return;
+    setState(() => _aiLoading = false);
+    final msg = failed.isEmpty
+        ? 'AI đã tạo bài cho $ok buổi tập.'
+        : 'Tạo xong $ok buổi. Lỗi: ${failed.join(", ")}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: failed.isEmpty ? AppColors.primaryGreen : Colors.orange.shade800,
+      ),
+    );
+  }
+
+  void _showSwapOptions(_SessionData session, int idx) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 12),
+            const Text('Đổi bài tập', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.auto_awesome, color: AppColors.primaryGreen),
+              title: const Text('AI gợi ý bài thay thế', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('Cùng nhóm cơ, phù hợp hồ sơ của bạn'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _aiSwapExercise(session, idx);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.library_books_outlined, color: AppColors.primaryGreen),
+              title: const Text('Tự chọn từ thư viện', style: TextStyle(fontWeight: FontWeight.w700)),
+              subtitle: const Text('Chọn bài tập khác từ danh sách'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _manualSwapExercise(session, idx);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _aiSwapExercise(_SessionData session, int idx) async {
+    if (_aiLoading) return;
+    final current = session.exercises[idx];
+    if (current.exercise.exerciseCode.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bài tập này không hỗ trợ AI đổi. Hãy tự chọn từ thư viện.')),
+      );
+      return;
+    }
+    setState(() => _aiLoading = true);
+    try {
+      final result = await _aiRepository.swapExercise(
+        currentExerciseCode: current.exercise.exerciseCode,
+        goal: _goal,
+        sessionTitle: session.name,
+        excludeCodes: _sessionExerciseCodes(session),
+      );
+      if (!mounted) return;
+      setState(() {
+        session.exercises[idx] = _ExerciseInput(exercise: result.item)
+          ..sets = result.sets
+          ..reps = result.reps
+          ..restSeconds = result.restSeconds
+          ..notes = result.notes;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã đổi sang "${result.item.nameEn}".'),
+          backgroundColor: AppColors.primaryGreen,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi AI: ${mapApiError(e)}'), backgroundColor: Colors.red.shade600),
+      );
+    } finally {
+      if (mounted) setState(() => _aiLoading = false);
+    }
+  }
+
+  Future<void> _manualSwapExercise(_SessionData session, int idx) async {
+    final selected = await showModalBottomSheet<ExerciseCatalogItem>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _SelectExerciseBottomSheet(repository: _repository),
+    );
+    if (selected == null || !mounted) return;
+    final old = session.exercises[idx];
+    setState(() {
+      session.exercises[idx] = _ExerciseInput(exercise: selected)
+        ..sets = old.sets
+        ..reps = old.reps
+        ..restSeconds = old.restSeconds
+        ..notes = old.notes;
+    });
+  }
+
   // SUB-SCREEN: Exercise Designer (ExecutionBlocks)
   Widget _buildExerciseDesigner(_SessionData session) {
-    return Scaffold(
+    return Stack(
+      children: [
+        Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.cardBackground,
@@ -861,6 +1085,11 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
                                   child: Text(ex.exercise.nameEn, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
                                 ),
                                 IconButton(
+                                  icon: const Icon(Icons.swap_horiz, color: AppColors.primaryGreen),
+                                  tooltip: 'Đổi bài tập',
+                                  onPressed: _aiLoading ? null : () => _showSwapOptions(session, idx),
+                                ),
+                                IconButton(
                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                                   onPressed: () => setState(() => session.exercises.removeAt(idx)),
                                 ),
@@ -892,49 +1121,78 @@ class _CreateCustomWorkoutScreenState extends State<CreateCustomWorkoutScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             color: AppColors.cardBackground,
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final selected = await showModalBottomSheet<ExerciseCatalogItem>(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => _SelectExerciseBottomSheet(repository: _repository),
-                      );
-                      if (selected != null) {
-                        setState(() {
-                          session.exercises.add(_ExerciseInput(exercise: selected));
-                        });
-                      }
-                    },
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _aiLoading ? null : () => _aiGenerateExercises(session),
+                    icon: const Icon(Icons.auto_awesome, size: 18),
+                    label: const Text('AI generate bài tập', style: TextStyle(fontWeight: FontWeight.w800)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AppColors.primaryGreen,
-                      side: const BorderSide(color: AppColors.primaryGreen),
+                      backgroundColor: AppColors.brightGreen,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
-                    child: const Text('+ Thêm bài tập', style: TextStyle(fontWeight: FontWeight.w700)),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => setState(() => _isDesigningSession = false),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final selected = await showModalBottomSheet<ExerciseCatalogItem>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (context) => _SelectExerciseBottomSheet(repository: _repository),
+                          );
+                          if (selected != null) {
+                            setState(() {
+                              session.exercises.add(_ExerciseInput(exercise: selected));
+                            });
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppColors.primaryGreen,
+                          side: const BorderSide(color: AppColors.primaryGreen),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('+ Thêm bài tập', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
                     ),
-                    child: const Text('Lưu buổi tập', style: TextStyle(fontWeight: FontWeight.w700)),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => setState(() => _isDesigningSession = false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryGreen,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Lưu buổi tập', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ],
       ),
+        ),
+        if (_aiLoading)
+          Container(
+            color: Colors.black.withValues(alpha: 0.4),
+            child: const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryGreen),
+            ),
+          ),
+      ],
     );
   }
 
@@ -1097,6 +1355,7 @@ class _SessionData {
   String scheduledWeekday = 'T2';
   bool reminderEnabled = true;
   int reminderMinutesBefore = 15;
+  bool aiGenerated = false;
   List<_ExerciseInput> exercises = [];
 }
 

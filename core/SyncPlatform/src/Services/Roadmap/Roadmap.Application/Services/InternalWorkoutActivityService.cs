@@ -61,6 +61,9 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
         // 1. Scheduled Workout Info (using RoadmapSession only, via PersonalizedRoadmap mapping)
         bool hasWorkoutScheduledToday = false;
         string? todayWorkoutName = null;
+        bool hasWorkoutScheduledTomorrow = false;
+        string? tomorrowWorkoutName = null;
+        List<string> tomorrowExerciseNames = new();
 
         var roadmaps = await _personalizedRoadmapRepository.GetByUserIdAsync(userId, cancellationToken);
         var activeRoadmap = roadmaps.FirstOrDefault(r => r.RoadmapStatus == RoadmapStatus.Active) ?? roadmaps.FirstOrDefault();
@@ -75,6 +78,15 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
                 hasWorkoutScheduledToday = true;
                 todayWorkoutName = todaySession.SessionTitle;
                 _logger.LogInformation("Found scheduled session today: {SessionTitle} (RoadmapId={RoadmapId})", todayWorkoutName, activeRoadmap.Id);
+            }
+
+            var tomorrowSession = sessions.FirstOrDefault(s => s.ScheduledDate >= startOfTomorrow && s.ScheduledDate < startOfTomorrow.AddDays(1));
+            if (tomorrowSession != null)
+            {
+                hasWorkoutScheduledTomorrow = true;
+                tomorrowWorkoutName = tomorrowSession.SessionTitle;
+                tomorrowExerciseNames = tomorrowSession.ExecutionBlocks.Select(eb => eb.ExerciseName).ToList();
+                _logger.LogInformation("Found scheduled session tomorrow: {SessionTitle} (RoadmapId={RoadmapId})", tomorrowWorkoutName, activeRoadmap.Id);
             }
         }
         else
@@ -100,6 +112,8 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
         int skippedExercisesCount = 0;
         int completedSetsCount = 0;
         int totalLoggedSetsCount = 0;
+        string? todayWorkoutAiCoachFeedback = null;
+        string? todayWorkoutSessionFeedback = null;
 
         if (hasStartedWorkoutToday)
         {
@@ -116,6 +130,8 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
             energyLevelAfter = latestLog.EnergyLevelAfter;
             caloriesBurned = latestLog.CaloriesBurned;
             skippedExercisesCount = latestLog.SkippedExercises?.Count ?? 0;
+            todayWorkoutAiCoachFeedback = latestLog.AiCoachFeedback;
+            todayWorkoutSessionFeedback = latestLog.SessionFeedback;
 
             // Query ExerciseSetLog for extra details
             var setLogs = await _exerciseSetLogRepository.GetByExecutionIdAsync(latestLog.Id, cancellationToken);
@@ -143,7 +159,12 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
             caloriesBurned,
             skippedExercisesCount,
             completedSetsCount,
-            totalLoggedSetsCount
+            totalLoggedSetsCount,
+            hasWorkoutScheduledTomorrow,
+            tomorrowWorkoutName,
+            tomorrowExerciseNames,
+            todayWorkoutAiCoachFeedback,
+            todayWorkoutSessionFeedback
         );
     }
 }

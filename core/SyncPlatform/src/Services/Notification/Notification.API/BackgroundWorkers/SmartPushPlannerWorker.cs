@@ -6,16 +6,16 @@ using Notification.Application.Services.SmartPush;
 
 namespace Notification.API.BackgroundWorkers;
 
-public class SmartPushNotificationWorker : BackgroundService
+public class SmartPushPlannerWorker : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<SmartPushNotificationWorker> _logger;
+    private readonly ILogger<SmartPushPlannerWorker> _logger;
 
-    public SmartPushNotificationWorker(
+    public SmartPushPlannerWorker(
         IServiceProvider serviceProvider,
         IConfiguration configuration,
-        ILogger<SmartPushNotificationWorker> logger)
+        ILogger<SmartPushPlannerWorker> logger)
     {
         _serviceProvider = serviceProvider;
         _configuration = configuration;
@@ -24,33 +24,34 @@ public class SmartPushNotificationWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var enabled = _configuration.GetValue<bool>("SmartPush:Enabled");
+        var enabled = _configuration.GetValue<bool>("SmartPush:Enabled", true);
         if (!enabled)
         {
-            _logger.LogWarning("Smart Push Notification Engine is disabled in configuration.");
+            _logger.LogWarning("Smart Push Planner Worker is disabled in configuration.");
             return;
         }
 
-        var intervalSeconds = _configuration.GetValue<int>("SmartPush:ScanIntervalSeconds", 60);
-        _logger.LogInformation("Smart Push Notification Engine started with scan interval of {Interval} seconds.", intervalSeconds);
+        // Run every 30 minutes (1800 seconds)
+        var intervalSeconds = _configuration.GetValue<int>("SmartPush:PlannerIntervalSeconds", 1800);
+        _logger.LogInformation("Smart Push Planner Worker started with interval of {Interval} seconds.", intervalSeconds);
 
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                _logger.LogInformation("Smart Push scan cycle started.");
+                _logger.LogInformation("Smart Push Planner cycle started.");
 
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var smartPushService = scope.ServiceProvider.GetRequiredService<ISmartPushNotificationService>();
-                    await smartPushService.ProcessDueUsersAsync(DateTime.UtcNow, stoppingToken);
+                    await smartPushService.ProcessDueUsersAsync(DateTime.UtcNow, cancellationToken: stoppingToken);
                 }
 
-                _logger.LogInformation("Smart Push scan cycle completed.");
+                _logger.LogInformation("Smart Push Planner cycle completed.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An unhandled exception occurred in Smart Push Notification Worker cycle.");
+                _logger.LogError(ex, "An unhandled exception occurred in Smart Push Planner Worker cycle.");
             }
 
             try
@@ -63,6 +64,6 @@ public class SmartPushNotificationWorker : BackgroundService
             }
         }
 
-        _logger.LogInformation("Smart Push Notification Engine stopped.");
+        _logger.LogInformation("Smart Push Planner Worker stopped.");
     }
 }

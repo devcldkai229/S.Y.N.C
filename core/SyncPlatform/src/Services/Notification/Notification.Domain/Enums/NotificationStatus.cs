@@ -7,5 +7,6 @@ public enum NotificationStatus
     Delivered = 2,
     Read = 3,
     Failed = 4,
-    Cancelled = 5
+    Cancelled = 5,
+    Processing = 6
 }

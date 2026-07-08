@@ -15,10 +15,14 @@ public class TestSmartPushController : ControllerBase
     }
 
     [HttpPost("trigger")]
-    public async Task<IActionResult> TriggerScan([FromQuery] DateTime? utcNow, CancellationToken cancellationToken)
+    public async Task<IActionResult> TriggerScan(
+        [FromQuery] DateTime? utcNow,
+        [FromQuery] Guid? userId,
+        [FromQuery] bool sendImmediately = false,
+        CancellationToken cancellationToken = default)
     {
         var targetTime = utcNow ?? DateTime.UtcNow;
-        await _smartPushService.ProcessDueUsersAsync(targetTime, cancellationToken);
-        return Ok(new { message = $"Smart Push engine triggered for target time: {targetTime:O}" });
+        await _smartPushService.ProcessDueUsersAsync(targetTime, userId, sendImmediately, cancellationToken);
+        return Ok(new { message = $"Smart Push engine triggered for target time: {targetTime:O}, userId: {userId}, sendImmediately: {sendImmediately}" });
     }
 }

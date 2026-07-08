@@ -67,6 +67,20 @@ public static class InfrastructureServiceExtensions
             }
         });
 
+        services.AddHttpClient<INutritionClient, NutritionClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["NutritionService:BaseUrl"] ?? "http://localhost:5122";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var apiKey = config["NutritionService:InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+            {
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+            }
+        });
+
         services.AddHttpClient<IDeepSeekClient, DeepSeekClient>((sp, client) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
