@@ -36,6 +36,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Role).HasConversion<string>().HasMaxLength(32);
         builder.Property(u => u.Status).HasConversion<string>().HasMaxLength(32);
         builder.Property(u => u.SubscriptionTier).HasConversion<string>().HasMaxLength(32);
+        builder.Property(u => u.AiUsageCount).HasDefaultValue(0);
+        builder.Property(u => u.AiUsagePeriodKey).HasMaxLength(7);
 
         builder.Property(u => u.CreatedAt).HasDefaultValueSql("now()");
 

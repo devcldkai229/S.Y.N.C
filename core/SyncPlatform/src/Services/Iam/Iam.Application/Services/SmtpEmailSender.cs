@@ -35,14 +35,17 @@ public class SmtpEmailSender : IEmailSender
         if (string.IsNullOrWhiteSpace(smtp.FromEmail))
             throw new InvalidOperationException("Email:Smtp:FromEmail is not configured.");
 
-        var verifyUrl = BuildVerifyUrl(verificationToken);
-        var htmlBody = VerificationEmailTemplate.BuildHtml(verifyUrl, toEmail, verificationToken);
+        var email = EmailMessageFactory.CreateVerificationEmail(_settings, toEmail, verificationToken);
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(smtp.FromName, smtp.FromEmail));
         message.To.Add(MailboxAddress.Parse(toEmail));
-        message.Subject = "Xác nhận email — Sync Lifestyle";
-        message.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+        message.Subject = email.Subject;
+        message.Body = new BodyBuilder
+        {
+            HtmlBody = email.HtmlBody,
+            TextBody = email.TextBody,
+        }.ToMessageBody();
 
         using var client = new SmtpClient();
         await client.ConnectAsync(
@@ -72,13 +75,17 @@ public class SmtpEmailSender : IEmailSender
         if (string.IsNullOrWhiteSpace(smtp.FromEmail))
             throw new InvalidOperationException("Email:Smtp:FromEmail is not configured.");
 
-        var htmlBody = VerificationEmailTemplate.BuildPasswordResetHtml(toEmail, resetCode);
+        var email = EmailMessageFactory.CreatePasswordResetEmail(toEmail, resetCode);
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(smtp.FromName, smtp.FromEmail));
         message.To.Add(MailboxAddress.Parse(toEmail));
-        message.Subject = "Đặt lại mật khẩu — Sync Lifestyle";
-        message.Body = new BodyBuilder { HtmlBody = htmlBody }.ToMessageBody();
+        message.Subject = email.Subject;
+        message.Body = new BodyBuilder
+        {
+            HtmlBody = email.HtmlBody,
+            TextBody = email.TextBody,
+        }.ToMessageBody();
 
         using var client = new SmtpClient();
         await client.ConnectAsync(
@@ -94,11 +101,5 @@ public class SmtpEmailSender : IEmailSender
         await client.DisconnectAsync(true, cancellationToken);
 
         _logger.LogInformation("Password reset email sent to {Email}", toEmail);
-    }
-
-    internal string BuildVerifyUrl(string verificationToken)
-    {
-        var baseUrl = _settings.VerificationBaseUrl.TrimEnd('/');
-        return $"{baseUrl}/api/v1/auth/verify-email?token={Uri.EscapeDataString(verificationToken)}";
     }
 }

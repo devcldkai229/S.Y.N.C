@@ -398,6 +398,17 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<int>("AiUsageCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("ai_usage_count");
+
+                    b.Property<string>("AiUsagePeriodKey")
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)")
+                        .HasColumnName("ai_usage_period_key");
+
                     b.Property<string>("AvatarUrl")
                         .HasMaxLength(1024)
                         .HasColumnType("character varying(1024)")

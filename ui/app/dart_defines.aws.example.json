@@ -1,0 +1,7 @@
+{
+  "_readme": "Copy to dart_defines.aws.json (gitignored). Used by scripts/run-chrome.ps1 and Flutter map widgets.",
+  "AWS_MAP_API_KEY": "",
+  "AWS_MAP_REGION": "ap-southeast-1",
+  "AWS_MAP_NAME": "sync-map",
+  "AWS_MAP_STYLE": "Hybrid"
+}

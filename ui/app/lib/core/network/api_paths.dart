@@ -146,4 +146,8 @@ abstract final class ApiPaths {
   static String orderById(String id) => '/v1/order/orders/$id';
   static String orderTracking(String id) => '/v1/order/orders/$id/tracking';
   static String orderCancel(String id) => '/v1/order/orders/$id/cancel';
+
+  // AI (Gateway → sync-agent-service :8088)
+  static const aiChat = '/v1/ai/chat';
+  static const aiChatConfirm = '/v1/ai/chat/confirm';
 }

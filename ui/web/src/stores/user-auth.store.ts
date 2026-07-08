@@ -17,6 +17,7 @@ interface UserAuthState {
   login: (token: string, user: SyncUser) => void;
   logout: () => void;
   loadFromStorage: () => void;
+  updateSubscriptionTier: (tier: string) => void;
 }
 
 const TOKEN_KEY = "sync_token";
@@ -53,6 +54,15 @@ export const useUserAuthStore = create<UserAuthState>()(
             localStorage.removeItem(USER_KEY);
           }
         }
+      },
+
+      updateSubscriptionTier: (tier) => {
+        set((state) => {
+          if (!state.user) return state;
+          const user = { ...state.user, subscriptionTier: tier };
+          localStorage.setItem(USER_KEY, JSON.stringify(user));
+          return { user };
+        });
       },
     }),
     { name: "user-auth-store" }

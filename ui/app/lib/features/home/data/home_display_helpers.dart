@@ -66,7 +66,7 @@ abstract final class HomeDisplayHelpers {
     final lower = tier.toLowerCase();
     if (lower == 'free') return 'Free';
     if (lower == 'premium') return 'Premium';
-    if (lower == 'pro') return 'Pro';
+    if (lower == 'ultra') return 'Ultra';
     return tier;
   }
 

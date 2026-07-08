@@ -96,6 +96,13 @@
           "Path": "/api/v1/challenges/{**catch-all}"
         }
       },
+      "social-admin-challenges-route": {
+        "ClusterId": "social-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/admin/challenges/{**catch-all}"
+        }
+      },
       "social-posts-route": {
         "ClusterId": "social-cluster",
         "Match": {
@@ -203,6 +210,17 @@
         "Match": {
           "Path": "/api/v1/media/{**catch-all}"
         }
+      },
+      "ai-route": {
+        "ClusterId": "ai-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/ai/{**catch-all}"
+        },
+        "Transforms": [
+          { "PathRemovePrefix": "/api/v1/ai" },
+          { "PathPrefix": "/ai" }
+        ]
       }
     },
     "Clusters": {
@@ -354,6 +372,26 @@
         "Destinations": {
           "order/primary": {
             "Address": "http://localhost:5123"
+          }
+        }
+      },
+      "ai-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HttpRequest": {
+          "ActivityTimeout": "00:05:00"
+        },
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/healthz"
+          }
+        },
+        "Destinations": {
+          "ai/primary": {
+            "Address": "http://localhost:8088"
           }
         }
       }

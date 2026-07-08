@@ -18,7 +18,9 @@
   "AwsLocation": {
     "Region": "ap-southeast-1",
     "PlaceIndexName": "sync-place-index",
-    "_note": "Create an Amazon Location Place Index (Esri or HERE) named sync-place-index in ap-southeast-1."
+    "MapName": "sync-map",
+    "MapStyle": "Hybrid",
+    "_note": "Place Index for checkout address search/reverse. MapName aligns with Flutter (dart_defines.aws.json) and web admin (NEXT_PUBLIC_AWS_MAP_NAME)."
   },
   "Ahamove": {
     "_comment": "Real sandbox API: Enabled=true, UseSandboxSimulation=false. Put ApiKey/Mobile/WebhookApiKey in user-secrets or appsettings.Development.json.",

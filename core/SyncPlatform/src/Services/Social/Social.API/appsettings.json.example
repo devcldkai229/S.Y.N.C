@@ -33,7 +33,13 @@
   "AwsLocation": {
     "Region": "ap-southeast-1",
     "RouteCalculatorName": "sync-route-calculator",
+    "PlaceIndexName": "sync-place-index",
+    "MapName": "sync-map",
+    "MapStyle": "Hybrid",
     "DataProvider": "Grab",
-    "Profile": "default"
+    "Profile": "default",
+    "_note_place_index": "Create Place Index sync-place-index in ap-southeast-1 (Esri/HERE). Used for admin challenge geocoding and Order checkout address search.",
+    "_note_map_web": "Admin web map tiles: set ui/web/.env NEXT_PUBLIC_AWS_MAP_API_KEY (Map resource key, not place-index key).",
+    "_note_credentials": "Use Profile (e.g. default from ~/.aws/credentials) or set AccessKeyId + SecretAccessKey in user-secrets."
   }
 }

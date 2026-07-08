@@ -24,5 +24,15 @@
     "Bucket": "sync-public-assets",
     "PublicBaseUrl": "http://localhost:5057/api/v1/media",
     "MaxFileSizeMb": 50
+  },
+  "AwsLocation": {
+    "Region": "ap-southeast-1",
+    "RouteCalculatorName": "sync-route-calculator",
+    "PlaceIndexName": "sync-place-index",
+    "MapName": "sync-map",
+    "MapStyle": "Hybrid",
+    "DataProvider": "Grab",
+    "Profile": "default",
+    "_note": "Place Index powers admin challenge address search/reverse. MapName/MapStyle are returned via GET /api/v1/admin/challenges/location/map-config; web map tiles use ui/web NEXT_PUBLIC_AWS_MAP_* env vars."
   }
 }

@@ -74,12 +74,15 @@ public class PayosPaymentService : IPayosPaymentService
         if (!plan.IsActive)
             throw new BadRequestException("Subscription plan is not currently active.");
 
-        var (baseAmount, durationDays) = request.BillingCycle switch
+        if (request.BillingCycle == BillingCycle.Yearly)
         {
-            BillingCycle.Monthly => (plan.MonthlyPrice, _settings.MonthlyDurationDays),
-            BillingCycle.Yearly  => (plan.YearlyPrice,  _settings.YearlyDurationDays),
-            _ => throw new BadRequestException("Invalid billing cycle.")
-        };
+            _logger.LogWarning(
+                "CreatePaymentLink: yearly billing ignored for UserId={UserId} — monthly-only rollout.",
+                userId);
+        }
+
+        var baseAmount = plan.MonthlyPrice;
+        var durationDays = _settings.MonthlyDurationDays;
 
         if (baseAmount <= 0)
             throw new BadRequestException("Selected billing cycle has no valid price configured.");
@@ -107,7 +110,7 @@ public class PayosPaymentService : IPayosPaymentService
             OrderCode                 = orderCode,
             RelatedEntityType         = nameof(SubscriptionPlan),
             RelatedEntityId           = plan.Id,
-            Description               = $"SYNC {plan.Name} ({request.BillingCycle}, {durationDays}d)",
+            Description               = $"SYNC {plan.Name} (Monthly, {durationDays}d)",
             SpendingAuthorizationType = SpendingAuthorizationType.ManualApproval,
             IsAiInitiated             = false,
             CouponCode                = appliedCouponCode
@@ -475,10 +478,8 @@ public class PayosPaymentService : IPayosPaymentService
             return;
         }
 
-        // Pick duration based on the amount paid: any payment >= YearlyPrice → yearly, otherwise monthly.
-        var durationDays = (plan.YearlyPrice > 0 && paidAmount >= plan.YearlyPrice)
-            ? _settings.YearlyDurationDays
-            : _settings.MonthlyDurationDays;
+        // Rollout: monthly-only billing duration.
+        var durationDays = _settings.MonthlyDurationDays;
 
         var existing = await _db.UserSubscriptions
             .Where(s => s.UserId == userId && s.SubscriptionPlanId == planId)

@@ -174,7 +174,7 @@ export default function PricingSection() {
             </div>
           </StaggerItem>
 
-          {/* ── Premium / Pro plan(s) ── */}
+          {/* ── Premium plan(s) ── */}
           {premiumPlans.map((plan) => {
             const isPurchasing = purchasing === plan.id;
             const features = plan.features?.length

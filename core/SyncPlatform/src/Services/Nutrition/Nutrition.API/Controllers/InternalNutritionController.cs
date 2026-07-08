@@ -6,26 +6,89 @@ using Nutrition.Application.Services;
 
 namespace Nutrition.API.Controllers;
 
+/// <summary>Internal endpoints for SYNC AI Layer (X-Internal-Api-Key).</summary>
 [ApiController]
 [Route("api/internal/nutrition")]
 [AllowAnonymous]
 public class InternalNutritionController : ControllerBase
 {
-    private readonly IDailyNutritionSummaryService _service;
+    private readonly IDailyNutritionSummaryService _dailySummaryService;
+    private readonly IMealLogService _mealLogService;
+    private readonly IFoodItemService _foodItemService;
 
-    public InternalNutritionController(IDailyNutritionSummaryService service)
+    public InternalNutritionController(
+        IDailyNutritionSummaryService dailySummaryService,
+        IMealLogService mealLogService,
+        IFoodItemService foodItemService)
     {
-        _service = service;
+        _dailySummaryService = dailySummaryService;
+        _mealLogService = mealLogService;
+        _foodItemService = foodItemService;
     }
 
-    [HttpGet("summary/{userId:guid}")]
+    [HttpGet("daily-summary/{userId:guid}")]
     public async Task<ActionResult<ApiResponse<DailyNutritionSummaryDto>>> GetDailySummary(
         Guid userId,
         [FromQuery] DateOnly? date,
         CancellationToken cancellationToken)
     {
         var targetDate = date ?? DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
-        var result = await _service.GetDailySummaryAsync(userId, targetDate, cancellationToken);
-        return Ok(ApiResponse<DailyNutritionSummaryDto>.SuccessResponse(result, "Daily summary retrieved successfully."));
+        var result = await _dailySummaryService.GetDailySummaryAsync(userId, targetDate, cancellationToken);
+        return Ok(ApiResponse<DailyNutritionSummaryDto>.SuccessResponse(result, "Daily summary retrieved."));
     }
+
+    [HttpPost("meal-logs")]
+    public async Task<ActionResult<ApiResponse<MealLogDto>>> CreateMealLog(
+        [FromBody] InternalCreateMealLogRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _mealLogService.CreateAsync(request.UserId, request, cancellationToken);
+        return Ok(ApiResponse<MealLogDto>.SuccessResponse(result, "Meal log created."));
+    }
+
+    [HttpGet("food-items")]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<FoodItemDto>>>> SearchFood(
+        [FromQuery] string? query,
+        [FromQuery] int limit = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new FoodSearchRequest { Query = query, PageNumber = 1, PageSize = Math.Clamp(limit, 1, 50) };
+        var (items, pagination) = await _foodItemService.SearchAsync(request, cancellationToken);
+        return Ok(PagedApiResponse<IReadOnlyList<FoodItemDto>>.SuccessPagedResponse(
+            items, pagination, "Food items retrieved."));
+    }
+
+    [HttpGet("food-items/barcode/{barcode}")]
+    public async Task<ActionResult<ApiResponse<FoodItemDto>>> GetFoodByBarcode(
+        string barcode,
+        CancellationToken cancellationToken)
+    {
+        var result = await _foodItemService.GetByBarcodeAsync(barcode, cancellationToken);
+        return Ok(ApiResponse<FoodItemDto>.SuccessResponse(result, "Food retrieved."));
+    }
+
+    [HttpPost("water-intake")]
+    public async Task<ActionResult<ApiResponse<DailyNutritionSummaryDto>>> LogWater(
+        [FromBody] InternalWaterIntakeRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _dailySummaryService.AddWaterIntakeAsync(
+            request.UserId,
+            new AddWaterIntakeDto { Milliliters = request.Milliliters },
+            cancellationToken);
+        return Ok(ApiResponse<DailyNutritionSummaryDto>.SuccessResponse(result, "Water intake logged."));
+    }
+}
+
+/// <summary>userId + fields from <see cref="CreateMealLogDto"/>.</summary>
+public class InternalCreateMealLogRequestDto : CreateMealLogDto
+{
+    public Guid UserId { get; set; }
+}
+
+public class InternalWaterIntakeRequestDto
+{
+    public Guid UserId { get; set; }
+
+    public int Milliliters { get; set; }
 }

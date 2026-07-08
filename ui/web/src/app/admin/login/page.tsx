@@ -61,8 +61,17 @@ export default function AdminLoginPage() {
         role:     role ?? "",
       });
       router.push("/admin/dashboard");
-    } catch {
-      setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("fetch")) {
+        setError(
+          "Không kết nối được API. Kiểm tra Gateway đang chạy (http://localhost:5057) và NEXT_PUBLIC_API_URL trong .env."
+        );
+      } else if (msg) {
+        setError(msg);
+      } else {
+        setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
+      }
     } finally {
       setLoading(false);
     }
@@ -176,7 +185,7 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@sync.vn"
+                  placeholder="admin@sync.local"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
                 />
               </div>
@@ -223,7 +232,11 @@ export default function AdminLoginPage() {
               </button>
             </form>
 
-            <p className="text-center text-xs text-gray-400 mt-8 leading-relaxed">
+            <p className="text-center text-xs text-gray-400 mt-4 leading-relaxed">
+              Dev: <span className="font-mono">admin@sync.local</span> / <span className="font-mono">Sync@12345</span>
+            </p>
+
+            <p className="text-center text-xs text-gray-400 mt-4 leading-relaxed">
               Không phải quản trị viên?{" "}
               <a href="/" className="underline hover:text-gray-600 transition-colors">
                 Quay về trang chủ

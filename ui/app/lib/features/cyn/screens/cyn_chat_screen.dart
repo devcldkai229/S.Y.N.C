@@ -1,8 +1,13 @@
 import 'dart:ui';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/context_navigation.dart';
+import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/features/cyn/models/cyn_chat_models.dart';
+import 'package:sync_app/features/cyn/services/cyn_ai_chat_service.dart';
 
 /// SYNC accent green for user chat bubbles (#DEFF9A).
 const _cynAccentGreen = Color(0xFFDEFF9A);
@@ -17,40 +22,19 @@ class CynChatScreen extends StatefulWidget {
 }
 
 class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateMixin {
-  static const _dummyMessages = <Map<String, dynamic>>[
-    {
-      'role': 'cyn',
-      'text':
-          'Chào Khải! Chúc mừng bạn đã hoàn thành Phase 1 của Foundation. Cơ thể bạn hôm nay cảm thấy thế nào?',
-      'time': '09:41',
-    },
-    {
-      'role': 'user',
-      'text':
-          'Cơ mình hơi mỏi phần đùi sau, và mình đang muốn tìm thực đơn bữa tối khoảng 500 kcal.',
-      'time': '09:42',
-      'read': true,
-    },
-    {
-      'role': 'cyn',
-      'text':
-          'Đã rõ. Dựa trên dữ liệu phục hồi của bạn, CYN đã điều chỉnh bài tập ngày mai thành Thân trên (Upper Body). Về bữa tối, CYN đề xuất: 150g ức gà áp chảo, 1 bát salad rau bina trộn dầu oliu, và 100g khoai lang luộc (Tổng: 485 kcal). Bạn muốn CYN tự động thêm vào danh sách đi chợ không?',
-      'time': '09:43',
-    },
-    {
-      'role': 'user_voice',
-      'duration': '0:12',
-      'time': '09:44',
-      'read': true,
-    },
-  ];
+  final _ai = getIt<CynAiChatService>();
+  final _sessionId = 'cyn-${DateTime.now().toUtc().millisecondsSinceEpoch}';
+  final _messages = <CynChatMessage>[];
+  final _textController = TextEditingController();
+  final _scrollController = ScrollController();
 
   CynChatMode _mode = CynChatMode.messaging;
   bool _isMuted = false;
   bool _isRecording = false;
+  bool _isStreaming = false;
+  CancelToken? _streamCancel;
+  int _msgSeq = 0;
 
-  final _textController = TextEditingController();
-  final _scrollController = ScrollController();
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
@@ -65,21 +49,49 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
     )..repeat(reverse: true);
     _pulseAnimation = CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut);
 
+    _messages.add(
+      CynChatMessage(
+        id: _newMessageId(),
+        role: CynMessageRole.cyn,
+        text:
+            'Chào bạn! Mình là CYN — coach AI của SYNC. Hỏi mình về lịch tập, dinh dưỡng hoặc gợi ý bữa ăn nhé.',
+        time: _formatTime(),
+      ),
+    );
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  }
+
+  String _newMessageId() {
+    _msgSeq += 1;
+    return 'msg-$_msgSeq';
+  }
+
+  String _formatTime() {
+    final now = DateTime.now();
+    final h = now.hour.toString().padLeft(2, '0');
+    final m = now.minute.toString().padLeft(2, '0');
+    return '$h:$m';
   }
 
   @override
   void dispose() {
+    _streamCancel?.cancel('dispose');
     _pulseController.dispose();
     _textController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool jump = false}) {
     if (!_scrollController.hasClients) return;
+    final target = _scrollController.position.maxScrollExtent;
+    if (jump) {
+      _scrollController.jumpTo(target);
+      return;
+    }
     _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
+      target,
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeOut,
     );
@@ -98,11 +110,212 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
     setState(() => _mode = CynChatMode.messaging);
   }
 
-  void _onSendText() {
+  Future<void> _onSendText() async {
     final text = _textController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || _isStreaming) return;
+
     _textController.clear();
     FocusScope.of(context).unfocus();
+
+    final cynMessageId = _newMessageId();
+    setState(() {
+      _messages.add(
+        CynChatMessage(
+          id: _newMessageId(),
+          role: CynMessageRole.user,
+          text: text,
+          time: _formatTime(),
+          read: true,
+        ),
+      );
+      _messages.add(
+        CynChatMessage(
+          id: cynMessageId,
+          role: CynMessageRole.cyn,
+          text: '',
+          time: _formatTime(),
+          isStreaming: true,
+        ),
+      );
+      _isStreaming = true;
+    });
+    _scrollToBottom();
+
+    final cynIndex = _messages.indexWhere((m) => m.id == cynMessageId);
+    final buffer = StringBuffer();
+    _streamCancel = CancelToken();
+    var hadError = false;
+
+    void applyReplyText(String text) {
+      if (text.trim().isEmpty) return;
+      buffer
+        ..clear()
+        ..write(text);
+      setState(() {
+        _messages[cynIndex] = _messages[cynIndex].copyWith(text: buffer.toString());
+      });
+      _scrollToBottom(jump: true);
+    }
+
+    try {
+      await for (final ev in _ai.streamChat(
+        message: text,
+        sessionId: _sessionId,
+        cancelToken: _streamCancel,
+      )) {
+        if (!mounted || cynIndex < 0) return;
+
+        switch (ev.type) {
+          case 'token':
+            buffer.write(ev.data);
+            setState(() {
+              _messages[cynIndex] = _messages[cynIndex].copyWith(text: buffer.toString());
+            });
+            _scrollToBottom(jump: true);
+            break;
+          case 'final':
+          case 'message':
+            final reply = ev.finalText;
+            if (reply != null) {
+              applyReplyText(reply);
+            } else if (ev.data.trim().isNotEmpty) {
+              buffer.write(ev.data);
+              setState(() {
+                _messages[cynIndex] = _messages[cynIndex].copyWith(text: buffer.toString());
+              });
+              _scrollToBottom(jump: true);
+            }
+            break;
+          case 'display_payload':
+            final display = ev.displayText;
+            if (display != null) applyReplyText(display);
+            break;
+          case 'handoff':
+            final payload = ev.jsonData;
+            final target = payload?['to']?.toString() ?? '';
+            if (target.isNotEmpty) {
+              setState(() {
+                _messages[cynIndex] = _messages[cynIndex].copyWith(
+                  handoffLabel: 'Chuyển sang ${_agentLabel(target)}',
+                );
+              });
+            }
+            break;
+          case 'pending_action':
+            setState(() {
+              _messages[cynIndex] = _messages[cynIndex].copyWith(pendingAction: ev.jsonData);
+            });
+            break;
+          case 'confirm':
+            setState(() {
+              _messages[cynIndex] = _messages[cynIndex].copyWith(
+                handoffLabel: 'Cần xác nhận trước khi đặt đơn',
+              );
+            });
+            break;
+          case 'error':
+            hadError = true;
+            setState(() {
+              _messages[cynIndex] = _messages[cynIndex].copyWith(
+                text: buffer.isEmpty ? ev.data : buffer.toString(),
+                isStreaming: false,
+                error: buffer.isEmpty,
+              );
+            });
+            break;
+          case 'done':
+            break;
+        }
+      }
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('CYN SSE stream error [${e.runtimeType}]: $e\n$st');
+      }
+      final bubbleText = cynIndex >= 0 && cynIndex < _messages.length
+          ? _messages[cynIndex].text.trim()
+          : '';
+      final hasText = buffer.toString().trim().isNotEmpty || bubbleText.isNotEmpty;
+      if (!hasText) {
+        hadError = true;
+      }
+      if (mounted && cynIndex >= 0) {
+        setState(() {
+          _messages[cynIndex] = _messages[cynIndex].copyWith(
+            text: hasText
+                ? (buffer.toString().trim().isNotEmpty ? buffer.toString() : bubbleText)
+                : 'Không nhận được phản hồi từ CYN. Thử lại nhé.',
+            isStreaming: false,
+            error: !hasText,
+          );
+        });
+      }
+    } finally {
+      _streamCancel = null;
+      if (mounted && cynIndex >= 0) {
+        final buffered = buffer.toString().trim();
+        final bubbleText = _messages[cynIndex].text.trim();
+        final resolved = buffered.isNotEmpty ? buffered : bubbleText;
+        final hasSideEffects = _messages[cynIndex].pendingAction != null ||
+            (_messages[cynIndex].handoffLabel?.isNotEmpty ?? false);
+        setState(() {
+          _messages[cynIndex] = _messages[cynIndex].copyWith(
+            text: resolved.isEmpty && !hadError && !hasSideEffects
+                ? 'CYN đã xử lý yêu cầu của bạn.'
+                : (resolved.isEmpty ? _messages[cynIndex].text : resolved),
+            isStreaming: false,
+            error: resolved.isEmpty && hadError,
+          );
+          _isStreaming = false;
+        });
+        _scrollToBottom();
+      }
+    }
+  }
+
+  String _agentLabel(String agent) {
+    return switch (agent.toLowerCase()) {
+      'nutrition' => 'Dinh dưỡng',
+      'workout' => 'Tập luyện',
+      'commerce' => 'Đặt món',
+      'insight' => 'Phân tích',
+      'coach' => 'Coach',
+      _ => agent,
+    };
+  }
+
+  Future<void> _confirmPending(CynChatMessage message, {required bool confirmed}) async {
+    final actionId = message.pendingAction?['action_id']?.toString();
+    if (actionId == null || actionId.isEmpty) return;
+
+    try {
+      await _ai.confirmAction(
+        sessionId: _sessionId,
+        actionId: actionId,
+        confirmed: confirmed,
+      );
+      if (!mounted) return;
+
+      final idx = _messages.indexWhere((m) => m.id == message.id);
+      setState(() {
+        if (idx >= 0) {
+          _messages[idx] = _messages[idx].copyWith(clearPendingAction: true);
+        }
+        _messages.add(
+          CynChatMessage(
+            id: _newMessageId(),
+            role: CynMessageRole.system,
+            text: confirmed ? 'Đã xác nhận đặt đơn.' : 'Đã hủy đặt đơn.',
+            time: _formatTime(),
+          ),
+        );
+      });
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không xác nhận được: $e')),
+      );
+    }
   }
 
   @override
@@ -120,6 +333,7 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
             topPadding: topPadding,
             isDark: isDark,
             isVoiceMode: _isVoiceMode,
+            isStreaming: _isStreaming,
             onBack: () => context.popOrGoHome(),
             onToggleMode: _toggleMode,
           ),
@@ -139,7 +353,8 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
                   : _MessagingBody(
                       key: const ValueKey('messaging'),
                       scrollController: _scrollController,
-                      messages: _dummyMessages,
+                      messages: _messages,
+                      onConfirmPending: _confirmPending,
                     ),
             ),
           ),
@@ -147,6 +362,7 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
             _FrostedInputBar(
               controller: _textController,
               isRecording: _isRecording,
+              isBusy: _isStreaming,
               onSend: _onSendText,
               onRecordStart: () => setState(() => _isRecording = true),
               onRecordEnd: () => setState(() => _isRecording = false),
@@ -162,6 +378,7 @@ class _CynChatAppBar extends StatelessWidget {
     required this.topPadding,
     required this.isDark,
     required this.isVoiceMode,
+    required this.isStreaming,
     required this.onBack,
     required this.onToggleMode,
   });
@@ -169,6 +386,7 @@ class _CynChatAppBar extends StatelessWidget {
   final double topPadding;
   final bool isDark;
   final bool isVoiceMode;
+  final bool isStreaming;
   final VoidCallback onBack;
   final VoidCallback onToggleMode;
 
@@ -253,7 +471,7 @@ class _CynChatAppBar extends StatelessWidget {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            'Online',
+                            isStreaming ? 'Đang trả lời...' : 'Online',
                             style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: muted),
                           ),
                         ],
@@ -289,10 +507,12 @@ class _MessagingBody extends StatelessWidget {
     super.key,
     required this.scrollController,
     required this.messages,
+    required this.onConfirmPending,
   });
 
   final ScrollController scrollController;
-  final List<Map<String, dynamic>> messages;
+  final List<CynChatMessage> messages;
+  final void Function(CynChatMessage message, {required bool confirmed}) onConfirmPending;
 
   @override
   Widget build(BuildContext context) {
@@ -302,38 +522,56 @@ class _MessagingBody extends StatelessWidget {
       itemCount: messages.length,
       itemBuilder: (context, index) {
         final msg = messages[index];
-        final role = msg['role'] as String;
-        if (role == 'cyn') {
-          return _CynBubble(
-            text: msg['text'] as String,
-            time: msg['time'] as String?,
-          );
+        switch (msg.role) {
+          case CynMessageRole.cyn:
+            return _CynBubble(
+              text: msg.text,
+              time: msg.time,
+              isStreaming: msg.isStreaming,
+              error: msg.error,
+              handoffLabel: msg.handoffLabel,
+              pendingAction: msg.pendingAction,
+              onConfirm: msg.pendingAction != null
+                  ? (confirmed) => onConfirmPending(msg, confirmed: confirmed)
+                  : null,
+            );
+          case CynMessageRole.system:
+            return _SystemBubble(text: msg.text, time: msg.time);
+          case CynMessageRole.user:
+            return _UserBubble(
+              text: msg.text,
+              time: msg.time,
+              read: msg.read,
+            );
         }
-        if (role == 'user_voice') {
-          return _UserVoiceBubble(
-            duration: msg['duration'] as String? ?? '0:00',
-            time: msg['time'] as String?,
-            read: msg['read'] == true,
-          );
-        }
-        return _UserBubble(
-          text: msg['text'] as String,
-          time: msg['time'] as String?,
-          read: msg['read'] == true,
-        );
       },
     );
   }
 }
 
 class _CynBubble extends StatelessWidget {
-  const _CynBubble({required this.text, this.time});
+  const _CynBubble({
+    required this.text,
+    this.time,
+    this.isStreaming = false,
+    this.error = false,
+    this.handoffLabel,
+    this.pendingAction,
+    this.onConfirm,
+  });
 
   final String text;
   final String? time;
+  final bool isStreaming;
+  final bool error;
+  final String? handoffLabel;
+  final Map<String, dynamic>? pendingAction;
+  final void Function(bool confirmed)? onConfirm;
 
   @override
   Widget build(BuildContext context) {
+    final showTyping = isStreaming && text.isEmpty;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, right: 48),
       child: Row(
@@ -354,16 +592,36 @@ class _CynBubble extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (handoffLabel != null) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.lightGreen.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Text(
+                      handoffLabel!,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
+                  ),
+                ],
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
+                    color: error ? const Color(0xFFFEE2E2) : const Color(0xFFF3F4F6),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(18),
                       topRight: Radius.circular(18),
                       bottomRight: Radius.circular(18),
                       bottomLeft: Radius.circular(4),
                     ),
+                    border: error ? Border.all(color: Colors.red.shade200) : null,
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.04),
@@ -372,15 +630,25 @@ class _CynBubble extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Text(
-                    text,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.45,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  child: showTyping
+                      ? const _TypingDots()
+                      : _StreamingText(
+                          text: text,
+                          isStreaming: isStreaming,
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 1.45,
+                            color: error ? Colors.red.shade800 : AppColors.textPrimary,
+                          ),
+                        ),
                 ),
+                if (pendingAction != null && onConfirm != null) ...[
+                  const SizedBox(height: 8),
+                  _PendingActionCard(
+                    action: pendingAction!,
+                    onConfirm: onConfirm!,
+                  ),
+                ],
                 if (time != null) ...[
                   const SizedBox(height: 4),
                   Padding(
@@ -392,6 +660,218 @@ class _CynBubble extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SystemBubble extends StatelessWidget {
+  const _SystemBubble({required this.text, this.time});
+
+  final String text;
+  final String? time;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundAlt,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingActionCard extends StatelessWidget {
+  const _PendingActionCard({
+    required this.action,
+    required this.onConfirm,
+  });
+
+  final Map<String, dynamic> action;
+  final void Function(bool confirmed) onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = action['summary']?.toString();
+    final amount = action['amount'];
+    final amountLabel = amount is num ? '${amount.toStringAsFixed(0)}đ' : null;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.35)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primaryGreen.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Xác nhận đặt đơn',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          if (summary != null && summary.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(summary, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          ],
+          if (amountLabel != null) ...[
+            const SizedBox(height: 4),
+            Text(amountLabel, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primaryGreen)),
+          ],
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => onConfirm(false),
+                  child: const Text('Hủy'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () => onConfirm(true),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.primaryGreen),
+                  child: const Text('Xác nhận'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StreamingText extends StatefulWidget {
+  const _StreamingText({
+    required this.text,
+    required this.isStreaming,
+    required this.style,
+  });
+
+  final String text;
+  final bool isStreaming;
+  final TextStyle style;
+
+  @override
+  State<_StreamingText> createState() => _StreamingTextState();
+}
+
+class _StreamingTextState extends State<_StreamingText> with SingleTickerProviderStateMixin {
+  late final AnimationController _cursorController;
+
+  @override
+  void initState() {
+    super.initState();
+    _cursorController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 530),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _cursorController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isStreaming) {
+      return Text(widget.text, style: widget.style);
+    }
+
+    return AnimatedBuilder(
+      animation: _cursorController,
+      builder: (context, child) {
+        return Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: widget.text, style: widget.style),
+              TextSpan(
+                text: '▍',
+                style: widget.style.copyWith(
+                  color: AppColors.primaryGreen.withValues(alpha: 0.35 + _cursorController.value * 0.65),
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 18,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(3, (i) {
+              final phase = (_controller.value + i * 0.2) % 1.0;
+              final scale = 0.6 + (phase < 0.5 ? phase : 1 - phase) * 0.8;
+              return Container(
+                width: 7,
+                height: 7,
+                margin: EdgeInsets.only(right: i == 2 ? 0 : 5),
+                transform: Matrix4.diagonal3Values(scale, scale, 1),
+                decoration: BoxDecoration(
+                  color: AppColors.textMuted.withValues(alpha: 0.35 + scale * 0.45),
+                  shape: BoxShape.circle,
+                ),
+              );
+            }),
+          );
+        },
       ),
     );
   }
@@ -462,111 +942,11 @@ class _UserBubble extends StatelessWidget {
   }
 }
 
-class _UserVoiceBubble extends StatelessWidget {
-  const _UserVoiceBubble({
-    required this.duration,
-    this.time,
-    this.read = false,
-  });
-
-  final String duration;
-  final String? time;
-  final bool read;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 48),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Container(
-            width: 220,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: _cynAccentGreen,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18),
-                topRight: Radius.circular(18),
-                bottomLeft: Radius.circular(18),
-                bottomRight: Radius.circular(4),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: _cynAccentGreen.withValues(alpha: 0.35),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.play_arrow_rounded, color: AppColors.textPrimary),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Row(
-                    children: List.generate(18, (i) {
-                      final h = 6.0 + (i % 5) * 3.5;
-                      return Container(
-                        width: 3,
-                        height: h,
-                        margin: const EdgeInsets.symmetric(horizontal: 1),
-                        decoration: BoxDecoration(
-                          color: AppColors.textPrimary.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-                Text(
-                  duration,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (time != null) ...[
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.mic_rounded, size: 12, color: AppColors.textMuted),
-                const SizedBox(width: 4),
-                Text(time!, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                if (read) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.done_all_rounded,
-                    size: 14,
-                    color: AppColors.primaryGreen.withValues(alpha: 0.85),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _FrostedInputBar extends StatelessWidget {
   const _FrostedInputBar({
     required this.controller,
     required this.isRecording,
+    required this.isBusy,
     required this.onSend,
     required this.onRecordStart,
     required this.onRecordEnd,
@@ -574,6 +954,7 @@ class _FrostedInputBar extends StatelessWidget {
 
   final TextEditingController controller;
   final bool isRecording;
+  final bool isBusy;
   final VoidCallback onSend;
   final VoidCallback onRecordStart;
   final VoidCallback onRecordEnd;
@@ -610,10 +991,11 @@ class _FrostedInputBar extends StatelessWidget {
                   ),
                   child: TextField(
                     controller: controller,
+                    enabled: !isBusy,
                     minLines: 1,
                     maxLines: 4,
                     textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => onSend(),
+                    onSubmitted: isBusy ? null : (_) => onSend(),
                     style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                     decoration: const InputDecoration(
                       hintText: 'Hỏi CYN về lịch tập...',
@@ -649,12 +1031,19 @@ class _FrostedInputBar extends StatelessWidget {
               ),
               const SizedBox(width: 4),
               IconButton.filled(
-                onPressed: onSend,
+                onPressed: isBusy ? null : onSend,
                 style: IconButton.styleFrom(
                   backgroundColor: AppColors.primaryGreen,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: AppColors.primaryGreen.withValues(alpha: 0.45),
                 ),
-                icon: const Icon(Icons.send_rounded, size: 20),
+                icon: isBusy
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.send_rounded, size: 20),
               ),
             ],
           ),

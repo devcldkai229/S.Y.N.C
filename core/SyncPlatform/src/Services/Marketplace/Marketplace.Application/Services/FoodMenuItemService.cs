@@ -39,7 +39,11 @@ public class FoodMenuItemService : IFoodMenuItemService
             RadiusKm = request.RadiusKm,
             PageNumber = pageNumber,
             PageSize = pageSize,
+            IsAiRecommended = request.IsAiRecommendedOnly,
         };
+
+        if (request.PartnerId is Guid partnerId)
+            criteria.PartnerIds = [partnerId];
 
         if (!string.IsNullOrWhiteSpace(request.Category)
             && Enum.TryParse<FoodCategory>(request.Category, true, out var category))

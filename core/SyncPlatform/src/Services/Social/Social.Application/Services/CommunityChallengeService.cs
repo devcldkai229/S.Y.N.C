@@ -41,6 +41,7 @@ public class CommunityChallengeService : ICommunityChallengeService
             dto.StartDate,
             dto.EndDate,
             dto.TargetValue);
+        ValidateChallengeLocation(dto.Address, dto.Latitude, dto.Longitude);
 
         var challenge = new CommunityChallenge
         {
@@ -81,6 +82,7 @@ public class CommunityChallengeService : ICommunityChallengeService
             dto.StartDate,
             dto.EndDate,
             dto.TargetValue);
+        ValidateChallengeLocation(dto.Address, dto.Latitude, dto.Longitude);
 
         var challenge = await GetSyncedChallengeAsync(challengeId, cancellationToken);
         EnsureRegistrationOpen(challenge, "update");
@@ -311,6 +313,21 @@ public class CommunityChallengeService : ICommunityChallengeService
 
         if (targetValue <= 0)
             throw new BadRequestException("TargetValue must be greater than zero.");
+    }
+
+    private static void ValidateChallengeLocation(
+        string? address,
+        decimal? latitude,
+        decimal? longitude)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+            throw new BadRequestException("Challenge venue address is required.");
+
+        if (latitude is null or < -90 or > 90)
+            throw new BadRequestException("Challenge venue latitude is required and must be between -90 and 90.");
+
+        if (longitude is null or < -180 or > 180)
+            throw new BadRequestException("Challenge venue longitude is required and must be between -180 and 180.");
     }
 
     private static void EnsureRegistrationOpen(CommunityChallenge challenge, string action)

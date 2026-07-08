@@ -29,4 +29,17 @@ public class RoadmapSessionRepository : GenericRepository<RoadmapSession>, IRoad
 
         await Collection.UpdateOneAsync(x => x.Id == id, update, cancellationToken: cancellationToken);
     }
+
+    public async Task<IReadOnlyList<RoadmapSession>> GetByRoadmapIdAndDateRangeAsync(
+        Guid roadmapId,
+        DateTimeOffset from,
+        DateTimeOffset to,
+        CancellationToken cancellationToken = default)
+        => await Collection
+            .Find(x => x.RoadmapId == roadmapId && x.ScheduledDate >= from && x.ScheduledDate <= to)
+            .SortBy(x => x.ScheduledDate)
+            .ToListAsync(cancellationToken);
+
+    public async Task DeleteByRoadmapIdAsync(Guid roadmapId, CancellationToken cancellationToken = default)
+        => await Collection.DeleteManyAsync(x => x.RoadmapId == roadmapId, cancellationToken);
 }

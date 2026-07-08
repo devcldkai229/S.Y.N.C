@@ -1,5 +1,7 @@
 import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Area, AreaChart, ResponsiveContainer } from "recharts";
+import type { DailyPoint } from "@/hooks/admin/dashboard-types";
 
 interface StatsCardProps {
   title: string;
@@ -7,8 +9,10 @@ interface StatsCardProps {
   icon: LucideIcon;
   description?: string;
   trend?: { value: number; label: string };
+  sparkline?: DailyPoint[];
   className?: string;
   color?: "green" | "blue" | "orange" | "purple";
+  href?: string;
 }
 
 const COLOR_MAP = {
@@ -18,9 +22,9 @@ const COLOR_MAP = {
   purple: { bg: "bg-violet-50",   icon: "text-violet-500" },
 };
 
-export function StatsCard({ title, value, icon: Icon, description, trend, className, color = "green" }: StatsCardProps) {
+export function StatsCard({ title, value, icon: Icon, description, trend, sparkline, className, color = "green", href }: StatsCardProps) {
   const colors = COLOR_MAP[color];
-  return (
+  const content = (
     <div className={cn("bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-shadow", className)}>
       <div className="flex items-start justify-between mb-4">
         <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", colors.bg)}>
@@ -45,6 +49,31 @@ export function StatsCard({ title, value, icon: Icon, description, trend, classN
       <p className="text-sm font-medium text-gray-500">{title}</p>
       {description && <p className="text-xs text-gray-400 mt-0.5">{description}</p>}
       {trend && <p className="text-xs text-gray-400 mt-1">{trend.label}</p>}
+      {sparkline && sparkline.length > 0 && (
+        <div className="h-10 mt-3 -mx-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={sparkline}>
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="oklch(0.52 0.165 149)"
+                fill="oklch(0.52 0.165 149 / 0.15)"
+                strokeWidth={1.5}
+                dot={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
+
+  if (href) {
+    return (
+      <a href={href} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-2xl">
+        {content}
+      </a>
+    );
+  }
+  return content;
 }

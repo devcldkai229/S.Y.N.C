@@ -21,20 +21,16 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IInternalSmartPushService, InternalSmartPushService>();
         services.AddScoped<IInternalBiometricService, InternalBiometricService>();
         services.AddScoped<IInternalUserService, InternalUserService>();
+        services.AddScoped<IInternalAiContextService, InternalAiContextService>();
         services.AddSingleton<IPasswordHasher, BcryptPasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<IGoogleTokenValidator, GoogleTokenValidator>();
-
-        var email = configuration.GetSection(EmailSettings.SectionName).Get<EmailSettings>() ?? new EmailSettings();
-        if (email.Smtp.Enabled && !string.IsNullOrWhiteSpace(email.Smtp.Host))
-            services.AddSingleton<IEmailSender, SmtpEmailSender>();
-        else
-            services.AddSingleton<IEmailSender, ConsoleEmailSender>();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPublicProfileService, PublicProfileService>();
         services.AddScoped<IUserSearchService, UserSearchService>();
         services.AddScoped<IAdminUserService, AdminUserService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
         services.AddScoped<ISubscriptionTierService, SubscriptionTierService>();
 
         return services;

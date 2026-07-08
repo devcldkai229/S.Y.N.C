@@ -16,7 +16,7 @@ const guarantees = [
   {
     icon: RefreshCcw,
     title: "Hủy bất cứ lúc nào",
-    description: "Không ràng buộc hợp đồng. Hủy gói Pro trong 1 click, không mất phí.",
+    description: "Không ràng buộc hợp đồng. Hủy gói Premium trong 1 click, không mất phí.",
   },
   {
     icon: HeadphonesIcon,
@@ -31,15 +31,15 @@ const faqs = [
     a: "Không. Gói Free là miễn phí mãi mãi, bạn có thể dùng vô thời hạn mà không cần nhập thẻ tín dụng.",
   },
   {
-    q: "Tôi có thể nâng cấp từ Free lên Pro bất cứ lúc nào không?",
-    a: "Có, bạn có thể nâng cấp ngay lập tức. Gói Pro sẽ kích hoạt tức thì sau khi thanh toán thành công.",
+    q: "Tôi có thể nâng cấp từ Free lên Premium bất cứ lúc nào không?",
+    a: "Có, bạn có thể nâng cấp ngay lập tức. Gói Premium sẽ kích hoạt tức thì sau khi thanh toán thành công.",
   },
   {
     q: "Phương thức thanh toán nào được hỗ trợ?",
     a: "SYNC hỗ trợ thanh toán qua VNPay, Momo, và các thẻ nội địa/quốc tế phổ biến.",
   },
   {
-    q: "Nếu tôi hủy Pro, dữ liệu của tôi có bị mất không?",
+    q: "Nếu tôi hủy Premium, dữ liệu của tôi có bị mất không?",
     a: "Không. Toàn bộ lịch sử tập luyện và dữ liệu của bạn được giữ nguyên khi chuyển về gói Free.",
   },
 ];

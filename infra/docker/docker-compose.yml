@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   sync-postgres:
-    image: postgres:17.6
+    image: pgvector/pgvector:pg17
     container_name: sync-postgres
     environment:
       POSTGRES_USER: postgres
@@ -11,11 +11,12 @@ services:
       - "5434:5432"
     volumes:
       - sync_postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d:ro
     networks:
       - sync-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sync_admin -d sync_master"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -133,13 +134,41 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin123
     ports:
-      - "9000:9000" 
-      - "9001:9001" 
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - sync_minio_data:/data
     networks:
       - sync-network
     restart: unless-stopped
+
+  # Optional local — comment out if not using self-hosted LLM / tracing
+  # sync-ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: sync-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - sync_ollama_data:/root/.ollama
+  #   networks:
+  #     - sync-network
+  #   restart: unless-stopped
+
+  # sync-langfuse:
+  #   image: langfuse/langfuse:latest
+  #   container_name: sync-langfuse
+  #   depends_on:
+  #     - sync-postgres
+  #   ports:
+  #     - "3001:3000"
+  #   environment:
+  #     DATABASE_URL: postgresql://postgres:12345@sync-postgres:5432/langfuse
+  #     NEXTAUTH_SECRET: change-me
+  #     SALT: change-me-salt
+  #     NEXTAUTH_URL: http://localhost:3001
+  #   networks:
+  #     - sync-network
+  #   restart: unless-stopped
 
 networks:
   sync-network:
@@ -151,4 +180,5 @@ volumes:
   sync_rabbitmq_data:
   sync_redis_data:
   sync_minio_data:
+  sync_ollama_data:
   sync_ai_postgres_data:

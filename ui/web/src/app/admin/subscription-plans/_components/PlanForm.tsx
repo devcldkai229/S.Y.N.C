@@ -53,7 +53,7 @@ export function PlanForm({ defaultValues, onSubmit, loading, submitLabel = "Save
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1 md:col-span-2">
             <Label>Tên gói *</Label>
-            <Input {...register("name")} placeholder="Gói Pro" />
+            <Input {...register("name")} placeholder="Gói Premium" />
             <FieldError msg={errors.name?.message} />
           </div>
           <div className="space-y-1 md:col-span-2">
