@@ -2,9 +2,12 @@ using Libs.Auth.Constants;
 using Libs.Auth.Context;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Social.Application.Clients;
 using Social.Application.Common;
 using Social.Application.DTOs;
 using Social.Application.Services;
+using Social.Infrastructure.Options;
 
 namespace Social.API.Controllers;
 
@@ -15,13 +18,56 @@ public class AdminChallengeController : ControllerBase
 {
     private readonly ICommunityChallengeService _challenges;
     private readonly ICurrentUserContext _currentUser;
+    private readonly IPlaceIndexClient _placeIndex;
+    private readonly AwsLocationOptions _awsLocation;
 
     public AdminChallengeController(
         ICommunityChallengeService challenges,
-        ICurrentUserContext currentUser)
+        ICurrentUserContext currentUser,
+        IPlaceIndexClient placeIndex,
+        IOptions<AwsLocationOptions> awsLocation)
     {
         _challenges = challenges;
         _currentUser = currentUser;
+        _placeIndex = placeIndex;
+        _awsLocation = awsLocation.Value;
+    }
+
+    [HttpGet("location/search")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<AddressSuggestionDto>>>> SearchLocation(
+        [FromQuery] string q,
+        [FromQuery] double? lat,
+        [FromQuery] double? lng,
+        CancellationToken cancellationToken)
+    {
+        var results = await _placeIndex.SearchAsync(q, lat, lng, cancellationToken);
+        return Ok(ApiResponse<IReadOnlyList<AddressSuggestionDto>>.SuccessResponse(
+            results,
+            "Address suggestions retrieved."));
+    }
+
+    [HttpGet("location/reverse")]
+    public async Task<ActionResult<ApiResponse<ReverseGeocodeResultDto>>> ReverseLocation(
+        [FromQuery] double lat,
+        [FromQuery] double lng,
+        CancellationToken cancellationToken)
+    {
+        var result = await _placeIndex.ReverseAsync(lat, lng, cancellationToken);
+        return Ok(ApiResponse<ReverseGeocodeResultDto>.SuccessResponse(result, "Address resolved."));
+    }
+
+    [HttpGet("location/map-config")]
+    public ActionResult<ApiResponse<ChallengeMapConfigDto>> GetMapConfig()
+    {
+        var config = new ChallengeMapConfigDto
+        {
+            Region = _awsLocation.Region,
+            MapName = _awsLocation.MapName,
+            MapStyle = _awsLocation.MapStyle,
+            PlacesEnabled = _awsLocation.IsPlacesConfigured,
+        };
+
+        return Ok(ApiResponse<ChallengeMapConfigDto>.SuccessResponse(config, "Map configuration retrieved."));
     }
 
     [HttpPost]

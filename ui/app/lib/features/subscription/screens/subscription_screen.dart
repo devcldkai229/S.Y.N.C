@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/features/subscription/models/subscription_models.dart';
 import 'package:sync_app/features/subscription/services/subscription_api_service.dart';
 import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
@@ -16,6 +17,7 @@ class SubscriptionScreen extends StatefulWidget {
 class _SubscriptionScreenState extends State<SubscriptionScreen>
     with WidgetsBindingObserver {
   final _api = getIt<SubscriptionApiService>();
+  final _profileApi = getIt<ProfileApiService>();
 
   List<SubscriptionPlan> _plans = [];
   ActiveSubscription? _activeSub;
@@ -109,6 +111,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         final tx = await _api.getTransactionStatus(orderCode);
         if (tx?.status == 'Succeeded') {
           setState(() { _pendingOrderCode = null; });
+          try {
+            await _profileApi.getProfileSettings();
+          } catch (_) {
+            /* best-effort refresh tier in profile cache */
+          }
           await _load();
           if (!mounted) return;
           _showSnack('Đã nâng cấp lên Premium!');

@@ -38,6 +38,7 @@ import 'package:sync_app/features/order/state/delivery_fee_config.dart';
 import 'package:sync_app/features/order/data/order_demo_repository.dart';
 import 'package:sync_app/features/order/services/websocket_tracking_service.dart';
 import 'package:sync_app/features/order/services/i_tracking_service.dart';
+import 'package:sync_app/features/cyn/services/cyn_ai_chat_service.dart';
 
 final getIt = GetIt.instance;
 
@@ -48,6 +49,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => const FlutterSecureStorage());
   getIt.registerLazySingleton(() => createDio(storage: getIt()));
   getIt.registerLazySingleton(() => AuthService(getIt(), getIt()));
+  getIt.registerLazySingleton(() => CynAiChatService(getIt(), getIt()));
   getIt.registerLazySingleton(() => ProfileApiService(getIt()));
   getIt.registerLazySingleton(() => SubscriptionApiService(getIt()));
   getIt.registerLazySingleton(() => WorkoutApiService(getIt()));

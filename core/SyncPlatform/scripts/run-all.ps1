@@ -9,6 +9,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 $SyncRoot = Split-Path -Parent $PSScriptRoot
+$RepoRoot = Split-Path -Parent (Split-Path -Parent $SyncRoot)
+$AiServiceDir = Join-Path $RepoRoot "ai\sync-agent-service"
 
 $services = @(
     @{ Name = "IAM";          Dir = "src\Services\Iam\Iam.API";                     Port = 5288 },
@@ -94,4 +96,49 @@ foreach ($svc in $services) {
 }
 
 Write-Host "Done. Gateway: http://localhost:5057" -ForegroundColor Green
+Write-Host "       AI:      http://localhost:8088/healthz" -ForegroundColor Green
 Write-Host "Stop: .\scripts\stop-all.ps1" -ForegroundColor DarkGray
+
+# --- SYNC AI (Python / uvicorn) — chạy ngoài dotnet, cùng repo ---
+if (-not (Test-Path $AiServiceDir)) {
+    Write-Host "Skip AI: folder not found at $AiServiceDir" -ForegroundColor Yellow
+    exit 0
+}
+
+$aiEnv = Join-Path $AiServiceDir ".env"
+if (-not (Test-Path $aiEnv)) {
+    Write-Host "Skip AI: copy ai/sync-agent-service/.env.example -> .env first" -ForegroundColor Yellow
+    exit 0
+}
+
+$uvicorn = Get-Command uvicorn -ErrorAction SilentlyContinue
+$uvicornCmd = if ($uvicorn) { "uvicorn" } else { "py -m uvicorn" }
+if (-not $uvicorn) {
+    $pyCheck = Get-Command py -ErrorAction SilentlyContinue
+    if (-not $pyCheck) {
+        Write-Host "Skip AI: neither uvicorn nor py launcher found. Install Python 3.11+." -ForegroundColor Yellow
+        exit 0
+    }
+    $pipCheck = & py -m pip --version 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Skip AI: py found but pip missing. Run: py -m ensurepip --upgrade" -ForegroundColor Yellow
+        exit 0
+    }
+}
+
+$aiCommand = @"
+`$Host.UI.RawUI.WindowTitle = 'Sync - AI Agent (:8088)'
+Set-Location '$AiServiceDir'
+Write-Host '>>> SYNC AI Agent - http://localhost:8088' -ForegroundColor Green
+Write-Host '    Health:  http://localhost:8088/healthz' -ForegroundColor DarkGray
+Write-Host '    Chat:    POST /ai/chat (SSE) via Gateway /api/v1/ai/chat' -ForegroundColor DarkGray
+Write-Host '    Needs:   Docker postgres+redis, Ollama :11434, OPENAI_API_KEY (tier mid/large)' -ForegroundColor DarkGray
+$($uvicornCmd) app.api.main:app --reload --host 0.0.0.0 --port 8088
+if (`$LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host 'AI service failed. Check .env, Redis, Postgres sync_ai, Ollama models.' -ForegroundColor Red
+}
+"@
+
+Write-Host "Starting AI Agent (uvicorn :8088)..." -ForegroundColor Cyan
+Start-Process -FilePath $launchShell -ArgumentList @("-NoExit", "-Command", $aiCommand)

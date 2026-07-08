@@ -57,6 +57,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IInternalWalletService, InternalWalletService>();
         services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IOrderPaymentService, OrderPaymentService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
         services.AddHttpClient("Momo");
 
@@ -72,6 +73,7 @@ public static class InfrastructureServiceExtensions
 
         // ── Background jobs ──────────────────────────────────────────────────
         services.AddHostedService<SubscriptionExpiryJob>();
+        services.AddHostedService<SubscriptionTierReconcileJob>();
 
         // ── IAM internal client (tier sync after activation/expiry) ─────────
         services.AddHttpClient<IIamSubscriptionClient, IamSubscriptionClient>((sp, client) =>

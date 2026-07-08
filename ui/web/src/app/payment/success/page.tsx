@@ -5,6 +5,15 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle, Loader2, XCircle, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { subscriptionService } from "@/services/subscription.service";
+import { userApi } from "@/services/user-api";
+import { useUserAuthStore } from "@/stores/user-auth.store";
+
+interface ProfileSettingsEnvelope {
+  success: boolean;
+  data?: {
+    basic?: { subscriptionTier?: string };
+  };
+}
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -18,6 +27,7 @@ function SuccessContent() {
 
   const [status,  setStatus]  = useState<"polling" | "succeeded" | "failed">("polling");
   const [attempt, setAttempt] = useState(0);
+  const updateSubscriptionTier = useUserAuthStore((s) => s.updateSubscriptionTier);
   const MAX_ATTEMPTS = 12; // ~60s
 
   useEffect(() => {
@@ -33,6 +43,15 @@ function SuccessContent() {
 
         if (tx?.status === "Succeeded") {
           sessionStorage.removeItem("sync_pending_order");
+          try {
+            const profile = await userApi.get<ProfileSettingsEnvelope>(
+              "/api/v1/iam/me/profile-settings"
+            );
+            const tier = profile.data?.basic?.subscriptionTier;
+            if (tier) updateSubscriptionTier(tier);
+          } catch {
+            /* best-effort — user may re-login to refresh JWT tier claim */
+          }
           setStatus("succeeded");
           return;
         }

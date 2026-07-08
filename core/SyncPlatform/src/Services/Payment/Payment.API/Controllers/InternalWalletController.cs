@@ -15,6 +15,16 @@ public class InternalWalletController : ControllerBase
 
     public InternalWalletController(IInternalWalletService service) => _service = service;
 
+    [HttpGet("{userId:guid}/balance")]
+    public async Task<ActionResult<ApiResponse<WalletBalanceDto>>> GetBalance(
+        Guid userId,
+        [FromServices] IOrderPaymentService orderPaymentService,
+        CancellationToken cancellationToken)
+    {
+        var balance = await orderPaymentService.GetWalletBalanceAsync(userId, cancellationToken);
+        return Ok(ApiResponse<WalletBalanceDto>.SuccessResponse(balance, "Wallet balance retrieved."));
+    }
+
     [HttpPost("charge-meal-order")]
     public async Task<ActionResult<ApiResponse<ChargeMealOrderResponseDto>>> ChargeMealOrder(
         [FromBody] ChargeMealOrderRequestDto request,
@@ -32,4 +42,24 @@ public class InternalWalletController : ControllerBase
         var result = await _service.RefundMealOrderAsync(request, cancellationToken);
         return Ok(ApiResponse<RefundMealOrderResponseDto>.SuccessResponse(result, "Refund processed."));
     }
+
+    [HttpPost("topup")]
+    public ActionResult<ApiResponse<object>> TopupWallet([FromBody] InternalWalletTopupRequestDto request)
+    {
+        return Ok(ApiResponse<object>.SuccessResponse(new
+        {
+            request.UserId,
+            request.Amount,
+            request.Method,
+            status = "requires_payment_confirmation",
+            message = "Top-up must be confirmed via payment gateway.",
+        }, "Top-up initiated."));
+    }
+}
+
+public class InternalWalletTopupRequestDto
+{
+    public Guid UserId { get; set; }
+    public decimal Amount { get; set; }
+    public string Method { get; set; } = "VietQR";
 }

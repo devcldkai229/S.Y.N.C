@@ -111,6 +111,9 @@ public class FoodMenuItemRepository : GenericRepository<FoodMenuItem>, IFoodMenu
         if (criteria.PartnerIds is { Count: > 0 })
             filters.Add(builder.In(x => x.PartnerId, criteria.PartnerIds));
 
+        if (criteria.IsAiRecommended.HasValue)
+            filters.Add(builder.Eq(x => x.IsAiRecommended, criteria.IsAiRecommended.Value));
+
         return filters.Count == 0 ? builder.Empty : builder.And(filters);
     }
 }

@@ -10,7 +10,7 @@ namespace Iam.Infrastructure.Persistence.Seed;
 /// <summary>Stable IDs and dev seed data (Flutter, Social, Roadmap cross-service references).</summary>
 public static class IamSeedData
 {
-    public const string DefaultDevPassword = "image.png";
+    public const string DefaultDevPassword = "Sync@12345";
 
     public static readonly Guid DemoUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     public static readonly Guid AdminUserId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
@@ -34,6 +34,17 @@ public static class IamSeedData
     public const string SocialBeginnerEmail = "tran@sync.local";
     public const string SocialNutritionistEmail = "le@sync.local";
     public const string SocialActiveMemberEmail = "pham@sync.local";
+
+    public static readonly Guid DemoBiometricId = Guid.Parse("e2000001-0000-0000-0000-000000000001");
+    public static readonly Guid DemoUserPreferenceId = Guid.Parse("e2000002-0000-0000-0000-000000000002");
+    public static readonly Guid DemoAIContextProfileId = Guid.Parse("e2000003-0000-0000-0000-000000000003");
+    public static readonly Guid DemoUserAchievementLoginId = Guid.Parse("e3000001-0000-0000-0000-000000000001");
+    public static readonly Guid DemoUserAchievementWorkoutId = Guid.Parse("e3000002-0000-0000-0000-000000000002");
+    public static readonly Guid DemoUserAchievementStreakId = Guid.Parse("e3000003-0000-0000-0000-000000000003");
+
+    public static readonly Guid AchievementFirstLoginId = Guid.Parse("d1000001-0000-0000-0000-000000000001");
+    public static readonly Guid AchievementStreak7Id = Guid.Parse("d1000001-0000-0000-0000-000000000002");
+    public static readonly Guid AchievementFirstWorkoutId = Guid.Parse("d1000001-0000-0000-0000-000000000004");
 
     public static IReadOnlyList<Achievement> GetAchievements() =>
     [
@@ -198,24 +209,119 @@ public static class IamSeedData
         AvatarUrl = DevSeedMediaUrls.Avatar("demo-user.png"),
         Role = UserRole.User,
         Status = UserStatus.Active,
-        SubscriptionTier = SubscriptionTier.Free,
+        SubscriptionTier = SubscriptionTier.Premium,
         EmailVerified = true,
         PhoneVerified = false,
         PreferredLanguage = "vi",
         TimeZone = "Asia/Ho_Chi_Minh",
-        GamificationProfile = new GamificationProfile
-        {
-            Id = Guid.Parse("e1000001-0000-0000-0000-000000000001"),
-            UserId = DemoUserId,
-            CurrentLevel = 5,
-            CurrentXP = 1250,
-            CurrentStreak = 7,
-            LongestStreak = 14,
-            SyncCoins = 320.5m,
-            AchievementPoints = 450,
-            ConsecutivePerfectDays = 3,
-        },
+        GamificationProfile = CreateDemoGamificationProfile(),
+        BiometricProfile = CreateDemoBiometricProfile(),
+        UserPreference = CreateDemoUserPreference(),
+        AIContextProfile = CreateDemoAIContextProfile(DateTimeOffset.UtcNow),
     };
+
+    public static GamificationProfile CreateDemoGamificationProfile() => new()
+    {
+        Id = Guid.Parse("e1000001-0000-0000-0000-000000000001"),
+        UserId = DemoUserId,
+        CurrentLevel = 7,
+        CurrentXP = 1840,
+        CurrentStreak = 12,
+        LongestStreak = 21,
+        SyncCoins = 340m,
+        AchievementPoints = 520,
+        ConsecutivePerfectDays = 3,
+    };
+
+    public static BiometricProfile CreateDemoBiometricProfile() => new()
+    {
+        Id = DemoBiometricId,
+        UserId = DemoUserId,
+        Gender = Gender.Male,
+        DateOfBirth = new DateOnly(1998, 3, 15),
+        HeightCm = 175,
+        CurrentWeightKg = 78,
+        TargetWeightKg = 72,
+        CurrentBodyFatPercentage = 22,
+        GoalBodyFatPercentage = 16,
+        MuscleMassKg = 58,
+        FitnessGoal = FitnessGoal.LoseFat,
+        ActivityLevel = ActivityLevel.ModeratelyActive,
+        FitnessExperienceLevel = FitnessExperienceLevel.Intermediate,
+        WorkoutLocationPreference = WorkoutLocationPreference.Hybrid,
+        BaseTDEE = 2180,
+        BMR = 1720,
+        DailyProteinTargetGram = 150,
+        DailyCarbTargetGram = 220,
+        DailyFatTargetGram = 65,
+        Injuries = ["đau vai phải nhẹ"],
+        Medications = [],
+    };
+
+    public static UserPreference CreateDemoUserPreference() => new()
+    {
+        Id = DemoUserPreferenceId,
+        UserId = DemoUserId,
+        Allergies = [new AllergyItem("đậu phộng", "high", "Không ăn món có peanut butter")],
+        FavoriteFoods = ["cá hồi", "phở bò tái", "smoothie protein"],
+        DislikedFoods = ["ức gà luộc", "salad rau sống"],
+        AgentPersona = AgentPersona.FriendlyBuddy,
+        MotivationStyle = MotivationStyle.Supportive,
+        AutoOrderEnabled = true,
+        MaxAutoOrderLimitPerOrder = 100_000,
+        MaxAutoOrderLimitDaily = 300_000,
+        DataSharingConsent = true,
+        MarketingConsent = false,
+        SmartPushEnabled = true,
+        AllowAiGeneratedNotification = true,
+        PreferredReminderTime = new TimeSpan(7, 0, 0),
+    };
+
+    public static AIContextProfile CreateDemoAIContextProfile(DateTimeOffset utcNow) => new()
+    {
+        Id = DemoAIContextProfileId,
+        UserId = DemoUserId,
+        AdherenceScore = 0.78m,
+        BurnoutRiskScore = 0.32m,
+        ChurnRiskScore = 0.18m,
+        MotivationScore = 0.82m,
+        RecoveryScore = 0.71m,
+        NutritionComplianceScore = 0.74m,
+        WorkoutComplianceScore = 0.81m,
+        PeakEnergyTimeWindow = "07:00-10:00",
+        PreferredInterventionStyle = "Supportive",
+        LastBurnoutDetectedAt = null,
+        LastWorkoutSkippedAt = utcNow.AddDays(-5),
+        LastCheatMealAt = utcNow.AddDays(-3),
+        CurrentMood = "Motivated",
+        AIConfidenceScore = 0.88m,
+        LastReplanAt = utcNow.AddDays(-10),
+    };
+
+    public static IReadOnlyList<UserAchievement> GetDemoUserAchievements(DateTimeOffset utcNow) =>
+    [
+        new UserAchievement
+        {
+            Id = DemoUserAchievementLoginId,
+            UserId = DemoUserId,
+            AchievementId = AchievementFirstLoginId,
+            UnlockedAt = utcNow.AddDays(-60),
+        },
+        new UserAchievement
+        {
+            Id = DemoUserAchievementWorkoutId,
+            UserId = DemoUserId,
+            AchievementId = AchievementFirstWorkoutId,
+            UnlockedAt = utcNow.AddDays(-45),
+        },
+        new UserAchievement
+        {
+            Id = DemoUserAchievementStreakId,
+            UserId = DemoUserId,
+            AchievementId = AchievementStreak7Id,
+            UnlockedAt = utcNow.AddDays(-5),
+        },
+    ];
 
     public static User CreateAdminUser(string passwordHash) => new()
     {
@@ -391,6 +497,7 @@ public static class IamSeedData
 
             await SeedAchievementsAsync(db, cancellationToken);
             await SeedUsersAsync(db, passwordHasher, cancellationToken);
+            await SeedDemoOnboardingProfilesAsync(db, cancellationToken);
         }
 
         private static async Task SeedAchievementsAsync(IamDbContext db, CancellationToken cancellationToken)
@@ -461,15 +568,22 @@ public static class IamSeedData
                 user.EmailVerified = true;
                 if (user.Status == UserStatus.PendingVerification)
                     user.Status = UserStatus.Active;
-                if (seedByEmail.TryGetValue(user.Email, out var seedUser) &&
-                    !string.IsNullOrWhiteSpace(seedUser.AvatarUrl))
+                if (seedByEmail.TryGetValue(user.Email, out var seedUser))
                 {
-                    user.AvatarUrl = DevSeedMediaUrls.MigrateLegacyUrl(seedUser.AvatarUrl);
+                    user.Role = seedUser.Role;
+                    user.SubscriptionTier = seedUser.SubscriptionTier;
+                    user.FullName = seedUser.FullName;
+                    if (!string.IsNullOrWhiteSpace(seedUser.AvatarUrl))
+                        user.AvatarUrl = DevSeedMediaUrls.MigrateLegacyUrl(seedUser.AvatarUrl);
                 }
                 else if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
                 {
                     user.AvatarUrl = DevSeedMediaUrls.MigrateLegacyUrl(user.AvatarUrl);
                 }
+
+                if (string.Equals(user.Email, DemoUserEmail, StringComparison.OrdinalIgnoreCase))
+                    user.SubscriptionTier = SubscriptionTier.Premium;
+
                 user.UpdatedAt = now;
             }
 
@@ -483,6 +597,24 @@ public static class IamSeedData
                     user.GamificationProfile.CreatedAt = now;
                     user.GamificationProfile.UpdatedAt = now;
                 }
+
+                if (user.BiometricProfile is not null)
+                {
+                    user.BiometricProfile.CreatedAt = now;
+                    user.BiometricProfile.UpdatedAt = now;
+                }
+
+                if (user.UserPreference is not null)
+                {
+                    user.UserPreference.CreatedAt = now;
+                    user.UserPreference.UpdatedAt = now;
+                }
+
+                if (user.AIContextProfile is not null)
+                {
+                    user.AIContextProfile.CreatedAt = now;
+                    user.AIContextProfile.UpdatedAt = now;
+                }
             }
 
             if (toAdd.Count > 0)
@@ -490,6 +622,164 @@ public static class IamSeedData
 
             if (existingUsers.Count > 0 || toAdd.Count > 0)
                 await db.SaveChangesAsync(cancellationToken);
+        }
+
+        private static async Task SeedDemoOnboardingProfilesAsync(
+            IamDbContext db,
+            CancellationToken cancellationToken)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var demoUser = await db.Users
+                .Include(u => u.GamificationProfile)
+                .FirstOrDefaultAsync(u => u.Id == DemoUserId, cancellationToken);
+            if (demoUser is null)
+                return;
+
+            demoUser.SubscriptionTier = SubscriptionTier.Premium;
+            demoUser.UpdatedAt = now;
+
+            var gamificationSeed = CreateDemoGamificationProfile();
+            if (demoUser.GamificationProfile is null)
+            {
+                gamificationSeed.CreatedAt = now;
+                gamificationSeed.UpdatedAt = now;
+                demoUser.GamificationProfile = gamificationSeed;
+            }
+            else
+            {
+                ApplyGamificationSeed(gamificationSeed, demoUser.GamificationProfile);
+                demoUser.GamificationProfile.UpdatedAt = now;
+            }
+
+            var biometricSeed = CreateDemoBiometricProfile();
+            var biometric = await db.BiometricProfiles
+                .FirstOrDefaultAsync(b => b.UserId == DemoUserId, cancellationToken);
+            if (biometric is null)
+            {
+                biometricSeed.CreatedAt = now;
+                biometricSeed.UpdatedAt = now;
+                await db.BiometricProfiles.AddAsync(biometricSeed, cancellationToken);
+            }
+            else
+            {
+                ApplyBiometricSeed(biometricSeed, biometric);
+                biometric.UpdatedAt = now;
+            }
+
+            var preferenceSeed = CreateDemoUserPreference();
+            var preference = await db.UserPreferences
+                .FirstOrDefaultAsync(p => p.UserId == DemoUserId, cancellationToken);
+            if (preference is null)
+            {
+                preferenceSeed.CreatedAt = now;
+                preferenceSeed.UpdatedAt = now;
+                await db.UserPreferences.AddAsync(preferenceSeed, cancellationToken);
+            }
+            else
+            {
+                ApplyPreferenceSeed(preferenceSeed, preference);
+                preference.UpdatedAt = now;
+            }
+
+            var aiSeed = CreateDemoAIContextProfile(now);
+            var aiContext = await db.AIContextProfiles
+                .FirstOrDefaultAsync(a => a.UserId == DemoUserId, cancellationToken);
+            if (aiContext is null)
+            {
+                aiSeed.CreatedAt = now;
+                aiSeed.UpdatedAt = now;
+                await db.AIContextProfiles.AddAsync(aiSeed, cancellationToken);
+            }
+            else
+            {
+                ApplyAIContextSeed(aiSeed, aiContext);
+                aiContext.UpdatedAt = now;
+            }
+
+            var achievementSeeds = GetDemoUserAchievements(now);
+            var achievementIds = achievementSeeds.Select(a => a.AchievementId).ToList();
+            var existingAchievementIds = await db.UserAchievements
+                .Where(ua => ua.UserId == DemoUserId && achievementIds.Contains(ua.AchievementId))
+                .Select(ua => ua.AchievementId)
+                .ToListAsync(cancellationToken);
+
+            foreach (var seed in achievementSeeds.Where(a => !existingAchievementIds.Contains(a.AchievementId)))
+            {
+                seed.CreatedAt = now;
+                seed.UpdatedAt = now;
+                await db.UserAchievements.AddAsync(seed, cancellationToken);
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        private static void ApplyGamificationSeed(GamificationProfile seed, GamificationProfile target)
+        {
+            target.CurrentLevel = seed.CurrentLevel;
+            target.CurrentXP = seed.CurrentXP;
+            target.CurrentStreak = seed.CurrentStreak;
+            target.LongestStreak = seed.LongestStreak;
+            target.SyncCoins = seed.SyncCoins;
+            target.AchievementPoints = seed.AchievementPoints;
+            target.ConsecutivePerfectDays = seed.ConsecutivePerfectDays;
+        }
+
+        private static void ApplyBiometricSeed(BiometricProfile seed, BiometricProfile target)
+        {
+            target.Gender = seed.Gender;
+            target.DateOfBirth = seed.DateOfBirth;
+            target.HeightCm = seed.HeightCm;
+            target.CurrentWeightKg = seed.CurrentWeightKg;
+            target.TargetWeightKg = seed.TargetWeightKg;
+            target.CurrentBodyFatPercentage = seed.CurrentBodyFatPercentage;
+            target.GoalBodyFatPercentage = seed.GoalBodyFatPercentage;
+            target.MuscleMassKg = seed.MuscleMassKg;
+            target.FitnessGoal = seed.FitnessGoal;
+            target.ActivityLevel = seed.ActivityLevel;
+            target.FitnessExperienceLevel = seed.FitnessExperienceLevel;
+            target.WorkoutLocationPreference = seed.WorkoutLocationPreference;
+            target.BaseTDEE = seed.BaseTDEE;
+            target.BMR = seed.BMR;
+            target.DailyProteinTargetGram = seed.DailyProteinTargetGram;
+            target.DailyCarbTargetGram = seed.DailyCarbTargetGram;
+            target.DailyFatTargetGram = seed.DailyFatTargetGram;
+            target.Injuries = seed.Injuries;
+            target.Medications = seed.Medications;
+        }
+
+        private static void ApplyPreferenceSeed(UserPreference seed, UserPreference target)
+        {
+            target.Allergies = seed.Allergies;
+            target.FavoriteFoods = seed.FavoriteFoods;
+            target.DislikedFoods = seed.DislikedFoods;
+            target.AgentPersona = seed.AgentPersona;
+            target.MotivationStyle = seed.MotivationStyle;
+            target.AutoOrderEnabled = seed.AutoOrderEnabled;
+            target.MaxAutoOrderLimitDaily = seed.MaxAutoOrderLimitDaily;
+            target.MaxAutoOrderLimitPerOrder = seed.MaxAutoOrderLimitPerOrder;
+            target.DataSharingConsent = seed.DataSharingConsent;
+            target.MarketingConsent = seed.MarketingConsent;
+            target.SmartPushEnabled = seed.SmartPushEnabled;
+            target.AllowAiGeneratedNotification = seed.AllowAiGeneratedNotification;
+            target.PreferredReminderTime = seed.PreferredReminderTime;
+        }
+
+        private static void ApplyAIContextSeed(AIContextProfile seed, AIContextProfile target)
+        {
+            target.AdherenceScore = seed.AdherenceScore;
+            target.BurnoutRiskScore = seed.BurnoutRiskScore;
+            target.ChurnRiskScore = seed.ChurnRiskScore;
+            target.MotivationScore = seed.MotivationScore;
+            target.RecoveryScore = seed.RecoveryScore;
+            target.NutritionComplianceScore = seed.NutritionComplianceScore;
+            target.WorkoutComplianceScore = seed.WorkoutComplianceScore;
+            target.PeakEnergyTimeWindow = seed.PeakEnergyTimeWindow;
+            target.PreferredInterventionStyle = seed.PreferredInterventionStyle;
+            target.LastWorkoutSkippedAt = seed.LastWorkoutSkippedAt;
+            target.LastCheatMealAt = seed.LastCheatMealAt;
+            target.CurrentMood = seed.CurrentMood;
+            target.AIConfidenceScore = seed.AIConfidenceScore;
+            target.LastReplanAt = seed.LastReplanAt;
         }
     }
 }

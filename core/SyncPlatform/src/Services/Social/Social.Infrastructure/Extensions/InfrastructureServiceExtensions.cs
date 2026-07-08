@@ -33,16 +33,21 @@ public static class InfrastructureServiceExtensions
 
         var awsLocation = configuration.GetSection(AwsLocationOptions.SectionName).Get<AwsLocationOptions>()
             ?? new AwsLocationOptions();
-        if (awsLocation.IsConfigured)
+        if (awsLocation.IsConfigured || awsLocation.IsPlacesConfigured)
         {
             services.AddSingleton<IAmazonLocationService>(_ =>
                 AwsLocationChallengeRouteCalculator.CreateClient(awsLocation));
+        }
+
+        if (awsLocation.IsConfigured)
             services.AddScoped<IChallengeRouteCalculator, AwsLocationChallengeRouteCalculator>();
-        }
         else
-        {
             services.AddScoped<IChallengeRouteCalculator, HaversineChallengeRouteCalculator>();
-        }
+
+        if (awsLocation.IsPlacesConfigured || awsLocation.IsConfigured)
+            services.AddSingleton<IPlaceIndexClient, AwsPlaceIndexClient>();
+        else
+            services.AddSingleton<IPlaceIndexClient, NullPlaceIndexClient>();
 
         services.AddSingleton<IStorageService, S3StorageService>();
 

@@ -22,5 +22,16 @@ public sealed class AwsLocationOptions
     /// <summary>Grab supports Motorcycle/Scooter in Southeast Asia; Esri uses Car/Truck/Walking/Bicycle.</summary>
     public string DataProvider { get; set; } = "Esri";
 
+    /// <summary>AWS Location Place Index resource name for geocoding.</summary>
+    public string PlaceIndexName { get; set; } = string.Empty;
+
+    /// <summary>Named map resource for MapLibre style descriptor (e.g. sync-map).</summary>
+    public string MapName { get; set; } = "sync-map";
+
+    /// <summary>v2 Esri style when MapName is empty: Standard, Hybrid, Satellite, Monochrome.</summary>
+    public string MapStyle { get; set; } = "Hybrid";
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(RouteCalculatorName);
+
+    public bool IsPlacesConfigured => !string.IsNullOrWhiteSpace(PlaceIndexName);
 }

@@ -72,6 +72,26 @@ class AppConfig {
 
   static const bool isProduction = bool.fromEnvironment('dart.vm.product');
 
+  /// AI chat API. Mặc định qua Gateway (`/api/v1/ai/chat` → sync-agent-service :8088).
+  /// Bỏ qua Gateway khi debug: `--dart-define=AI_BASE_URL=http://<pc-lan-ip>:8088`
+  static String get aiBaseUrl {
+    const fromEnv = String.fromEnvironment('AI_BASE_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv.replaceAll(RegExp(r'/$'), '');
+    return baseUrl;
+  }
+
+  /// `true` khi gọi thẳng sync-agent-service, không qua Gateway.
+  static bool get aiUsesDirectService =>
+      const String.fromEnvironment('AI_BASE_URL', defaultValue: '').isNotEmpty;
+
+  static String get aiChatPath =>
+      aiUsesDirectService ? '/ai/chat' : '/v1/ai/chat';
+
+  static String get aiChatConfirmPath =>
+      aiUsesDirectService ? '/ai/chat/confirm' : '/v1/ai/chat/confirm';
+
+  static String get aiChatUrl => '$aiBaseUrl$aiChatPath';
+
   /// Web OAuth 2.0 client (Google Cloud Console → **Web application**).
   /// Used as [googleServerClientId] on Android/iOS so Google returns an ID token for IAM.
   static const String defaultGoogleWebClientId =

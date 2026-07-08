@@ -13,5 +13,8 @@ public interface IPersonalizedRoadmapService
         Guid? userId = null,
         CancellationToken cancellationToken = default);
     Task<PersonalizedRoadmapDto> UpdateAsync(Guid id, UpdatePersonalizedRoadmapDto dto, CancellationToken cancellationToken = default);
+    Task<PersonalizedRoadmapDto?> GetActiveByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<PersonalizedRoadmapDto> PatchForAiAsync(Guid id, InternalPatchPersonalizedRoadmapDto dto, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<PersonalizedRoadmapDto> BootstrapAuditRoadmapAsync(Guid userId, CancellationToken cancellationToken = default);
 }

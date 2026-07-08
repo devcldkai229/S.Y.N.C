@@ -12,6 +12,10 @@
     "BaseUrl": "http://localhost:5106",
     "InternalApiKey": "dev_internal_api_key_sync_platform"
   },
+  "RoadmapService": {
+    "BaseUrl": "http://localhost:5118",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
   },
@@ -32,6 +36,13 @@
   },
   "Email": {
     "VerificationBaseUrl": "http://localhost:5288",
+    "Ses": {
+      "_comment": "Production: set Enabled=true and verify FromEmail/domain in AWS SES (ap-southeast-1). Takes priority over SMTP.",
+      "Enabled": false,
+      "FromEmail": "noreply@sync.vn",
+      "FromName": "Sync Lifestyle",
+      "ConfigurationSetName": ""
+    },
     "Smtp": {
       "Enabled": true,
       "Host": "smtp.gmail.com",
