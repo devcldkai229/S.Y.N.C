@@ -114,7 +114,13 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                             return ListTile(
                               title: const Text('Không thấy? Tạo món mới'),
                               trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                              onTap: () => context.push(AppRoutes.nutritionCreateFood),
+                              onTap: () async {
+                                final created = await context
+                                    .push<bool>(AppRoutes.nutritionCreateFood);
+                                if (created == true) {
+                                  _search(query: _controller.text);
+                                }
+                              },
                             );
                           }
                           final food = _items[index];

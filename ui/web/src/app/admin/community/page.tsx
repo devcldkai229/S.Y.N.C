@@ -121,13 +121,14 @@ function ChallengesTab() {
   const [f, setF] = useState({
     title: "", description: "", startDate: "", endDate: "",
     goalType: "TotalWorkouts" as ChallengeGoalType, targetValue: 0,
+    pointRewards: 0, gifts: "",
   });
 
   const challenges = data?.items ?? [];
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((p) => ({ ...p, [k]: v }));
 
   const resetForm = () => {
-    setF({ title: "", description: "", startDate: "", endDate: "", goalType: "TotalWorkouts", targetValue: 0 });
+    setF({ title: "", description: "", startDate: "", endDate: "", goalType: "TotalWorkouts", targetValue: 0, pointRewards: 0, gifts: "" });
     setLocation(null);
   };
 
@@ -147,6 +148,8 @@ function ChallengesTab() {
         endDate: new Date(f.endDate).toISOString(),
         goalType: f.goalType,
         targetValue: f.targetValue,
+        pointRewards: f.pointRewards > 0 ? f.pointRewards : undefined,
+        gifts: f.gifts.split(",").map((g) => g.trim()).filter(Boolean),
         address: location.address,
         latitude: location.latitude,
         longitude: location.longitude,
@@ -172,8 +175,9 @@ function ChallengesTab() {
       cell: ({ row }) => {
         const s = row.original.status;
         const cls = s === "Active" ? "bg-green-100 text-green-800" :
+                    s === "InProgress" ? "bg-amber-100 text-amber-800" :
                     s === "Completed" ? "bg-gray-100 text-gray-800" :
-                    s === "Upcoming" ? "bg-blue-100 text-blue-800" : "bg-muted";
+                    s === "Upcoming" ? "bg-blue-100 text-blue-800" : "bg-muted text-muted-foreground";
         return <Badge className={`text-[10px] ${cls} hover:${cls}`}>{s}</Badge>;
       }
     },
@@ -273,6 +277,14 @@ function ChallengesTab() {
                   <Label>Giá trị</Label>
                   <Input type="number" step="0.01" value={f.targetValue} onChange={(e) => set("targetValue", Number(e.target.value))} />
                 </div>
+                <div className="space-y-1">
+                  <Label>Điểm thưởng</Label>
+                  <Input type="number" step="1" min="0" value={f.pointRewards} onChange={(e) => set("pointRewards", Number(e.target.value))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Quà tặng</Label>
+                  <Input placeholder="Áo thun, Bình nước..." value={f.gifts} onChange={(e) => set("gifts", e.target.value)} />
+                </div>
               </div>
               <ChallengeLocationPicker value={location} onChange={setLocation} />
               <div className="flex justify-end pt-2">
@@ -292,8 +304,9 @@ function ChallengesTab() {
             <SelectTrigger className="w-40 h-8 text-sm"><SelectValue placeholder="Trạng thái" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="Upcoming">Sắp tới (Upcoming)</SelectItem>
-              <SelectItem value="Active">Đang chạy (Active)</SelectItem>
+              <SelectItem value="Active">Mở đăng ký (Active)</SelectItem>
+              <SelectItem value="Upcoming">Sắp diễn ra (Upcoming)</SelectItem>
+              <SelectItem value="InProgress">Đang diễn ra (InProgress)</SelectItem>
               <SelectItem value="Completed">Đã kết thúc (Completed)</SelectItem>
             </SelectContent>
           </Select>

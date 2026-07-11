@@ -496,19 +496,6 @@ class _UnlockedSection extends StatelessWidget {
                   height: 1.4,
                 ),
               ),
-              if (item.xpReward > 0 || item.coinReward > 0) ...[
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (item.xpReward > 0)
-                      _RewardPill(label: '+${item.xpReward} XP', color: AchievementsTheme.chipXpText),
-                    if (item.xpReward > 0 && item.coinReward > 0) const SizedBox(width: 10),
-                    if (item.coinReward > 0)
-                      _RewardPill(label: '+${item.coinReward} coins', color: AchievementsTheme.chipCoinText),
-                  ],
-                ),
-              ],
             ],
           ),
         ),
@@ -557,28 +544,6 @@ class _BadgeTile extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _RewardPill extends StatelessWidget {
-  const _RewardPill({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color),
       ),
     );
   }

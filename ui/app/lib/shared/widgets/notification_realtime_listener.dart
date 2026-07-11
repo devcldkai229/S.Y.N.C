@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/notifications/notification_deep_link.dart';
+import 'package:sync_app/core/notifications/notification_detail_sheet.dart';
 import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
 import 'package:sync_app/core/notifications/notification_realtime_service.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
@@ -52,7 +53,10 @@ class _NotificationRealtimeListenerState extends State<NotificationRealtimeListe
       action: SnackBarAction(
         label: 'Xem',
         textColor: AppColors.brightGreen,
-        onPressed: () => NotificationDeepLink.open(context, notification),
+        onPressed: () {
+          final opened = NotificationDeepLink.open(context, notification);
+          if (!opened) showNotificationDetailSheet(context, notification);
+        },
       ),
     );
   }
