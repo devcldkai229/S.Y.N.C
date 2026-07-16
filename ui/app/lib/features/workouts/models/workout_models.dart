@@ -341,6 +341,36 @@ class ExerciseCatalogItem {
   }
 }
 
+/// An exercise suggested by the AIAgent service, carrying the catalog item plus
+/// AI-assigned sets/reps/rest/notes. Reuses [ExerciseCatalogItem.fromJson] since
+/// the AI endpoint returns the same catalog fields.
+class AiSuggestedExercise {
+  AiSuggestedExercise({
+    required this.item,
+    required this.sets,
+    required this.reps,
+    required this.restSeconds,
+    required this.notes,
+  });
+
+  final ExerciseCatalogItem item;
+  final int sets;
+  final int reps;
+  final int restSeconds;
+  final String notes;
+
+  factory AiSuggestedExercise.fromJson(Map<String, dynamic> json) {
+    return AiSuggestedExercise(
+      item: ExerciseCatalogItem.fromJson(json),
+      sets: (json['sets'] is num) ? (json['sets'] as num).toInt() : 3,
+      reps: (json['reps'] is num) ? (json['reps'] as num).toInt() : 10,
+      restSeconds:
+          (json['restSeconds'] is num) ? (json['restSeconds'] as num).toInt() : 60,
+      notes: (json['notes'] ?? '').toString(),
+    );
+  }
+}
+
 class ExerciseMotionAsset {
   ExerciseMotionAsset({
     required this.id,
