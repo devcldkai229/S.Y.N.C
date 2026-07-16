@@ -18,6 +18,9 @@ public class WorkoutExecutionLogDto
     public string? SessionFeedback { get; set; }
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
+
+    /// <summary>Set-level logs for this execution (populated for AI internal range queries).</summary>
+    public List<ExerciseSetLogDto> Sets { get; set; } = [];
 }
 
 public class CreateWorkoutExecutionLogDto

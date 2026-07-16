@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Gateway.API.Transforms;
 using Libs.Auth.Constants;
@@ -8,7 +8,6 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddSharedConfiguration(builder.Environment);
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
@@ -19,7 +18,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // JWT validated once at the edge; Bearer is forwarded to downstream services (defense in depth).
-// X-User-* headers are injected for correlation/logging — not for authorization.
+// X-User-* headers are injected for correlation/logging â€” not for authorization.
 builder.Services.AddSyncJwtAuthentication(
     builder.Configuration,
     builder.Environment,

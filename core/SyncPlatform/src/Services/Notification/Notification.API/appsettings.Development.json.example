@@ -1,3 +1,61 @@
 {
-  "$schema": "https://json.schemastore.org/appsettings.json"
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1.",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam-dev",
+    "Audience": "sync-lifestyle-clients-dev",
+    "SecretKey": "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
+  },
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
+  "ConnectionStrings": {
+    "NotificationDatabase": "mongodb://localhost:27018",
+    "SmartPushDatabase": "Host=localhost;Port=5434;Database=sync_smart_push;Username=postgres;Password=12345;Include Error Detail=true"
+  },
+  "MongoDB": {
+    "NotificationDatabaseName": "sync_notification"
+  },
+  "SmartPush": {
+    "Enabled": true,
+    "ScanIntervalSeconds": 45,
+    "MaxPerDay": 2,
+    "MinGapHours": 5,
+    "WindowStartLocal": "06:00",
+    "WindowEndLocal": "20:00",
+    "JitterMinutes": 12,
+    "Model": "gpt-4o-mini",
+    "TriggerCooldownDays": {
+      "StreakProtection": 1,
+      "GentleCheckIn": 3,
+      "ProgressCelebrate": 1
+    },
+    "GenerationCacheTtlMinutes": 240,
+    "ClaimBatchSize": 200,
+    "UseAiGeneration": true
+  },
+  "OpenAI": {
+    "BaseUrl": "https://api.openai.com/v1",
+    "ApiKey": "",
+    "Model": "gpt-4o-mini"
+  },
+  "IamService": {
+    "BaseUrl": "http://localhost:5288",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
+  "RoadmapService": {
+    "BaseUrl": "http://localhost:5118",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
+  "NutritionService": {
+    "BaseUrl": "http://localhost:5122",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  }
 }

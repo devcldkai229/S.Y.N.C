@@ -12,4 +12,5 @@ if (-not (Test-Path $definesFile)) {
 }
 
 flutter run -d chrome `
+  --web-port=53521 `
   --dart-define-from-file=$definesFile

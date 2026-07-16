@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 /// Converts raw AI/ML scores into user-friendly Vietnamese bands (never show raw numbers in UI).
 abstract final class AiRoadmapDisplayHelpers {
+  /// Human-readable session day, e.g. "Hôm nay", "Ngày mai", "T2, 14/07".
+  /// Returns empty when [date] is missing/epoch (API parse fallback).
+  static String formatSessionDate(DateTime date, {required Locale locale}) {
+    if (date.millisecondsSinceEpoch <= 0) return '';
+    final local = date.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(local.year, local.month, local.day);
+    final diff = day.difference(today).inDays;
+    final isVi = locale.languageCode == 'vi';
+    if (diff == 0) return isVi ? 'Hôm nay' : 'Today';
+    if (diff == 1) return isVi ? 'Ngày mai' : 'Tomorrow';
+    if (diff == -1) return isVi ? 'Hôm qua' : 'Yesterday';
+    return DateFormat('EEE, dd/MM', locale.toString()).format(local);
+  }
+
   static String fitnessGoalVi(String goal) {
     final g = goal.toLowerCase().replaceAll(' ', '');
     if (g.contains('fatloss') || g.contains('fat')) return 'Giảm mỡ';

@@ -1,4 +1,5 @@
 using Libs.Shared.Enums;
+using Libs.Shared.Time;
 using Nutrition.Application.DTOs;
 using Nutrition.Application.Exceptions;
 using Nutrition.Application.Helpers;
@@ -40,7 +41,7 @@ public class MealLogService : IMealLogService
         {
             UserId = userId,
             MealType = dto.MealType,
-            LoggedAt = dto.LoggedAt ?? DateTimeOffset.UtcNow,
+            LoggedAt = ResolveLoggedAt(dto),
             Source = MealLogSource.Manual,
             PhotoUrl = dto.PhotoUrl,
             Notes = dto.Notes,
@@ -50,7 +51,7 @@ public class MealLogService : IMealLogService
         NutritionMacroCalculator.ApplyTotals(log);
 
         await _mealLogRepository.CreateAsync(log, cancellationToken);
-        var logDate = DateOnly.FromDateTime(log.LoggedAt.UtcDateTime);
+        var logDate = UserLocalTime.ToLocalDate(log.LoggedAt, null);
         await _dailySummaryService.RecomputeForDateAsync(userId, logDate, cancellationToken);
         await _realtimePublisher.PublishNutritionUpdatedAsync(userId, logDate, cancellationToken);
 
@@ -64,7 +65,7 @@ public class MealLogService : IMealLogService
         CancellationToken cancellationToken = default)
     {
         var log = await GetOwnedLogAsync(userId, id, cancellationToken);
-        var oldDate = DateOnly.FromDateTime(log.LoggedAt.UtcDateTime);
+        var oldDate = UserLocalTime.ToLocalDate(log.LoggedAt, null);
 
         if (dto.Items.Count == 0)
             throw new BadRequestException("At least one meal item is required.");
@@ -78,7 +79,7 @@ public class MealLogService : IMealLogService
 
         await _mealLogRepository.UpdateAsync(id, log, cancellationToken);
 
-        var newDate = DateOnly.FromDateTime(log.LoggedAt.UtcDateTime);
+        var newDate = UserLocalTime.ToLocalDate(log.LoggedAt, null);
         await _dailySummaryService.RecomputeForDateAsync(userId, oldDate, cancellationToken);
         if (newDate != oldDate)
             await _dailySummaryService.RecomputeForDateAsync(userId, newDate, cancellationToken);
@@ -91,7 +92,7 @@ public class MealLogService : IMealLogService
     public async Task DeleteAsync(Guid userId, Guid id, CancellationToken cancellationToken = default)
     {
         var log = await GetOwnedLogAsync(userId, id, cancellationToken);
-        var date = DateOnly.FromDateTime(log.LoggedAt.UtcDateTime);
+        var date = UserLocalTime.ToLocalDate(log.LoggedAt, null);
         await _mealLogRepository.DeleteAsync(id, cancellationToken);
         await _dailySummaryService.RecomputeForDateAsync(userId, date, cancellationToken);
         await _realtimePublisher.PublishNutritionUpdatedAsync(userId, date, cancellationToken);
@@ -167,18 +168,24 @@ public class MealLogService : IMealLogService
     private static (DateTimeOffset From, DateTimeOffset To) ResolveDateRange(MealLogListRequest request)
     {
         if (request.Date is DateOnly singleDate)
-        {
-            var from = new DateTimeOffset(singleDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-            return (from, from.AddDays(1));
-        }
+            return UserLocalTime.DayRange(singleDate, null);
 
-        var fromDate = request.From ?? DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
+        var fromDate = request.From ?? UserLocalTime.TodayDate(null);
         var toDate = request.To ?? fromDate;
         if (toDate < fromDate)
             throw new BadRequestException("To date must be on or after From date.");
 
-        var rangeFrom = new DateTimeOffset(fromDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
-        var rangeTo = new DateTimeOffset(toDate.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).AddDays(1);
+        var rangeFrom = UserLocalTime.DayRange(fromDate, null).Start;
+        var rangeTo = UserLocalTime.DayRange(toDate, null).EndExclusive;
         return (rangeFrom, rangeTo);
+    }
+
+    private static DateTimeOffset ResolveLoggedAt(CreateMealLogDto dto)
+    {
+        if (dto.LoggedAt is DateTimeOffset loggedAt)
+            return loggedAt;
+        if (dto.LogDate is DateOnly logDate)
+            return UserLocalTime.NoonOnDate(logDate, null);
+        return DateTimeOffset.UtcNow;
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Libs.Shared.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Payment.Domain.Enums;
@@ -9,8 +10,8 @@ namespace Payment.Infrastructure.Persistence.Seed;
 /// <summary>Stable subscription plan IDs and dev seed data for Payment service.</summary>
 public static class PaymentSeedData
 {
-    // Must match IamSeedData.DemoUserId
-    public static readonly Guid DemoUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    /// <summary>Primary demo wallet owner — SyncSeedUsers.User02 (Trần Quốc Bảo).</summary>
+    public static readonly Guid DemoUserId = SyncSeedUsers.User02;
 
     public static readonly Guid FreePlanId = Guid.Parse("f1000001-0000-0000-0000-000000000001");
     public static readonly Guid PremiumPlanId = Guid.Parse("f1000002-0000-0000-0000-000000000002");

@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Iam.API.Exceptions;
 using Iam.API.Middleware;
 using Iam.API.Services;
@@ -15,7 +15,6 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddSharedConfiguration(builder.Environment);
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

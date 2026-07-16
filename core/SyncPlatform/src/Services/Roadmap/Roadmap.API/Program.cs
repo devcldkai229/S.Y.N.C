@@ -1,26 +1,27 @@
+﻿using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
 using Libs.Storage.Extensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using Roadmap.API.Hubs;
+using Roadmap.API.Middleware;
 using Roadmap.API.Services;
 using Roadmap.Application.Common;
 using Roadmap.Application.Extensions;
-using Roadmap.API.Middleware;
+using Roadmap.Application.Services;
 using Roadmap.Infrastructure.Extensions;
 using Roadmap.Infrastructure.Persistence;
 using Roadmap.Infrastructure.Persistence.Seed;
-using System.Text.Json.Serialization;
 
 BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Layer shared configuration (Jwt, baseline Logging, AllowedHosts) from configs/appsettings.Shared*.json
-builder.Configuration.AddSharedConfiguration(builder.Environment);
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
@@ -38,8 +39,33 @@ builder.Services.AddRoadmapInfrastructure(builder.Configuration);
 builder.Services.AddS3ObjectStorage(builder.Configuration);
 builder.Services.AddSingleton<IWorkoutMediaStorage, S3WorkoutMediaStorage>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyHeader()
+            .AllowAnyMethod()
+            .SetIsOriginAllowed(_ => true)
+            .AllowCredentials());
+});
+
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IRoadmapRealtimePublisher, SignalRRoadmapRealtimePublisher>();
+
 // JWT authentication + authorization policies + ICurrentUserContext (shared lib)
 builder.Services.AddSyncJwtAuthentication(builder.Configuration, builder.Environment);
+builder.Services.PostConfigure<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    var previous = options.Events.OnMessageReceived;
+    options.Events.OnMessageReceived = context =>
+    {
+        var accessToken = context.Request.Query["access_token"];
+        var path = context.HttpContext.Request.Path;
+        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments(RoadmapHub.HubPath))
+            context.Token = accessToken;
+
+        return previous is null ? Task.CompletedTask : previous(context);
+    };
+});
 builder.Services.AddSyncHealthChecks();
 
 builder.Services.AddControllers()
@@ -79,13 +105,15 @@ else
 }
 
 app.UseMiddleware<InternalApiKeyMiddleware>();
+app.UseCors();
 app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
-await RoadmapSeedData.RoadmapMongoSeeder.SeedAsync(mongoDb);
+await RoadmapSeedData.RoadmapMongoSeeder.SeedAsync(mongoDb, app.Configuration);
 
 app.MapSyncHealthChecks();
+app.MapHub<RoadmapHub>(RoadmapHub.HubPath);
 app.MapControllers();
 
 app.Run();

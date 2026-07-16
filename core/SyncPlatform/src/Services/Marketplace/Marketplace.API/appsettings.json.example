@@ -1,6 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1.",
   "InternalApiKey": "dev_internal_api_key_sync_platform",
   "ConnectionStrings": {
     "MarketplaceDatabase": "mongodb://localhost:27018"
@@ -15,5 +14,29 @@
   "OrderService": {
     "BaseUrl": "http://localhost:5123",
     "InternalApiKey": "dev_internal_api_key_sync_platform"
-  }
+  },
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-pub-assets",
+    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
+    "MaxFileSizeMb": 10
+  },
+  "AllowedHosts": "*",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1."
 }

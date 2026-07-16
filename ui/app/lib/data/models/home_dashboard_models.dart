@@ -27,6 +27,10 @@ class HomeDashboardData {
     this.currentLevel = 1,
     this.currentXp = 0,
     this.currentStreak = 0,
+    this.hasActiveRoadmap = false,
+    this.featuredCustomWorkoutId,
+    this.featuredCustomWorkoutName,
+    this.featuredCustomWorkoutCoverUrl,
   });
 
   final String greetingName;
@@ -52,6 +56,10 @@ class HomeDashboardData {
   final int currentLevel;
   final int currentXp;
   final int currentStreak;
+  final bool hasActiveRoadmap;
+  final String? featuredCustomWorkoutId;
+  final String? featuredCustomWorkoutName;
+  final String? featuredCustomWorkoutCoverUrl;
 
   int get xpInLevel => currentXp % HomeDisplayHelpers.xpPerLevel;
 
@@ -64,6 +72,7 @@ class HomeDashboardData {
     PersonalizedRoadmap? roadmap,
     List<RoadmapSession> sessions = const [],
     RecoveryProfile? recovery,
+    UserCustomWorkout? featuredCustomWorkout,
   }) {
     final name = settings.basic.fullName.split(' ').first;
     final phase = HomeDisplayHelpers.phaseVi(roadmap?.currentPhase);
@@ -151,6 +160,10 @@ class HomeDashboardData {
       currentLevel: gamification?.currentLevel ?? 1,
       currentXp: gamification?.currentXp ?? 0,
       currentStreak: gamification?.currentStreak ?? 0,
+      hasActiveRoadmap: roadmap != null,
+      featuredCustomWorkoutId: featuredCustomWorkout?.id,
+      featuredCustomWorkoutName: featuredCustomWorkout?.workoutName,
+      featuredCustomWorkoutCoverUrl: featuredCustomWorkout?.coverRoadmapImageUrl,
     );
   }
 

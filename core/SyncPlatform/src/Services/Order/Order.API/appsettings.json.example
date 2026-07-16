@@ -1,7 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1.",
-
   "InternalApiKey": "dev_internal_api_key_sync_platform",
   "ConnectionStrings": {
     "OrderDatabase": "Host=localhost;Port=5434;Database=sync_order;Username=postgres;Password=postgres",
@@ -13,25 +11,20 @@
     "LocationPollIntervalSeconds": 12,
     "SimulateDeliveryProgress": false,
     "SandboxSimulationIntervalSeconds": 4,
-    "PublicBaseUrl": "https://your-ngrok-subdomain.ngrok-free.dev"
+    "PublicBaseUrl": "https://frictional-delisa-squeakingly.ngrok-free.dev"
   },
   "AwsLocation": {
     "Region": "ap-southeast-1",
     "PlaceIndexName": "sync-place-index",
-    "MapName": "sync-map",
-    "MapStyle": "Hybrid",
-    "_note": "Place Index for checkout address search/reverse. MapName aligns with Flutter (dart_defines.aws.json) and web admin (NEXT_PUBLIC_AWS_MAP_NAME)."
+    "Profile": "default"
   },
   "Ahamove": {
-    "_comment": "Real sandbox API: Enabled=true, UseSandboxSimulation=false. Put ApiKey/Mobile/WebhookApiKey in user-secrets or appsettings.Development.json.",
     "Enabled": true,
     "UseSandboxSimulation": false,
-    "ApiKey": "your-ahamove-sandbox-api-key",
+    "ApiKey": "ab37c1b3e4d4341b953f06493b4d92c09818e602",
+    "Mobile": "84978504380",
     "BaseUrl": "https://partner-apistg.ahamove.com/v3",
-    "Mobile": "84xxxxxxxxx",
-    "ServiceId": "SGN-BIKE",
-    "PaymentMethod": "CASH",
-    "WebhookApiKey": "your-webhook-secret"
+    "ServiceId": "SGN-BIKE"
   },
   "MarketplaceService": {
     "BaseUrl": "http://localhost:5119",
@@ -47,5 +40,20 @@
   },
   "NutritionService": {
     "BaseUrl": "http://localhost:5122"
-  }
+  },
+  "AllowedHosts": "*",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1."
 }

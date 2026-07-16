@@ -14,13 +14,16 @@ public class InternalOrderAiController : ControllerBase
 {
     private readonly IOrderService _orderService;
     private readonly IDeliveryTrackingService _trackingService;
+    private readonly ICheckoutSessionService _checkout;
 
     public InternalOrderAiController(
         IOrderService orderService,
-        IDeliveryTrackingService trackingService)
+        IDeliveryTrackingService trackingService,
+        ICheckoutSessionService checkout)
     {
         _orderService = orderService;
         _trackingService = trackingService;
+        _checkout = checkout;
     }
 
     [HttpPost]
@@ -31,6 +34,35 @@ public class InternalOrderAiController : ControllerBase
         dto.IsAiInitiated = true;
         var result = await _orderService.PlaceOrderAsync(dto.UserId, dto, cancellationToken);
         return Ok(ApiResponse<PlaceOrderResultDto>.SuccessResponse(result, "Order placed successfully."));
+    }
+
+    [HttpPost("quote")]
+    public async Task<ActionResult<ApiResponse<QuoteOrderResultDto>>> Quote(
+        [FromBody] QuoteOrderRequestDto dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await _orderService.QuoteOrderAsync(dto, cancellationToken);
+        return Ok(ApiResponse<QuoteOrderResultDto>.SuccessResponse(result, "Quote calculated."));
+    }
+
+    [HttpGet("{orderId:guid}")]
+    public async Task<ActionResult<ApiResponse<OrderDetailDto>>> GetOrder(
+        Guid orderId,
+        [FromQuery] Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _orderService.GetOrderDetailForUserAsync(userId, orderId, cancellationToken);
+        return Ok(ApiResponse<OrderDetailDto>.SuccessResponse(result, "Order retrieved."));
+    }
+
+    [HttpGet("users/{userId:guid}/delivery-address")]
+    public async Task<ActionResult<ApiResponse<DeliveryAddressDto?>>> GetDeliveryAddress(
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var address = await _checkout.GetDeliveryAddressAsync(userId, cancellationToken);
+        return Ok(ApiResponse<DeliveryAddressDto?>.SuccessResponse(
+            address, address == null ? "No delivery address saved." : "Delivery address retrieved."));
     }
 
     [HttpGet("{orderId:guid}/tracking")]
@@ -61,6 +93,8 @@ public class InternalOrderAiController : ControllerBase
             }).ToList(),
             DeliveryAddress = previous.DeliveryAddress,
             RecipientPhone = previous.RecipientPhone,
+            RecipientName = previous.RecipientName,
+            PaymentMethod = CheckoutPaymentMethod.Deferred,
             ClientRequestKey = dto.IdempotencyKey,
             IdempotencyKey = dto.IdempotencyKey,
             IsAiInitiated = true,

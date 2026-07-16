@@ -9,6 +9,7 @@ import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/models/notification_models.dart';
 import 'package:sync_app/features/nutrition/services/nutrition_realtime_service.dart';
 import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
+import 'package:sync_app/features/workouts/services/roadmap_realtime_service.dart';
 import 'package:sync_app/shared/widgets/sync_snack_bar.dart';
 
 /// Starts SignalR and shows lightweight in-app toasts for social notifications.
@@ -29,6 +30,7 @@ class _NotificationRealtimeListenerState extends State<NotificationRealtimeListe
     super.initState();
     getIt<NotificationRealtimeService>().start();
     getIt<NutritionRealtimeService>().start();
+    getIt<RoadmapRealtimeService>().start();
     _sub = getIt<NotificationInboxNotifier>().incoming.listen(_showToast);
   }
 

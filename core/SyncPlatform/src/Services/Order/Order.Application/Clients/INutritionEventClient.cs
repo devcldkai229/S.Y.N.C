@@ -1,4 +1,4 @@
-using Contract.Events;
+using Libs.Shared.Events;
 
 namespace Order.Application.Clients;
 

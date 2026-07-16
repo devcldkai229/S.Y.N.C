@@ -1,14 +1,16 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.json (gitignored). YARP routes for local microservices.",
-
   "Logging": {
     "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning",
       "Yarp": "Warning"
     }
   },
   "Cors": {
-    "AllowedOrigins": [ "*" ]
+    "AllowedOrigins": [
+      "*"
+    ]
   },
   "RateLimiting": {
     "Enabled": false
@@ -28,20 +30,32 @@
           "Path": "/api/v1/iam/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/iam" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/iam"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
+      },
+      "iam-me-route": {
+        "ClusterId": "iam-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/me/{**catch-all}"
+        }
+      },
+      "iam-biometrics-route": {
+        "ClusterId": "iam-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/biometrics/{**catch-all}"
+        }
       },
       "iam-users-public-profile-route": {
         "ClusterId": "iam-cluster",
         "Match": {
           "Path": "/api/v1/users/{id}/public-profile"
-        }
-      },
-      "iam-users-search-route": {
-        "ClusterId": "iam-cluster",
-        "Match": {
-          "Path": "/api/v1/users/search"
         }
       },
       "roadmap-route": {
@@ -51,8 +65,26 @@
           "Path": "/api/v1/roadmap/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/roadmap" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/roadmap"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
+        ]
+      },
+      "exercise-media-route": {
+        "ClusterId": "exercise-cluster",
+        "Match": {
+          "Path": "/api/v1/exercise/exercises/media/{**catch-all}"
+        },
+        "Transforms": [
+          {
+            "PathRemovePrefix": "/api/v1/exercise"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
       },
       "exercise-route": {
@@ -62,8 +94,12 @@
           "Path": "/api/v1/exercise/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/exercise" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/exercise"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
       },
       "notifications-direct-route": {
@@ -80,8 +116,12 @@
           "Path": "/api/v1/notification/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/notification" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/notification"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
       },
       "social-route": {
@@ -122,25 +162,18 @@
           "Path": "/api/v1/users/me/challenges/{**catch-all}"
         }
       },
-      "payment-subscription-plans-public-route": {
-        "ClusterId": "payment-cluster",
-        "Match": {
-          "Path": "/api/v1/payment/payments/subscription-plans",
-          "Methods": [ "GET" ]
-        },
-        "Transforms": [
-          { "PathRemovePrefix": "/api/v1/payment" },
-          { "PathPrefix": "/api/v1" }
-        ]
-      },
       "payment-payos-webhook-route": {
         "ClusterId": "payment-cluster",
         "Match": {
           "Path": "/api/v1/payment/payments/payos/webhook"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/payment" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/payment"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
       },
       "payment-route": {
@@ -150,8 +183,12 @@
           "Path": "/api/v1/payment/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/payment" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/payment"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
       },
       "nutrition-route": {
@@ -161,8 +198,12 @@
           "Path": "/api/v1/nutrition/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/nutrition" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/nutrition"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
       },
       "marketplace-route": {
@@ -172,8 +213,12 @@
           "Path": "/api/v1/marketplace/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/marketplace" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/marketplace"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
       },
       "order-route": {
@@ -183,8 +228,12 @@
           "Path": "/api/v1/order/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/order" },
-          { "PathPrefix": "/api/v1" }
+          {
+            "PathRemovePrefix": "/api/v1/order"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
         ]
       },
       "order-ahamove-webhook-route": {
@@ -197,12 +246,6 @@
         "ClusterId": "order-cluster",
         "Match": {
           "Path": "/hubs/tracking/{**catch-all}"
-        }
-      },
-      "payment-momo-webhook-route": {
-        "ClusterId": "payment-cluster",
-        "Match": {
-          "Path": "/webhooks/momo"
         }
       },
       "media-route": {
@@ -218,12 +261,36 @@
           "Path": "/api/v1/ai/{**catch-all}"
         },
         "Transforms": [
-          { "PathRemovePrefix": "/api/v1/ai" },
-          { "PathPrefix": "/ai" }
+          {
+            "PathRemovePrefix": "/api/v1/ai"
+          },
+          {
+            "PathPrefix": "/ai"
+          }
         ]
       }
     },
     "Clusters": {
+      "ai-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HttpRequest": {
+          "ActivityTimeout": "00:05:00"
+        },
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/healthz"
+          }
+        },
+        "Destinations": {
+          "ai/primary": {
+            "Address": "http://localhost:8088"
+          }
+        }
+      },
       "iam-cluster": {
         "LoadBalancingPolicy": "RoundRobin",
         "HealthCheck": {
@@ -304,7 +371,9 @@
           }
         },
         "Destinations": {
-          "social/primary": { "Address": "http://localhost:5120" }
+          "social/primary": {
+            "Address": "http://localhost:5120"
+          }
         }
       },
       "payment-cluster": {
@@ -374,27 +443,16 @@
             "Address": "http://localhost:5123"
           }
         }
-      },
-      "ai-cluster": {
-        "LoadBalancingPolicy": "RoundRobin",
-        "HttpRequest": {
-          "ActivityTimeout": "00:05:00"
-        },
-        "HealthCheck": {
-          "Active": {
-            "Enabled": true,
-            "Interval": "00:00:30",
-            "Timeout": "00:00:10",
-            "Policy": "ConsecutiveFailures",
-            "Path": "/healthz"
-          }
-        },
-        "Destinations": {
-          "ai/primary": {
-            "Address": "http://localhost:8088"
-          }
-        }
       }
     }
-  }
+  },
+  "AllowedHosts": "*",
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1."
 }

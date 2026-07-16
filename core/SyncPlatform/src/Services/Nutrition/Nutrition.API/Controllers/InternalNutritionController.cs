@@ -1,3 +1,4 @@
+using Libs.Shared.Time;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Common;
@@ -30,11 +31,29 @@ public class InternalNutritionController : ControllerBase
     public async Task<ActionResult<ApiResponse<DailyNutritionSummaryDto>>> GetDailySummary(
         Guid userId,
         [FromQuery] DateOnly? date,
+        [FromQuery] string? timeZoneId,
         CancellationToken cancellationToken)
     {
-        var targetDate = date ?? DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
+        var targetDate = date ?? UserLocalTime.TodayDate(timeZoneId);
         var result = await _dailySummaryService.GetDailySummaryAsync(userId, targetDate, cancellationToken);
         return Ok(ApiResponse<DailyNutritionSummaryDto>.SuccessResponse(result, "Daily summary retrieved."));
+    }
+
+    [HttpGet("{userId:guid}/timeseries")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<NutritionTimeseriesBucketDto>>>> GetTimeseries(
+        Guid userId,
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
+        [FromQuery] string? granularity,
+        [FromQuery] string? timeZoneId,
+        CancellationToken cancellationToken)
+    {
+        var end = to ?? UserLocalTime.TodayDate(timeZoneId);
+        var start = from ?? end.AddDays(-13);
+        var result = await _dailySummaryService.GetTimeseriesAsync(
+            userId, start, end, granularity ?? "day", cancellationToken);
+        return Ok(ApiResponse<IReadOnlyList<NutritionTimeseriesBucketDto>>.SuccessResponse(
+            result, "Nutrition timeseries retrieved."));
     }
 
     [HttpPost("meal-logs")]

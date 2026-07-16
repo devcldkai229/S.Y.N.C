@@ -85,13 +85,13 @@ public class UserFollowController : ControllerBase
     /// <summary>Paginated list of users who follow <paramref name="userId"/>.</summary>
     [HttpGet("{userId:guid}/followers")]
     [AllowAnonymous]
-    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<UserFollowDto>>>> GetFollowers(
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<FollowListItemDto>>>> GetFollowers(
         Guid userId,
         [FromQuery] FollowListQuery query,
         CancellationToken cancellationToken)
     {
         var result = await _follows.GetFollowersAsync(userId, query, cancellationToken);
-        return Ok(PagedApiResponse<IReadOnlyList<UserFollowDto>>.SuccessPagedResponse(
+        return Ok(PagedApiResponse<IReadOnlyList<FollowListItemDto>>.SuccessPagedResponse(
             result.Items,
             result.Pagination,
             "Followers retrieved successfully."));
@@ -100,13 +100,13 @@ public class UserFollowController : ControllerBase
     /// <summary>Paginated list of users that <paramref name="userId"/> follows.</summary>
     [HttpGet("{userId:guid}/following")]
     [AllowAnonymous]
-    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<UserFollowDto>>>> GetFollowing(
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<FollowListItemDto>>>> GetFollowing(
         Guid userId,
         [FromQuery] FollowListQuery query,
         CancellationToken cancellationToken)
     {
         var result = await _follows.GetFollowingAsync(userId, query, cancellationToken);
-        return Ok(PagedApiResponse<IReadOnlyList<UserFollowDto>>.SuccessPagedResponse(
+        return Ok(PagedApiResponse<IReadOnlyList<FollowListItemDto>>.SuccessPagedResponse(
             result.Items,
             result.Pagination,
             "Following list retrieved successfully."));

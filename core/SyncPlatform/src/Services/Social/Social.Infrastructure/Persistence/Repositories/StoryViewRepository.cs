@@ -35,4 +35,23 @@ public class StoryViewRepository : IStoryViewRepository
             return false;
         }
     }
+
+    public async Task<HashSet<Guid>> GetViewedStoryIdsAsync(
+        Guid viewerId,
+        IReadOnlyList<Guid> storyIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (storyIds.Count == 0)
+            return [];
+
+        var filter = Builders<StoryView>.Filter.And(
+            Builders<StoryView>.Filter.Eq(x => x.ViewerId, viewerId),
+            Builders<StoryView>.Filter.In(x => x.StoryId, storyIds));
+
+        var viewed = await _collection.Find(filter)
+            .Project(x => x.StoryId)
+            .ToListAsync(cancellationToken);
+
+        return viewed.ToHashSet();
+    }
 }

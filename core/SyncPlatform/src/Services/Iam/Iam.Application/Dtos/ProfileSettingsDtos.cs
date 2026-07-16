@@ -47,7 +47,9 @@ public sealed record AccountPreferencesDto(
     decimal? MaxAutoOrderLimitDaily,
     decimal? MaxAutoOrderLimitPerOrder,
     bool DataSharingConsent,
-    bool MarketingConsent);
+    bool MarketingConsent,
+    bool SmartPushEnabled = false,
+    bool AllowAiGeneratedNotification = false);
 
 public sealed record ProfileSettingsResponse(
     Guid UserId,
@@ -95,4 +97,6 @@ public sealed record UpdateAccountPreferencesRequest(
     decimal? MaxAutoOrderLimitDaily,
     decimal? MaxAutoOrderLimitPerOrder,
     bool? DataSharingConsent,
-    bool? MarketingConsent);
+    bool? MarketingConsent,
+    bool? SmartPushEnabled = null,
+    bool? AllowAiGeneratedNotification = null);

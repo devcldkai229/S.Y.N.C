@@ -1,5 +1,6 @@
-using Contract.Events;
+using Libs.Shared.Events;
 using Libs.Shared.Enums;
+using Libs.Shared.Time;
 using Nutrition.Application.Helpers;
 using Nutrition.Domain.Enums;
 using Nutrition.Domain.Models;
@@ -55,7 +56,7 @@ public class OrderCompletedHandler : IOrderCompletedHandler
 
         NutritionMacroCalculator.ApplyTotals(log);
         await _mealLogRepository.CreateAsync(log, cancellationToken);
-        var logDate = DateOnly.FromDateTime(orderEvent.CompletedAt.UtcDateTime);
+        var logDate = UserLocalTime.ToLocalDate(orderEvent.CompletedAt, null);
         await _dailySummaryService.RecomputeForDateAsync(
             orderEvent.UserId,
             logDate,
@@ -65,7 +66,7 @@ public class OrderCompletedHandler : IOrderCompletedHandler
 
     private static MealType InferMealType(DateTimeOffset completedAt)
     {
-        var hour = completedAt.UtcDateTime.Hour;
+        var hour = TimeZoneInfo.ConvertTime(completedAt, UserLocalTime.ResolveTimeZone(null)).Hour;
         return hour switch
         {
             < 10 => MealType.Breakfast,

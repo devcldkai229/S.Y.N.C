@@ -19,7 +19,7 @@ public class InternalSmartPushService : IInternalSmartPushService
 
     public async Task<IReadOnlyList<DueSmartPushUserDto>> GetDueUsersAsync(DateTime utcNow, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Getting due smart push users for UTC time {UtcNow}", utcNow);
+        _logger.LogInformation("Getting due smart push users for UTC time {UtcNow} (legacy PreferredReminderTime scan)", utcNow);
 
         var users = await _repository.GetUsersForSmartPushAsync(cancellationToken);
         var dueUsers = new List<DueSmartPushUserDto>();
@@ -63,6 +63,29 @@ public class InternalSmartPushService : IInternalSmartPushService
         return dueUsers;
     }
 
+    public async Task<IReadOnlyList<SmartPushEnabledUserDto>> GetEnabledUsersAsync(CancellationToken cancellationToken)
+    {
+        var users = await _repository.GetUsersForSmartPushAsync(cancellationToken);
+        return users
+            .Where(u => u.UserPreference != null)
+            .Select(u =>
+            {
+                var pref = u.UserPreference!;
+                var ai = u.AIContextProfile;
+                var tzId = string.IsNullOrWhiteSpace(u.TimeZone) ? "Asia/Ho_Chi_Minh" : u.TimeZone;
+                return new SmartPushEnabledUserDto(
+                    u.Id,
+                    tzId,
+                    pref.PreferredReminderTime,
+                    ai?.PeakEnergyTimeWindow,
+                    u.LastActiveAt,
+                    pref.SmartPushEnabled,
+                    pref.AllowAiGeneratedNotification
+                );
+            })
+            .ToList();
+    }
+
     public async Task<IamSmartPushContextDto?> GetSmartPushContextAsync(Guid userId, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Fetching smart push context for user {UserId}", userId);
@@ -98,7 +121,12 @@ public class InternalSmartPushService : IInternalSmartPushService
             pref?.AllowAiGeneratedNotification ?? false,
             tzId,
             pref?.AgentPersona.ToString() ?? "FriendlyBuddy",
-            user.SubscriptionTier.ToString()
+            user.SubscriptionTier.ToString(),
+            aiProfile != null ? (int)aiProfile.RecoveryScore : 100,
+            aiProfile != null ? (int)aiProfile.ChurnRiskScore : 0,
+            aiProfile?.PeakEnergyTimeWindow,
+            user.LastActiveAt,
+            pref?.PreferredReminderTime
         );
     }
 }

@@ -1,0 +1,75 @@
+name: infra-terraform
+
+# Terraform riêng khỏi app: plan trên PR (comment diff), apply sau khi merge/duyệt.
+on:
+  push:
+    branches: [main]
+    paths: ["infra/terraform/**", ".github/workflows/infra.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["infra/terraform/**"]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  TF_VERSION: "1.9.5"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        env: [dev, prod]
+    defaults:
+      run:
+        working-directory: infra/terraform/envs/${{ matrix.env }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "${{ env.TF_VERSION }}" }
+      - run: terraform init
+      - run: terraform fmt -check -recursive || true
+      - run: terraform validate
+      - name: Plan
+        run: terraform plan -no-color -out=tfplan
+      - name: Save plan artifact
+        uses: actions/upload-artifact@v4
+        with: { name: tfplan-${{ matrix.env }}, path: infra/terraform/envs/${{ matrix.env }}/tfplan }
+
+  apply-dev:
+    needs: [plan]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: infra-dev
+    defaults: { run: { working-directory: infra/terraform/envs/dev } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with: { role-to-assume: "${{ secrets.AWS_OIDC_ROLE_ARN }}", aws-region: "${{ env.AWS_REGION }}" }
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "${{ env.TF_VERSION }}" }
+      - run: terraform init
+      - run: terraform apply -auto-approve
+
+  apply-prod:
+    needs: [apply-dev]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: infra-prod       # Required reviewers → manual approval
+    defaults: { run: { working-directory: infra/terraform/envs/prod } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with: { role-to-assume: "${{ secrets.AWS_OIDC_ROLE_ARN }}", aws-region: "${{ env.AWS_REGION }}" }
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "${{ env.TF_VERSION }}" }
+      - run: terraform init
+      - run: terraform apply -auto-approve

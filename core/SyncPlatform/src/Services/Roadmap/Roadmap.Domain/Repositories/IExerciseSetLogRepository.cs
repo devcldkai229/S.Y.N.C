@@ -5,6 +5,7 @@ namespace Roadmap.Domain.Repositories;
 public interface IExerciseSetLogRepository : IGenericRepository<ExerciseSetLog>
 {
     Task<IReadOnlyList<ExerciseSetLog>> GetByExecutionIdAsync(Guid executionId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ExerciseSetLog>> GetByExecutionIdsAsync(IEnumerable<Guid> executionIds, CancellationToken cancellationToken = default);
     Task CreateManyAsync(IEnumerable<ExerciseSetLog> entities, CancellationToken cancellationToken = default);
     Task DeleteManyByExecutionIdAsync(Guid executionId, CancellationToken cancellationToken = default);
 }

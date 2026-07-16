@@ -14,6 +14,7 @@ using Social.Infrastructure.Persistence;
 using Social.Infrastructure.Persistence.Repositories;
 using Social.Infrastructure.Services;
 using Social.Infrastructure.Persistence.Seed;
+using Social.Infrastructure.Workers;
 
 namespace Social.Infrastructure.Extensions;
 
@@ -28,6 +29,7 @@ public static class InfrastructureServiceExtensions
     {
         RegisterBsonConventions();
 
+        services.AddMemoryCache();
         services.AddS3ObjectStorage(configuration);
         services.Configure<AwsLocationOptions>(configuration.GetSection(AwsLocationOptions.SectionName));
 
@@ -79,11 +81,14 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IStoryRepository, StoryRepository>();
         services.AddScoped<IStoryInteractionRepository, StoryInteractionRepository>();
         services.AddScoped<IStoryViewRepository, StoryViewRepository>();
+        services.AddScoped<ITrendingPostRepository, TrendingPostRepository>();
         services.AddScoped<IBlogRepository, BlogRepository>();
         services.AddScoped<IBlogInteractionRepository, BlogInteractionRepository>();
+        services.AddScoped<IBlogCommentRepository, BlogCommentRepository>();
+
+        services.AddHostedService<TrendingFeedHostedService>();
 
         services.Configure<SocialSeedOptions>(configuration.GetSection(SocialSeedOptions.SectionName));
-        services.AddScoped<ISocialDatabaseSeeder, SocialDatabaseSeeder>();
         services.AddScoped<S3DevAssetSeeder>();
 
         // Inter-service: IAM gamification (grant XP after social events)
@@ -100,6 +105,18 @@ public static class InfrastructureServiceExtensions
         });
 
         services.AddHttpClient<IIamUserSearchClient, IamUserSearchClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["IamService:BaseUrl"] ?? "http://localhost:5288";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var apiKey = config["IamService:InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
+
+        services.AddHttpClient<IIamPublicProfileClient, IamPublicProfileClient>((sp, client) =>
         {
             var config = sp.GetRequiredService<IConfiguration>();
             var baseUrl = config["IamService:BaseUrl"] ?? "http://localhost:5288";

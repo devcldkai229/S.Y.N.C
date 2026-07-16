@@ -29,6 +29,10 @@ public class StoryFeedGroupDto
 {
     public Guid AuthorId { get; set; }
     public AuthorSnapshotDto AuthorSnapshot { get; set; } = new();
+    public int StoryCount { get; set; }
+    public DateTimeOffset LatestAt { get; set; }
+    public bool HasUnseen { get; set; }
+    public string? CoverThumbUrl { get; set; }
     public IReadOnlyList<StoryDto> Stories { get; set; } = [];
 }
 

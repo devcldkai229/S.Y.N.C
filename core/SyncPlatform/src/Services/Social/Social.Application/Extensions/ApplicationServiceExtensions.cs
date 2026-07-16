@@ -17,6 +17,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<ISocialUserSearchService, SocialUserSearchService>();
         services.AddScoped<IStoryService, StoryService>();
         services.AddScoped<IBlogService, BlogService>();
+        services.AddScoped<IBlogCommentService, BlogCommentService>();
         return services;
     }
 }

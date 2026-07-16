@@ -1,4 +1,4 @@
-using Contract.Events;
+using Libs.Shared.Events;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Common;

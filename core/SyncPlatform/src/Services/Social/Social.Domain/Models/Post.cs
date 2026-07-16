@@ -13,6 +13,9 @@ public class Post : BaseMongoEntity
 
     public string Content { get; set; } = string.Empty;
 
+    /// <summary>Accent-folded lowercase content for VN search (no-diacritic match).</summary>
+    public string ContentNormalized { get; set; } = string.Empty;
+
     public List<string> MediaUrls { get; set; } = [];
 
     [BsonIgnoreIfNull]

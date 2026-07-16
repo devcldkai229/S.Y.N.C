@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
@@ -18,7 +18,6 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddSharedConfiguration(builder.Environment);
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

@@ -21,6 +21,7 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
         var total = (int)await Collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
         var items = await Collection.Find(filter)
             .SortByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync(cancellationToken);
@@ -29,18 +30,39 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
     }
 
     public async Task<IReadOnlyList<Post>> GetPublicFeedCursorAsync(
-        DateTimeOffset? cursor,
+        FeedCursorValue? cursor,
         int limit,
         CancellationToken cancellationToken = default)
     {
         var filterBuilder = Builders<Post>.Filter;
         var filter = filterBuilder.Eq(x => x.IsPublic, true);
-
-        if (cursor.HasValue)
-            filter &= filterBuilder.Lt(x => x.CreatedAt, cursor.Value);
+        filter &= BuildCursorFilter(filterBuilder, cursor);
 
         return await Collection.Find(filter)
             .SortByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
+            .Limit(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Post>> GetFollowingFeedCursorAsync(
+        IReadOnlyList<Guid> authorIds,
+        FeedCursorValue? cursor,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        if (authorIds.Count == 0)
+            return [];
+
+        var filterBuilder = Builders<Post>.Filter;
+        var filter = filterBuilder.And(
+            filterBuilder.In(x => x.AuthorId, authorIds),
+            filterBuilder.Eq(x => x.IsPublic, true));
+        filter &= BuildCursorFilter(filterBuilder, cursor);
+
+        return await Collection.Find(filter)
+            .SortByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
             .Limit(limit)
             .ToListAsync(cancellationToken);
     }
@@ -55,6 +77,7 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
         var total = (int)await Collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
         var items = await Collection.Find(filter)
             .SortByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Limit(pageSize)
             .ToListAsync(cancellationToken);
@@ -83,7 +106,7 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
 
     public async Task<IReadOnlyList<Post>> GetUserWallCursorAsync(
         Guid authorId,
-        DateTimeOffset? cursor,
+        FeedCursorValue? cursor,
         int limit,
         bool onlyMedia,
         bool includePrivatePosts,
@@ -95,14 +118,14 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
         if (!includePrivatePosts)
             filter &= filterBuilder.Eq(x => x.IsPublic, true);
 
-        if (cursor.HasValue)
-            filter &= filterBuilder.Lt(x => x.CreatedAt, cursor.Value);
+        filter &= BuildCursorFilter(filterBuilder, cursor);
 
         if (onlyMedia)
             filter &= filterBuilder.SizeGt(x => x.MediaUrls, 0);
 
         return await Collection.Find(filter)
             .SortByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
             .Limit(limit)
             .ToListAsync(cancellationToken);
     }
@@ -153,15 +176,67 @@ public class PostRepository : GenericRepository<Post>, IPostRepository
         var pattern = $"(?i).*{escaped}.*";
         var regex = new BsonRegularExpression(pattern);
 
+        // Accent-folded match: normalize query the same way as ContentNormalized.
+        var normalizedQuery = trimmed;
+        try
+        {
+            // Soft dependency — Application helper not available in Infrastructure.
+            // Callers pass raw query; we also regex ContentNormalized with lowercased form.
+            normalizedQuery = trimmed.ToLowerInvariant();
+        }
+        catch
+        {
+            // ignore
+        }
+
+        var normalizedEscaped = Regex.Escape(normalizedQuery);
+        var normalizedRegex = new BsonRegularExpression($".*{normalizedEscaped}.*");
+
         var filterBuilder = Builders<Post>.Filter;
         var filter = filterBuilder.Or(
             filterBuilder.Regex(x => x.Content, regex),
+            filterBuilder.Regex(x => x.ContentNormalized, normalizedRegex),
             filterBuilder.Regex("AuthorSnapshot.FullName", regex));
 
         return await Collection.Find(filter)
             .SortByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.Id)
             .Skip(skip)
             .Limit(take)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Post>> GetRecentPublicPostsAsync(
+        DateTimeOffset since,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        var filter = Builders<Post>.Filter.And(
+            Builders<Post>.Filter.Eq(x => x.IsPublic, true),
+            Builders<Post>.Filter.Gte(x => x.CreatedAt, since));
+
+        return await Collection.Find(filter)
+            .SortByDescending(x => x.CreatedAt)
+            .Limit(limit)
+            .ToListAsync(cancellationToken);
+    }
+
+    private static FilterDefinition<Post> BuildCursorFilter(
+        FilterDefinitionBuilder<Post> fb,
+        FeedCursorValue? cursor)
+    {
+        if (cursor is null)
+            return fb.Empty;
+
+        var c = cursor.Value;
+        if (c.Id == Guid.Empty)
+            return fb.Lt(x => x.CreatedAt, c.CreatedAt);
+
+        // (createdAt < c) OR (createdAt == c AND id < c.id)
+        return fb.Or(
+            fb.Lt(x => x.CreatedAt, c.CreatedAt),
+            fb.And(
+                fb.Eq(x => x.CreatedAt, c.CreatedAt),
+                fb.Lt(x => x.Id, c.Id)));
     }
 }

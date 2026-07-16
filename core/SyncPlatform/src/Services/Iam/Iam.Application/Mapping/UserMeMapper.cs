@@ -82,7 +82,9 @@ internal static class UserMeMapper
                 MaxAutoOrderLimitDaily: null,
                 MaxAutoOrderLimitPerOrder: null,
                 DataSharingConsent: false,
-                MarketingConsent: false)
+                MarketingConsent: false,
+                SmartPushEnabled: false,
+                AllowAiGeneratedNotification: false)
             : new AccountPreferencesDto(
                 IsConfigured: true,
                 (preference.Allergies ?? [])
@@ -96,7 +98,9 @@ internal static class UserMeMapper
                 preference.MaxAutoOrderLimitDaily,
                 preference.MaxAutoOrderLimitPerOrder,
                 preference.DataSharingConsent,
-                preference.MarketingConsent);
+                preference.MarketingConsent,
+                preference.SmartPushEnabled,
+                preference.AllowAiGeneratedNotification);
 
     public static ProfileSettingsResponse ToProfileSettingsResponse(User user, IMediaUrlResolver media)
     {

@@ -1,11 +1,34 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1.",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam-dev",
+    "Audience": "sync-lifestyle-clients-dev",
+    "SecretKey": "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
+  },
   "InternalApiKey": "dev_internal_api_key_sync_platform",
   "ConnectionStrings": {
     "RoadmapDatabase": "mongodb://localhost:27018"
   },
   "MongoDB": {
     "RoadmapDatabaseName": "sync_roadmap"
+  },
+  "AWS": {
+    "Profile": "default",
+    "Region": "ap-southeast-1"
+  },
+  "Storage": {
+    "Bucket": "sync-pub-assets",
+    "PublicBaseUrl": "http://localhost:5057/api/v1/media",
+    "MaxFileSizeMb": 10
   },
   "Roadmap": {
     "Seed": {

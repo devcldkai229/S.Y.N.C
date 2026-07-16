@@ -1,3 +1,5 @@
+import 'package:sync_app/features/nutrition/data/nutrition_date_helpers.dart';
+
 class DailyNutritionSummary {
   const DailyNutritionSummary({
     required this.date,
@@ -45,7 +47,7 @@ class DailyNutritionSummary {
   factory DailyNutritionSummary.fromJson(Map<String, dynamic> json) {
     final dateStr = json['date']?.toString() ?? '';
     return DailyNutritionSummary(
-      date: DateTime.tryParse(dateStr) ?? DateTime.now(),
+      date: NutritionDateHelpers.parseApiDate(dateStr) ?? DateTime.now(),
       targetCalories: (json['targetCalories'] as num?)?.toInt() ?? 0,
       consumedCalories: (json['consumedCalories'] as num?)?.toInt() ?? 0,
       targetProteinGram: (json['targetProteinGram'] as num?)?.toDouble() ?? 0,
@@ -184,4 +186,15 @@ enum MealTypeUi {
 
   const MealTypeUi(this.apiValue);
   final String apiValue;
+}
+
+/// Navigation payload: meal slot + diary calendar day being edited.
+class NutritionFoodSearchArgs {
+  const NutritionFoodSearchArgs({
+    required this.mealType,
+    required this.diaryDate,
+  });
+
+  final MealTypeUi mealType;
+  final DateTime diaryDate;
 }

@@ -19,6 +19,9 @@ class CynAiChatService {
     required String message,
     required String sessionId,
     String locale = 'vi',
+    double? latitude,
+    double? longitude,
+    String? timezone,
     CancelToken? cancelToken,
   }) async* {
     final token = await _auth.getValidAccessToken();
@@ -27,10 +30,13 @@ class CynAiChatService {
       return;
     }
 
-    final payload = {
+    final payload = <String, dynamic>{
       'message': message,
       'session_id': sessionId,
       'locale': locale,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (timezone != null && timezone.isNotEmpty) 'timezone': timezone,
     };
 
     final CynAiChatStreamResponse httpResult;

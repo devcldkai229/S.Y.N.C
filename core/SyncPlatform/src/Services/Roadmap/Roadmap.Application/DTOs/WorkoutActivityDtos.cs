@@ -17,5 +17,9 @@ public record TodayWorkoutActivityDto(
     int CaloriesBurned,
     int SkippedExercisesCount,
     int CompletedSetsCount,
-    int TotalLoggedSetsCount
+    int TotalLoggedSetsCount,
+    string WorkoutSource = "none",
+    string? TodayWorkoutType = null,
+    string? ScheduledLocalTime = null,
+    int MissedRecentCount = 0
 );

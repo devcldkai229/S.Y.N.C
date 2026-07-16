@@ -1,3 +1,4 @@
+using Libs.Shared.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -879,7 +880,7 @@ public class DeliveryTrackingService : IDeliveryTrackingService
         }, cancellationToken);
 
         var nutritionById = validated.Items.ToDictionary(x => x.FoodMenuItemId);
-        await _nutritionEventClient.PublishOrderCompletedAsync(new Contract.Events.OrderCompletedEvent
+        await _nutritionEventClient.PublishOrderCompletedAsync(new OrderCompletedEvent
         {
             OrderId = order.Id,
             UserId = order.UserId,
@@ -887,7 +888,7 @@ public class DeliveryTrackingService : IDeliveryTrackingService
             Items = order.Items.Select(i =>
             {
                 nutritionById.TryGetValue(i.FoodMenuItemId, out var menu);
-                return new Contract.Events.OrderCompletedLineItem
+                return new OrderCompletedLineItem
                 {
                     FoodMenuItemId = i.FoodMenuItemId,
                     NameSnapshot = i.NameSnapshot,

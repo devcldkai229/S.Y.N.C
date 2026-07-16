@@ -241,6 +241,8 @@ class AccountPreferences {
     this.maxAutoOrderLimitPerOrder,
     required this.dataSharingConsent,
     required this.marketingConsent,
+    this.smartPushEnabled = true,
+    this.allowAiGeneratedNotification = true,
   });
 
   final bool isConfigured;
@@ -254,6 +256,8 @@ class AccountPreferences {
   final double? maxAutoOrderLimitPerOrder;
   final bool dataSharingConsent;
   final bool marketingConsent;
+  final bool smartPushEnabled;
+  final bool allowAiGeneratedNotification;
 
   factory AccountPreferences.fromJson(Map<String, dynamic> json) {
     return AccountPreferences(
@@ -271,6 +275,8 @@ class AccountPreferences {
       maxAutoOrderLimitPerOrder: _toDouble(json['maxAutoOrderLimitPerOrder']),
       dataSharingConsent: json['dataSharingConsent'] == true,
       marketingConsent: json['marketingConsent'] == true,
+      smartPushEnabled: json['smartPushEnabled'] == true,
+      allowAiGeneratedNotification: json['allowAiGeneratedNotification'] == true,
     );
   }
 
@@ -285,6 +291,8 @@ class AccountPreferences {
         'maxAutoOrderLimitPerOrder': maxAutoOrderLimitPerOrder,
         'dataSharingConsent': dataSharingConsent,
         'marketingConsent': marketingConsent,
+        'smartPushEnabled': smartPushEnabled,
+        'allowAiGeneratedNotification': allowAiGeneratedNotification,
       };
 
   AccountPreferences copyWith({
@@ -298,6 +306,8 @@ class AccountPreferences {
     double? maxAutoOrderLimitPerOrder,
     bool? dataSharingConsent,
     bool? marketingConsent,
+    bool? smartPushEnabled,
+    bool? allowAiGeneratedNotification,
   }) {
     return AccountPreferences(
       isConfigured: isConfigured,
@@ -311,6 +321,9 @@ class AccountPreferences {
       maxAutoOrderLimitPerOrder: maxAutoOrderLimitPerOrder ?? this.maxAutoOrderLimitPerOrder,
       dataSharingConsent: dataSharingConsent ?? this.dataSharingConsent,
       marketingConsent: marketingConsent ?? this.marketingConsent,
+      smartPushEnabled: smartPushEnabled ?? this.smartPushEnabled,
+      allowAiGeneratedNotification:
+          allowAiGeneratedNotification ?? this.allowAiGeneratedNotification,
     );
   }
 }

@@ -1,10 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1.",
-
-  "IamService": {
-    "BaseUrl": "http://localhost:5288"
-  },
   "ConnectionStrings": {
     "SocialDatabase": "mongodb://localhost:27018"
   },
@@ -26,20 +21,32 @@
     "Region": "ap-southeast-1"
   },
   "Storage": {
-    "Bucket": "sync-public-assets",
+    "Bucket": "sync-private-assets",
     "PublicBaseUrl": "http://localhost:5057/api/v1/media",
     "MaxFileSizeMb": 50
   },
   "AwsLocation": {
     "Region": "ap-southeast-1",
     "RouteCalculatorName": "sync-route-calculator",
-    "PlaceIndexName": "sync-place-index",
-    "MapName": "sync-map",
-    "MapStyle": "Hybrid",
     "DataProvider": "Grab",
     "Profile": "default",
-    "_note_place_index": "Create Place Index sync-place-index in ap-southeast-1 (Esri/HERE). Used for admin challenge geocoding and Order checkout address search.",
-    "_note_map_web": "Admin web map tiles: set ui/web/.env NEXT_PUBLIC_AWS_MAP_API_KEY (Map resource key, not place-index key).",
-    "_note_credentials": "Use Profile (e.g. default from ~/.aws/credentials) or set AccessKeyId + SecretAccessKey in user-secrets."
-  }
+    "PlaceIndexName": "sync-place-index",
+    "MapName": "sync-map",
+    "MapStyle": "Hybrid"
+  },
+  "AllowedHosts": "*",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1."
 }

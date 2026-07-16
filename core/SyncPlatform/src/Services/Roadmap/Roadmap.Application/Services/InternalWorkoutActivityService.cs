@@ -1,6 +1,7 @@
 using Libs.Shared.Enums;
 using Microsoft.Extensions.Logging;
 using Roadmap.Application.DTOs;
+using Roadmap.Domain.Models;
 using Roadmap.Domain.Repositories;
 
 namespace Roadmap.Application.Services;
@@ -47,42 +48,52 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
             userTz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
         }
 
-        // Get the current local time of the user based on current UTC
         var userLocalNow = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, userTz);
-
-        // Start of today in user's local time
         var localStartOfToday = new DateTime(userLocalNow.Year, userLocalNow.Month, userLocalNow.Day, 0, 0, 0, DateTimeKind.Unspecified);
         var startOfToday = new DateTimeOffset(localStartOfToday, userTz.GetUtcOffset(localStartOfToday));
         var startOfTomorrow = startOfToday.AddDays(1);
-
-        _logger.LogInformation("Determined user's local day range: {StartOfToday} to {StartOfTomorrow} (Offset: {Offset})", 
-            startOfToday, startOfTomorrow, userTz.GetUtcOffset(localStartOfToday));
-
-        // 1. Scheduled Workout Info (using RoadmapSession only, via PersonalizedRoadmap mapping)
-        bool hasWorkoutScheduledToday = false;
-        string? todayWorkoutName = null;
+        var lookbackStart = startOfToday.AddDays(-7);
 
         var roadmaps = await _personalizedRoadmapRepository.GetByUserIdAsync(userId, cancellationToken);
-        var activeRoadmap = roadmaps.FirstOrDefault(r => r.RoadmapStatus == RoadmapStatus.Active) ?? roadmaps.FirstOrDefault();
-
-        if (activeRoadmap != null)
+        var allSessions = new List<RoadmapSession>();
+        foreach (var roadmap in roadmaps)
         {
-            var sessions = await _sessionRepository.GetByRoadmapIdAsync(activeRoadmap.Id, cancellationToken);
-            var todaySession = sessions.FirstOrDefault(s => s.ScheduledDate >= startOfToday && s.ScheduledDate < startOfTomorrow);
-
-            if (todaySession != null)
-            {
-                hasWorkoutScheduledToday = true;
-                todayWorkoutName = todaySession.SessionTitle;
-                _logger.LogInformation("Found scheduled session today: {SessionTitle} (RoadmapId={RoadmapId})", todayWorkoutName, activeRoadmap.Id);
-            }
-        }
-        else
-        {
-            _logger.LogInformation("No personalized roadmap found for user {UserId}", userId);
+            var sessions = await _sessionRepository.GetByRoadmapIdAsync(roadmap.Id, cancellationToken);
+            allSessions.AddRange(sessions);
         }
 
-        // 2. Workout Execution Logs Info
+        var todaySessions = allSessions
+            .Where(s => s.ScheduledDate >= startOfToday && s.ScheduledDate < startOfTomorrow)
+            .ToList();
+
+        var hasRoadmapSession = todaySessions.Any(s => s.AiGenerated);
+        var hasCustomSession = todaySessions.Any(s => !s.AiGenerated);
+        var workoutSource = (hasRoadmapSession, hasCustomSession) switch
+        {
+            (true, true) => "both",
+            (true, false) => "roadmap",
+            (false, true) => "custom",
+            _ => "none"
+        };
+
+        var primaryToday = todaySessions
+            .OrderByDescending(s => s.AiGenerated ? 0 : 1) // prefer calling out custom when present
+            .ThenBy(s => s.ScheduledDate)
+            .FirstOrDefault();
+
+        var hasWorkoutScheduledToday = todaySessions.Count > 0;
+        var todayWorkoutName = primaryToday?.SessionTitle;
+        var todayWorkoutType = primaryToday?.SessionType;
+        var scheduledLocalTime = string.IsNullOrWhiteSpace(primaryToday?.ScheduledTime)
+            ? null
+            : primaryToday!.ScheduledTime;
+
+        // Missed: session in past 7 days (not today) that is still Pending / not Completed
+        var missedRecentCount = allSessions.Count(s =>
+            s.ScheduledDate >= lookbackStart
+            && s.ScheduledDate < startOfToday
+            && s.SessionStatus is SessionStatus.Scheduled or SessionStatus.InProgress or SessionStatus.Skipped);
+
         var logs = await _workoutLogRepository.GetByUserIdAndDateRangeAsync(userId, startOfToday, startOfTomorrow, cancellationToken);
 
         bool hasStartedWorkoutToday = logs.Any();
@@ -103,9 +114,7 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
 
         if (hasStartedWorkoutToday)
         {
-            // First item is the latest sorted by StartedAt descending
             var latestLog = logs.First();
-
             sessionId = latestLog.SessionId;
             latestStartedAt = latestLog.StartedAt;
             latestCompletedAt = latestLog.CompletedAt;
@@ -117,13 +126,9 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
             caloriesBurned = latestLog.CaloriesBurned;
             skippedExercisesCount = latestLog.SkippedExercises?.Count ?? 0;
 
-            // Query ExerciseSetLog for extra details
             var setLogs = await _exerciseSetLogRepository.GetByExecutionIdAsync(latestLog.Id, cancellationToken);
             totalLoggedSetsCount = setLogs.Count;
             completedSetsCount = setLogs.Count(s => s.Completed);
-
-            _logger.LogInformation("Latest execution log details: Id={ExecutionId}, TotalSets={TotalSets}, CompletedSets={CompletedSets}", 
-                latestLog.Id, totalLoggedSetsCount, completedSetsCount);
         }
 
         return new TodayWorkoutActivityDto(
@@ -143,7 +148,11 @@ public class InternalWorkoutActivityService : IInternalWorkoutActivityService
             caloriesBurned,
             skippedExercisesCount,
             completedSetsCount,
-            totalLoggedSetsCount
+            totalLoggedSetsCount,
+            workoutSource,
+            todayWorkoutType,
+            scheduledLocalTime,
+            missedRecentCount
         );
     }
 }

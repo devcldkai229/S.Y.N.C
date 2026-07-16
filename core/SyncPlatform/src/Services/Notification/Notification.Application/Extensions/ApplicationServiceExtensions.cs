@@ -1,4 +1,5 @@
 using Notification.Application.Services;
+using Notification.Application.Services.SmartPush;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Notification.Application.Extensions;
@@ -9,11 +10,13 @@ public static class ApplicationServiceExtensions
     {
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<INotificationTemplateService, NotificationTemplateService>();
-        services.AddScoped<Notification.Application.Services.SmartPush.ISmartPushDecisionService, Notification.Application.Services.SmartPush.SmartPushDecisionService>();
-        services.AddScoped<Notification.Application.Services.SmartPush.ISmartPushNotificationService, Notification.Application.Services.SmartPush.SmartPushNotificationService>();
-        services.AddScoped<Notification.Application.Services.SmartPush.ISmartPushAiUsagePolicy, Notification.Application.Services.SmartPush.SmartPushAiUsagePolicy>();
-        services.AddScoped<Notification.Application.Services.SmartPush.ISmartPushDeepLinkResolver, Notification.Application.Services.SmartPush.SmartPushDeepLinkResolver>();
-        services.AddScoped<Notification.Application.Services.SmartPush.ISmartPushTemplateService, Notification.Application.Services.SmartPush.SmartPushTemplateService>();
+        services.AddScoped<ISmartPushDecisionService, SmartPushDecisionService>();
+        services.AddScoped<ISmartPushNotificationService, SmartPushNotificationService>();
+        services.AddScoped<ISmartPushAiUsagePolicy, SmartPushAiUsagePolicy>();
+        services.AddScoped<ISmartPushDeepLinkResolver, SmartPushDeepLinkResolver>();
+        services.AddScoped<ISmartPushTemplateService, SmartPushTemplateService>();
+        services.AddScoped<ISmartPushScheduleService, SmartPushScheduleService>();
+        services.AddSingleton<ISmartPushGenerationCache, SmartPushGenerationCache>();
 
         return services;
     }

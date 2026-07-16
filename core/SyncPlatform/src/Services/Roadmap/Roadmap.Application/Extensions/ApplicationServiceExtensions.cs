@@ -12,11 +12,13 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IWorkoutExecutionService, WorkoutExecutionService>();
         services.AddScoped<IExerciseSetLogService, ExerciseSetLogService>();
         services.AddScoped<IPersonalizedRoadmapService, PersonalizedRoadmapService>();
+        services.AddScoped<IRoadmapOverviewService, RoadmapOverviewService>();
         services.AddScoped<IRecoveryProfileService, RecoveryProfileService>();
         services.AddScoped<IScheduledWorkoutService, ScheduledWorkoutService>();
         services.AddScoped<IWorkoutExecutionLogService, WorkoutExecutionLogService>();
         services.AddScoped<IInternalWorkoutActivityService, InternalWorkoutActivityService>();
 
+        services.AddSingleton<IRoadmapRealtimePublisher, NoOpRoadmapRealtimePublisher>();
 
         return services;
     }

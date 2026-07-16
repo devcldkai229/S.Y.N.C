@@ -4,5 +4,5 @@ namespace Notification.Application.Services.SmartPush;
 
 public interface ISmartPushDecisionService
 {
-    SmartPushDecision Decide(SmartPushContextDto context);
+    Task<SmartPushDecision> DecideAsync(SmartPushContextDto context, CancellationToken ct);
 }

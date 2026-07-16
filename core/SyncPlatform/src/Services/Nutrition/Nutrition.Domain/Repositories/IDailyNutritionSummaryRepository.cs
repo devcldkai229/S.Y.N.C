@@ -10,4 +10,10 @@ public interface IDailyNutritionSummaryRepository : IGenericRepository<DailyNutr
         CancellationToken cancellationToken = default);
 
     Task UpsertAsync(DailyNutritionSummary summary, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<DailyNutritionSummary>> GetByUserAndDateRangeAsync(
+        Guid userId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken = default);
 }

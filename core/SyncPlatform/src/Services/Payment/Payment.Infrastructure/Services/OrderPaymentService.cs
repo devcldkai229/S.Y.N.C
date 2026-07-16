@@ -205,6 +205,43 @@ public class OrderPaymentService : IOrderPaymentService
         }
     }
 
+    public async Task<OrderPaymentStatusDto?> GetPaymentStatusAsync(
+        Guid? orderId,
+        long? payOsOrderCode,
+        CancellationToken cancellationToken = default)
+    {
+        Transaction? transaction = null;
+        if (payOsOrderCode is long code)
+        {
+            transaction = await _db.Transactions.AsNoTracking()
+                .Where(t => t.OrderCode == code)
+                .OrderByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        else if (orderId is Guid oid)
+        {
+            transaction = await _db.Transactions.AsNoTracking()
+                .Where(t => t.RelatedEntityType == "Order" && t.RelatedEntityId == oid)
+                .OrderByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+
+        if (transaction is null)
+            return null;
+
+        return new OrderPaymentStatusDto
+        {
+            TransactionId = transaction.Id,
+            OrderId = transaction.RelatedEntityId,
+            PayOsOrderCode = transaction.OrderCode,
+            Status = transaction.Status.ToString(),
+            PaymentMethod = transaction.PaymentMethod.ToString(),
+            Amount = transaction.Amount,
+            Currency = transaction.Currency,
+            ProcessedAt = transaction.ProcessedAt,
+        };
+    }
+
     public async Task<CreateMomoPaymentResponseDto> CreateMomoPaymentAsync(
         CreateMomoPaymentRequestDto request,
         CancellationToken cancellationToken = default)

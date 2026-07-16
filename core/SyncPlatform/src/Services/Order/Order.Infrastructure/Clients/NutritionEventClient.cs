@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using Contract.Events;
+using Libs.Shared.Events;
 using Order.Application.Clients;
 
 namespace Order.Infrastructure.Clients;

@@ -187,6 +187,8 @@ class SocialStory {
 
   bool get isTextOnly => mediaType == 'TextOnly' || mediaUrl.isEmpty;
 
+  bool get isVideo => mediaType.toLowerCase() == 'video';
+
   factory SocialStory.fromJson(Map<String, dynamic> json) {
     final authorSnapshotJson = json['authorSnapshot'] as Map<String, dynamic>? ?? const {};
     return SocialStory(
@@ -222,11 +224,19 @@ class SocialStoryFeedGroup {
     required this.authorId,
     required this.authorSnapshot,
     required this.stories,
+    this.storyCount = 0,
+    this.latestAt,
+    this.hasUnseen = true,
+    this.coverThumbUrl,
   });
 
   final String authorId;
   final SocialAuthorSnapshot authorSnapshot;
   final List<SocialStory> stories;
+  final int storyCount;
+  final DateTime? latestAt;
+  final bool hasUnseen;
+  final String? coverThumbUrl;
 
   SocialStory? get previewStory =>
       stories.isNotEmpty ? stories.reduce((a, b) => a.createdAt.isAfter(b.createdAt) ? a : b) : null;
@@ -248,6 +258,11 @@ class SocialStoryFeedGroup {
               .map(SocialStory.fromJson)
               .toList()
           : const [],
+      storyCount: (json['storyCount'] as num?)?.toInt() ??
+          (rawStories is List ? rawStories.length : 0),
+      latestAt: DateTime.tryParse(json['latestAt']?.toString() ?? ''),
+      hasUnseen: json['hasUnseen'] != false,
+      coverThumbUrl: json['coverThumbUrl']?.toString(),
     );
   }
 }
@@ -294,10 +309,15 @@ class SocialComment {
 }
 
 class CursorFeedPage<T> {
-  const CursorFeedPage({required this.items, this.nextCursor});
+  const CursorFeedPage({
+    required this.items,
+    this.nextCursor,
+    this.hasMore = false,
+  });
 
   final List<T> items;
   final String? nextCursor;
+  final bool hasMore;
 }
 
 class CommentsPage {

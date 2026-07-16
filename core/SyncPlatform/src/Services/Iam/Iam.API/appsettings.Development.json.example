@@ -1,26 +1,41 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
   "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1.",
-
   "Logging": {
     "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information",
       "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
     }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam-dev",
+    "Audience": "sync-lifestyle-clients-dev",
+    "SecretKey": "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
   },
   "InternalApiKey": "dev_internal_api_key_sync_platform",
   "NotificationService": {
     "BaseUrl": "http://localhost:5106",
     "InternalApiKey": "dev_internal_api_key_sync_platform"
   },
-  "RoadmapService": {
-    "BaseUrl": "http://localhost:5118",
-    "InternalApiKey": "dev_internal_api_key_sync_platform"
-  },
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
   },
+  "DevSeed": {
+    "Enabled": true
+  },
+  "Iam": {
+    "Seed": {
+      "Enabled": true,
+      "ApplyMigrations": true,
+      "SeedAchievements": true,
+      "SeedDemoUsers": true,
+      "DemoUserPassword": "SyncDemo123!"
+    }
+  },
   "GoogleAuth": {
-    "_comment": "List every OAuth client ID that may appear in the Google ID token aud claim. Web client ID must match ui/app web/index.html meta + Flutter AppConfig.defaultGoogleWebClientId.",
     "ClientIds": [
       "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",
       "366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com"
@@ -36,23 +51,15 @@
     "MaxFileSizeMb": 10
   },
   "Email": {
-    "_comment": "Public IAM or Gateway URL (no trailing slash). Verify link: {VerificationBaseUrl}/api/v1/auth/verify-email?token=...",
     "VerificationBaseUrl": "http://localhost:5288",
-    "Ses": {
-      "_comment": "Prod: Enabled=true + verified SES identity. Dev: keep false and use SMTP below.",
-      "Enabled": false,
-      "FromEmail": "noreply@sync.vn",
-      "FromName": "Sync Lifestyle",
-      "ConfigurationSetName": ""
-    },
-    "Smtp": {
+    "Brevo": {
       "Enabled": true,
-      "Host": "smtp.gmail.com",
+      "Host": "smtp-relay.brevo.com",
       "Port": 587,
-      "UserName": "kag40222@gmail.com",
-      "Password": "jegh ucpq tcom akcz",
+      "UserName": "<YOUR_BREVO_SMTP_LOGIN>",
+      "Password": "<YOUR_BREVO_SMTP_KEY>",
       "FromEmail": "kag40222@gmail.com",
-      "FromName": "Sync",
+      "FromName": "Sync Lifestyle",
       "UseSsl": true
     }
   }

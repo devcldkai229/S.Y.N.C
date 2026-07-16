@@ -1,4 +1,4 @@
-using Contract.Events;
+using Libs.Shared.Events;
 
 namespace Nutrition.Application.Services;
 

@@ -11,6 +11,7 @@ public class RoadmapActivityClient : IRoadmapActivityClient
     private readonly HttpClient _httpClient;
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
+        PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 

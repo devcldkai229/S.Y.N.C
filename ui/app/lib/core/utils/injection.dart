@@ -5,6 +5,7 @@ import 'package:sync_app/core/locale/locale_cubit.dart';
 import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
 import 'package:sync_app/core/notifications/notification_realtime_service.dart';
 import 'package:sync_app/core/network/dio_client.dart';
+import 'package:sync_app/core/network/token_refresh_coordinator.dart';
 import 'package:sync_app/data/datasources/notification_remote_data_source.dart';
 import 'package:sync_app/data/datasources/onboarding_remote_data_source.dart';
 import 'package:sync_app/data/repositories/auth_repository.dart';
@@ -20,11 +21,14 @@ import 'package:sync_app/features/challenges/state/challenge_join_state.dart';
 import 'package:sync_app/features/social/data/social_remote_data_source.dart';
 import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
+import 'package:sync_app/features/profile/services/current_user_profile_bus.dart';
 import 'package:sync_app/features/subscription/services/subscription_api_service.dart';
 import 'package:sync_app/features/workouts/services/workout_api_service.dart';
 import 'package:sync_app/features/nutrition/data/nutrition_remote_data_source.dart';
 import 'package:sync_app/features/nutrition/services/nutrition_realtime_service.dart';
 import 'package:sync_app/features/nutrition/state/nutrition_refresh_notifier.dart';
+import 'package:sync_app/features/workouts/services/roadmap_realtime_service.dart';
+import 'package:sync_app/features/workouts/state/roadmap_refresh_notifier.dart';
 import 'package:sync_app/features/marketplace/data/marketplace_remote_data_source.dart';
 import 'package:sync_app/features/marketplace/data/marketplace_repository.dart';
 import 'package:sync_app/features/marketplace/data/marketplace_remote_repository.dart';
@@ -39,6 +43,9 @@ import 'package:sync_app/features/order/data/order_demo_repository.dart';
 import 'package:sync_app/features/order/services/websocket_tracking_service.dart';
 import 'package:sync_app/features/order/services/i_tracking_service.dart';
 import 'package:sync_app/features/cyn/services/cyn_ai_chat_service.dart';
+import 'package:sync_app/features/cyn/state/cyn_chat_session_store.dart';
+import 'package:sync_app/features/blogs/data/blog_remote_data_source.dart';
+import 'package:sync_app/features/blogs/data/blog_repository.dart';
 
 final getIt = GetIt.instance;
 
@@ -47,10 +54,29 @@ Future<void> configureDependencies() async {
   getIt.registerSingleton<SharedPreferences>(prefs);
   getIt.registerLazySingleton(() => LocaleCubit(prefs));
   getIt.registerLazySingleton(() => const FlutterSecureStorage());
-  getIt.registerLazySingleton(() => createDio(storage: getIt()));
-  getIt.registerLazySingleton(() => AuthService(getIt(), getIt()));
+  getIt.registerLazySingleton(
+    () => TokenRefreshCoordinator(
+      storage: getIt<FlutterSecureStorage>(),
+      refreshDio: createBareDio(),
+    ),
+  );
+  getIt.registerLazySingleton(
+    () => createDio(
+      storage: getIt<FlutterSecureStorage>(),
+      coordinator: getIt<TokenRefreshCoordinator>(),
+    ),
+  );
+  getIt.registerLazySingleton(
+    () => AuthService(
+      getIt(),
+      getIt(),
+      getIt<TokenRefreshCoordinator>(),
+    ),
+  );
   getIt.registerLazySingleton(() => CynAiChatService(getIt(), getIt()));
+  getIt.registerLazySingleton(() => CynChatSessionStore(getIt()));
   getIt.registerLazySingleton(() => ProfileApiService(getIt()));
+  getIt.registerLazySingleton(CurrentUserProfileBus.new);
   getIt.registerLazySingleton(() => SubscriptionApiService(getIt()));
   getIt.registerLazySingleton(() => WorkoutApiService(getIt()));
   getIt.registerLazySingleton(() => NotificationRemoteDataSource(getIt()));
@@ -63,15 +89,25 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => WorkoutRepository(getIt()));
   getIt.registerLazySingleton(() => NotificationRepository(getIt()));
   getIt.registerLazySingleton(() => NotificationInboxNotifier());
-  getIt.registerLazySingleton(() => NotificationRealtimeService(getIt(), getIt()));
+  getIt.registerLazySingleton(
+    () => NotificationRealtimeService(getIt<AuthService>(), getIt()),
+  );
   getIt.registerLazySingleton(() => OnboardingRepository(getIt()));
   getIt.registerLazySingleton(() => SocialRepository(getIt()));
+  getIt.registerLazySingleton(() => BlogRemoteDataSource(getIt()));
+  getIt.registerLazySingleton(() => BlogRepository(getIt()));
   getIt.registerLazySingleton(() => ChallengeRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => ChallengeRepository(getIt()));
   getIt.registerLazySingleton(() => ChallengeJoinState(getIt()));
   getIt.registerLazySingleton(() => NutritionRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => NutritionRefreshNotifier());
-  getIt.registerLazySingleton(() => NutritionRealtimeService(getIt(), getIt()));
+  getIt.registerLazySingleton(
+    () => NutritionRealtimeService(getIt<AuthService>(), getIt()),
+  );
+  getIt.registerLazySingleton(() => RoadmapRefreshNotifier());
+  getIt.registerLazySingleton(
+    () => RoadmapRealtimeService(getIt<AuthService>(), getIt()),
+  );
   getIt.registerLazySingleton(() => MarketplaceRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => CheckoutRemoteDataSource(getIt()));
   getIt.registerLazySingleton(() => DeliveryFeeConfig(getIt()));

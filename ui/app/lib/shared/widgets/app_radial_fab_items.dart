@@ -32,6 +32,11 @@ abstract final class AppRadialFabItems {
         onTap: () => context.push(AppRoutes.nutritionDiary),
       ),
       RadialFabMenuItem(
+        icon: Icons.article_rounded,
+        label: 'Blogs',
+        onTap: () => context.push(AppRoutes.blogs),
+      ),
+      RadialFabMenuItem(
         icon: Icons.storefront_rounded,
         label: 'Sync Foods',
         onTap: () => context.push(AppRoutes.marketplaceHome),

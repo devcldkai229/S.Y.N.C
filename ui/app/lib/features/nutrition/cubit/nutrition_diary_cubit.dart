@@ -2,30 +2,54 @@ import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/core/utils/safe_emit.dart';
+import 'package:sync_app/features/nutrition/data/nutrition_date_helpers.dart';
 import 'package:sync_app/features/nutrition/data/nutrition_remote_data_source.dart';
 import 'package:sync_app/features/nutrition/models/nutrition_models.dart';
+import 'package:sync_app/features/profile/services/profile_api_service.dart';
 
 part 'nutrition_diary_state.dart';
 
 class NutritionDiaryCubit extends Cubit<NutritionDiaryState> with SafeEmitMixin<NutritionDiaryState> {
-  NutritionDiaryCubit(this._api) : super(NutritionDiaryState(selectedDate: DateTime.now()));
+  NutritionDiaryCubit(this._api, this._profileApi)
+      : super(NutritionDiaryState(
+          selectedDate: NutritionDateHelpers.dateOnly(DateTime.now()),
+        ));
 
   final NutritionRemoteDataSource _api;
+  final ProfileApiService _profileApi;
   bool _waterBusy = false;
+  String? _fitnessGoal;
+  bool _goalFetched = false;
+
+  DateTime _normalizeDate(DateTime date) => NutritionDateHelpers.dateOnly(date);
+
+  /// Lấy mục tiêu thể chất một lần (cache) để hiện khuyến nghị calo theo mục tiêu.
+  Future<void> _ensureGoal() async {
+    if (_goalFetched) return;
+    _goalFetched = true;
+    try {
+      final settings = await _profileApi.getProfileSettings();
+      _fitnessGoal = settings.fitness.fitnessGoal;
+    } catch (_) {
+      _fitnessGoal = null; // thiếu goal → card khuyến nghị ẩn, không chặn diary
+    }
+  }
 
   Future<void> load({DateTime? date}) async {
-    final target = date ?? state.selectedDate;
+    final target = _normalizeDate(date ?? state.selectedDate);
     safeEmit(state.copyWith(status: NutritionDiaryStatus.loading, selectedDate: target));
     try {
       final results = await Future.wait([
         _api.fetchDailySummary(target),
         _api.fetchMealLogs(target),
+        _ensureGoal(),
       ]);
       safeEmit(state.copyWith(
         status: NutritionDiaryStatus.loaded,
         summary: results[0] as DailyNutritionSummary,
         mealLogs: results[1] as List<MealLog>,
         errorMessage: null,
+        fitnessGoal: _fitnessGoal,
       ));
     } catch (e) {
       safeEmit(state.copyWith(
@@ -36,7 +60,7 @@ class NutritionDiaryCubit extends Cubit<NutritionDiaryState> with SafeEmitMixin<
   }
 
   Future<void> shiftDay(int delta) async {
-    final next = state.selectedDate.add(Duration(days: delta));
+    final next = _normalizeDate(state.selectedDate.add(Duration(days: delta)));
     await load(date: next);
   }
 
@@ -68,7 +92,7 @@ class NutritionDiaryCubit extends Cubit<NutritionDiaryState> with SafeEmitMixin<
   }
 
   Future<void> refreshAfterMealLogged({DateTime? date}) async {
-    final target = date ?? state.selectedDate;
+    final target = _normalizeDate(date ?? state.selectedDate);
     final sameDay = target.year == state.selectedDate.year &&
         target.month == state.selectedDate.month &&
         target.day == state.selectedDate.day;

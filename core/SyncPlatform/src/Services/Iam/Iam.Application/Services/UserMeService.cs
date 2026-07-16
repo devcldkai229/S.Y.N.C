@@ -192,6 +192,8 @@ public sealed class UserMeService
             AutoOrderEnabled = false,
             DataSharingConsent = false,
             MarketingConsent = false,
+            SmartPushEnabled = true,
+            AllowAiGeneratedNotification = true,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -293,6 +295,12 @@ public sealed class UserMeService
 
         if (request.MarketingConsent is not null)
             preference.MarketingConsent = request.MarketingConsent.Value;
+
+        if (request.SmartPushEnabled is not null)
+            preference.SmartPushEnabled = request.SmartPushEnabled.Value;
+
+        if (request.AllowAiGeneratedNotification is not null)
+            preference.AllowAiGeneratedNotification = request.AllowAiGeneratedNotification.Value;
     }
 
     private static void ValidateAutoOrderState(UserPreference preference)

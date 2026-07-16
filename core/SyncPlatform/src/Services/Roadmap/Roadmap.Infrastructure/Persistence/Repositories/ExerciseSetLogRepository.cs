@@ -17,6 +17,21 @@ public class ExerciseSetLogRepository : GenericRepository<ExerciseSetLog>, IExer
             .SortBy(x => x.SetNumber)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<ExerciseSetLog>> GetByExecutionIdsAsync(
+        IEnumerable<Guid> executionIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = executionIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return [];
+
+        return await Collection
+            .Find(x => ids.Contains(x.ExecutionId))
+            .SortBy(x => x.ExecutionId)
+            .ThenBy(x => x.SetNumber)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task CreateManyAsync(
         IEnumerable<ExerciseSetLog> entities,
         CancellationToken cancellationToken = default)
