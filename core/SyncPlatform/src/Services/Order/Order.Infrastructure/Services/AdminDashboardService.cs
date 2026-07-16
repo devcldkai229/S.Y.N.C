@@ -45,6 +45,7 @@ public sealed class AdminDashboardService : IAdminDashboardService
 
         var ordersDaily = new List<DailyPointDto>();
         var gmvDaily = new List<DailyPointDto>();
+        var commissionDaily = new List<DailyPointDto>();
         for (var d = chartStart; d <= chartEnd; d = d.AddDays(1))
         {
             var dayStart = new DateTimeOffset(d.ToDateTime(TimeOnly.MinValue), TimeSpan.FromHours(7)).ToUniversalTime();
@@ -60,6 +61,11 @@ public sealed class AdminDashboardService : IAdminDashboardService
                 Date = d.ToString("yyyy-MM-dd"),
                 Value = dayOrders.Sum(o => o.TotalAmount),
             });
+            commissionDaily.Add(new DailyPointDto
+            {
+                Date = d.ToString("yyyy-MM-dd"),
+                Value = commissions.Where(c => c.CreatedAt >= dayStart && c.CreatedAt < dayEnd).Sum(c => c.CommissionAmount),
+            });
         }
 
         var statusDist = orders
@@ -72,9 +78,9 @@ public sealed class AdminDashboardService : IAdminDashboardService
         var topPartners = orders
             .Where(o => o.PlacedAt >= periodStart)
             .GroupBy(o => o.PartnerId)
-            .Select(g => new NamedAmountDto
+            .Select(g => new PartnerRevenueDto
             {
-                Name = g.Key.ToString()[..8] + "…",
+                PartnerId = g.Key,
                 Amount = g.Sum(o => o.TotalAmount),
             })
             .OrderByDescending(x => x.Amount)
@@ -87,9 +93,10 @@ public sealed class AdminDashboardService : IAdminDashboardService
             Days = days,
             Gmv = DashboardMetricsHelper.BuildKpi(gmvCurrent, gmvPrevious, DashboardMetricsHelper.BuildSparkline(gmvDaily)),
             OrderCount = DashboardMetricsHelper.BuildKpi(ordersCurrent, ordersPrevious, DashboardMetricsHelper.BuildSparkline(ordersDaily)),
-            CommissionRevenue = DashboardMetricsHelper.BuildKpi(commCurrent, commPrevious),
+            CommissionRevenue = DashboardMetricsHelper.BuildKpi(commCurrent, commPrevious, DashboardMetricsHelper.BuildSparkline(commissionDaily)),
             OrdersDaily = ordersDaily,
             GmvDaily = gmvDaily,
+            CommissionDaily = commissionDaily,
             OrderStatusDistribution = statusDist,
             TopPartners = topPartners,
         };

@@ -31,6 +31,12 @@ public class NamedAmountDto
     public decimal Amount { get; set; }
 }
 
+public class PartnerRevenueDto
+{
+    public Guid PartnerId { get; set; }
+    public decimal Amount { get; set; }
+}
+
 public class OrderDashboardOverviewDto
 {
     public DateTimeOffset GeneratedAt { get; set; }
@@ -40,6 +46,7 @@ public class OrderDashboardOverviewDto
     public KpiMetricDto CommissionRevenue { get; set; } = new();
     public IReadOnlyList<DailyPointDto> OrdersDaily { get; set; } = [];
     public IReadOnlyList<DailyPointDto> GmvDaily { get; set; } = [];
+    public IReadOnlyList<DailyPointDto> CommissionDaily { get; set; } = [];
     public IReadOnlyList<NamedCountDto> OrderStatusDistribution { get; set; } = [];
-    public IReadOnlyList<NamedAmountDto> TopPartners { get; set; } = [];
+    public IReadOnlyList<PartnerRevenueDto> TopPartners { get; set; } = [];
 }

@@ -20,6 +20,11 @@ export interface NamedAmount {
   amount: number;
 }
 
+export interface PartnerRevenue {
+  partnerId: string;
+  amount: number;
+}
+
 export interface StackedDailyPoint {
   date: string;
   subscription: number;
@@ -70,8 +75,9 @@ export interface OrderDashboardOverview {
   commissionRevenue: KpiMetric;
   ordersDaily: DailyPoint[];
   gmvDaily: DailyPoint[];
+  commissionDaily: DailyPoint[];
   orderStatusDistribution: NamedCount[];
-  topPartners: NamedAmount[];
+  topPartners: PartnerRevenue[];
 }
 
 export interface AiKpiMetric {

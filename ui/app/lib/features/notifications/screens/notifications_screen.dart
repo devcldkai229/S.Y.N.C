@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/notifications/notification_deep_link.dart';
+import 'package:sync_app/core/notifications/notification_detail_sheet.dart';
 import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
 import 'package:sync_app/core/notifications/notification_ui.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
@@ -161,7 +162,9 @@ class NotificationsScreen extends StatelessWidget {
               await context.read<NotificationsCubit>().markAsRead(n.id);
               getIt<NotificationInboxNotifier>().decrementUnread();
             }
-            if (context.mounted) NotificationDeepLink.open(context, n);
+            if (!context.mounted) return;
+            final opened = NotificationDeepLink.open(context, n);
+            if (!opened) await showNotificationDetailSheet(context, n);
           },
           child: NotificationCard(
             accentBar: !n.isRead,

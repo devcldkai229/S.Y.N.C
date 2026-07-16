@@ -38,6 +38,8 @@ export interface CommunityChallengeDto {
   endDate:          string;
   goalType:         ChallengeGoalType;
   targetValue:      number;
+  pointRewards?:    number | null;
+  gifts:            string[];
   participantCount: number;
   status:           string;
   address?:         string | null;
@@ -125,6 +127,8 @@ export interface CreateChallengeDto {
   endDate:              string;
   goalType:             ChallengeGoalType;
   targetValue:          number;
+  pointRewards?:        number | null;
+  gifts?:               string[];
   address:              string;
   latitude:             number;
   longitude:            number;

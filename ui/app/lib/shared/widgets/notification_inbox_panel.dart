@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/notifications/notification_deep_link.dart';
+import 'package:sync_app/core/notifications/notification_detail_sheet.dart';
 import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
 import 'package:sync_app/core/notifications/notification_ui.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
@@ -247,8 +248,10 @@ class _PanelNotificationTile extends StatelessWidget {
             getIt<NotificationInboxNotifier>().decrementUnread();
           }
           if (!context.mounted) return;
+          final rootContext = Navigator.of(context, rootNavigator: true).context;
           Navigator.of(context).pop();
-          NotificationDeepLink.open(context, notification);
+          final opened = NotificationDeepLink.open(context, notification);
+          if (!opened) await showNotificationDetailSheet(rootContext, notification);
         },
         child: NotificationCard(
           accentBar: !notification.isRead,
