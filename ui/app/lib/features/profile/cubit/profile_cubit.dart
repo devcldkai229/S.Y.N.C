@@ -2,9 +2,12 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
+import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/core/utils/safe_emit.dart';
 import 'package:sync_app/data/repositories/profile_repository.dart';
 import 'package:sync_app/features/profile/models/profile_models.dart';
+import 'package:sync_app/features/profile/services/current_user_profile_bus.dart';
+import 'package:sync_app/features/social/models/social_models.dart';
 
 part 'profile_state.dart';
 
@@ -12,6 +15,15 @@ class ProfileCubit extends Cubit<ProfileState> with SafeEmitMixin<ProfileState> 
   ProfileCubit(this._repository) : super(const ProfileState.initial());
 
   final ProfileRepository _repository;
+
+  void _publishCurrentUser(ProfileSettings settings) {
+    getIt<CurrentUserProfileBus>().publish(
+      SocialAuthorSnapshot(
+        fullName: settings.basic.fullName.isNotEmpty ? settings.basic.fullName : 'Bạn',
+        avatarUrl: settings.basic.avatarUrl,
+      ),
+    );
+  }
 
   Future<void> load() async {
     safeEmit(state.copyWith(status: ProfileStatus.loading, clearError: true));
@@ -24,6 +36,7 @@ class ProfileCubit extends Cubit<ProfileState> with SafeEmitMixin<ProfileState> 
         biometric: result.biometric,
         publicProfile: result.publicProfile,
       ));
+      _publishCurrentUser(result.settings);
     } catch (e) {
       safeEmit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));
     }
@@ -46,6 +59,7 @@ class ProfileCubit extends Cubit<ProfileState> with SafeEmitMixin<ProfileState> 
         timeZone: timeZone,
       );
       safeEmit(state.copyWith(status: ProfileStatus.success, settings: updated));
+      _publishCurrentUser(updated);
       return true;
     } catch (e) {
       safeEmit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));
@@ -60,6 +74,7 @@ class ProfileCubit extends Cubit<ProfileState> with SafeEmitMixin<ProfileState> 
       if (urls.isEmpty) throw Exception('Upload failed');
       final updated = await _repository.updateBasic(avatarUrl: urls.first);
       safeEmit(state.copyWith(status: ProfileStatus.success, settings: updated));
+      _publishCurrentUser(updated);
       return true;
     } catch (e) {
       safeEmit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));
@@ -74,6 +89,7 @@ class ProfileCubit extends Cubit<ProfileState> with SafeEmitMixin<ProfileState> 
       if (urls.isEmpty) throw Exception('Upload failed');
       final updated = await _repository.updateBasic(backgroundImageUrl: urls.first);
       safeEmit(state.copyWith(status: ProfileStatus.success, settings: updated));
+      _publishCurrentUser(updated);
       return true;
     } catch (e) {
       safeEmit(state.copyWith(status: ProfileStatus.failure, error: mapApiError(e)));

@@ -3,17 +3,25 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
+import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
+import 'package:sync_app/features/profile/services/current_user_profile_bus.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
 
 part 'social_state.dart';
 
 class SocialCubit extends Cubit<SocialState> {
-  SocialCubit(this._repository, this._profileApi) : super(const SocialState.initial());
+  SocialCubit(this._repository, this._profileApi) : super(const SocialState.initial()) {
+    _profileBusSub = getIt<CurrentUserProfileBus>().stream.listen((user) {
+      if (isClosed) return;
+      emit(state.copyWith(currentUser: user));
+    });
+  }
 
   final SocialRepository _repository;
   final ProfileApiService _profileApi;
+  StreamSubscription<SocialAuthorSnapshot>? _profileBusSub;
 
   static const _feedLimit = 20;
   static const _likeDebounceMs = 300;
@@ -23,13 +31,13 @@ class SocialCubit extends Cubit<SocialState> {
 
   Future<void> loadAll({bool refresh = true}) async {
     await Future.wait([
-      _loadCurrentUser(),
+      refreshCurrentUser(),
       loadStories(),
       loadFeed(refresh: refresh),
     ]);
   }
 
-  Future<void> _loadCurrentUser() async {
+  Future<void> refreshCurrentUser() async {
     try {
       final settings = await _profileApi.getProfileSettings();
       if (isClosed) return;
@@ -72,7 +80,7 @@ class SocialCubit extends Cubit<SocialState> {
   }
 
   Future<void> loadFeed({bool refresh = true}) async {
-    if (state.currentUserId.isEmpty) unawaited(_loadCurrentUser());
+    if (state.currentUserId.isEmpty) unawaited(refreshCurrentUser());
 
     if (refresh) {
       emit(
@@ -92,14 +100,18 @@ class SocialCubit extends Cubit<SocialState> {
     }
 
     try {
-      final page = await _repository.loadFeed(cursor: null, limit: _feedLimit);
+      final page = await _repository.loadFeed(
+        cursor: null,
+        limit: _feedLimit,
+        type: 'following',
+      );
       final likedIds = page.items.where((p) => p.isLikedByMe).map((p) => p.id).toList();
       emit(
         state.copyWith(
           status: SocialStatus.success,
           posts: page.items,
           nextCursor: page.nextCursor,
-          hasMore: page.nextCursor != null && page.nextCursor!.isNotEmpty,
+          hasMore: page.hasMore,
           isLoadingMore: false,
           likedPostIds: likedIds,
         ),
@@ -118,15 +130,21 @@ class SocialCubit extends Cubit<SocialState> {
     emit(state.copyWith(isLoadingMore: true, clearError: true));
 
     try {
-      final page = await _repository.loadFeed(cursor: cursor, limit: _feedLimit);
-      final merged = [...state.posts, ...page.items];
-      final newLikedIds = page.items.where((p) => p.isLikedByMe).map((p) => p.id).toList();
+      final page = await _repository.loadFeed(
+        cursor: cursor,
+        limit: _feedLimit,
+        type: 'following',
+      );
+      final existingIds = state.posts.map((p) => p.id).toSet();
+      final fresh = page.items.where((p) => !existingIds.contains(p.id)).toList();
+      final merged = [...state.posts, ...fresh];
+      final newLikedIds = fresh.where((p) => p.isLikedByMe).map((p) => p.id).toList();
       emit(
         state.copyWith(
           status: SocialStatus.success,
           posts: merged,
           nextCursor: page.nextCursor,
-          hasMore: page.nextCursor != null && page.nextCursor!.isNotEmpty,
+          hasMore: page.hasMore,
           isLoadingMore: false,
           likedPostIds: [...state.likedPostIds, ...newLikedIds],
         ),
@@ -322,6 +340,7 @@ class SocialCubit extends Cubit<SocialState> {
 
   @override
   Future<void> close() {
+    unawaited(_profileBusSub?.cancel() ?? Future.value());
     for (final timer in _likeDebounceTimers.values) {
       timer.cancel();
     }

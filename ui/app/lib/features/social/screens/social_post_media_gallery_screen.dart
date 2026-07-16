@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/features/social/screens/social_video_player_screen.dart';
 import 'package:sync_app/features/social/utils/social_media_utils.dart';
 
@@ -103,7 +104,7 @@ class _SocialPostMediaGalleryScreenState extends State<SocialPostMediaGalleryScr
                     minScale: 1,
                     maxScale: 4,
                     child: CachedNetworkImage(
-                      imageUrl: url,
+                      imageUrl: MediaUrlResolver.resolve(url) ?? url,
                       fit: BoxFit.contain,
                       placeholder: (_, __) => const Center(
                         child: CircularProgressIndicator(color: AppColors.primaryGreen),

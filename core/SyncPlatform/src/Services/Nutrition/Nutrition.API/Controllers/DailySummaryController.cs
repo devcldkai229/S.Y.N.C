@@ -1,5 +1,6 @@
 using Libs.Auth.Constants;
 using Libs.Auth.Context;
+using Libs.Shared.Time;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Common;
@@ -27,7 +28,7 @@ public class DailySummaryController : ControllerBase
         [FromQuery] DateOnly? date,
         CancellationToken cancellationToken)
     {
-        var targetDate = date ?? DateOnly.FromDateTime(DateTimeOffset.UtcNow.UtcDateTime);
+        var targetDate = date ?? UserLocalTime.TodayDate(null);
         var result = await _service.GetDailySummaryAsync(_currentUser.RequireUserId(), targetDate, cancellationToken);
         return Ok(ApiResponse<DailyNutritionSummaryDto>.SuccessResponse(result, "Daily summary retrieved successfully."));
     }

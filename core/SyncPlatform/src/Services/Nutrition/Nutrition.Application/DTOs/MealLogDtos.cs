@@ -46,6 +46,8 @@ public class CreateMealLogDto
 {
     public MealType MealType { get; set; }
     public DateTimeOffset? LoggedAt { get; set; }
+    /// <summary>Diary calendar day when <see cref="LoggedAt"/> is omitted.</summary>
+    public DateOnly? LogDate { get; set; }
     public List<MealLogItemInputDto> Items { get; set; } = [];
     public string? PhotoUrl { get; set; }
     public string? Notes { get; set; }

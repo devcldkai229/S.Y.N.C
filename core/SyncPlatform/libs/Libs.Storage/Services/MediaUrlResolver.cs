@@ -76,7 +76,17 @@ public sealed class MediaUrlResolver : IMediaUrlResolver
             Expires = DateTime.UtcNow.AddHours(1),
         };
 
-        return _s3.GetPreSignedURL(request);
+        var client = S3BucketClientResolver.Resolve(_s3, bucket);
+        var disposeClient = !ReferenceEquals(client, _s3);
+        try
+        {
+            return client.GetPreSignedURL(request);
+        }
+        finally
+        {
+            if (disposeClient)
+                client.Dispose();
+        }
     }
 
     private string ResolvePublicBucketUrl(string key)
@@ -85,7 +95,7 @@ public sealed class MediaUrlResolver : IMediaUrlResolver
             return PublicMediaUrls.Object(_options.PublicBaseUrl, key);
 
         var bucket = StorageBuckets.PublicAssets;
-        var region = _s3.Config.RegionEndpoint?.SystemName ?? "us-east-1";
+        var region = S3BucketClientResolver.DefaultRegion(_s3);
         return $"https://{bucket}.s3.{region}.amazonaws.com/{key.TrimStart('/')}";
     }
 
@@ -141,11 +151,26 @@ public sealed class MediaUrlResolver : IMediaUrlResolver
             if (slash <= 0)
                 return false;
 
-            bucket = path[..slash];
+            var candidate = path[..slash];
+
+            // When the path came from the media proxy marker (/api/v1/media/<bucket>/<key>),
+            // the first segment IS the bucket. Otherwise (e.g. "profiles/abc.jpg" stored as a
+            // bare S3 key) the first segment is NOT a bucket — treat the whole path as a key.
+            if (markerIndex < 0 && !LooksLikeBucketName(candidate))
+                return false;
+
+            bucket = candidate;
             key = path[(slash + 1)..];
             return !string.IsNullOrWhiteSpace(bucket) && !string.IsNullOrWhiteSpace(key);
         }
 
         return false;
     }
+
+    /// <summary>
+    /// Heuristic: real S3 bucket names in this project contain "sync-".
+    /// Folder prefixes like "profiles", "stories", "exercises_catalog" do not.
+    /// </summary>
+    private static bool LooksLikeBucketName(string segment) =>
+        segment.Contains("sync-", StringComparison.OrdinalIgnoreCase);
 }

@@ -19,6 +19,9 @@ abstract final class AppLocationResolver {
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        if (requestPermission) {
+          await Geolocator.openLocationSettings();
+        }
         return (lat: null, lng: null, access: LocationAccess.serviceDisabled);
       }
 
@@ -30,6 +33,9 @@ abstract final class AppLocationResolver {
         return (lat: null, lng: null, access: LocationAccess.permissionDenied);
       }
       if (permission == LocationPermission.deniedForever) {
+        if (requestPermission) {
+          await Geolocator.openAppSettings();
+        }
         return (lat: null, lng: null, access: LocationAccess.permissionDeniedForever);
       }
 

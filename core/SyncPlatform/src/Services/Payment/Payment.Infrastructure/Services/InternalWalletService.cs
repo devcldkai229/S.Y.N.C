@@ -22,6 +22,24 @@ public class InternalWalletService : IInternalWalletService
         if (request.Amount <= 0)
             return new ChargeMealOrderResponseDto { Success = false, FailureReason = "Amount must be greater than zero." };
 
+        // Idempotent: reuse succeeded MealPurchase for the same order.
+        var existing = await _db.Transactions.AsNoTracking().FirstOrDefaultAsync(
+            t => t.RelatedEntityType == "Order"
+                 && t.RelatedEntityId == request.OrderId
+                 && t.TransactionType == TransactionType.MealPurchase
+                 && t.PaymentMethod == PaymentMethod.Wallet
+                 && t.Status == TransactionStatus.Succeeded,
+            cancellationToken);
+        if (existing != null)
+        {
+            return new ChargeMealOrderResponseDto
+            {
+                Success = true,
+                TransactionId = existing.Id,
+                DiscountAmount = 0m,
+            };
+        }
+
         var wallet = await GetOrCreateWalletAsync(request.UserId, request.Currency, cancellationToken);
         var discount = 0m;
         if (request.VoucherId.HasValue)

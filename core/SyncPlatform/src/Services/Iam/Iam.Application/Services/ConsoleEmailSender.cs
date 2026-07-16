@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 namespace Iam.Application.Services;
 
 /// <summary>
-/// Fallback when <c>Email:Smtp:Enabled</c> is false — logs the full verify URL only.
+/// Fallback when <c>Email:Brevo:Enabled</c> is false — logs the full verify URL only.
 /// </summary>
 public class ConsoleEmailSender : IEmailSender
 {

@@ -18,9 +18,8 @@ public record TodayWorkoutActivityDto(
     int SkippedExercisesCount,
     int CompletedSetsCount,
     int TotalLoggedSetsCount,
-    bool HasWorkoutScheduledTomorrow,
-    string? TomorrowWorkoutName,
-    List<string> TomorrowExerciseNames,
-    string? TodayWorkoutAiCoachFeedback,
-    string? TodayWorkoutSessionFeedback
+    string WorkoutSource = "none",
+    string? TodayWorkoutType = null,
+    string? ScheduledLocalTime = null,
+    int MissedRecentCount = 0
 );

@@ -37,6 +37,12 @@ public class PartnerRepository : GenericRepository<Partner>, IPartnerRepository
         if (criteria.Type.HasValue)
             filters.Add(builder.Eq(x => x.Type, criteria.Type.Value));
 
+        if (criteria.MinRating is decimal minRating)
+            filters.Add(builder.Gte(x => x.RatingAverage, minRating));
+
+        if (criteria.PartnerIds is { Count: > 0 })
+            filters.Add(builder.In(x => x.Id, criteria.PartnerIds));
+
         if (!string.IsNullOrWhiteSpace(criteria.Query))
         {
             var pattern = new MongoDB.Bson.BsonRegularExpression(criteria.Query.Trim(), "i");

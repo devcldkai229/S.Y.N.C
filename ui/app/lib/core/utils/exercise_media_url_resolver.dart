@@ -1,7 +1,7 @@
 import 'package:sync_app/core/config/app_config.dart';
 import 'package:sync_app/core/utils/media_url_resolver.dart';
 
-/// Rewrites exercise S3/MinIO URLs to Gateway proxies the Flutter client can load.
+/// Rewrites exercise S3 URLs to Gateway proxies the Flutter client can load.
 abstract final class ExerciseMediaUrlResolver {
   static String? resolve(String? url) {
     if (url == null) return null;

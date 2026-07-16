@@ -1,145 +1,110 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
+import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/features/workouts/data/ai_roadmap_display_helpers.dart';
-import 'package:sync_app/features/workouts/data/ai_roadmap_repository.dart';
+import 'package:sync_app/features/workouts/models/roadmap_overview_models.dart';
 import 'package:sync_app/features/workouts/theme/workout_theme.dart';
-enum AiRoadmapSessionVisual { completed, nextUp, upcoming }
 
 class AiRoadmapSessionTimelineItem extends StatelessWidget {
   const AiRoadmapSessionTimelineItem({
     super.key,
-    required this.entry,
-    required this.visual,
-    this.animationDelay = Duration.zero,
+    required this.session,
   });
 
-  final AiRoadmapSessionEntry entry;
-  final AiRoadmapSessionVisual visual;
-  final Duration animationDelay;
+  final RoadmapSessionOverview session;
 
   @override
   Widget build(BuildContext context) {
-    final session = entry.session;
-    final intensity = AiRoadmapDisplayHelpers.intensityBand(entry.energyDemandScore);
-    final statusLabel = AiRoadmapDisplayHelpers.sessionStatusLabel(
-      isCompleted: visual == AiRoadmapSessionVisual.completed,
-      isNextUp: visual == AiRoadmapSessionVisual.nextUp,
-    );
+    final l10n = context.l10n;
+    final isCompleted = session.isCompleted;
+    final isNext = session.isNextUp;
+    final statusLabel = isCompleted
+        ? l10n.aiRoadmapStatusDone
+        : isNext
+            ? l10n.aiRoadmapStatusNext
+            : l10n.aiRoadmapStatusUpcoming;
+    final intensityColor = switch (session.intensity) {
+      'Light' => const Color(0xFF2E6B4F),
+      'High' => const Color(0xFFB45309),
+      _ => AppColors.primaryGreen,
+    };
+    final intensityLabel = switch (session.intensity) {
+      'Light' => l10n.aiRoadmapIntensityLight,
+      'High' => l10n.aiRoadmapIntensityHigh,
+      _ => l10n.aiRoadmapIntensityModerate,
+    };
 
+    final dateLabel = AiRoadmapDisplayHelpers.formatSessionDate(
+      session.scheduledDate,
+      locale: Localizations.localeOf(context),
+    );
     final meta = [
-      '${session.estimatedDurationMinutes} phút',
-      intensity.label,
-      if (session.exerciseCount > 0) '${session.exerciseCount} bài',
-      if (session.scheduledTime.isNotEmpty) session.scheduledTime,
+      if (dateLabel.isNotEmpty) dateLabel,
+      if (session.scheduledTime != null && session.scheduledTime!.isNotEmpty) session.scheduledTime!,
+      if (session.durationMin > 0) l10n.aiRoadmapMetaDuration(session.durationMin),
+      intensityLabel,
+      if (session.exerciseCount > 0) l10n.aiRoadmapMetaExercises(session.exerciseCount),
     ].join(' · ');
 
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-      builder: (context, opacity, child) => Opacity(opacity: opacity, child: child),
+    return InkWell(
+      onTap: () => context.push(AppRoutes.customSessionDetail(session.id)),
+      borderRadius: WorkoutTheme.radiusMd,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.only(bottom: 10),
+        constraints: const BoxConstraints(minHeight: 44),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: visual == AiRoadmapSessionVisual.nextUp
-              ? AppColors.primaryGreen.withValues(alpha: 0.1)
-              : WorkoutTheme.card,
+          color: WorkoutTheme.card,
           borderRadius: WorkoutTheme.radiusMd,
           border: Border.all(
-            color: visual == AiRoadmapSessionVisual.nextUp
-                ? AppColors.primaryGreen.withValues(alpha: 0.45)
-                : WorkoutTheme.border,
-            width: visual == AiRoadmapSessionVisual.nextUp ? 1.5 : 1,
+            color: isNext ? AppColors.primaryGreen.withValues(alpha: 0.35) : WorkoutTheme.border,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            if (visual == AiRoadmapSessionVisual.nextUp)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'TIẾP THEO',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1, color: AppColors.primaryGreen),
-                ),
+            Container(
+              width: 4,
+              height: 36,
+              decoration: BoxDecoration(
+                color: intensityColor,
+                borderRadius: BorderRadius.circular(4),
               ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (session.aiGenerated)
-                            Container(
-                              margin: const EdgeInsets.only(right: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: WorkoutTheme.lime.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text('AI', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: WorkoutTheme.forest)),
-                            ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: visual == AiRoadmapSessionVisual.completed
-                                  ? WorkoutTheme.border.withValues(alpha: 0.6)
-                                  : intensity.background,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              statusLabel,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: visual == AiRoadmapSessionVisual.completed ? WorkoutTheme.textMuted : intensity.accent,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        session.sessionTitle,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: visual == AiRoadmapSessionVisual.completed ? WorkoutTheme.textMuted : WorkoutTheme.textPrimary,
-                          decoration: visual == AiRoadmapSessionVisual.completed ? TextDecoration.lineThrough : null,
-                          decorationColor: WorkoutTheme.textMuted,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(meta, style: const TextStyle(fontSize: 12, color: WorkoutTheme.textMuted, height: 1.3)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text('Cường độ: ', style: TextStyle(fontSize: 11, color: WorkoutTheme.textMuted.withValues(alpha: 0.9))),
-                          Text(intensity.label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: intensity.accent)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                if (visual == AiRoadmapSessionVisual.nextUp) ...[
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () => context.push(AppRoutes.customSessionDetail(session.id)),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primaryGreen,
-                      minimumSize: const Size(88, 44),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    session.displayNameVi,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: isCompleted ? WorkoutTheme.textMuted : WorkoutTheme.textPrimary,
+                      decoration: isCompleted ? TextDecoration.lineThrough : null,
                     ),
-                    child: const Text('Bắt đầu', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    meta,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: WorkoutTheme.textMuted),
                   ),
                 ],
-              ],
+              ),
+            ),
+            Text(
+              statusLabel,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: isCompleted
+                    ? WorkoutTheme.textMuted
+                    : isNext
+                        ? AppColors.primaryGreen
+                        : WorkoutTheme.sage,
+              ),
             ),
           ],
         ),

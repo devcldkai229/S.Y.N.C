@@ -114,6 +114,25 @@ public class CreateVietQrPaymentResponseDto
     public string? FailureReason { get; set; }
 }
 
+public class OrderPaymentStatusDto
+{
+    public Guid? TransactionId { get; set; }
+
+    public Guid? OrderId { get; set; }
+
+    public long? PayOsOrderCode { get; set; }
+
+    public string Status { get; set; } = string.Empty;
+
+    public string? PaymentMethod { get; set; }
+
+    public decimal Amount { get; set; }
+
+    public string Currency { get; set; } = "VND";
+
+    public DateTimeOffset? ProcessedAt { get; set; }
+}
+
 public class MomoIpnPayloadDto
 {
     public string PartnerCode { get; set; } = string.Empty;

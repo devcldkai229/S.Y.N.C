@@ -1,6 +1,6 @@
 using Libs.Shared.Enums;
 using Roadmap.Application.Common;
-using Roadmap.Application.Defaults;
+
 using Roadmap.Application.DTOs;
 using Roadmap.Application.Exceptions;
 using Roadmap.Application.Mappers;
@@ -14,15 +14,18 @@ public class PersonalizedRoadmapService : IPersonalizedRoadmapService
     private readonly IPersonalizedRoadmapRepository _repository;
     private readonly IRoadmapSessionRepository _sessionRepository;
     private readonly IScheduledWorkoutRepository _scheduledWorkoutRepository;
+    private readonly IRoadmapRealtimePublisher _realtimePublisher;
 
     public PersonalizedRoadmapService(
         IPersonalizedRoadmapRepository repository,
         IRoadmapSessionRepository sessionRepository,
-        IScheduledWorkoutRepository scheduledWorkoutRepository)
+        IScheduledWorkoutRepository scheduledWorkoutRepository,
+        IRoadmapRealtimePublisher realtimePublisher)
     {
         _repository = repository;
         _sessionRepository = sessionRepository;
         _scheduledWorkoutRepository = scheduledWorkoutRepository;
+        _realtimePublisher = realtimePublisher;
     }
 
     public async Task<PersonalizedRoadmapDto> CreateAsync(CreatePersonalizedRoadmapDto dto, CancellationToken cancellationToken = default)
@@ -108,22 +111,17 @@ public class PersonalizedRoadmapService : IPersonalizedRoadmapService
         if (dto.RoadmapStatus is not null) entity.RoadmapStatus = dto.RoadmapStatus.Value;
 
         await _repository.UpdateAsync(id, entity, cancellationToken);
+
+        await _realtimePublisher.PublishRoadmapUpdatedAsync(
+            entity.UserId,
+            "roadmap_changed",
+            entity.Id,
+            cancellationToken: cancellationToken);
+
         return entity.ToDto();
     }
 
-    public async Task<PersonalizedRoadmapDto> BootstrapAuditRoadmapAsync(
-        Guid userId,
-        CancellationToken cancellationToken = default)
-    {
-        if (userId == Guid.Empty)
-            throw new BadRequestException("UserId is required.");
 
-        var existing = await GetActiveByUserIdAsync(userId, cancellationToken);
-        if (existing is not null)
-            return existing;
-
-        return await CreateAsync(AuditRoadmapDefaults.ForUser(userId), cancellationToken);
-    }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {

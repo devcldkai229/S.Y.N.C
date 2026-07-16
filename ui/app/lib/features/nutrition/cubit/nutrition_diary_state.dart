@@ -9,6 +9,7 @@ class NutritionDiaryState extends Equatable {
     this.summary,
     this.mealLogs = const [],
     this.errorMessage,
+    this.fitnessGoal,
   });
 
   final NutritionDiaryStatus status;
@@ -17,12 +18,16 @@ class NutritionDiaryState extends Equatable {
   final List<MealLog> mealLogs;
   final String? errorMessage;
 
+  /// Mục tiêu thể chất (LoseFat/Maintain/GainMuscle…) để hiện khuyến nghị calo/thâm hụt.
+  final String? fitnessGoal;
+
   NutritionDiaryState copyWith({
     NutritionDiaryStatus? status,
     DateTime? selectedDate,
     DailyNutritionSummary? summary,
     List<MealLog>? mealLogs,
     String? errorMessage,
+    String? fitnessGoal,
   }) =>
       NutritionDiaryState(
         status: status ?? this.status,
@@ -30,8 +35,10 @@ class NutritionDiaryState extends Equatable {
         summary: summary ?? this.summary,
         mealLogs: mealLogs ?? this.mealLogs,
         errorMessage: errorMessage,
+        fitnessGoal: fitnessGoal ?? this.fitnessGoal,
       );
 
   @override
-  List<Object?> get props => [status, selectedDate, summary, mealLogs, errorMessage];
+  List<Object?> get props =>
+      [status, selectedDate, summary, mealLogs, errorMessage, fitnessGoal];
 }

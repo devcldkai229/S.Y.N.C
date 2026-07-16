@@ -51,4 +51,21 @@ public class InternalOrderPaymentsController : ControllerBase
         var result = await _orderPaymentService.CreateMomoPaymentAsync(request, cancellationToken);
         return Ok(ApiResponse<CreateMomoPaymentResponseDto>.SuccessResponse(result));
     }
+
+    [HttpGet("status")]
+    public async Task<ActionResult<ApiResponse<OrderPaymentStatusDto>>> GetStatus(
+        [FromQuery] Guid? orderId,
+        [FromQuery] long? payOsOrderCode,
+        CancellationToken cancellationToken)
+    {
+        if (orderId is null && payOsOrderCode is null)
+            return BadRequest(ApiResponse<OrderPaymentStatusDto>.FailureResponse(
+                "Provide orderId or payOsOrderCode."));
+
+        var result = await _orderPaymentService.GetPaymentStatusAsync(orderId, payOsOrderCode, cancellationToken);
+        if (result is null)
+            return NotFound(ApiResponse<OrderPaymentStatusDto>.FailureResponse("Payment not found."));
+
+        return Ok(ApiResponse<OrderPaymentStatusDto>.SuccessResponse(result, "Payment status retrieved."));
+    }
 }

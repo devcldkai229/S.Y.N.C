@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:dio/dio.dart';
@@ -9,21 +8,23 @@ import 'package:logger/logger.dart';
 
 import 'package:sync_app/core/config/app_config.dart';
 import 'package:sync_app/core/network/api_paths.dart';
-import 'package:sync_app/core/network/auth_interceptor.dart';
+import 'package:sync_app/core/network/auth_storage_keys.dart';
+import 'package:sync_app/core/network/token_refresh_coordinator.dart';
+import 'package:sync_app/core/notifications/notification_realtime_service.dart';
+import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/auth/models/auth_models.dart';
+import 'package:sync_app/features/cyn/state/cyn_chat_session_store.dart';
 
 class AuthService {
-  AuthService(this._dio, this._storage);
+  AuthService(this._dio, this._storage, this._coordinator);
 
   final Dio _dio;
   final FlutterSecureStorage _storage;
+  final TokenRefreshCoordinator _coordinator;
   final Logger _logger = Logger();
 
-  static const _deviceIdKey = 'auth_device_id';
-  static const _accessTokenKey = AuthInterceptor.accessTokenKey;
-  static const _refreshTokenKey = 'auth_refresh_token';
-  static const _userEmailKey = 'auth_user_email';
-  static const _userNameKey = 'auth_user_name';
+  /// Fires when silent refresh fails and session tokens were cleared.
+  Stream<void> get onSessionExpired => _coordinator.onSessionExpired;
 
   bool _googleInitialized = false;
 
@@ -200,7 +201,7 @@ class AuthService {
     return message.isEmpty ? fallback : message;
   }
 
-  /// Confirms email via token (same as opening the link in email / IAM log when SMTP is off).
+  /// Confirms email via token (same as opening the link in email / IAM log when Brevo is off).
   Future<VerifyEmailResult> verifyEmail(String token) async {
     final trimmed = token.trim();
     if (trimmed.isEmpty) {
@@ -259,42 +260,73 @@ class AuthService {
     return envelope.data!;
   }
 
+  // ── Web-only: called by LoginScreen when GoogleSignIn.instance.authenticationEvents
+  // fires a GoogleSignInAuthenticationEventSignIn after the GIS renderButton() is clicked.
+  Future<AuthSession> loginWithGoogleAccount(GoogleSignInAccount account) async {
+    _logger.i('Web: processing signed-in Google account (${account.email})');
+    final webAuth = account.authentication;
+    final idToken = webAuth.idToken;
+    return _exchangeGoogleIdToken(idToken: idToken, email: account.email);
+  }
+
   Future<AuthSession> loginWithGoogle() async {
     _logger.i('Google sign-in started (platform=$_platformName)');
-    await _ensureGoogleSignInInitialized();
 
-    if (!GoogleSignIn.instance.supportsAuthenticate()) {
-      _logger.w('Google sign-in unsupported on this platform');
-      throw Exception(
-        'Google Sign-In chưa hỗ trợ trên platform này. '
-        'Hãy chạy Web (Chrome), Android hoặc iOS.',
-      );
+    String? idToken;
+    String? signedInEmail;
+
+    if (kIsWeb) {
+      // On Web, google_sign_in_web (GIS) does NOT support authenticate().
+      // Sign-in is triggered by clicking the renderButton() widget rendered in
+      // the login screen. Results arrive via GoogleSignIn.instance.authenticationEvents
+      // stream, which calls loginWithGoogleAccount() directly.
+      // loginWithGoogle() is therefore not the Web sign-in entry point.
+      throw const WebGoogleSignInRequiresButtonException();
+    } else {
+      // Android / iOS — use the unified instance API.
+      await _ensureGoogleSignInInitialized();
+
+      if (!GoogleSignIn.instance.supportsAuthenticate()) {
+        _logger.w('Google sign-in unsupported on this platform');
+        throw Exception(
+          'Google Sign-In chưa hỗ trợ trên platform này. '
+          'Hãy chạy Web (Chrome), Android hoặc iOS.',
+        );
+      }
+
+      GoogleSignInAccount googleUser;
+      try {
+        googleUser = await GoogleSignIn.instance.authenticate(
+          scopeHint: const <String>['email', 'profile', 'openid'],
+        );
+      } on GoogleSignInException catch (e) {
+        _logger.e(
+          'Google authenticate failed: code=${e.code.name} desc=${e.description}',
+        );
+        rethrow;
+      }
+      signedInEmail = googleUser.email;
+      _logger.i('Google authenticate OK (email=$signedInEmail)');
+      final mobileAuth = googleUser.authentication;
+      idToken = mobileAuth.idToken;
     }
 
-    GoogleSignInAccount googleUser;
-    try {
-      googleUser = await GoogleSignIn.instance.authenticate(
-        scopeHint: const <String>['email', 'profile', 'openid'],
-      );
-    } on GoogleSignInException catch (e) {
-      _logger.e(
-        'Google authenticate failed: code=${e.code.name} desc=${e.description}',
-      );
-      rethrow;
-    }
-    _logger.i('Google authenticate OK (email=${googleUser.email})');
-    final auth = googleUser.authentication;
-    final idToken = auth.idToken;
+    return _exchangeGoogleIdToken(idToken: idToken, email: signedInEmail);
+  }
+
+  Future<AuthSession> _exchangeGoogleIdToken({
+    required String? idToken,
+    required String? email,
+  }) async {
     if (idToken == null || idToken.isEmpty) {
-      _logger.e('Google ID token missing after authenticate');
+      _logger.e('Google ID token missing (email=$email)');
       throw Exception(
         'Google ID token bị thiếu. Hãy cấu hình GOOGLE_SERVER_CLIENT_ID '
         '(hoặc google-services) rồi thử lại.',
       );
     }
-
     final deviceId = await _getOrCreateDeviceId();
-    _logger.i('Calling IAM Google login API...');
+    _logger.i('Calling IAM Google login API (email=$email)...');
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.authGoogle,
       data: <String, dynamic>{
@@ -319,73 +351,65 @@ class AuthService {
   }
 
   Future<bool> isLoggedIn() async {
-    final token = await _storage.read(key: _accessTokenKey);
-    return token != null && token.isNotEmpty;
+    final refresh = await _storage.read(key: AuthStorageKeys.refreshToken);
+    if (refresh != null && refresh.isNotEmpty) return true;
+    final access = await _storage.read(key: AuthStorageKeys.accessToken);
+    return access != null &&
+        access.isNotEmpty &&
+        !TokenRefreshCoordinator.isAccessTokenExpired(access);
   }
 
   /// Returns a non-expired access token, refreshing when needed.
-  Future<String?> getValidAccessToken() async {
-    final token = await _storage.read(key: _accessTokenKey);
-    if (token == null || token.isEmpty) return null;
-    if (!_isAccessTokenExpired(token)) return token;
-    return _refreshAccessToken();
-  }
-
-  Future<String?> _refreshAccessToken() async {
-    final refreshToken = await _storage.read(key: _refreshTokenKey);
-    final deviceId = await _storage.read(key: _deviceIdKey);
-    if (refreshToken == null || refreshToken.isEmpty || deviceId == null || deviceId.isEmpty) {
-      return null;
-    }
-
-    try {
-      final response = await _dio.post<Map<String, dynamic>>(
-        ApiPaths.authRefresh,
-        data: <String, dynamic>{
-          'refreshToken': refreshToken,
-          'deviceId': deviceId,
-        },
-      );
-      final envelope = ApiEnvelope<AuthSession>.fromJson(
-        response.data ?? <String, dynamic>{},
-        AuthSession.fromJson,
-      );
-      if (!envelope.success || envelope.data == null) return null;
-      await _saveSession(envelope.data!);
-      return envelope.data!.accessToken;
-    } catch (e) {
-      _logger.w('Token refresh failed: $e');
-      return null;
-    }
-  }
-
-  bool _isAccessTokenExpired(String token) {
-    try {
-      final parts = token.split('.');
-      if (parts.length < 2) return true;
-      final normalized = base64Url.normalize(parts[1]);
-      final payload = json.decode(utf8.decode(base64Url.decode(normalized)));
-      final exp = payload['exp'];
-      if (exp is! num) return false;
-      final expiresAt = DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000, isUtc: true);
-      return DateTime.now().toUtc().isAfter(expiresAt.subtract(const Duration(seconds: 30)));
-    } catch (_) {
-      return true;
-    }
-  }
+  Future<String?> getValidAccessToken() => _coordinator.getValidAccessToken();
 
   Future<void> logout() async {
-    await _storage.deleteAll();
+    try {
+      if (getIt.isRegistered<NotificationRealtimeService>()) {
+        await getIt<NotificationRealtimeService>().stop();
+      }
+    } catch (_) {
+      // Ignore hub stop errors during logout.
+    }
+    try {
+      if (getIt.isRegistered<CynChatSessionStore>()) {
+        getIt<CynChatSessionStore>().clear();
+      }
+    } catch (_) {
+      // Ignore chat clear errors during logout.
+    }
+
+    await _bestEffortLogoutApi();
+    await _coordinator.clearSessionTokens(emitExpired: false);
   }
 
-  Future<void> _saveSession(AuthSession session) async {
-    await Future.wait(<Future<void>>[
-      _storage.write(key: _accessTokenKey, value: session.accessToken),
-      _storage.write(key: _refreshTokenKey, value: session.refreshToken),
-      _storage.write(key: _userEmailKey, value: session.email),
-      _storage.write(key: _userNameKey, value: session.fullName),
-    ]);
+  /// Revokes device refresh on IAM when access is still usable; never blocks local clear.
+  Future<void> _bestEffortLogoutApi() async {
+    final access = await _storage.read(key: AuthStorageKeys.accessToken);
+    final deviceId = await _storage.read(key: AuthStorageKeys.deviceId);
+    if (access == null ||
+        access.isEmpty ||
+        TokenRefreshCoordinator.isAccessTokenExpired(access) ||
+        deviceId == null ||
+        deviceId.isEmpty) {
+      return;
+    }
+    try {
+      await _dio.post<Map<String, dynamic>>(
+        ApiPaths.authLogout,
+        data: <String, dynamic>{'deviceId': deviceId},
+      );
+    } catch (e) {
+      _logger.w('Logout API failed (continuing local clear): $e');
+    }
   }
+
+  Future<void> _saveSession(AuthSession session) =>
+      _coordinator.saveSession(session);
+
+  /// Public entry-point for UI to ensure GoogleSignIn is initialized before
+  /// subscribing to [GoogleSignIn.instance.authenticationEvents] on Web.
+  /// Safe to call multiple times — only initializes once.
+  Future<void> ensureGoogleSignInInitialized() => _ensureGoogleSignInInitialized();
 
   Future<void> _ensureGoogleSignInInitialized() async {
     if (_googleInitialized) return;
@@ -414,7 +438,8 @@ class AuthService {
 
     await GoogleSignIn.instance.initialize(
       clientId: clientId.isEmpty ? null : clientId,
-      serverClientId: serverClientId.isEmpty ? null : serverClientId,
+      // google_sign_in_web asserts serverClientId == null on Web — never pass it.
+      serverClientId: (kIsWeb || serverClientId.isEmpty) ? null : serverClientId,
     );
     _googleInitialized = true;
   }
@@ -425,7 +450,7 @@ class AuthService {
   }
 
   Future<String> _getOrCreateDeviceId() async {
-    final existing = await _storage.read(key: _deviceIdKey);
+    final existing = await _storage.read(key: AuthStorageKeys.deviceId);
     if (existing != null && existing.isNotEmpty) {
       return existing;
     }
@@ -436,7 +461,7 @@ class AuthService {
     ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
     final generated =
         'sync-${_platformName.toLowerCase()}-${DateTime.now().millisecondsSinceEpoch}-$random';
-    await _storage.write(key: _deviceIdKey, value: generated);
+    await _storage.write(key: AuthStorageKeys.deviceId, value: generated);
     return generated;
   }
 
@@ -452,4 +477,15 @@ class AuthService {
         return 'Web';
     }
   }
+}
+
+/// Thrown by [AuthService.loginWithGoogle] on Web when no cached Google session
+/// exists and the UI must show [GoogleSignIn.instance.renderButton()] to let the
+/// user sign in interactively via GIS.
+class WebGoogleSignInRequiresButtonException implements Exception {
+  const WebGoogleSignInRequiresButtonException();
+
+  @override
+  String toString() =>
+      'WebGoogleSignInRequiresButtonException: use GoogleSignIn.instance.renderButton()';
 }

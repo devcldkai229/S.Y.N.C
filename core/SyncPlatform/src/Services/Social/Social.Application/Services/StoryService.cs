@@ -67,9 +67,7 @@ public class StoryService : IStoryService
                 ext = $".{contentType.Split('/').Last()}";
 
             var objectName = $"stories/{Guid.NewGuid():N}{ext}";
-            var resolvedContentType = string.IsNullOrWhiteSpace(contentType)
-                ? "application/octet-stream"
-                : contentType;
+            var resolvedContentType = ResolveUploadContentType(contentType, objectName);
 
             mediaUrl = await _storage.UploadFileAsync(
                 mediaStream,
@@ -146,16 +144,24 @@ public class StoryService : IStoryService
         }
 
         var groups = new List<StoryFeedGroupDto>();
+        var allStoryIds = visible.Select(s => s.Id).ToList();
+        var viewedIds = await _storyViews.GetViewedStoryIdsAsync(viewerId, allStoryIds, cancellationToken);
+
         foreach (var group in visible.GroupBy(x => x.AuthorId))
         {
-            var first = group.First();
+            var ordered = group.OrderBy(x => x.CreatedAt).ToList();
+            var first = ordered[0];
+            var latest = ordered[^1];
             var storyDtos = new List<StoryDto>();
 
-            foreach (var story in group.OrderBy(x => x.CreatedAt))
+            foreach (var story in ordered)
             {
                 var liked = await _storyInteractions.HasLikedAsync(story.Id, viewerId, cancellationToken);
                 storyDtos.Add(story.ToDto(liked, _media));
             }
+
+            var hasUnseen = ordered.Any(s => !viewedIds.Contains(s.Id));
+            var cover = ordered.LastOrDefault(s => !string.IsNullOrWhiteSpace(s.MediaUrl)) ?? latest;
 
             groups.Add(new StoryFeedGroupDto
             {
@@ -165,12 +171,19 @@ public class StoryService : IStoryService
                     FullName = first.AuthorSnapshot.FullName,
                     AvatarUrl = first.AuthorSnapshot.AvatarUrl,
                 },
+                StoryCount = storyDtos.Count,
+                LatestAt = latest.CreatedAt,
+                HasUnseen = hasUnseen,
+                CoverThumbUrl = _media.ResolveForDisplay(cover.MediaUrl),
                 Stories = storyDtos,
             });
         }
 
+        // IG-style: self first → unseen (by latestAt) → seen (by latestAt)
         return groups
-            .OrderByDescending(g => g.Stories.Max(s => s.CreatedAt))
+            .OrderByDescending(g => g.AuthorId == viewerId)
+            .ThenByDescending(g => g.HasUnseen)
+            .ThenByDescending(g => g.LatestAt)
             .ToList();
     }
 
@@ -299,5 +312,31 @@ public class StoryService : IStoryService
             return StoryMediaType.Image;
 
         return StoryMediaType.Image;
+    }
+
+    /// <summary>
+    /// Prefer a concrete image/video MIME when clients send octet-stream or empty CT.
+    /// </summary>
+    private static string ResolveUploadContentType(string? contentType, string objectName)
+    {
+        if (!string.IsNullOrWhiteSpace(contentType) &&
+            !contentType.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase))
+        {
+            return contentType;
+        }
+
+        var ext = Path.GetExtension(objectName).ToLowerInvariant();
+        return ext switch
+        {
+            ".webp" => "image/webp",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".mp4" => "video/mp4",
+            ".webm" => "video/webm",
+            ".mov" => "video/quicktime",
+            ".mpeg" or ".mpg" => "video/mpeg",
+            _ => string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType,
+        };
     }
 }

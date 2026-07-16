@@ -30,13 +30,18 @@ public class PartnerService : IPartnerService
         var pageNumber = Math.Max(1, request.PageNumber);
         var pageSize = Math.Clamp(request.PageSize, 1, 100);
 
+        double? radiusKm = request.RadiusKm;
+        if (request.Latitude is not null && request.Longitude is not null && radiusKm is null or <= 0)
+            radiusKm = 5;
+
         var criteria = new PartnerSearchCriteria
         {
             Query = request.Query,
             Status = PartnerStatus.Active,
             Latitude = request.Latitude,
             Longitude = request.Longitude,
-            RadiusKm = request.RadiusKm,
+            RadiusKm = radiusKm,
+            MinRating = request.MinRating,
             PageNumber = pageNumber,
             PageSize = pageSize,
         };
@@ -45,6 +50,22 @@ public class PartnerService : IPartnerService
             && Enum.TryParse<PartnerType>(request.Type, true, out var type))
         {
             criteria.Type = type;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Dish))
+        {
+            var dishCriteria = new FoodMenuItemSearchCriteria
+            {
+                Query = request.Dish.Trim(),
+                Availability = AvailabilityStatus.Available,
+                PageNumber = 1,
+                PageSize = 200,
+            };
+            var (menuHits, _) = await _foodMenuItemRepository.SearchPagedAsync(dishCriteria, cancellationToken);
+            var partnerIds = menuHits.Select(x => x.PartnerId).Distinct().ToList();
+            if (partnerIds.Count == 0)
+                return ([], new PaginationMetadata(pageNumber, pageSize, 0));
+            criteria.PartnerIds = partnerIds;
         }
 
         var (items, total) = await _partnerRepository.SearchPagedAsync(criteria, cancellationToken);

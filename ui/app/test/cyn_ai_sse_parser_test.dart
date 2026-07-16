@@ -32,13 +32,20 @@ void main() {
     expect(events.first.data, 'Chào');
   });
 
-  test('parse plain-text message as token fallback', () async {
+  test('ignore unnamed plain-text SSE (not display text)', () async {
     const block = 'data: Xin chào\n\n';
     final events = await parseAiSseBytes(Stream.value(utf8.encode(block))).toList();
 
+    expect(events, isEmpty);
+  });
+
+  test('unnamed SSE with type final still maps to final', () async {
+    const block = 'data: {"type":"final","text":"Legacy final"}\n\n';
+    final events = await parseAiSseBytes(Stream.value(utf8.encode(block))).toList();
+
     expect(events, hasLength(1));
-    expect(events.first.type, 'token');
-    expect(events.first.data, 'Xin chào');
+    expect(events.first.type, 'final');
+    expect(events.first.finalText, 'Legacy final');
   });
 
   test('parse token stream then final and done', () async {

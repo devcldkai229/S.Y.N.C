@@ -1,16 +1,15 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:sync_app/core/config/app_config.dart';
-import 'package:sync_app/core/network/auth_interceptor.dart';
 import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
 import 'package:sync_app/data/models/notification_models.dart';
+import 'package:sync_app/features/auth/services/auth_service.dart';
 
 /// Maintains a SignalR connection to Notification service for live in-app events.
 class NotificationRealtimeService {
-  NotificationRealtimeService(this._storage, this._inbox);
+  NotificationRealtimeService(this._auth, this._inbox);
 
-  final FlutterSecureStorage _storage;
+  final AuthService _auth;
   final NotificationInboxNotifier _inbox;
 
   HubConnection? _connection;
@@ -20,7 +19,7 @@ class NotificationRealtimeService {
     if (_connecting) return;
     if (_connection?.state == HubConnectionState.Connected) return;
 
-    final token = await _storage.read(key: AuthInterceptor.accessTokenKey);
+    final token = await _auth.getValidAccessToken();
     if (token == null || token.isEmpty) return;
 
     _connecting = true;

@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1. Fill secrets in appsettings.Development.json.",
-
   "Logging": {
     "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning",
       "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
     }
   },
@@ -12,12 +12,20 @@
     "BaseUrl": "http://localhost:5106",
     "InternalApiKey": "dev_internal_api_key_sync_platform"
   },
-  "RoadmapService": {
-    "BaseUrl": "http://localhost:5118",
-    "InternalApiKey": "dev_internal_api_key_sync_platform"
-  },
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"
+  },
+  "DevSeed": {
+    "Enabled": true
+  },
+  "Iam": {
+    "Seed": {
+      "Enabled": true,
+      "ApplyMigrations": true,
+      "SeedAchievements": true,
+      "SeedDemoUsers": true,
+      "DemoUserPassword": "SyncDemo123!"
+    }
   },
   "GoogleAuth": {
     "ClientIds": [
@@ -36,22 +44,24 @@
   },
   "Email": {
     "VerificationBaseUrl": "http://localhost:5288",
-    "Ses": {
-      "_comment": "Production: set Enabled=true and verify FromEmail/domain in AWS SES (ap-southeast-1). Takes priority over SMTP.",
-      "Enabled": false,
-      "FromEmail": "noreply@sync.vn",
-      "FromName": "Sync Lifestyle",
-      "ConfigurationSetName": ""
-    },
-    "Smtp": {
+    "Brevo": {
       "Enabled": true,
-      "Host": "smtp.gmail.com",
+      "Host": "smtp-relay.brevo.com",
       "Port": 587,
-      "UserName": "kag40222@gmail.com",
-      "Password": "jegh ucpq tcom akcz",
+      "UserName": "<YOUR_BREVO_SMTP_LOGIN>",
+      "Password": "<YOUR_BREVO_SMTP_KEY>",
       "FromEmail": "kag40222@gmail.com",
-      "FromName": "Sync",
+      "FromName": "Sync Lifestyle",
       "UseSsl": true
     }
-  }
+  },
+  "AllowedHosts": "*",
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1."
 }

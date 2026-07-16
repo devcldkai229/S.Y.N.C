@@ -12,36 +12,29 @@ public class EmailSettings
     /// </summary>
     public string VerificationBaseUrl { get; set; } = "http://localhost:5288";
 
-    /// <summary>AWS SES (production). Takes priority over SMTP when enabled.</summary>
-    public SesOptions Ses { get; set; } = new();
-
-    public SmtpOptions Smtp { get; set; } = new();
+    /// <summary>Brevo SMTP relay — the only email provider.</summary>
+    public BrevoOptions Brevo { get; set; } = new();
 }
 
-public class SesOptions
+public class BrevoOptions
 {
-    /// <summary>When true, sends via AWS SES using credentials from the AWS section.</summary>
     public bool Enabled { get; set; }
 
-    /// <summary>Verified sender in SES (domain or email identity).</summary>
-    public string FromEmail { get; set; } = string.Empty;
+    public string Host { get; set; } = "smtp-relay.brevo.com";
 
-    public string FromName { get; set; } = "Sync Lifestyle";
-
-    /// <summary>Optional SES configuration set for bounce/complaint tracking.</summary>
-    public string? ConfigurationSetName { get; set; }
-}
-
-public class SmtpOptions
-{
-    /// <summary>When false, falls back to <see cref="ConsoleEmailSender"/> (log only).</summary>
-    public bool Enabled { get; set; }
-
-    public string Host { get; set; } = string.Empty;
     public int Port { get; set; } = 587;
+
+    /// <summary>Brevo SMTP login (e.g. 96626e001@smtp-brevo.com).</summary>
     public string UserName { get; set; } = string.Empty;
+
+    /// <summary>Brevo SMTP key (xsmtpsib-...).</summary>
     public string Password { get; set; } = string.Empty;
+
+    /// <summary>Verified sender address in Brevo.</summary>
     public string FromEmail { get; set; } = string.Empty;
+
     public string FromName { get; set; } = "Sync Lifestyle";
+
+    /// <summary>Use STARTTLS on port 587 when true.</summary>
     public bool UseSsl { get; set; } = true;
 }

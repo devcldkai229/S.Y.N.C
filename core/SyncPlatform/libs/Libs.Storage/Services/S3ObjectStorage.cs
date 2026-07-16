@@ -1,7 +1,5 @@
-using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Libs.Shared.Storage;
 using Libs.Storage.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -9,13 +7,6 @@ namespace Libs.Storage.Services;
 
 public sealed class S3ObjectStorage
 {
-    private static readonly IReadOnlyDictionary<string, string> KnownBucketRegions =
-        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-        {
-            [StorageBuckets.PublicAssets] = "us-east-1",
-            ["sync-objs"] = "ap-southeast-1",
-        };
-
     private readonly IAmazonS3 _s3;
     private readonly ObjectStorageOptions _options;
 
@@ -47,7 +38,19 @@ public sealed class S3ObjectStorage
         if (stream.CanSeek)
             request.Headers.ContentLength = objectSize;
 
-        await _s3.PutObjectAsync(request, cancellationToken);
+        // Bucket may live in a different region than AWS:Region.
+        var client = S3BucketClientResolver.Resolve(_s3, _options.Bucket);
+        var disposeClient = !ReferenceEquals(client, _s3);
+        try
+        {
+            await client.PutObjectAsync(request, cancellationToken);
+        }
+        finally
+        {
+            if (disposeClient)
+                client.Dispose();
+        }
+
         return ResolveUrl(key);
     }
 
@@ -62,7 +65,7 @@ public sealed class S3ObjectStorage
         if (string.IsNullOrWhiteSpace(bucket) || string.IsNullOrWhiteSpace(objectKey))
             return null;
 
-        var client = ResolveClientForBucket(bucket);
+        var client = S3BucketClientResolver.Resolve(_s3, bucket);
         var disposeClient = !ReferenceEquals(client, _s3);
         try
         {
@@ -106,9 +109,11 @@ public sealed class S3ObjectStorage
 
     public async Task<bool> ObjectExistsAsync(string objectKey, CancellationToken cancellationToken = default)
     {
+        var client = S3BucketClientResolver.Resolve(_s3, _options.Bucket);
+        var disposeClient = !ReferenceEquals(client, _s3);
         try
         {
-            await _s3.GetObjectMetadataAsync(new GetObjectMetadataRequest
+            await client.GetObjectMetadataAsync(new GetObjectMetadataRequest
             {
                 BucketName = _options.Bucket,
                 Key = objectKey.TrimStart('/'),
@@ -119,18 +124,11 @@ public sealed class S3ObjectStorage
         {
             return false;
         }
-    }
-
-    private IAmazonS3 ResolveClientForBucket(string bucket)
-    {
-        if (!KnownBucketRegions.TryGetValue(bucket, out var region))
-            return _s3;
-
-        var current = _s3.Config.RegionEndpoint?.SystemName;
-        if (string.Equals(current, region, StringComparison.OrdinalIgnoreCase))
-            return _s3;
-
-        return new AmazonS3Client(RegionEndpoint.GetBySystemName(region));
+        finally
+        {
+            if (disposeClient)
+                client.Dispose();
+        }
     }
 
     private static string GuessContentType(string objectKey)

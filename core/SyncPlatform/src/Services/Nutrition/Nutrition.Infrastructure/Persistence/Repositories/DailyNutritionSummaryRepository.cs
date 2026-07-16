@@ -33,4 +33,16 @@ public class DailyNutritionSummaryRepository : GenericRepository<DailyNutritionS
         summary.UpdatedAt = DateTimeOffset.UtcNow;
         await Collection.ReplaceOneAsync(x => x.Id == existing.Id, summary, cancellationToken: cancellationToken);
     }
+
+    public async Task<IReadOnlyList<DailyNutritionSummary>> GetByUserAndDateRangeAsync(
+        Guid userId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken = default)
+    {
+        return await Collection
+            .Find(x => x.UserId == userId && x.Date >= from && x.Date <= to)
+            .SortBy(x => x.Date)
+            .ToListAsync(cancellationToken);
+    }
 }

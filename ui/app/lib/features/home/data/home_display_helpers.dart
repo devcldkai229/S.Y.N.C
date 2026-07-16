@@ -82,7 +82,6 @@ abstract final class HomeDisplayHelpers {
 
   static String weightLabel(double? kg) {
     if (kg == null) return '—';
-    final rounded = kg.roundToDouble() == kg ? kg.toInt() : kg;
-    return '${rounded}kg';
+    return '${kg.round()}kg';
   }
 }

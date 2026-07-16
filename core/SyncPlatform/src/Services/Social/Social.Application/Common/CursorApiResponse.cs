@@ -1,7 +1,7 @@
 namespace Social.Application.Common;
 
 /// <summary>
-/// Standard API envelope for cursor-paginated feeds (data + nextCursor).
+/// Standard API envelope for cursor-paginated feeds (data + nextCursor + hasMore).
 /// </summary>
 public class CursorApiResponse<T>
 {
@@ -9,12 +9,14 @@ public class CursorApiResponse<T>
     public string Message { get; set; } = string.Empty;
     public T? Data { get; set; }
     public string? NextCursor { get; set; }
+    public bool HasMore { get; set; }
     public object? Errors { get; set; }
 
     public static CursorApiResponse<T> SuccessResponse(
         T data,
         string? nextCursor,
-        string message = "Operation completed successfully.")
+        string message = "Operation completed successfully.",
+        bool? hasMore = null)
     {
         return new CursorApiResponse<T>
         {
@@ -22,6 +24,7 @@ public class CursorApiResponse<T>
             Message = message,
             Data = data,
             NextCursor = nextCursor,
+            HasMore = hasMore ?? !string.IsNullOrEmpty(nextCursor),
             Errors = null,
         };
     }
@@ -34,6 +37,7 @@ public class CursorApiResponse<T>
             Message = message,
             Data = default,
             NextCursor = null,
+            HasMore = false,
             Errors = errors,
         };
     }

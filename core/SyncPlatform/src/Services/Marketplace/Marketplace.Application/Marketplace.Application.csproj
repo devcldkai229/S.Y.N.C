@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Marketplace.Domain\Marketplace.Domain.csproj" />
-    <ProjectReference Include="..\..\..\..\libs\Contract\Contract.csproj" />
   </ItemGroup>
 
   <ItemGroup>

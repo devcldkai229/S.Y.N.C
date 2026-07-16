@@ -9,6 +9,8 @@ public class FoodMenuItemDto
 
     public Guid PartnerId { get; set; }
 
+    public string? PartnerName { get; set; }
+
     public string NameVi { get; set; } = string.Empty;
 
     public string NameEn { get; set; } = string.Empty;

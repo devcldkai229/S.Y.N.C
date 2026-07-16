@@ -76,7 +76,7 @@ class SocialStoriesRow extends StatelessWidget {
             }
 
             final group = storyGroups[index - 1];
-            final isSeen = seenAuthorIds.contains(group.authorId);
+            final isSeen = !group.hasUnseen || seenAuthorIds.contains(group.authorId);
             return _StoryCard(
               group: group,
               isSeen: isSeen,
@@ -231,6 +231,7 @@ class _StoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final story = group.previewStory;
     final ringColor = isSeen ? AppColors.borderLight : _StoryColors.unseenRing;
+    final coverUrl = _ringCoverUrl(group, story);
 
     return GestureDetector(
       onTap: onTap,
@@ -242,7 +243,7 @@ class _StoryCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (story == null || story.isTextOnly)
+              if (coverUrl == null)
                 Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
@@ -251,13 +252,19 @@ class _StoryCard extends StatelessWidget {
                       colors: [Color(0xFF16803A), Color(0xFF22C55E)],
                     ),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.format_quote_rounded, color: Colors.white70, size: 36),
+                  child: Center(
+                    child: Icon(
+                      story != null && story.isVideo
+                          ? Icons.videocam_rounded
+                          : Icons.format_quote_rounded,
+                      color: Colors.white70,
+                      size: 36,
+                    ),
                   ),
                 )
               else
                 CachedNetworkImage(
-                  imageUrl: story.mediaUrl,
+                  imageUrl: coverUrl,
                   fit: BoxFit.cover,
                   placeholder: (_, __) => Container(color: AppColors.lightGreen),
                   errorWidget: (_, __, ___) => Container(color: AppColors.lightGreen),
@@ -313,5 +320,28 @@ class _StoryCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Prefer an image frame for the ring; never feed a video URL into CachedNetworkImage.
+  static String? _ringCoverUrl(SocialStoryFeedGroup group, SocialStory? story) {
+    SocialStory? imageStory;
+    for (final s in group.stories) {
+      if (!s.isTextOnly && !s.isVideo && s.mediaUrl.trim().isNotEmpty) {
+        imageStory = s;
+      }
+    }
+    if (imageStory != null) {
+      return MediaUrlResolver.resolve(imageStory.mediaUrl) ?? imageStory.mediaUrl;
+    }
+
+    final cover = group.coverThumbUrl?.trim();
+    if (cover != null &&
+        cover.isNotEmpty &&
+        (story == null || (!story.isVideo && !story.isTextOnly))) {
+      return MediaUrlResolver.resolve(cover) ?? cover;
+    }
+
+    if (story == null || story.isTextOnly || story.isVideo) return null;
+    return MediaUrlResolver.resolve(story.mediaUrl) ?? story.mediaUrl;
   }
 }

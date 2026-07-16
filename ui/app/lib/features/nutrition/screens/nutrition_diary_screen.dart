@@ -21,7 +21,7 @@ class NutritionDiaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => NutritionDiaryCubit(getIt())..load(),
+      create: (_) => NutritionDiaryCubit(getIt(), getIt())..load(),
       child: const AppShellOverlayScaffold(child: _NutritionDiaryView()),
     );
   }
@@ -133,6 +133,10 @@ class _NutritionDiaryViewState extends State<_NutritionDiaryView> {
                               ),
                             ),
                             const SizedBox(height: 12),
+                            _GoalCalorieAdviceCard(
+                              targetCalories: summary.targetCalories,
+                              fitnessGoal: state.fitnessGoal,
+                            ),
                             Row(
                               children: [
                                 MacroBar(
@@ -169,28 +173,52 @@ class _NutritionDiaryViewState extends State<_NutritionDiaryView> {
                             title: 'Bữa sáng',
                             icon: Icons.wb_sunny_outlined,
                             logs: cubit.logsForMeal('Breakfast'),
-                            onAdd: () => context.push(AppRoutes.nutritionFoodSearch, extra: MealTypeUi.breakfast),
+                            onAdd: () => context.push(
+                              AppRoutes.nutritionFoodSearch,
+                              extra: NutritionFoodSearchArgs(
+                                mealType: MealTypeUi.breakfast,
+                                diaryDate: state.selectedDate,
+                              ),
+                            ),
                             onDeleteLog: (log) => cubit.deleteMealLog(log.id),
                           ),
                           MealSectionCard(
                             title: 'Bữa trưa',
                             icon: Icons.lunch_dining_outlined,
                             logs: cubit.logsForMeal('Lunch'),
-                            onAdd: () => context.push(AppRoutes.nutritionFoodSearch, extra: MealTypeUi.lunch),
+                            onAdd: () => context.push(
+                              AppRoutes.nutritionFoodSearch,
+                              extra: NutritionFoodSearchArgs(
+                                mealType: MealTypeUi.lunch,
+                                diaryDate: state.selectedDate,
+                              ),
+                            ),
                             onDeleteLog: (log) => cubit.deleteMealLog(log.id),
                           ),
                           MealSectionCard(
                             title: 'Bữa tối',
                             icon: Icons.nights_stay_outlined,
                             logs: cubit.logsForMeal('Dinner'),
-                            onAdd: () => context.push(AppRoutes.nutritionFoodSearch, extra: MealTypeUi.dinner),
+                            onAdd: () => context.push(
+                              AppRoutes.nutritionFoodSearch,
+                              extra: NutritionFoodSearchArgs(
+                                mealType: MealTypeUi.dinner,
+                                diaryDate: state.selectedDate,
+                              ),
+                            ),
                             onDeleteLog: (log) => cubit.deleteMealLog(log.id),
                           ),
                           MealSectionCard(
                             title: 'Bữa phụ',
                             icon: Icons.cookie_outlined,
                             logs: cubit.logsForMeal('Snack'),
-                            onAdd: () => context.push(AppRoutes.nutritionFoodSearch, extra: MealTypeUi.snack),
+                            onAdd: () => context.push(
+                              AppRoutes.nutritionFoodSearch,
+                              extra: NutritionFoodSearchArgs(
+                                mealType: MealTypeUi.snack,
+                                diaryDate: state.selectedDate,
+                              ),
+                            ),
                             onDeleteLog: (log) => cubit.deleteMealLog(log.id),
                           ),
                         ],
@@ -198,6 +226,89 @@ class _NutritionDiaryViewState extends State<_NutritionDiaryView> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Khuyến nghị calo theo mục tiêu (giảm mỡ → thâm hụt 200-400 kcal + ít dầu mỡ).
+/// Mục tiêu chuẩn giữ nguyên ở vòng calo; card này chỉ thêm hướng dẫn.
+class _GoalCalorieAdviceCard extends StatelessWidget {
+  const _GoalCalorieAdviceCard({
+    required this.targetCalories,
+    required this.fitnessGoal,
+  });
+
+  final int targetCalories;
+  final String? fitnessGoal;
+
+  @override
+  Widget build(BuildContext context) {
+    if (targetCalories <= 0) return const SizedBox.shrink();
+    final goal = (fitnessGoal ?? '').toLowerCase();
+    final isDeficit =
+        goal.contains('lose') || goal.contains('fat') || goal.contains('cut');
+    final isSurplus = goal.contains('gain') ||
+        goal.contains('muscle') ||
+        goal.contains('bulk');
+    // Chưa rõ mục tiêu → không hiện (tránh khuyên bừa).
+    if (!isDeficit && !isSurplus && goal.isEmpty) return const SizedBox.shrink();
+
+    final String title;
+    final String body;
+    if (isDeficit) {
+      final low = targetCalories - 400;
+      final high = targetCalories - 200;
+      title = 'Gợi ý giảm mỡ';
+      body =
+          'Mục tiêu chuẩn $targetCalories kcal. Để giảm mỡ bền vững, hãy ăn thâm hụt '
+          '200–400 kcal — nhắm khoảng $low–$high kcal/ngày, ưu tiên món ít dầu mỡ, '
+          'nhiều đạm và rau xanh.';
+    } else if (isSurplus) {
+      final low = targetCalories + 200;
+      final high = targetCalories + 400;
+      title = 'Gợi ý tăng cơ';
+      body =
+          'Mục tiêu chuẩn $targetCalories kcal. Để tăng cơ, ăn thặng dư nhẹ 200–400 kcal — '
+          'khoảng $low–$high kcal/ngày, ưu tiên đạm và tinh bột phức, hạn chế dầu mỡ xấu.';
+    } else {
+      title = 'Gợi ý duy trì';
+      body =
+          'Ăn quanh mục tiêu $targetCalories kcal (±10%), cân bằng đạm–tinh bột–béo và '
+          'ưu tiên món ít dầu mỡ.';
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: NutritionTheme.cardDecoration(color: NutritionTheme.amberBg),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.eco_outlined, size: 20, color: NutritionTheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                    color: NutritionTheme.heading,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  body,
+                  style: const TextStyle(fontSize: 12.5, color: NutritionTheme.textMuted, height: 1.35),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

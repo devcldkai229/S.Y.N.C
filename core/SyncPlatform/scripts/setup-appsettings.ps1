@@ -36,4 +36,4 @@ Write-Host "Created/updated: $created  |  Skipped (exists): $skipped" -Foregroun
 if ($skipped -gt 0) {
   Write-Host "Use -Force to overwrite existing files." -ForegroundColor DarkGray
 }
-Write-Host "Fill secrets in appsettings.Development.json - see CONFIGURATION.md" -ForegroundColor Yellow
+Write-Host "Fill secrets in each service appsettings.Development.json (Jwt, connection strings, API keys)." -ForegroundColor Yellow

@@ -22,7 +22,7 @@ public static class MongoDbIndexInitializer
         await collection.Indexes.CreateManyAsync(
         [
             new CreateIndexModel<Partner>(ix.Ascending(x => x.Slug), new CreateIndexOptions { Unique = true, Name = "UIX_Slug" }),
-            new CreateIndexModel<Partner>(ix.Ascending(x => x.OwnerUserId), new CreateIndexOptions { Unique = true, Name = "UIX_OwnerUserId" }),
+            new CreateIndexModel<Partner>(ix.Ascending(x => x.OwnerUserId), new CreateIndexOptions { Name = "IX_OwnerUserId" }),
             new CreateIndexModel<Partner>(ix.Ascending(x => x.Status).Ascending(x => x.Type), new CreateIndexOptions { Name = "IX_Status_Type" }),
             new CreateIndexModel<Partner>(ix.Geo2DSphere(x => x.Location), new CreateIndexOptions { Name = "GEO2D_Location" }),
         ]);

@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Exercise.API.Exceptions;
 using Exercise.Application.Common;
 using Exercise.Application.Extensions;
@@ -12,7 +12,6 @@ using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddSharedConfiguration(builder.Environment);
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

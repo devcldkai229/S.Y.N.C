@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sync_app/app/router/app_router.dart';
 import 'package:sync_app/core/config/app_config.dart';
+import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/locale/locale_cubit.dart';
 import 'package:sync_app/core/theme/app_theme.dart';
 import 'package:sync_app/core/utils/injection.dart';
@@ -14,6 +17,7 @@ import 'package:sync_app/data/repositories/onboarding_repository.dart';
 import 'package:sync_app/data/repositories/profile_repository.dart';
 import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/data/repositories/workout_repository.dart';
+import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/marketplace/cubit/marketplace_cart_cubit.dart';
 
 void main() async {
@@ -28,10 +32,36 @@ void main() async {
   });
 }
 
-class SyncApp extends StatelessWidget {
+class SyncApp extends StatefulWidget {
   const SyncApp({super.key, required this.localeCubit});
 
   final LocaleCubit localeCubit;
+
+  @override
+  State<SyncApp> createState() => _SyncAppState();
+}
+
+class _SyncAppState extends State<SyncApp> {
+  StreamSubscription<void>? _sessionExpiredSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _sessionExpiredSub = getIt<AuthService>().onSessionExpired.listen((_) {
+      AppRouter.router.go(AppRoutes.login);
+      final ctx = rootNavigatorKey.currentContext;
+      if (ctx == null || !ctx.mounted) return;
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(content: Text('Phiên đăng nhập hết hạn')),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _sessionExpiredSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +77,7 @@ class SyncApp extends StatelessWidget {
       ],
       child: MultiBlocProvider(
         providers: [
-          BlocProvider.value(value: localeCubit),
+          BlocProvider.value(value: widget.localeCubit),
           BlocProvider.value(value: getIt<MarketplaceCartCubit>()),
         ],
         child: BlocBuilder<LocaleCubit, Locale>(

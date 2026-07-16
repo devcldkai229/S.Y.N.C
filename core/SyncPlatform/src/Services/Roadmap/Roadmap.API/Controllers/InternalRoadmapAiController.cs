@@ -1,4 +1,5 @@
 using Libs.Shared.Enums;
+using Libs.Shared.Time;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Roadmap.Application.Common;
@@ -42,6 +43,7 @@ public class InternalRoadmapAiController : ControllerBase
         Guid userId,
         [FromQuery] DateTimeOffset? from,
         [FromQuery] DateTimeOffset? to,
+        [FromQuery] string? timeZoneId,
         CancellationToken cancellationToken)
     {
         var active = await _roadmapService.GetActiveByUserIdAsync(userId, cancellationToken);
@@ -49,8 +51,20 @@ public class InternalRoadmapAiController : ControllerBase
             return Ok(ApiResponse<IReadOnlyList<RoadmapSessionDto>>.SuccessResponse(
                 [], "No active roadmap found."));
 
-        var end = to ?? DateTimeOffset.UtcNow.AddDays(1);
-        var start = from ?? DateTimeOffset.UtcNow.Date;
+        DateTimeOffset start;
+        DateTimeOffset end;
+        if (from is null || to is null)
+        {
+            var (localStart, localEnd) = UserLocalTime.TodayRange(timeZoneId);
+            start = from ?? localStart;
+            end = to ?? localEnd;
+        }
+        else
+        {
+            start = from.Value;
+            end = to.Value;
+        }
+
         var result = await _sessionService.GetByRoadmapIdAndDateRangeAsync(active.Id, start, end, cancellationToken);
         return Ok(ApiResponse<IReadOnlyList<RoadmapSessionDto>>.SuccessResponse(result, "Sessions retrieved."));
     }
@@ -80,6 +94,16 @@ public class InternalRoadmapAiController : ControllerBase
 
     // ── Reschedule single session ────────────────────────────────────────────
 
+    /// <summary>AI flow — đọc 1 session để validate luật đổi lịch (ngày/giờ hiện tại).</summary>
+    [HttpGet("sessions/{sessionId:guid}")]
+    public async Task<ActionResult<ApiResponse<RoadmapSessionDto>>> GetSession(
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sessionService.GetByIdAsync(sessionId, cancellationToken);
+        return Ok(ApiResponse<RoadmapSessionDto>.SuccessResponse(result, "Session retrieved."));
+    }
+
     [HttpPost("sessions/{sessionId:guid}/reschedule")]
     public async Task<ActionResult<ApiResponse<RoadmapSessionDto>>> RescheduleSession(
         Guid sessionId,
@@ -89,6 +113,36 @@ public class InternalRoadmapAiController : ControllerBase
         var result = await _sessionService.RescheduleSessionAsync(
             sessionId, request.UserId, request.NewDate, request.NewTime, cancellationToken);
         return Ok(ApiResponse<RoadmapSessionDto>.SuccessResponse(result, "Session rescheduled."));
+    }
+
+    [HttpPut("sessions/{sessionId:guid}")]
+    public async Task<ActionResult<ApiResponse<RoadmapSessionDto>>> UpdateSession(
+        Guid sessionId,
+        [FromBody] UpdateRoadmapSessionDto request,
+        CancellationToken cancellationToken)
+    {
+        // Gate AI edits against the parent roadmap when known.
+        if (request.RoadmapId != Guid.Empty)
+        {
+            var roadmap = await _roadmapService.GetByIdAsync(request.RoadmapId, cancellationToken);
+            if (!roadmap.AllowAiReschedule && !roadmap.AllowAiIntensityAdjustment)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    "AI session edits are disabled for this roadmap."));
+            }
+        }
+
+        var result = await _sessionService.UpdateAsync(sessionId, request, cancellationToken);
+        return Ok(ApiResponse<RoadmapSessionDto>.SuccessResponse(result, "Session updated."));
+    }
+
+    [HttpDelete("sessions/{sessionId:guid}")]
+    public async Task<ActionResult<ApiResponse<object>>> DeleteSession(
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        await _sessionService.DeleteAsync(sessionId, cancellationToken);
+        return Ok(ApiResponse<object>.SuccessResponse(new { sessionId }, "Session deleted."));
     }
 
     [HttpGet("users/{userId:guid}/active")]
@@ -109,14 +163,7 @@ public class InternalRoadmapAiController : ControllerBase
         return Ok(ApiResponse<PersonalizedRoadmapDto>.SuccessResponse(result, "Roadmap retrieved."));
     }
 
-    [HttpPost("users/{userId:guid}/bootstrap-audit")]
-    public async Task<ActionResult<ApiResponse<PersonalizedRoadmapDto>>> BootstrapAuditRoadmap(
-        Guid userId,
-        CancellationToken cancellationToken)
-    {
-        var result = await _roadmapService.BootstrapAuditRoadmapAsync(userId, cancellationToken);
-        return Ok(ApiResponse<PersonalizedRoadmapDto>.SuccessResponse(result, "Audit roadmap ready."));
-    }
+
 
     [HttpPost]
     public async Task<ActionResult<ApiResponse<PersonalizedRoadmapDto>>> CreateRoadmap(

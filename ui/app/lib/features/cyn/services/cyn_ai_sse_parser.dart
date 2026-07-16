@@ -58,17 +58,15 @@ CynAiStreamEvent? _parseSseBlock(String block) {
   }
 
   final data = dataLines.join('\n');
-  final type = eventName ?? 'message';
 
-  if (type == 'final' || type == 'message') {
-    final asFinal = _tryFinalEvent(data);
-    if (asFinal != null) return asFinal;
-    if (type == 'message' && data.isNotEmpty) {
-      return CynAiStreamEvent.token(data);
-    }
+  // Unnamed/default SSE is not display text. Only accept as `final` when JSON
+  // explicitly carries type=final (legacy server duplicate). Otherwise ignore.
+  if (eventName == null || eventName.isEmpty) {
+    final asFinal = _tryFinalEvent(data, requireTypeFinal: true);
+    return asFinal;
   }
 
-  switch (type) {
+  switch (eventName) {
     case 'token':
       return CynAiStreamEvent.token(data);
     case 'done':
@@ -77,18 +75,24 @@ CynAiStreamEvent? _parseSseBlock(String block) {
       return CynAiStreamEvent.error(data);
     case 'final':
       return CynAiStreamEvent.finalPayload(data);
+    case 'display_payload':
+      return CynAiStreamEvent.displayPayload(data);
     default:
-      return CynAiStreamEvent.raw(type, data);
+      return CynAiStreamEvent.raw(eventName, data);
   }
 }
 
-CynAiStreamEvent? _tryFinalEvent(String data) {
+CynAiStreamEvent? _tryFinalEvent(String data, {bool requireTypeFinal = false}) {
   if (data.isEmpty) return null;
   try {
     final decoded = jsonDecode(data);
     if (decoded is! Map) return null;
     final map = Map<String, dynamic>.from(decoded);
     final kind = map['type']?.toString();
+    if (requireTypeFinal) {
+      if (kind == 'final') return CynAiStreamEvent.finalPayload(data);
+      return null;
+    }
     if (kind == 'final' || map.containsKey('text')) {
       return CynAiStreamEvent.finalPayload(data);
     }

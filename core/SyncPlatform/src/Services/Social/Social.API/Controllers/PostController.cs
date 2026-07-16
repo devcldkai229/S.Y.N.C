@@ -24,26 +24,48 @@ public class PostController : ControllerBase
     }
 
     /// <summary>
-    /// Community feed (cursor pagination). Pass <c>cursor</c> = CreatedAt (ISO-8601) of the last post seen.
+    /// Community feed. <c>type=following</c> (default when authenticated) or <c>type=discovery</c>.
+    /// Cursor is opaque base64 compound keyset (legacy ISO-8601 CreatedAt still accepted).
     /// </summary>
     [HttpGet("feed")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(CursorApiResponse<IReadOnlyList<PostDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<CursorApiResponse<IReadOnlyList<PostDto>>>> GetFeed(
-        [FromQuery] DateTimeOffset? cursor,
+        [FromQuery] string? cursor,
+        [FromQuery] string? type,
         [FromQuery] int limit = DefaultFeedLimit,
         CancellationToken cancellationToken = default)
     {
         var clampedLimit = limit < 1 ? DefaultFeedLimit : Math.Min(limit, MaxFeedLimit);
+        var feedType = ParseFeedType(type, _currentUser.UserId.HasValue);
 
-        var result = await _posts.GetPublicFeedCursorAsync(
-            new FeedCursorQuery { Cursor = cursor, Limit = clampedLimit, ViewerUserId = _currentUser.UserId },
+        var result = await _posts.GetFeedCursorAsync(
+            new FeedCursorQuery
+            {
+                Cursor = cursor,
+                Limit = clampedLimit,
+                Type = feedType,
+                ViewerUserId = _currentUser.UserId,
+            },
             cancellationToken);
 
         return Ok(CursorApiResponse<IReadOnlyList<PostDto>>.SuccessResponse(
             result.Items,
             result.NextCursor,
-            "Feed retrieved successfully."));
+            "Feed retrieved successfully.",
+            result.HasMore));
+    }
+
+    private static FeedType ParseFeedType(string? type, bool isAuthenticated)
+    {
+        if (string.Equals(type, "discovery", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(type, "explore", StringComparison.OrdinalIgnoreCase))
+            return FeedType.Discovery;
+
+        if (string.Equals(type, "following", StringComparison.OrdinalIgnoreCase))
+            return FeedType.Following;
+
+        return isAuthenticated ? FeedType.Following : FeedType.Discovery;
     }
 
     /// <summary>
@@ -52,7 +74,7 @@ public class PostController : ControllerBase
     [HttpGet("me/wall")]
     [ProducesResponseType(typeof(CursorApiResponse<IReadOnlyList<PostDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<CursorApiResponse<IReadOnlyList<PostDto>>>> GetMyWall(
-        [FromQuery] DateTimeOffset? cursor,
+        [FromQuery] string? cursor,
         [FromQuery] int limit = DefaultFeedLimit,
         [FromQuery] bool onlyMedia = false,
         CancellationToken cancellationToken = default)
@@ -68,7 +90,8 @@ public class PostController : ControllerBase
         return Ok(CursorApiResponse<IReadOnlyList<PostDto>>.SuccessResponse(
             result.Items,
             result.NextCursor,
-            "Your wall posts retrieved successfully."));
+            "Your wall posts retrieved successfully.",
+            result.HasMore));
     }
 
     /// <summary>
@@ -79,7 +102,7 @@ public class PostController : ControllerBase
     [ProducesResponseType(typeof(CursorApiResponse<IReadOnlyList<PostDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<CursorApiResponse<IReadOnlyList<PostDto>>>> GetUserWall(
         Guid userId,
-        [FromQuery] DateTimeOffset? cursor,
+        [FromQuery] string? cursor,
         [FromQuery] int limit = DefaultFeedLimit,
         [FromQuery] bool onlyMedia = false,
         CancellationToken cancellationToken = default)
@@ -94,7 +117,8 @@ public class PostController : ControllerBase
         return Ok(CursorApiResponse<IReadOnlyList<PostDto>>.SuccessResponse(
             result.Items,
             result.NextCursor,
-            "User posts retrieved successfully."));
+            "User posts retrieved successfully.",
+            result.HasMore));
     }
 
     /// <summary>Search posts by content or author name (privacy-aware).</summary>
@@ -142,7 +166,7 @@ public class PostController : ControllerBase
     [ProducesResponseType(typeof(CursorApiResponse<IReadOnlyList<PostDto>>), StatusCodes.Status200OK)]
     public async Task<ActionResult<CursorApiResponse<IReadOnlyList<PostDto>>>> GetByAuthor(
         Guid authorId,
-        [FromQuery] DateTimeOffset? cursor,
+        [FromQuery] string? cursor,
         [FromQuery] int limit = DefaultFeedLimit,
         [FromQuery] bool onlyMedia = false,
         CancellationToken cancellationToken = default)
@@ -160,7 +184,8 @@ public class PostController : ControllerBase
         return Ok(CursorApiResponse<IReadOnlyList<PostDto>>.SuccessResponse(
             result.Items,
             result.NextCursor,
-            "Author posts retrieved successfully. This endpoint is deprecated; use GET /api/v1/posts/user/{userId}."));
+            "Author posts retrieved successfully. This endpoint is deprecated; use GET /api/v1/posts/user/{userId}.",
+            result.HasMore));
     }
 
     [HttpPost("{postId:guid}/like")]

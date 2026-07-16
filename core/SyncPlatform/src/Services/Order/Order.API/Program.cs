@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -18,7 +18,6 @@ using Order.Infrastructure.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddSharedConfiguration(builder.Environment);
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
@@ -120,17 +119,17 @@ if (!string.IsNullOrWhiteSpace(orderSettings.AhamoveWebhookUrl))
         "Ahamove webhook URL (register in partner portal): {WebhookUrl}",
         orderSettings.AhamoveWebhookUrl);
     app.Logger.LogInformation(
-        "Ahamove webhook auth — header: apikey, token: WebhookApiKey from config (empty = accept all in dev)");
+        "Ahamove webhook auth â€” header: apikey, token: WebhookApiKey from config (empty = accept all in dev)");
 }
 else
 {
     app.Logger.LogWarning(
-        "Order:PublicBaseUrl is not set — Ahamove webhooks cannot reach this service. " +
+        "Order:PublicBaseUrl is not set â€” Ahamove webhooks cannot reach this service. " +
         "Set PublicBaseUrl to your ngrok URL (e.g. https://xxx.ngrok-free.dev).");
 }
 
 app.Logger.LogInformation(
-    "Ahamove mode — Enabled={Enabled}, UseSandboxSimulation={UseSandboxSimulation}, SimulateDeliveryProgress={SimulateDeliveryProgress}",
+    "Ahamove mode â€” Enabled={Enabled}, UseSandboxSimulation={UseSandboxSimulation}, SimulateDeliveryProgress={SimulateDeliveryProgress}",
     ahamoveSettings.Enabled,
     ahamoveSettings.UseSandboxSimulation,
     orderSettings.SimulateDeliveryProgress);

@@ -1,10 +1,10 @@
 import 'package:sync_app/core/config/app_config.dart';
 
-/// Rewrites S3 / MinIO / legacy CDN media URLs to the Gateway media proxy.
+/// Rewrites S3 / legacy CDN media URLs to the Gateway media proxy.
 abstract final class MediaUrlResolver {
-  static const publicBucket = 'sync-public-assets';
+  static const publicBucket = 'sync-pub-assets';
   static const privateBucket = 'sync-private-assets';
-  static const _legacyBuckets = ['social-assets', 'sync-objs'];
+  static const _legacyBuckets = ['social-assets', 'sync-objs', 'sync-public-assets'];
   static const _legacyCdnHost = 'cdn.sync.local';
 
   /// Returns a client-reachable URL, or [url] unchanged when already external.
@@ -17,7 +17,19 @@ abstract final class MediaUrlResolver {
 
     final origin = _gatewayOrigin();
     final proxiedPrefix = '$origin/api/v1/media/';
-    if (trimmed.startsWith(proxiedPrefix)) return trimmed;
+    if (trimmed.startsWith(proxiedPrefix)) {
+      // Drop query if any (e.g. accidental signature on gateway URL).
+      final q = trimmed.indexOf('?');
+      return q >= 0 ? trimmed.substring(0, q) : trimmed;
+    }
+
+    // Private-bucket AWS signed URLs → Gateway proxy (CORS + stable Content-Type).
+    // Fall back to the signed URL only when the object path cannot be recovered.
+    if (_isAwsPresignedUrl(trimmed)) {
+      final objectPath = _extractObjectPath(trimmed);
+      if (objectPath != null) return '$proxiedPrefix$objectPath';
+      return trimmed;
+    }
 
     final objectPath = _extractObjectPath(trimmed);
     if (objectPath != null) {
@@ -31,6 +43,15 @@ abstract final class MediaUrlResolver {
     return trimmed;
   }
 
+  static bool _isAwsPresignedUrl(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.host.contains('amazonaws.com')) return false;
+    final params = uri.queryParameters;
+    return params.containsKey('X-Amz-Signature') ||
+        params.containsKey('X-Amz-Algorithm') ||
+        params.containsKey('X-Amz-Credential');
+  }
+
   static String _gatewayOrigin() {
     final base = AppConfig.baseUrl;
     if (base.endsWith('/api')) {
@@ -39,10 +60,12 @@ abstract final class MediaUrlResolver {
     return base;
   }
 
+  /// Returns `{bucket}/{key}` without query string, or null when unknown.
   static String? _extractObjectPath(String url) {
     final uri = Uri.tryParse(url);
     if (uri != null && uri.host.contains('amazonaws.com')) {
       final host = uri.host;
+      // uri.path excludes query — safe for signed URLs.
       final objectKey = uri.path.replaceFirst(RegExp(r'^/+'), '');
 
       final s3Marker = '.s3';
@@ -57,27 +80,29 @@ abstract final class MediaUrlResolver {
       }
     }
 
+    final withoutQuery = url.split('?').first;
+
     for (final bucket in [publicBucket, privateBucket]) {
       final bucketSegment = '/$bucket/';
-      final bucketIndex = url.indexOf(bucketSegment);
+      final bucketIndex = withoutQuery.indexOf(bucketSegment);
       if (bucketIndex >= 0) {
-        return '$bucket/${url.substring(bucketIndex + bucketSegment.length)}';
+        return '$bucket/${withoutQuery.substring(bucketIndex + bucketSegment.length)}';
       }
     }
 
     for (final legacy in _legacyBuckets) {
       final bucketSegment = '/$legacy/';
-      final bucketIndex = url.indexOf(bucketSegment);
+      final bucketIndex = withoutQuery.indexOf(bucketSegment);
       if (bucketIndex >= 0) {
-        final suffix = url.substring(bucketIndex + bucketSegment.length);
+        final suffix = withoutQuery.substring(bucketIndex + bucketSegment.length);
         return '$publicBucket/$suffix';
       }
     }
 
     final legacyMarker = '$_legacyCdnHost/';
-    final legacyIndex = url.indexOf(legacyMarker);
+    final legacyIndex = withoutQuery.indexOf(legacyMarker);
     if (legacyIndex >= 0) {
-      final key = url.substring(legacyIndex + legacyMarker.length);
+      final key = withoutQuery.substring(legacyIndex + legacyMarker.length);
       return '$publicBucket/$key';
     }
 

@@ -1,3 +1,4 @@
+using Libs.Shared.Seed;
 using MongoDB.Driver;
 using Notification.Domain.Enums;
 using Notification.Domain.Models;
@@ -6,7 +7,8 @@ namespace Notification.Infrastructure.Persistence.Seed;
 
 public static class NotificationSeedData
 {
-    public static readonly Guid DemoUserId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+    /// <summary>Primary inbox owner — SyncSeedUsers.User02.</summary>
+    public static readonly Guid DemoUserId = SyncSeedUsers.User02;
 
     public static List<NotificationMessage> GetDemoNotifications()
     {

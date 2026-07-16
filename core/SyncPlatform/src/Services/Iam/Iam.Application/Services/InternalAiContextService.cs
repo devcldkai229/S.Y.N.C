@@ -30,6 +30,8 @@ public class InternalAiContextService : IInternalAiContextService
             UserId = user.Id,
             PreferredLanguage = string.IsNullOrWhiteSpace(user.PreferredLanguage) ? "vi" : user.PreferredLanguage,
             SubscriptionTier = user.SubscriptionTier.ToString(),
+            FullName = string.IsNullOrWhiteSpace(user.FullName) ? null : user.FullName.Trim(),
+            PhoneNumber = string.IsNullOrWhiteSpace(user.PhoneNumber) ? null : user.PhoneNumber.Trim(),
         };
 
         var pref = user.UserPreference;
@@ -52,15 +54,23 @@ public class InternalAiContextService : IInternalAiContextService
             dto.FitnessGoal = bio.FitnessGoal.ToString();
             dto.ActivityLevel = bio.ActivityLevel.ToString();
             dto.ExperienceLevel = bio.FitnessExperienceLevel.ToString();
+            dto.Gender = bio.Gender.ToString();
             dto.CurrentWeightKg = bio.CurrentWeightKg;
             dto.TargetWeightKg = bio.TargetWeightKg;
             dto.HeightCm = bio.HeightCm;
+            dto.CurrentBodyFatPercentage = bio.CurrentBodyFatPercentage;
+            dto.GoalBodyFatPercentage = bio.GoalBodyFatPercentage;
+            dto.MuscleMassKg = bio.MuscleMassKg;
+            dto.WorkoutLocationPreference = bio.WorkoutLocationPreference.ToString();
             dto.BaseTDEE = bio.BaseTDEE;
+            dto.Bmr = bio.BMR;
             dto.DailyProteinTargetGram = bio.DailyProteinTargetGram;
             dto.DailyCarbTargetGram = bio.DailyCarbTargetGram;
             dto.DailyFatTargetGram = bio.DailyFatTargetGram;
             if (bio.Injuries != null)
                 dto.Injuries = bio.Injuries.ToList();
+            if (bio.Medications != null)
+                dto.Medications = bio.Medications.ToList();
         }
 
         var ai = user.AIContextProfile;

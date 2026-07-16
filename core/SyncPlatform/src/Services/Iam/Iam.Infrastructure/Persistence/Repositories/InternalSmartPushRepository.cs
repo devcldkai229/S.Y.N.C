@@ -17,6 +17,7 @@ public class InternalSmartPushRepository : IInternalSmartPushRepository
     {
         return await _db.Users
             .Include(u => u.UserPreference)
+            .Include(u => u.AIContextProfile)
             .Where(u => u.UserPreference != null && u.UserPreference.SmartPushEnabled && u.UserPreference.AllowAiGeneratedNotification)
             .ToListAsync(cancellationToken);
     }

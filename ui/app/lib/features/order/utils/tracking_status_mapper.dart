@@ -26,12 +26,9 @@ abstract final class TrackingStatusMapper {
 
   static bool isActiveDelivery(String? deliveryStatus) {
     if (deliveryStatus == null || deliveryStatus.isEmpty) return false;
-    return !const {
-      'Pending',
-      'Completed',
-      'Cancelled',
-      'Failed',
-    }.contains(deliveryStatus);
+    // 'Failed' means the delivery booking attempt failed but a retry/sandbox
+    // simulation may still advance it — keep polling.
+    return !const {'Pending', 'Completed', 'Cancelled'}.contains(deliveryStatus);
   }
 
   static String _normalizeOrderStatus(String? raw) {
@@ -46,7 +43,11 @@ abstract final class TrackingStatusMapper {
         'PickedUp' => 'PickedUp',
         'Delivering' || 'Arrived' => 'Delivering',
         'Completed' => 'Delivered',
-        'Cancelled' || 'Failed' => 'Cancelled',
+        'Cancelled' => 'Cancelled',
+        // 'Failed' delivery booking is a transient backend error — the order is
+        // still alive (status stays Confirmed); show "Confirmed" rather than
+        // "Cancelled" so the user is not confused.
+        'Failed' => 'Confirmed',
         _ => 'Confirmed',
       };
 

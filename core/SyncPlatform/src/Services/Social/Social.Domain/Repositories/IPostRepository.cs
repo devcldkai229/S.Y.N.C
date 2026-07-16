@@ -9,12 +9,14 @@ public interface IPostRepository : IGenericRepository<Post>
         int pageSize,
         CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Public feed sorted by CreatedAt descending. When <paramref name="cursor"/> is set,
-    /// returns posts strictly older than that timestamp.
-    /// </summary>
     Task<IReadOnlyList<Post>> GetPublicFeedCursorAsync(
-        DateTimeOffset? cursor,
+        FeedCursorValue? cursor,
+        int limit,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Post>> GetFollowingFeedCursorAsync(
+        IReadOnlyList<Guid> authorIds,
+        FeedCursorValue? cursor,
         int limit,
         CancellationToken cancellationToken = default);
 
@@ -31,10 +33,9 @@ public interface IPostRepository : IGenericRepository<Post>
 
     Task<int> GetLikeCountAsync(Guid postId, CancellationToken cancellationToken = default);
 
-    /// <param name="includePrivatePosts">When true, returns all author posts; when false, only <c>IsPublic</c>.</param>
     Task<IReadOnlyList<Post>> GetUserWallCursorAsync(
         Guid authorId,
-        DateTimeOffset? cursor,
+        FeedCursorValue? cursor,
         int limit,
         bool onlyMedia,
         bool includePrivatePosts,
@@ -52,5 +53,10 @@ public interface IPostRepository : IGenericRepository<Post>
         string query,
         int skip,
         int take,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<Post>> GetRecentPublicPostsAsync(
+        DateTimeOffset since,
+        int limit,
         CancellationToken cancellationToken = default);
 }

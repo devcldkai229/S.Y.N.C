@@ -15,17 +15,20 @@ public class RoadmapSessionService : IRoadmapSessionService
     private readonly IScheduledWorkoutRepository _scheduledWorkoutRepository;
     private readonly IUserCustomWorkoutRepository _customWorkoutRepository;
     private readonly IPersonalizedRoadmapRepository _personalizedRoadmapRepository;
+    private readonly IRoadmapRealtimePublisher _realtimePublisher;
 
     public RoadmapSessionService(
         IRoadmapSessionRepository sessionRepository,
         IScheduledWorkoutRepository scheduledWorkoutRepository,
         IUserCustomWorkoutRepository customWorkoutRepository,
-        IPersonalizedRoadmapRepository personalizedRoadmapRepository)
+        IPersonalizedRoadmapRepository personalizedRoadmapRepository,
+        IRoadmapRealtimePublisher realtimePublisher)
     {
         _sessionRepository = sessionRepository;
         _scheduledWorkoutRepository = scheduledWorkoutRepository;
         _customWorkoutRepository = customWorkoutRepository;
         _personalizedRoadmapRepository = personalizedRoadmapRepository;
+        _realtimePublisher = realtimePublisher;
     }
 
     // ── AI Flow ──────────────────────────────────────────────────────────────
@@ -54,6 +57,13 @@ public class RoadmapSessionService : IRoadmapSessionService
 
         var scheduledWorkout = BuildScheduledWorkout(dto.UserId, session.Id, dto.ScheduledDate, dto.EstimatedDurationMinutes);
         await _scheduledWorkoutRepository.CreateAsync(scheduledWorkout, cancellationToken);
+
+        await _realtimePublisher.PublishRoadmapUpdatedAsync(
+            dto.UserId,
+            "sessions_changed",
+            dto.RoadmapId,
+            [session.Id],
+            cancellationToken);
 
         return new ScheduledSessionResultDto
         {
@@ -211,6 +221,13 @@ public class RoadmapSessionService : IRoadmapSessionService
             await _scheduledWorkoutRepository.UpdateAsync(scheduledWorkout.Id, scheduledWorkout, cancellationToken);
         }
 
+        await _realtimePublisher.PublishRoadmapUpdatedAsync(
+            userId,
+            "sessions_changed",
+            entity.RoadmapId == Guid.Empty ? null : entity.RoadmapId,
+            [sessionId],
+            cancellationToken);
+
         return entity.ToDto();
     }
 
@@ -251,6 +268,18 @@ public class RoadmapSessionService : IRoadmapSessionService
 
         entity.UpdateEntity(dto);
         await _sessionRepository.UpdateAsync(id, entity, cancellationToken);
+
+        var userId = await ResolveUserIdForSessionAsync(entity, cancellationToken);
+        if (userId != Guid.Empty)
+        {
+            await _realtimePublisher.PublishRoadmapUpdatedAsync(
+                userId,
+                "sessions_changed",
+                entity.RoadmapId == Guid.Empty ? null : entity.RoadmapId,
+                [id],
+                cancellationToken);
+        }
+
         return entity.ToDto();
     }
 
@@ -312,13 +341,44 @@ public class RoadmapSessionService : IRoadmapSessionService
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        if (!await _sessionRepository.ExistsAsync(id, cancellationToken))
-            throw new NotFoundException(nameof(RoadmapSession), id);
+        var entity = await _sessionRepository.GetByIdAsync(id, cancellationToken)
+            ?? throw new NotFoundException(nameof(RoadmapSession), id);
+
+        var userId = await ResolveUserIdForSessionAsync(entity, cancellationToken);
+        var roadmapId = entity.RoadmapId == Guid.Empty ? (Guid?)null : entity.RoadmapId;
 
         await _sessionRepository.DeleteAsync(id, cancellationToken);
+
+        if (userId != Guid.Empty)
+        {
+            await _realtimePublisher.PublishRoadmapUpdatedAsync(
+                userId,
+                "sessions_changed",
+                roadmapId,
+                [id],
+                cancellationToken);
+        }
     }
 
     // ── Private helpers ──────────────────────────────────────────────────────
+
+    private async Task<Guid> ResolveUserIdForSessionAsync(
+        RoadmapSession entity,
+        CancellationToken cancellationToken)
+    {
+        var scheduledWorkout = await _scheduledWorkoutRepository.GetBySessionIdAsync(entity.Id, cancellationToken);
+        if (scheduledWorkout is not null && scheduledWorkout.UserId != Guid.Empty)
+            return scheduledWorkout.UserId;
+
+        if (entity.RoadmapId != Guid.Empty)
+        {
+            var roadmap = await _personalizedRoadmapRepository.GetByIdAsync(entity.RoadmapId, cancellationToken);
+            if (roadmap is not null)
+                return roadmap.UserId;
+        }
+
+        return Guid.Empty;
+    }
 
     private async Task EnsureAiIntensityAllowedAsync(Guid roadmapId, CancellationToken cancellationToken)
     {

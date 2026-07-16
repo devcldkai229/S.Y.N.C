@@ -1,3 +1,4 @@
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sync_app/features/auth/models/auth_models.dart';
 import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
@@ -59,6 +60,16 @@ class AuthRepository {
       );
 
   Future<AuthSession> signInWithGoogle() => _auth.loginWithGoogle();
+
+  /// Web-only: processes a [GoogleSignInAccount] obtained from
+  /// [GoogleSignIn.instance.renderButton()] / [authenticationEvents] stream.
+  Future<AuthSession> signInWithGoogleAccount(GoogleSignInAccount account) =>
+      _auth.loginWithGoogleAccount(account);
+
+  /// Ensures GoogleSignIn is initialized (safe to call multiple times).
+  /// On Web, call this before subscribing to [GoogleSignIn.instance.authenticationEvents].
+  Future<void> ensureGoogleSignInInitialized() =>
+      _auth.ensureGoogleSignInInitialized();
 
   Future<bool> isLoggedIn() => _auth.isLoggedIn();
 

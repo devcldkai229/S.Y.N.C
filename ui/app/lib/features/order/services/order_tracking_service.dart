@@ -1,14 +1,13 @@
 import 'dart:async';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:sync_app/core/config/app_config.dart';
-import 'package:sync_app/core/network/auth_interceptor.dart';
+import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/order/models/order_models.dart';
 
 class OrderTrackingService {
-  OrderTrackingService(this._storage);
+  OrderTrackingService(this._auth);
 
-  final FlutterSecureStorage _storage;
+  final AuthService _auth;
   HubConnection? _connection;
   final _locationController = StreamController<TrackingLocationUpdate>.broadcast();
 
@@ -16,7 +15,7 @@ class OrderTrackingService {
 
   Future<void> connect(String orderId) async {
     await disconnect();
-    final token = await _storage.read(key: AuthInterceptor.accessTokenKey);
+    final token = await _auth.getValidAccessToken();
     if (token == null || token.isEmpty) return;
 
     final hubUrl =

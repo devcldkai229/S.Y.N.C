@@ -16,6 +16,12 @@ public class PartnerSearchCriteria
 
     public double? RadiusKm { get; set; }
 
+    /// <summary>Minimum partner RatingAverage (inclusive).</summary>
+    public decimal? MinRating { get; set; }
+
+    /// <summary>When set, only partners in this set (e.g. dish name join).</summary>
+    public IReadOnlyList<Guid>? PartnerIds { get; set; }
+
     public int PageNumber { get; set; } = 1;
 
     public int PageSize { get; set; } = 20;

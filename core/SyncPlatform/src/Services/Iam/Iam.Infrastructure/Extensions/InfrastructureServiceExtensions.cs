@@ -1,5 +1,3 @@
-using Amazon.Extensions.NETCore.Setup;
-using Amazon.SimpleEmailV2;
 using Iam.Application.Abstractions;
 using Iam.Application.Options;
 using Iam.Application.Services;
@@ -7,7 +5,6 @@ using Iam.Domain.Repositories;
 using Iam.Infrastructure.Clients;
 using Iam.Infrastructure.Persistence;
 using Iam.Infrastructure.Persistence.Repositories;
-using Iam.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,18 +51,6 @@ public static class InfrastructureServiceExtensions
                 client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
         });
 
-        services.AddHttpClient<IRoadmapClient, RoadmapClient>((sp, client) =>
-        {
-            var config = sp.GetRequiredService<IConfiguration>();
-            var baseUrl = config["RoadmapService:BaseUrl"] ?? "http://localhost:5118";
-            client.BaseAddress = new Uri(baseUrl);
-            client.Timeout = TimeSpan.FromSeconds(10);
-
-            var apiKey = config["RoadmapService:InternalApiKey"];
-            if (!string.IsNullOrEmpty(apiKey))
-                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
-        });
-
         return services;
     }
 
@@ -73,18 +58,11 @@ public static class InfrastructureServiceExtensions
     {
         var email = configuration.GetSection(EmailSettings.SectionName).Get<EmailSettings>() ?? new EmailSettings();
 
-        if (email.Ses.Enabled && !string.IsNullOrWhiteSpace(email.Ses.FromEmail))
+        if (email.Brevo.Enabled
+            && !string.IsNullOrWhiteSpace(email.Brevo.Host)
+            && !string.IsNullOrWhiteSpace(email.Brevo.FromEmail))
         {
-            var awsOptions = configuration.GetAWSOptions();
-            services.AddDefaultAWSOptions(awsOptions);
-            services.AddAWSService<IAmazonSimpleEmailServiceV2>();
-            services.AddSingleton<IEmailSender, SesEmailSender>();
-            return;
-        }
-
-        if (email.Smtp.Enabled && !string.IsNullOrWhiteSpace(email.Smtp.Host))
-        {
-            services.AddSingleton<IEmailSender, SmtpEmailSender>();
+            services.AddSingleton<IEmailSender, BrevoSmtpEmailSender>();
             return;
         }
 

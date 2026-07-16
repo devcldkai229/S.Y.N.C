@@ -56,6 +56,21 @@ class AppConfig {
     }
   }
 
+  /// Roadmap SignalR hub (Roadmap service :5118). Override:
+  /// `--dart-define=ROADMAP_HUB_URL=http://<host>:5118/hubs/roadmap`
+  static String get roadmapHubUrl {
+    const fromEnv = String.fromEnvironment('ROADMAP_HUB_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (kIsWeb) return 'http://localhost:5118/hubs/roadmap';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+        return 'http://$_devLanHost:5118/hubs/roadmap';
+      default:
+        return 'http://localhost:5118/hubs/roadmap';
+    }
+  }
+
   static String get notificationHubUrl {
     const fromEnv = String.fromEnvironment('NOTIFICATION_HUB_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
@@ -95,12 +110,12 @@ class AppConfig {
   /// Web OAuth 2.0 client (Google Cloud Console → **Web application**).
   /// Used as [googleServerClientId] on Android/iOS so Google returns an ID token for IAM.
   static const String defaultGoogleWebClientId =
-      '366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com';
+      '366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com';
 
   /// Android OAuth client (Google Cloud Console → **Android**).
   /// Package: com.sync.sync_app + debug SHA-1 must be registered for this client.
   static const String defaultGoogleAndroidClientId =
-      '366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com';
+      '366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com';
 
   /// Platform OAuth client ID passed to GoogleSignIn.initialize(clientId: ...).
   /// Android only needs [googleServerClientId] (Web client) + SHA-1 registered in Cloud Console.
@@ -114,7 +129,9 @@ class AppConfig {
 
   /// Override: `--dart-define=GOOGLE_SERVER_CLIENT_ID=...`
   /// Android/iOS: use the **Web** client ID here so Google returns an ID token IAM can verify.
+  /// NOTE: `google_sign_in_web` does NOT support `serverClientId` — always return empty on Web.
   static String get googleServerClientId {
+    if (kIsWeb) return ''; // google_sign_in_web asserts serverClientId == null
     const fromEnv = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
     return defaultGoogleWebClientId;

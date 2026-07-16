@@ -21,7 +21,7 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _tokenService;
     private readonly IGoogleTokenValidator _googleValidator;
     private readonly IEmailSender _emailSender;
-    private readonly IRoadmapClient _roadmapClient;
+
     private readonly JwtAuthSettings _jwtSettings;
     private readonly ILogger<AuthService> _logger;
 
@@ -32,7 +32,6 @@ public class AuthService : IAuthService
         IJwtTokenService tokenService,
         IGoogleTokenValidator googleValidator,
         IEmailSender emailSender,
-        IRoadmapClient roadmapClient,
         IOptions<JwtAuthSettings> jwtOptions,
         ILogger<AuthService> logger)
     {
@@ -42,7 +41,6 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
         _googleValidator = googleValidator;
         _emailSender = emailSender;
-        _roadmapClient = roadmapClient;
         _jwtSettings = jwtOptions.Value;
         _logger = logger;
     }
@@ -170,8 +168,6 @@ public class AuthService : IAuthService
 
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        await BootstrapAuditRoadmapAsync(user.Id, cancellationToken);
-
         return new VerifyEmailResponse
         {
             UserId = user.Id,
@@ -246,8 +242,6 @@ public class AuthService : IAuthService
         user.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _userRepository.SaveChangesAsync(cancellationToken);
-
-        await BootstrapAuditRoadmapAsync(user.Id, cancellationToken);
 
         return new VerifyEmailResponse
         {
@@ -398,7 +392,6 @@ public class AuthService : IAuthService
             };
             await _userRepository.AddAsync(user, cancellationToken);
             await _userRepository.SaveChangesAsync(cancellationToken);
-            await BootstrapAuditRoadmapAsync(user.Id, cancellationToken);
         }
         else if (user.Status == UserStatus.Suspended || user.Status == UserStatus.Deleted)
         {
@@ -413,7 +406,7 @@ public class AuthService : IAuthService
             user.EmailVerificationToken = null;
             if (user.Status == UserStatus.PendingVerification)
                 user.Status = UserStatus.Active;
-            await BootstrapAuditRoadmapAsync(user.Id, cancellationToken);
+
         }
 
         var authResponse = await IssueTokensAsync(user, request.DeviceId, request.Platform, cancellationToken);
@@ -570,6 +563,4 @@ public class AuthService : IAuthService
         return RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
     }
 
-    private Task BootstrapAuditRoadmapAsync(Guid userId, CancellationToken cancellationToken) =>
-        _roadmapClient.EnsureAuditRoadmapAsync(userId, cancellationToken);
 }

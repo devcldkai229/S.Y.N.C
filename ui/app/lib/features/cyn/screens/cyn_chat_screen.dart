@@ -1,44 +1,45 @@
 import 'dart:ui';
 
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/context_navigation.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/features/cyn/models/cyn_chat_models.dart';
-import 'package:sync_app/features/cyn/services/cyn_ai_chat_service.dart';
+import 'package:sync_app/features/cyn/state/cyn_chat_session_store.dart';
+import 'package:sync_app/features/cyn/widgets/cyn_insight_charts.dart';
+import 'package:sync_app/features/marketplace/models/marketplace_home_models.dart';
+import 'package:sync_app/features/marketplace/widgets/home/marketplace_location_picker_sheet.dart';
+import 'package:sync_app/features/marketplace/widgets/marketplace_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// SYNC accent green for user chat bubbles (#DEFF9A).
 const _cynAccentGreen = Color(0xFFDEFF9A);
 
-enum CynChatMode { messaging, voiceConversation }
-
 class CynChatScreen extends StatefulWidget {
-  const CynChatScreen({super.key});
+  const CynChatScreen({super.key, this.initialMessage});
+
+  final String? initialMessage;
 
   @override
   State<CynChatScreen> createState() => _CynChatScreenState();
 }
 
 class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateMixin {
-  final _ai = getIt<CynAiChatService>();
-  final _sessionId = 'cyn-${DateTime.now().toUtc().millisecondsSinceEpoch}';
-  final _messages = <CynChatMessage>[];
+  final _store = getIt<CynChatSessionStore>();
   final _textController = TextEditingController();
   final _scrollController = ScrollController();
 
-  CynChatMode _mode = CynChatMode.messaging;
   bool _isMuted = false;
   bool _isRecording = false;
-  bool _isStreaming = false;
-  CancelToken? _streamCancel;
-  int _msgSeq = 0;
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
-  bool get _isVoiceMode => _mode == CynChatMode.voiceConversation;
+  static const _greeting =
+      'Chào bạn! Mình là CYN — coach AI của SYNC. Hỏi mình về lịch tập, dinh dưỡng hoặc gợi ý bữa ăn nhé.';
 
   @override
   void initState() {
@@ -49,34 +50,35 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
     )..repeat(reverse: true);
     _pulseAnimation = CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut);
 
-    _messages.add(
-      CynChatMessage(
-        id: _newMessageId(),
-        role: CynMessageRole.cyn,
-        text:
-            'Chào bạn! Mình là CYN — coach AI của SYNC. Hỏi mình về lịch tập, dinh dưỡng hoặc gợi ý bữa ăn nhé.',
-        time: _formatTime(),
-      ),
-    );
+    _store.ensureSeeded(_greeting);
+    _store.addListener(_onStoreChanged);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+      _store.sendInitialIfNeeded(widget.initialMessage);
+    });
   }
 
-  String _newMessageId() {
-    _msgSeq += 1;
-    return 'msg-$_msgSeq';
-  }
-
-  String _formatTime() {
-    final now = DateTime.now();
-    final h = now.hour.toString().padLeft(2, '0');
-    final m = now.minute.toString().padLeft(2, '0');
-    return '$h:$m';
+  void _onStoreChanged() {
+    if (!mounted) return;
+    final hint = _store.snackbarHint;
+    if (hint != null && hint.isNotEmpty) {
+      _store.clearSnackbarHint();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(hint), behavior: SnackBarBehavior.floating),
+        );
+      });
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _scrollToBottom(jump: _store.isStreaming);
+    });
   }
 
   @override
   void dispose() {
-    _streamCancel?.cancel('dispose');
+    _store.removeListener(_onStoreChanged);
     _pulseController.dispose();
     _textController.dispose();
     _scrollController.dispose();
@@ -98,218 +100,23 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
   }
 
   void _toggleMode() {
-    setState(() {
-      _mode = _isVoiceMode ? CynChatMode.messaging : CynChatMode.voiceConversation;
-      if (_isVoiceMode) {
-        _pulseController.repeat(reverse: true);
-      }
-    });
-  }
-
-  void _endVoiceMode() {
-    setState(() => _mode = CynChatMode.messaging);
+    _store.toggleMode();
+    if (_store.isVoiceMode) {
+      _pulseController.repeat(reverse: true);
+    }
   }
 
   Future<void> _onSendText() async {
     final text = _textController.text.trim();
-    if (text.isEmpty || _isStreaming) return;
-
+    if (text.isEmpty || _store.isStreaming) return;
     _textController.clear();
     FocusScope.of(context).unfocus();
-
-    final cynMessageId = _newMessageId();
-    setState(() {
-      _messages.add(
-        CynChatMessage(
-          id: _newMessageId(),
-          role: CynMessageRole.user,
-          text: text,
-          time: _formatTime(),
-          read: true,
-        ),
-      );
-      _messages.add(
-        CynChatMessage(
-          id: cynMessageId,
-          role: CynMessageRole.cyn,
-          text: '',
-          time: _formatTime(),
-          isStreaming: true,
-        ),
-      );
-      _isStreaming = true;
-    });
-    _scrollToBottom();
-
-    final cynIndex = _messages.indexWhere((m) => m.id == cynMessageId);
-    final buffer = StringBuffer();
-    _streamCancel = CancelToken();
-    var hadError = false;
-
-    void applyReplyText(String text) {
-      if (text.trim().isEmpty) return;
-      buffer
-        ..clear()
-        ..write(text);
-      setState(() {
-        _messages[cynIndex] = _messages[cynIndex].copyWith(text: buffer.toString());
-      });
-      _scrollToBottom(jump: true);
-    }
-
-    try {
-      await for (final ev in _ai.streamChat(
-        message: text,
-        sessionId: _sessionId,
-        cancelToken: _streamCancel,
-      )) {
-        if (!mounted || cynIndex < 0) return;
-
-        switch (ev.type) {
-          case 'token':
-            buffer.write(ev.data);
-            setState(() {
-              _messages[cynIndex] = _messages[cynIndex].copyWith(text: buffer.toString());
-            });
-            _scrollToBottom(jump: true);
-            break;
-          case 'final':
-          case 'message':
-            final reply = ev.finalText;
-            if (reply != null) {
-              applyReplyText(reply);
-            } else if (ev.data.trim().isNotEmpty) {
-              buffer.write(ev.data);
-              setState(() {
-                _messages[cynIndex] = _messages[cynIndex].copyWith(text: buffer.toString());
-              });
-              _scrollToBottom(jump: true);
-            }
-            break;
-          case 'display_payload':
-            final display = ev.displayText;
-            if (display != null) applyReplyText(display);
-            break;
-          case 'handoff':
-            final payload = ev.jsonData;
-            final target = payload?['to']?.toString() ?? '';
-            if (target.isNotEmpty) {
-              setState(() {
-                _messages[cynIndex] = _messages[cynIndex].copyWith(
-                  handoffLabel: 'Chuyển sang ${_agentLabel(target)}',
-                );
-              });
-            }
-            break;
-          case 'pending_action':
-            setState(() {
-              _messages[cynIndex] = _messages[cynIndex].copyWith(pendingAction: ev.jsonData);
-            });
-            break;
-          case 'confirm':
-            setState(() {
-              _messages[cynIndex] = _messages[cynIndex].copyWith(
-                handoffLabel: 'Cần xác nhận trước khi đặt đơn',
-              );
-            });
-            break;
-          case 'error':
-            hadError = true;
-            setState(() {
-              _messages[cynIndex] = _messages[cynIndex].copyWith(
-                text: buffer.isEmpty ? ev.data : buffer.toString(),
-                isStreaming: false,
-                error: buffer.isEmpty,
-              );
-            });
-            break;
-          case 'done':
-            break;
-        }
-      }
-    } catch (e, st) {
-      if (kDebugMode) {
-        debugPrint('CYN SSE stream error [${e.runtimeType}]: $e\n$st');
-      }
-      final bubbleText = cynIndex >= 0 && cynIndex < _messages.length
-          ? _messages[cynIndex].text.trim()
-          : '';
-      final hasText = buffer.toString().trim().isNotEmpty || bubbleText.isNotEmpty;
-      if (!hasText) {
-        hadError = true;
-      }
-      if (mounted && cynIndex >= 0) {
-        setState(() {
-          _messages[cynIndex] = _messages[cynIndex].copyWith(
-            text: hasText
-                ? (buffer.toString().trim().isNotEmpty ? buffer.toString() : bubbleText)
-                : 'Không nhận được phản hồi từ CYN. Thử lại nhé.',
-            isStreaming: false,
-            error: !hasText,
-          );
-        });
-      }
-    } finally {
-      _streamCancel = null;
-      if (mounted && cynIndex >= 0) {
-        final buffered = buffer.toString().trim();
-        final bubbleText = _messages[cynIndex].text.trim();
-        final resolved = buffered.isNotEmpty ? buffered : bubbleText;
-        final hasSideEffects = _messages[cynIndex].pendingAction != null ||
-            (_messages[cynIndex].handoffLabel?.isNotEmpty ?? false);
-        setState(() {
-          _messages[cynIndex] = _messages[cynIndex].copyWith(
-            text: resolved.isEmpty && !hadError && !hasSideEffects
-                ? 'CYN đã xử lý yêu cầu của bạn.'
-                : (resolved.isEmpty ? _messages[cynIndex].text : resolved),
-            isStreaming: false,
-            error: resolved.isEmpty && hadError,
-          );
-          _isStreaming = false;
-        });
-        _scrollToBottom();
-      }
-    }
-  }
-
-  String _agentLabel(String agent) {
-    return switch (agent.toLowerCase()) {
-      'nutrition' => 'Dinh dưỡng',
-      'workout' => 'Tập luyện',
-      'commerce' => 'Đặt món',
-      'insight' => 'Phân tích',
-      'coach' => 'Coach',
-      _ => agent,
-    };
+    await _store.send(text);
   }
 
   Future<void> _confirmPending(CynChatMessage message, {required bool confirmed}) async {
-    final actionId = message.pendingAction?['action_id']?.toString();
-    if (actionId == null || actionId.isEmpty) return;
-
     try {
-      await _ai.confirmAction(
-        sessionId: _sessionId,
-        actionId: actionId,
-        confirmed: confirmed,
-      );
-      if (!mounted) return;
-
-      final idx = _messages.indexWhere((m) => m.id == message.id);
-      setState(() {
-        if (idx >= 0) {
-          _messages[idx] = _messages[idx].copyWith(clearPendingAction: true);
-        }
-        _messages.add(
-          CynChatMessage(
-            id: _newMessageId(),
-            role: CynMessageRole.system,
-            text: confirmed ? 'Đã xác nhận đặt đơn.' : 'Đã hủy đặt đơn.',
-            time: _formatTime(),
-          ),
-        );
-      });
-      _scrollToBottom();
+      await _store.confirmPending(message, confirmed: confirmed);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -321,54 +128,111 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
-    final isDark = _isVoiceMode;
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0B0F14) : AppColors.background,
-      extendBodyBehindAppBar: true,
-      resizeToAvoidBottomInset: !_isVoiceMode,
-      body: Column(
-        children: [
-          _CynChatAppBar(
-            topPadding: topPadding,
-            isDark: isDark,
-            isVoiceMode: _isVoiceMode,
-            isStreaming: _isStreaming,
-            onBack: () => context.popOrGoHome(),
-            onToggleMode: _toggleMode,
+    return ListenableBuilder(
+      listenable: _store,
+      builder: (context, _) {
+        final isVoiceMode = _store.isVoiceMode;
+        final isDark = isVoiceMode;
+        final isStreaming = _store.isStreaming;
+
+        return Scaffold(
+          backgroundColor: isDark ? const Color(0xFF0B0F14) : AppColors.background,
+          extendBodyBehindAppBar: true,
+          resizeToAvoidBottomInset: !isVoiceMode,
+          body: Column(
+            children: [
+              _CynChatAppBar(
+                topPadding: topPadding,
+                isDark: isDark,
+                isVoiceMode: isVoiceMode,
+                isStreaming: isStreaming,
+                onBack: () => context.popOrGoHome(),
+                onToggleMode: _toggleMode,
+              ),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 320),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  child: isVoiceMode
+                      ? _VoiceConversationBody(
+                          key: const ValueKey('voice'),
+                          pulseAnimation: _pulseAnimation,
+                          isMuted: _isMuted,
+                          onToggleMute: () => setState(() => _isMuted = !_isMuted),
+                          onEndCall: _store.endVoiceMode,
+                        )
+                      : _MessagingBody(
+                          key: const ValueKey('messaging'),
+                          scrollController: _scrollController,
+                          messages: _store.messages,
+                          isConfirming: _store.isConfirming,
+                          onConfirmPending: _confirmPending,
+                          onRequestLocation: () => _store.requestLocationFromUi(),
+                          onPaymentMethodSelected: (method) {
+                            final label = switch (method) {
+                              'wallet' => 'Tôi chọn thanh toán bằng Sync Wallet',
+                              'cod' => 'Tôi chọn thanh toán COD khi nhận hàng',
+                              'vietqr' => 'Tôi chọn thanh toán VietQR',
+                              _ => 'Tôi chọn phương thức $method',
+                            };
+                            _store.send(label);
+                          },
+                          onDeliveryInfoSubmitted: (data) {
+                            final name = (data['name'] ?? '').toString().trim();
+                            final phone = (data['phone'] ?? '').toString().trim();
+                            final address = (data['address'] ?? '').toString().trim();
+                            final payment = (data['payment_method'] ?? '')
+                                .toString()
+                                .trim()
+                                .toLowerCase();
+                            final lat = data['lat'];
+                            final lng = data['lng'];
+                            final bits = <String>[
+                              if (name.isNotEmpty) 'Tên: $name',
+                              if (phone.isNotEmpty) 'SĐT: $phone',
+                              if (address.isNotEmpty) 'Địa chỉ: $address',
+                            ];
+                            final payLabel = switch (payment) {
+                              'wallet' => 'Sync Wallet',
+                              'cod' => 'COD khi nhận hàng',
+                              'vietqr' => 'VietQR',
+                              _ => '',
+                            };
+                            final payBit = payLabel.isEmpty
+                                ? ''
+                                : ' Phương thức thanh toán: $payLabel.';
+                            // Toạ độ đi qua kênh structured (latitude/longitude) —
+                            // không in lat/lng trong bubble chat.
+                            _store.send(
+                              'Thông tin giao hàng: ${bits.join('; ')}.$payBit '
+                              'Xác nhận đặt đơn với delivery_confirmed=true.',
+                              latitude: lat is num ? lat.toDouble() : null,
+                              longitude: lng is num ? lng.toDouble() : null,
+                            );
+                          },
+                          onPremiumUpsell: () {
+                            _store.send(
+                              'Mình muốn nâng cấp Premium để mở AI Insights và biểu đồ.',
+                            );
+                          },
+                        ),
+                ),
+              ),
+              if (!isVoiceMode)
+                _FrostedInputBar(
+                  controller: _textController,
+                  isRecording: _isRecording,
+                  isBusy: isStreaming,
+                  onSend: _onSendText,
+                  onRecordStart: () => setState(() => _isRecording = true),
+                  onRecordEnd: () => setState(() => _isRecording = false),
+                ),
+            ],
           ),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 320),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: _isVoiceMode
-                  ? _VoiceConversationBody(
-                      key: const ValueKey('voice'),
-                      pulseAnimation: _pulseAnimation,
-                      isMuted: _isMuted,
-                      onToggleMute: () => setState(() => _isMuted = !_isMuted),
-                      onEndCall: _endVoiceMode,
-                    )
-                  : _MessagingBody(
-                      key: const ValueKey('messaging'),
-                      scrollController: _scrollController,
-                      messages: _messages,
-                      onConfirmPending: _confirmPending,
-                    ),
-            ),
-          ),
-          if (!_isVoiceMode)
-            _FrostedInputBar(
-              controller: _textController,
-              isRecording: _isRecording,
-              isBusy: _isStreaming,
-              onSend: _onSendText,
-              onRecordStart: () => setState(() => _isRecording = true),
-              onRecordEnd: () => setState(() => _isRecording = false),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -507,12 +371,22 @@ class _MessagingBody extends StatelessWidget {
     super.key,
     required this.scrollController,
     required this.messages,
+    required this.isConfirming,
     required this.onConfirmPending,
+    required this.onRequestLocation,
+    required this.onPaymentMethodSelected,
+    this.onDeliveryInfoSubmitted,
+    this.onPremiumUpsell,
   });
 
   final ScrollController scrollController;
   final List<CynChatMessage> messages;
+  final bool isConfirming;
   final void Function(CynChatMessage message, {required bool confirmed}) onConfirmPending;
+  final VoidCallback onRequestLocation;
+  final void Function(String method) onPaymentMethodSelected;
+  final void Function(Map<String, dynamic> data)? onDeliveryInfoSubmitted;
+  final VoidCallback? onPremiumUpsell;
 
   @override
   Widget build(BuildContext context) {
@@ -531,9 +405,15 @@ class _MessagingBody extends StatelessWidget {
               error: msg.error,
               handoffLabel: msg.handoffLabel,
               pendingAction: msg.pendingAction,
+              displayPayloads: msg.displayPayloads,
+              isConfirming: isConfirming,
               onConfirm: msg.pendingAction != null
                   ? (confirmed) => onConfirmPending(msg, confirmed: confirmed)
                   : null,
+              onRequestLocation: onRequestLocation,
+              onPaymentMethodSelected: onPaymentMethodSelected,
+              onDeliveryInfoSubmitted: onDeliveryInfoSubmitted,
+              onPremiumUpsell: onPremiumUpsell,
             );
           case CynMessageRole.system:
             return _SystemBubble(text: msg.text, time: msg.time);
@@ -557,7 +437,13 @@ class _CynBubble extends StatelessWidget {
     this.error = false,
     this.handoffLabel,
     this.pendingAction,
+    this.displayPayloads = const [],
+    this.isConfirming = false,
     this.onConfirm,
+    this.onRequestLocation,
+    this.onPaymentMethodSelected,
+    this.onDeliveryInfoSubmitted,
+    this.onPremiumUpsell,
   });
 
   final String text;
@@ -566,7 +452,13 @@ class _CynBubble extends StatelessWidget {
   final bool error;
   final String? handoffLabel;
   final Map<String, dynamic>? pendingAction;
+  final List<Map<String, dynamic>> displayPayloads;
+  final bool isConfirming;
   final void Function(bool confirmed)? onConfirm;
+  final VoidCallback? onRequestLocation;
+  final void Function(String method)? onPaymentMethodSelected;
+  final void Function(Map<String, dynamic> data)? onDeliveryInfoSubmitted;
+  final VoidCallback? onPremiumUpsell;
 
   @override
   Widget build(BuildContext context) {
@@ -646,7 +538,23 @@ class _CynBubble extends StatelessWidget {
                   const SizedBox(height: 8),
                   _PendingActionCard(
                     action: pendingAction!,
+                    isConfirming: isConfirming,
                     onConfirm: onConfirm!,
+                  ),
+                ],
+                if (displayPayloads.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ..._mergeCheckoutDisplayPayloads(displayPayloads).map(
+                    (p) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: _DisplayPayloadCard(
+                        payload: p,
+                        onRequestLocation: onRequestLocation,
+                        onPaymentMethodSelected: onPaymentMethodSelected,
+                        onDeliveryInfoSubmitted: onDeliveryInfoSubmitted,
+                        onPremiumUpsell: onPremiumUpsell,
+                      ),
+                    ),
                   ),
                 ],
                 if (time != null) ...[
@@ -694,20 +602,1014 @@ class _SystemBubble extends StatelessWidget {
   }
 }
 
+/// Merge legacy `delivery_info_form` + `payment_method_select` into one
+/// `checkout_form` so payment radios submit with delivery fields.
+List<Map<String, dynamic>> _mergeCheckoutDisplayPayloads(
+  List<Map<String, dynamic>> payloads,
+) {
+  Map<String, dynamic>? delivery;
+  Map<String, dynamic>? payment;
+  final others = <Map<String, dynamic>>[];
+  for (final p in payloads) {
+    final type = p['type']?.toString() ?? '';
+    if (type == 'delivery_info_form' && delivery == null) {
+      delivery = p;
+    } else if (type == 'payment_method_select' && payment == null) {
+      payment = p;
+    } else {
+      others.add(p);
+    }
+  }
+  if (delivery != null && payment != null) {
+    return [
+      {
+        'type': 'checkout_form',
+        'prefill': delivery['prefill'] ?? const {},
+        'fields': delivery['fields'] ?? const [],
+        'walletBalance': payment['walletBalance'],
+        'walletBalanceLabel': payment['walletBalanceLabel'],
+        'walletSufficient': payment['walletSufficient'],
+        'amount': payment['amount'],
+        'options': payment['options'] ?? const ['wallet', 'cod', 'vietqr'],
+      },
+      ...others,
+    ];
+  }
+  if (delivery != null) others.insert(0, delivery);
+  if (payment != null) others.add(payment);
+  return others;
+}
+
+class _DisplayPayloadCard extends StatelessWidget {
+  const _DisplayPayloadCard({
+    required this.payload,
+    this.onRequestLocation,
+    this.onPaymentMethodSelected,
+    this.onDeliveryInfoSubmitted,
+    this.onPremiumUpsell,
+  });
+
+  final Map<String, dynamic> payload;
+  final VoidCallback? onRequestLocation;
+  final void Function(String method)? onPaymentMethodSelected;
+  final void Function(Map<String, dynamic> data)? onDeliveryInfoSubmitted;
+  final VoidCallback? onPremiumUpsell;
+
+  @override
+  Widget build(BuildContext context) {
+    final type = payload['type']?.toString() ?? '';
+    if (type == 'premium_upsell') {
+      return CynPremiumUpsellCard(
+        payload: payload,
+        onUpgrade: onPremiumUpsell,
+      );
+    }
+    if (type == 'chart' || type == 'insight_dashboard') {
+      return CynInsightChartCard(payload: payload);
+    }
+    if (type == 'weekly_report') {
+      return CynWeeklyReportCard(payload: payload);
+    }
+    if (type == 'request_location_permission') {
+      final reason = payload['reason']?.toString() ??
+          'Cho phép vị trí để tìm quán gần bạn';
+      return _ctaCard(
+        title: 'Cho phép vị trí',
+        body: reason,
+        buttonLabel: 'Cho phép truy cập vị trí',
+        onPressed: () async {
+          final serviceOn = await Geolocator.isLocationServiceEnabled();
+          if (!serviceOn) {
+            await Geolocator.openLocationSettings();
+          }
+          onRequestLocation?.call();
+        },
+      );
+    }
+    if (type == 'payment_qr') {
+      final purpose = payload['purpose']?.toString() ?? '';
+      final url = payload['checkoutUrl']?.toString() ?? '';
+      final amount = payload['amount'];
+      final title = purpose == 'premium_upgrade'
+          ? 'Thanh toán Premium'
+          : 'Thanh toán VietQR';
+      final amountLabel = amount is num ? '${amount.toStringAsFixed(0)}đ' : null;
+      return _ctaCard(
+        title: title,
+        body: amountLabel != null
+            ? 'Số tiền: $amountLabel. Mở link để quét VietQR.'
+            : 'Mở link VietQR để hoàn tất thanh toán.',
+        buttonLabel: purpose == 'premium_upgrade'
+            ? 'Thanh toán Premium'
+            : 'Mở VietQR',
+        onPressed: url.isEmpty
+            ? null
+            : () async {
+                final uri = Uri.tryParse(url);
+                if (uri != null) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+      );
+    }
+    if (type == 'order_success') {
+      final orderId = payload['orderId']?.toString() ?? '';
+      final amount = payload['amount'];
+      final method = payload['paymentMethod']?.toString() ?? '';
+      final amountLabel =
+          amount is num ? '${amount.toStringAsFixed(0)}đ' : null;
+      final bodyParts = <String>[
+        if (orderId.isNotEmpty) 'Mã đơn: $orderId',
+        if (amountLabel != null) 'Tổng: $amountLabel',
+        if (method.isNotEmpty) 'Thanh toán: $method',
+      ];
+      return _ctaCard(
+        title: 'Đặt đơn thành công',
+        body: bodyParts.isEmpty
+            ? 'Đơn đã được tạo. Xem trong danh sách đơn hàng.'
+            : bodyParts.join('\n'),
+        buttonLabel: 'Xem đơn hàng',
+        onPressed: () {
+          if (orderId.isNotEmpty) {
+            context.push(AppRoutes.orderDetail(orderId));
+          } else {
+            context.push(AppRoutes.orderList);
+          }
+        },
+      );
+    }
+    if (type == 'payment_method_select') {
+      // Standalone payment (delivery already confirmed): radios + one confirm.
+      return _PaymentMethodRadioCard(
+        payload: payload,
+        onSelected: onPaymentMethodSelected,
+      );
+    }
+    if (type == 'exercise_media') {
+      final name = (payload['exerciseName'] ?? payload['name'] ?? 'Bài tập').toString();
+      final imagesRaw = payload['images'];
+      final images = <String>[];
+      if (imagesRaw is List) {
+        for (final u in imagesRaw) {
+          if (u is String && u.trim().isNotEmpty) images.add(u.trim());
+        }
+      }
+      if (images.isEmpty) return const SizedBox.shrink();
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              name,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 120,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length.clamp(0, 8),
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, i) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: MarketplaceNetworkImage(
+                      imageUrl: images[i],
+                      width: 160,
+                      height: 120,
+                      fit: BoxFit.cover,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (type == 'food_detail' || type == 'partner_detail') {
+      final dataRaw = payload['data'];
+      final data = dataRaw is Map
+          ? Map<String, dynamic>.from(dataRaw)
+          : Map<String, dynamic>.from(payload);
+      return _detailCard(type: type, data: data);
+    }
+    if (type == 'cart') {
+      return _cartCard(payload);
+    }
+    if (type == 'delivery_info_form' || type == 'checkout_form') {
+      return _CheckoutFormCard(
+        payload: payload,
+        includePayment: type == 'checkout_form' ||
+            (payload['options'] is List) ||
+            ((payload['fields'] as List?)
+                    ?.any((f) => f is Map && f['key'] == 'payment_method') ??
+                false),
+        onSubmitted: onDeliveryInfoSubmitted,
+      );
+    }
+    if (type == 'partner_list' ||
+        type == 'dish_list' ||
+        type == 'menu_list' ||
+        type == 'review_list') {
+      final items = payload['items'];
+      if (items is! List || items.isEmpty) return const SizedBox.shrink();
+      final heading = switch (type) {
+        'partner_list' => 'Quán gợi ý',
+        'dish_list' || 'menu_list' => 'Món gợi ý',
+        'review_list' => 'Review',
+        _ => 'Kết quả',
+      };
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              heading,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...items.take(8).whereType<Map>().map((raw) {
+              final m = Map<String, dynamic>.from(raw);
+              return _listItemRow(type: type, item: m);
+            }),
+          ],
+        ),
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  Widget _listItemRow({required String type, required Map<String, dynamic> item}) {
+    if (type == 'review_list') {
+      final comment = (item['comment'] ?? item['Comment'] ?? 'Review').toString();
+      final rating = item['rating'] ?? item['Rating'];
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          rating != null ? '★$rating · $comment' : comment,
+          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
+      );
+    }
+    final name = (item['nameVi'] ??
+            item['NameVi'] ??
+            item['name'] ??
+            item['Name'] ??
+            'Mục')
+        .toString();
+    final partnerName = (item['partnerName'] ?? item['PartnerName'] ?? '').toString().trim();
+    final rating =
+        item['ratingAverage'] ?? item['RatingAverage'] ?? item['rating'] ?? item['Rating'];
+    final price = item['price'] ?? item['Price'];
+    final imageUrl = _imageOf(item);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: MarketplaceNetworkImage(
+              imageUrl: imageUrl,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                ),
+                if (partnerName.isNotEmpty &&
+                    (type == 'dish_list' || type == 'menu_list'))
+                  Text(
+                    partnerName,
+                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  ),
+                if (rating != null || price != null)
+                  Text(
+                    [
+                      if (rating != null) '★$rating',
+                      if (price != null) '$priceđ',
+                    ].join(' · '),
+                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cartCard(Map<String, dynamic> payload) {
+    final items = payload['items'];
+    final total = payload['total'];
+    if (items is! List || items.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.borderLight),
+        ),
+        child: const Text(
+          'Giỏ hàng trống',
+          style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+        ),
+      );
+    }
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Giỏ hàng',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...items.take(12).whereType<Map>().map((raw) {
+            final m = Map<String, dynamic>.from(raw);
+            final name = (m['name'] ?? m['Name'] ?? m['foodId'] ?? 'Món').toString();
+            final qty = m['qty'] ?? m['quantity'] ?? 1;
+            final price = m['unitPrice'] ?? m['unit_price'] ?? m['price'];
+            final line = price is num
+                ? '$name × $qty · ${price.toStringAsFixed(0)}đ'
+                : '$name × $qty';
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                line,
+                style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+              ),
+            );
+          }),
+          if (total is num) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Tạm tính: ${total.toStringAsFixed(0)}đ',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _detailCard({required String type, required Map<String, dynamic> data}) {
+    final isFood = type == 'food_detail';
+    final title = (data['nameVi'] ??
+            data['NameVi'] ??
+            data['name'] ??
+            data['Name'] ??
+            (isFood ? 'Chi tiết món' : 'Chi tiết quán'))
+        .toString();
+    final partnerName = (data['partnerName'] ?? data['PartnerName'] ?? '').toString().trim();
+    final imageUrl = _imageOf(data);
+    final price = data['price'] ?? data['Price'];
+    final rating =
+        data['ratingAverage'] ?? data['RatingAverage'] ?? data['rating'] ?? data['Rating'];
+    final calories = data['calories'] ?? data['Calories'] ?? data['calo'];
+    final protein = data['proteinG'] ?? data['ProteinG'] ?? data['protein'];
+    final carbs = data['carbG'] ?? data['CarbG'] ?? data['carbohydrate'];
+    final fat = data['fatG'] ?? data['FatG'] ?? data['fat'];
+    final address = data['address'] ?? data['Address'];
+    final desc = (data['description'] ?? data['Description'] ?? '').toString();
+
+    final lines = <String>[];
+    if (isFood && partnerName.isNotEmpty) lines.add('Quán: $partnerName');
+    if (price != null) lines.add('Giá: $priceđ');
+    if (rating != null) lines.add('★ $rating');
+    if (calories != null) lines.add('$calories kcal');
+    if (protein != null || carbs != null || fat != null) {
+      lines.add(
+        'P ${protein ?? '-'}g · C ${carbs ?? '-'}g · F ${fat ?? '-'}g',
+      );
+    }
+    if (address != null) lines.add(address.toString());
+    if (desc.isNotEmpty) lines.add(desc);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: MarketplaceNetworkImage(
+              imageUrl: imageUrl,
+              width: 72,
+              height: 72,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                ...lines.map(
+                  (l) => Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      l,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _imageOf(Map<String, dynamic> m) {
+    final direct = m['imageUrl'] ?? m['ImageUrl'] ?? m['coverImageUrl'] ?? m['CoverImageUrl'];
+    if (direct != null && direct.toString().isNotEmpty) return direct.toString();
+    final urls = m['imageUrls'] ?? m['ImageUrls'];
+    if (urls is List && urls.isNotEmpty) return urls.first.toString();
+    return null;
+  }
+
+  Widget _ctaCard({
+    required String title,
+    required String body,
+    required String buttonLabel,
+    VoidCallback? onPressed,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(body, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onPressed,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(buttonLabel),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CheckoutFormCard extends StatefulWidget {
+  const _CheckoutFormCard({
+    required this.payload,
+    required this.includePayment,
+    this.onSubmitted,
+  });
+
+  final Map<String, dynamic> payload;
+  final bool includePayment;
+  final void Function(Map<String, dynamic> data)? onSubmitted;
+
+  @override
+  State<_CheckoutFormCard> createState() => _CheckoutFormCardState();
+}
+
+class _CheckoutFormCardState extends State<_CheckoutFormCard> {
+  late final TextEditingController _nameCtrl;
+  late final TextEditingController _phoneCtrl;
+  late final TextEditingController _addressCtrl;
+  double? _lat;
+  double? _lng;
+  bool _submitting = false;
+  String? _paymentMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefill = widget.payload['prefill'];
+    final map = prefill is Map ? Map<String, dynamic>.from(prefill) : <String, dynamic>{};
+    _nameCtrl = TextEditingController(text: (map['name'] ?? map['fullName'] ?? '').toString());
+    _phoneCtrl = TextEditingController(text: (map['phone'] ?? '').toString());
+    _addressCtrl = TextEditingController(text: (map['address'] ?? '').toString());
+    final lat = map['lat'];
+    final lng = map['lng'];
+    if (lat is num) _lat = lat.toDouble();
+    if (lng is num) _lng = lng.toDouble();
+
+    // Default COD for food delivery; user can switch to Wallet/VietQR.
+    if (widget.includePayment) {
+      _paymentMethod = 'cod';
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _addressCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickAddress() async {
+    DeliveryLocation? initial;
+    final address = _addressCtrl.text.trim();
+    if (_lat != null && _lng != null) {
+      initial = DeliveryLocation(
+        lat: _lat!,
+        lng: _lng!,
+        shortLabel: address.isEmpty ? 'Vị trí đã chọn' : address,
+        fullAddress: address.isEmpty ? 'Vị trí đã chọn' : address,
+      );
+    }
+    final picked = await MarketplaceLocationPickerScreen.show(
+      context,
+      initial: initial,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _addressCtrl.text = picked.fullAddress;
+      _lat = picked.lat;
+      _lng = picked.lng;
+    });
+  }
+
+  void _submit() {
+    if (_submitting) return;
+    final name = _nameCtrl.text.trim();
+    final phone = _phoneCtrl.text.trim();
+    final address = _addressCtrl.text.trim();
+    if (name.isEmpty || phone.isEmpty || address.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nhập họ tên, SĐT và địa chỉ giao hàng.')),
+      );
+      return;
+    }
+    if (widget.includePayment && (_paymentMethod == null || _paymentMethod!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chọn phương thức thanh toán.')),
+      );
+      return;
+    }
+    final walletOk = widget.payload['walletSufficient'] != false;
+    if (_paymentMethod == 'wallet' && !walletOk) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ví không đủ số dư — chọn COD hoặc VietQR.')),
+      );
+      return;
+    }
+    setState(() => _submitting = true);
+    widget.onSubmitted?.call({
+      'name': name,
+      'phone': phone,
+      'address': address,
+      'lat': _lat,
+      'lng': _lng,
+      if (widget.includePayment) 'payment_method': _paymentMethod,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = widget.payload['amount'];
+    final balance = widget.payload['walletBalance'];
+    final walletSufficient = widget.payload['walletSufficient'];
+    final amountLabel =
+        amount is num ? 'Giá trị đơn: ${amount.toStringAsFixed(0)}đ' : '';
+    var balanceLabel = balance is num
+        ? 'Số dư ví: ${balance.toStringAsFixed(0)}đ'
+        : (widget.payload['walletBalanceLabel']?.toString() ?? '');
+    if (balanceLabel.isNotEmpty && walletSufficient is bool) {
+      if (walletSufficient) {
+        balanceLabel = '$balanceLabel — Đủ thanh toán đơn này';
+      } else if (balance is num && amount is num) {
+        balanceLabel =
+            '$balanceLabel — Thiếu ${(amount - balance).toStringAsFixed(0)}đ';
+      } else {
+        balanceLabel = '$balanceLabel — Không đủ cho đơn này';
+      }
+    }
+    final walletDisabled = walletSufficient == false;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.includePayment ? 'Xác nhận đặt hàng' : 'Thông tin giao hàng',
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _nameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Họ tên',
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _phoneCtrl,
+            keyboardType: TextInputType.phone,
+            decoration: const InputDecoration(
+              labelText: 'Số điện thoại',
+              isDense: true,
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _addressCtrl,
+            readOnly: true,
+            onTap: _pickAddress,
+            decoration: const InputDecoration(
+              labelText: 'Địa chỉ giao',
+              isDense: true,
+              border: OutlineInputBorder(),
+              suffixIcon: Icon(Icons.map_outlined),
+            ),
+          ),
+          const SizedBox(height: 6),
+          TextButton.icon(
+            onPressed: _pickAddress,
+            icon: const Icon(Icons.location_on_outlined, size: 18),
+            label: const Text('Chọn trên bản đồ'),
+          ),
+          if (widget.includePayment) ...[
+            const SizedBox(height: 12),
+            const Text(
+              'Phương thức thanh toán',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            if (amountLabel.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                amountLabel,
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              ),
+            ],
+            if (balanceLabel.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                balanceLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: walletDisabled ? Colors.red.shade700 : AppColors.textMuted,
+                ),
+              ),
+            ],
+            const SizedBox(height: 4),
+            RadioGroup<String>(
+              groupValue: _paymentMethod,
+              onChanged: (v) => setState(() => _paymentMethod = v),
+              child: Column(
+                children: [
+                  RadioListTile<String>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: 'wallet',
+                    enabled: !walletDisabled,
+                    title: Text(
+                      walletDisabled
+                          ? 'Sync Wallet (thiếu số dư)'
+                          : 'Sync Wallet',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: walletDisabled
+                            ? AppColors.textMuted
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const RadioListTile<String>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: 'cod',
+                    title: Text(
+                      'COD (thanh toán khi nhận hàng)',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const RadioListTile<String>(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    value: 'vietqr',
+                    title: Text(
+                      'VietQR (chuyển khoản)',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _submitting ? null : _submit,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                _submitting
+                    ? 'Đã gửi'
+                    : (widget.includePayment
+                        ? 'Xác nhận đặt hàng'
+                        : 'Xác nhận thông tin'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaymentMethodRadioCard extends StatefulWidget {
+  const _PaymentMethodRadioCard({
+    required this.payload,
+    this.onSelected,
+  });
+
+  final Map<String, dynamic> payload;
+  final void Function(String method)? onSelected;
+
+  @override
+  State<_PaymentMethodRadioCard> createState() => _PaymentMethodRadioCardState();
+}
+
+class _PaymentMethodRadioCardState extends State<_PaymentMethodRadioCard> {
+  String? _method;
+  bool _submitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _method = 'cod';
+  }
+
+  void _confirm() {
+    if (_submitting || _method == null) return;
+    final walletOk = widget.payload['walletSufficient'] != false;
+    if (_method == 'wallet' && !walletOk) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ví không đủ số dư — chọn COD hoặc VietQR.')),
+      );
+      return;
+    }
+    setState(() => _submitting = true);
+    widget.onSelected?.call(_method!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final balance = widget.payload['walletBalance'];
+    final amount = widget.payload['amount'];
+    final sufficientRaw = widget.payload['walletSufficient'];
+    final bool? walletSufficient = sufficientRaw is bool
+        ? sufficientRaw
+        : (balance is num && amount is num ? balance >= amount : null);
+    var balanceLabel = balance is num
+        ? 'Số dư ví: ${balance.toStringAsFixed(0)}đ'
+        : (widget.payload['walletBalanceLabel']?.toString() ?? '');
+    if (balanceLabel.isNotEmpty && walletSufficient != null) {
+      if (walletSufficient) {
+        balanceLabel = '$balanceLabel — Đủ thanh toán đơn này';
+      } else if (balance is num && amount is num) {
+        balanceLabel =
+            '$balanceLabel — Thiếu ${(amount - balance).toStringAsFixed(0)}đ';
+      } else {
+        balanceLabel = '$balanceLabel — Không đủ cho đơn này';
+      }
+    }
+    final amountLabel =
+        amount is num ? 'Giá trị đơn: ${amount.toStringAsFixed(0)}đ' : '';
+    final walletDisabled = walletSufficient == false;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Chọn phương thức thanh toán',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (amountLabel.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              amountLabel,
+              style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ],
+          if (balanceLabel.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              balanceLabel,
+              style: TextStyle(
+                fontSize: 12,
+                color: walletDisabled ? Colors.red.shade700 : AppColors.textMuted,
+              ),
+            ),
+          ],
+          RadioGroup<String>(
+            groupValue: _method,
+            onChanged: (v) => setState(() => _method = v),
+            child: Column(
+              children: [
+                RadioListTile<String>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  value: 'wallet',
+                  enabled: !walletDisabled,
+                  title: Text(
+                    walletDisabled ? 'Sync Wallet (thiếu số dư)' : 'Sync Wallet',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: walletDisabled
+                          ? AppColors.textMuted
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                const RadioListTile<String>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  value: 'cod',
+                  title: Text(
+                    'COD (thanh toán khi nhận hàng)',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                const RadioListTile<String>(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  value: 'vietqr',
+                  title: Text(
+                    'VietQR (chuyển khoản)',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: _submitting ? null : _confirm,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primaryGreen,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(_submitting ? 'Đã gửi' : 'Xác nhận thanh toán'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PendingActionCard extends StatelessWidget {
   const _PendingActionCard({
     required this.action,
     required this.onConfirm,
+    this.isConfirming = false,
   });
 
   final Map<String, dynamic> action;
   final void Function(bool confirmed) onConfirm;
+  final bool isConfirming;
 
   @override
   Widget build(BuildContext context) {
     final summary = action['summary']?.toString();
+    final planSummary = action['plan_summary']?.toString();
     final amount = action['amount'];
     final amountLabel = amount is num ? '${amount.toStringAsFixed(0)}đ' : null;
+    final type = action['type']?.toString() ?? '';
+    final title = switch (type) {
+      'upgrade_premium' => 'Nâng cấp Premium',
+      'enable_ai_reschedule' => 'Cho phép AI chỉnh lịch tập',
+      'plan_or_edit_workout' || 'generate_week_plan' => 'Xác nhận lịch tập',
+      'create_roadmap' || 'delete_roadmap' || 'reschedule_session' =>
+        'Xác nhận lộ trình',
+      'log_meal' => 'Xác nhận nhật ký bữa ăn',
+      'create_order' => 'Xác nhận đặt đơn',
+      'pay_with_wallet' || 'create_payment_link' || 'topup_wallet' =>
+        'Xác nhận thanh toán',
+      '' => 'Xác nhận',
+      _ => 'Xác nhận',
+    };
 
     return Container(
       width: double.infinity,
@@ -727,13 +1629,17 @@ class _PendingActionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Xác nhận đặt đơn',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
           ),
           if (summary != null && summary.isNotEmpty) ...[
             const SizedBox(height: 4),
             Text(summary, style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          ],
+          if (planSummary != null && planSummary.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(planSummary, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
           ],
           if (amountLabel != null) ...[
             const SizedBox(height: 4),
@@ -744,16 +1650,28 @@ class _PendingActionCard extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => onConfirm(false),
+                  onPressed: isConfirming ? null : () => onConfirm(false),
                   child: const Text('Hủy'),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: FilledButton(
-                  onPressed: () => onConfirm(true),
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-                  child: const Text('Xác nhận'),
+                  onPressed: isConfirming ? null : () => onConfirm(true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: isConfirming
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Xác nhận'),
                 ),
               ),
             ],

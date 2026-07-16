@@ -3,6 +3,7 @@ using Amazon.LocationService;
 using Amazon.LocationService.Model;
 using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Social.Application.DTOs;
@@ -14,6 +15,10 @@ namespace Social.Infrastructure.Services;
 
 /// <summary>
 /// Road-network routes via Amazon Location Service Route Calculator.
+/// Results are cached in-memory for <see cref="RouteCacheTtl"/> to avoid
+/// redundant AWS calls when the same user re-fetches a challenge route.
+/// When all travel modes are requested simultaneously they are dispatched
+/// in parallel via Task.WhenAll to reduce wall-clock latency.
 /// </summary>
 public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalculator
 {
@@ -21,16 +26,21 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
     private const double MotorbikeFallbackSpeedKmh = 30;
     private const double WalkingFallbackSpeedKmh = 5;
 
+    private static readonly TimeSpan RouteCacheTtl = TimeSpan.FromMinutes(3);
+
     private readonly IAmazonLocationService _location;
+    private readonly IMemoryCache _cache;
     private readonly AwsLocationOptions _options;
     private readonly ILogger<AwsLocationChallengeRouteCalculator> _logger;
 
     public AwsLocationChallengeRouteCalculator(
         IAmazonLocationService location,
+        IMemoryCache cache,
         IOptions<AwsLocationOptions> options,
         ILogger<AwsLocationChallengeRouteCalculator> logger)
     {
         _location = location;
+        _cache = cache;
         _options = options.Value;
         _logger = logger;
     }
@@ -50,6 +60,13 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
                 userLat, userLng, destinationLat, destinationLng, travelMode, cancellationToken);
         }
 
+        var cacheKey = BuildCacheKey(userLat, userLng, destinationLat, destinationLng, travelMode);
+        if (_cache.TryGetValue(cacheKey, out ChallengeRouteDto? cached) && cached is not null)
+        {
+            _logger.LogDebug("Route cache hit: {Key}", cacheKey);
+            return cached;
+        }
+
         _logger.LogInformation(
             "AWS Location route: {Calculator} ({Provider}), mode={Mode}",
             _options.RouteCalculatorName,
@@ -59,35 +76,76 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
         var modes = ResolveModes(travelMode);
         var result = new ChallengeRouteDto();
 
-        foreach (var mode in modes)
+        if (modes.Count == 1)
         {
-            var route = mode switch
-            {
-                ChallengeRouteTravelMode.Car => await CalculateModeAsync(
-                    userLat, userLng, destinationLat, destinationLng, TravelMode.Car, cancellationToken),
-                ChallengeRouteTravelMode.Walking => await CalculateModeAsync(
-                    userLat, userLng, destinationLat, destinationLng, TravelMode.Walking, cancellationToken),
-                _ => await CalculateMotorbikeAsync(
-                    userLat, userLng, destinationLat, destinationLng, cancellationToken),
-            };
+            var route = await CalculateOneModeAsync(
+                userLat, userLng, destinationLat, destinationLng, modes[0], cancellationToken);
+            AssignMode(result, modes[0], route);
+        }
+        else
+        {
+            // Dispatch all modes in parallel — cuts latency from ~3× to ~1× one AWS call.
+            var tasks = modes.Select(mode =>
+                CalculateOneModeAsync(userLat, userLng, destinationLat, destinationLng, mode, cancellationToken));
 
-            route = NormalizeRoute(route, userLat, userLng, destinationLat, destinationLng);
-
-            switch (mode)
-            {
-                case ChallengeRouteTravelMode.Car:
-                    result.Car = route;
-                    break;
-                case ChallengeRouteTravelMode.Motorbike:
-                    result.Motorbike = route;
-                    break;
-                case ChallengeRouteTravelMode.Walking:
-                    result.Walking = route;
-                    break;
-            }
+            var routes = await Task.WhenAll(tasks);
+            for (var i = 0; i < modes.Count; i++)
+                AssignMode(result, modes[i], routes[i]);
         }
 
+        _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = RouteCacheTtl,
+            Size = 1,
+        });
+
         return result;
+    }
+
+    private async Task<TravelModeRouteDto> CalculateOneModeAsync(
+        double userLat,
+        double userLng,
+        double destinationLat,
+        double destinationLng,
+        ChallengeRouteTravelMode mode,
+        CancellationToken cancellationToken)
+    {
+        var route = mode switch
+        {
+            ChallengeRouteTravelMode.Car => await CalculateModeAsync(
+                userLat, userLng, destinationLat, destinationLng, TravelMode.Car, cancellationToken),
+            ChallengeRouteTravelMode.Walking => await CalculateModeAsync(
+                userLat, userLng, destinationLat, destinationLng, TravelMode.Walking, cancellationToken),
+            _ => await CalculateMotorbikeAsync(
+                userLat, userLng, destinationLat, destinationLng, cancellationToken),
+        };
+
+        return NormalizeRoute(route, userLat, userLng, destinationLat, destinationLng);
+    }
+
+    private static void AssignMode(ChallengeRouteDto result, ChallengeRouteTravelMode mode, TravelModeRouteDto route)
+    {
+        switch (mode)
+        {
+            case ChallengeRouteTravelMode.Car:      result.Car = route;       break;
+            case ChallengeRouteTravelMode.Motorbike: result.Motorbike = route; break;
+            case ChallengeRouteTravelMode.Walking:  result.Walking = route;   break;
+        }
+    }
+
+    private static string BuildCacheKey(
+        double userLat,
+        double userLng,
+        double destLat,
+        double destLng,
+        ChallengeRouteTravelMode? mode)
+    {
+        // Round to ~11 m grid (4 decimal places) to allow minor GPS jitter to still hit cache.
+        var uLat = Math.Round(userLat, 4);
+        var uLng = Math.Round(userLng, 4);
+        var dLat = Math.Round(destLat, 4);
+        var dLng = Math.Round(destLng, 4);
+        return $"route:{uLat}:{uLng}:{dLat}:{dLng}:{mode?.ToString() ?? "all"}";
     }
 
     private static IReadOnlyList<ChallengeRouteTravelMode> ResolveModes(ChallengeRouteTravelMode? travelMode) =>

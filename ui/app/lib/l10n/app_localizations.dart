@@ -500,6 +500,30 @@ abstract class AppLocalizations {
   /// **'I agree to receive promotions and health tips'**
   String get consentMarketing;
 
+  /// No description provided for @smartPushEnabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Smart reminders from AI Coach'**
+  String get smartPushEnabledLabel;
+
+  /// No description provided for @smartPushEnabledHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Get 1–2 daily workout & nutrition nudges on the system schedule'**
+  String get smartPushEnabledHint;
+
+  /// No description provided for @allowAiNotificationLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow AI-written notification copy'**
+  String get allowAiNotificationLabel;
+
+  /// No description provided for @allowAiNotificationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When off, fixed templates are used instead of AI-generated text'**
+  String get allowAiNotificationHint;
+
   /// No description provided for @onboardingValidationRequired.
   ///
   /// In en, this message translates to:
@@ -989,7 +1013,7 @@ abstract class AppLocalizations {
   /// No description provided for @authErrorEmailNotVerified.
   ///
   /// In en, this message translates to:
-  /// **'Email not verified. Open the link in your email or use Verify email (token from IAM log when SMTP is off).'**
+  /// **'Email not verified. Open the link in your email or use Verify email (token from IAM log when Brevo is off).'**
   String get authErrorEmailNotVerified;
 
   /// No description provided for @authErrorInvalidCredentials.
@@ -1021,6 +1045,444 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Authentication request failed.'**
   String get authErrorGeneric;
+
+  /// No description provided for @aiRoadmapLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your roadmap. Please try again.'**
+  String get aiRoadmapLoadFailed;
+
+  /// No description provided for @aiRoadmapRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get aiRoadmapRetry;
+
+  /// No description provided for @aiRoadmapGoalChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal: {goal}'**
+  String aiRoadmapGoalChip(String goal);
+
+  /// No description provided for @aiRoadmapWeekOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Week {current}/{total}'**
+  String aiRoadmapWeekOf(int current, int total);
+
+  /// No description provided for @aiRoadmapWhyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Why this phase'**
+  String get aiRoadmapWhyTitle;
+
+  /// No description provided for @aiRoadmapWeightCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'{kg} kg now'**
+  String aiRoadmapWeightCurrent(String kg);
+
+  /// No description provided for @aiRoadmapWeightTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Target {kg} kg'**
+  String aiRoadmapWeightTarget(String kg);
+
+  /// No description provided for @aiRoadmapWeightDash.
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get aiRoadmapWeightDash;
+
+  /// No description provided for @aiRoadmapReadinessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Readiness today'**
+  String get aiRoadmapReadinessTitle;
+
+  /// No description provided for @aiRoadmapReadinessReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get aiRoadmapReadinessReady;
+
+  /// No description provided for @aiRoadmapReadinessModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get aiRoadmapReadinessModerate;
+
+  /// No description provided for @aiRoadmapReadinessRest.
+  ///
+  /// In en, this message translates to:
+  /// **'Rest recommended'**
+  String get aiRoadmapReadinessRest;
+
+  /// No description provided for @aiRoadmapFatigueToReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Fatigued → Ready'**
+  String get aiRoadmapFatigueToReady;
+
+  /// No description provided for @aiRoadmapFatigueChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Fatigue'**
+  String get aiRoadmapFatigueChip;
+
+  /// No description provided for @aiRoadmapSorenessChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Soreness'**
+  String get aiRoadmapSorenessChip;
+
+  /// No description provided for @aiRoadmapNextSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Next session'**
+  String get aiRoadmapNextSession;
+
+  /// No description provided for @aiRoadmapStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get aiRoadmapStart;
+
+  /// No description provided for @aiRoadmapAskAi.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask AI'**
+  String get aiRoadmapAskAi;
+
+  /// No description provided for @aiRoadmapSessionWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why this session'**
+  String get aiRoadmapSessionWhy;
+
+  /// No description provided for @aiRoadmapWeekSchedule.
+  ///
+  /// In en, this message translates to:
+  /// **'This week\'s schedule'**
+  String get aiRoadmapWeekSchedule;
+
+  /// No description provided for @aiRoadmapStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get aiRoadmapStatusDone;
+
+  /// No description provided for @aiRoadmapStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get aiRoadmapStatusUpcoming;
+
+  /// No description provided for @aiRoadmapStatusNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get aiRoadmapStatusNext;
+
+  /// No description provided for @aiRoadmapIntensityLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get aiRoadmapIntensityLight;
+
+  /// No description provided for @aiRoadmapIntensityModerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Moderate'**
+  String get aiRoadmapIntensityModerate;
+
+  /// No description provided for @aiRoadmapIntensityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get aiRoadmapIntensityHigh;
+
+  /// No description provided for @aiRoadmapMetaDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'{min} min'**
+  String aiRoadmapMetaDuration(int min);
+
+  /// No description provided for @aiRoadmapMetaExercises.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} exercises'**
+  String aiRoadmapMetaExercises(int count);
+
+  /// No description provided for @aiRoadmapAskAiPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Why am I doing {session} today? Can we make it a bit easier?'**
+  String aiRoadmapAskAiPrompt(String session);
+
+  /// No description provided for @aiRoadmapEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cyn — your training companion'**
+  String get aiRoadmapEmptyTitle;
+
+  /// No description provided for @aiRoadmapEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ll build a plan that fits your body and goals.'**
+  String get aiRoadmapEmptyBody;
+
+  /// No description provided for @aiRoadmapEmptyCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Get started'**
+  String get aiRoadmapEmptyCta;
+
+  /// No description provided for @aiRoadmapEmptyAutoMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'I want Cyn to create my training roadmap!'**
+  String get aiRoadmapEmptyAutoMessage;
+
+  /// No description provided for @aiRoadmapGoalFatLoss.
+  ///
+  /// In en, this message translates to:
+  /// **'Fat loss'**
+  String get aiRoadmapGoalFatLoss;
+
+  /// No description provided for @aiRoadmapGoalMuscleGain.
+  ///
+  /// In en, this message translates to:
+  /// **'Muscle gain'**
+  String get aiRoadmapGoalMuscleGain;
+
+  /// No description provided for @aiRoadmapGoalGeneralHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'General health'**
+  String get aiRoadmapGoalGeneralHealth;
+
+  /// No description provided for @profileEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get profileEdit;
+
+  /// No description provided for @profileGroupPersonalize.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalize'**
+  String get profileGroupPersonalize;
+
+  /// No description provided for @profileGroupActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get profileGroupActivity;
+
+  /// No description provided for @profileGroupAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get profileGroupAccount;
+
+  /// No description provided for @profileFollowersBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Followers · {count}'**
+  String profileFollowersBtn(int count);
+
+  /// No description provided for @profileFollowingBtn.
+  ///
+  /// In en, this message translates to:
+  /// **'Following · {count}'**
+  String profileFollowingBtn(int count);
+
+  /// No description provided for @profileStatLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Level'**
+  String get profileStatLevel;
+
+  /// No description provided for @profileStatStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak'**
+  String get profileStatStreak;
+
+  /// No description provided for @profileStatCoins.
+  ///
+  /// In en, this message translates to:
+  /// **'Coins'**
+  String get profileStatCoins;
+
+  /// No description provided for @profileStatXp.
+  ///
+  /// In en, this message translates to:
+  /// **'XP'**
+  String get profileStatXp;
+
+  /// No description provided for @profileChangeCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Change cover photo'**
+  String get profileChangeCover;
+
+  /// No description provided for @profileMacrosDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily macros'**
+  String get profileMacrosDaily;
+
+  /// No description provided for @profileVouchersTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'My vouchers'**
+  String get profileVouchersTitle;
+
+  /// No description provided for @profileVouchersEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No vouchers yet. Redeem SyncCoins in the Shop!'**
+  String get profileVouchersEmpty;
+
+  /// No description provided for @profileLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get profileLogout;
+
+  /// No description provided for @profileLogoutConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out'**
+  String get profileLogoutConfirmTitle;
+
+  /// No description provided for @profileLogoutConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to log out of your account?'**
+  String get profileLogoutConfirmBody;
+
+  /// No description provided for @profileAvatarUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar updated'**
+  String get profileAvatarUpdated;
+
+  /// No description provided for @profileCoverUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover photo updated'**
+  String get profileCoverUpdated;
+
+  /// No description provided for @profileUploadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not upload image'**
+  String get profileUploadFailed;
+
+  /// No description provided for @profileCompleteCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete your profile →'**
+  String get profileCompleteCta;
+
+  /// No description provided for @profileNoVouchersShort.
+  ///
+  /// In en, this message translates to:
+  /// **'No vouchers'**
+  String get profileNoVouchersShort;
+
+  /// No description provided for @profileVoucherCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} vouchers'**
+  String profileVoucherCount(int count);
+
+  /// No description provided for @socialStoryEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up'**
+  String get socialStoryEnded;
+
+  /// No description provided for @socialCreateStory.
+  ///
+  /// In en, this message translates to:
+  /// **'Create story'**
+  String get socialCreateStory;
+
+  /// No description provided for @socialPostStory.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get socialPostStory;
+
+  /// No description provided for @socialPickMediaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos or videos · disappear after 24 hours'**
+  String get socialPickMediaHint;
+
+  /// No description provided for @socialPickMediaEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Select photos or videos'**
+  String get socialPickMediaEmpty;
+
+  /// No description provided for @socialStoryCaptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a caption (optional)'**
+  String get socialStoryCaptionHint;
+
+  /// No description provided for @socialStoriesCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} stories shared (24 hours)'**
+  String socialStoriesCreated(int count);
+
+  /// No description provided for @socialStoryPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get socialStoryPhoto;
+
+  /// No description provided for @socialStoryVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Video'**
+  String get socialStoryVideo;
+
+  /// No description provided for @socialStoryCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get socialStoryCamera;
+
+  /// No description provided for @cynLocationPermissionReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow location access to find places near you'**
+  String get cynLocationPermissionReason;
+
+  /// No description provided for @cynLocationGrantedFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve shared my location. Please continue finding places near me.'**
+  String get cynLocationGrantedFollowUp;
+
+  /// No description provided for @cynLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Location permission was denied. Enable it in Settings to search nearby.'**
+  String get cynLocationDenied;
+
+  /// No description provided for @cynLocationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not get your location right now. Try again later.'**
+  String get cynLocationUnavailable;
 }
 
 class _AppLocalizationsDelegate

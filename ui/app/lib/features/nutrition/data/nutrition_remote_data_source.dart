@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:sync_app/core/network/api_paths.dart';
+import 'package:sync_app/features/nutrition/data/nutrition_date_helpers.dart';
 import 'package:sync_app/features/nutrition/models/nutrition_models.dart';
 
 class NutritionRemoteDataSource {
@@ -8,8 +9,7 @@ class NutritionRemoteDataSource {
   final Dio _dio;
 
   Future<DailyNutritionSummary> fetchDailySummary(DateTime date) async {
-    final dateStr =
-        '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dateStr = NutritionDateHelpers.toApiDate(date);
     final response = await _dio.get<Map<String, dynamic>>(
       ApiPaths.nutritionDailySummary,
       queryParameters: {'date': dateStr},
@@ -18,8 +18,7 @@ class NutritionRemoteDataSource {
   }
 
   Future<List<MealLog>> fetchMealLogs(DateTime date) async {
-    final dateStr =
-        '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dateStr = NutritionDateHelpers.toApiDate(date);
     final response = await _dio.get<Map<String, dynamic>>(
       ApiPaths.nutritionMealLogs,
       queryParameters: {'date': dateStr},
@@ -29,8 +28,7 @@ class NutritionRemoteDataSource {
   }
 
   Future<DailyNutritionSummary> addWater(int milliliters, DateTime date) async {
-    final dateStr =
-        '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    final dateStr = NutritionDateHelpers.toApiDate(date);
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.nutritionDailySummaryWater,
       data: {'milliliters': milliliters, 'date': dateStr},
@@ -80,10 +78,18 @@ class NutritionRemoteDataSource {
     return _parseEnvelope(response.data, FoodItem.fromJson);
   }
 
-  Future<MealLog> createMealLog(Map<String, dynamic> body) async {
+  Future<MealLog> createMealLog(
+    Map<String, dynamic> body, {
+    DateTime? diaryDate,
+  }) async {
+    final payload = Map<String, dynamic>.from(body);
+    if (diaryDate != null && payload['loggedAt'] == null && payload['logDate'] == null) {
+      payload['loggedAt'] =
+          NutritionDateHelpers.logInstantForDiaryDate(diaryDate).toIso8601String();
+    }
     final response = await _dio.post<Map<String, dynamic>>(
       ApiPaths.nutritionMealLogs,
-      data: body,
+      data: payload,
     );
     return _parseEnvelope(response.data, MealLog.fromJson);
   }

@@ -492,17 +492,16 @@ core/SyncPlatform/**/appsettings.Development.json
 ui/app/android/build/
 ui/app/android/*.hprof
 
-# ── Sync Platform configuration (see core/SyncPlatform/CONFIGURATION.md) ─────
+# ── Sync Platform configuration ───────────────────────────────────────────────
 # Chỉ commit file *.example — KHÔNG commit appsettings đã điền secret trên máy local.
 core/SyncPlatform/src/**/appsettings.json
 core/SyncPlatform/src/**/appsettings.Development.json
-core/SyncPlatform/configs/appsettings.Shared.json
-core/SyncPlatform/configs/appsettings.Shared.Development.json
 core/SyncPlatform/**/appsettings.*.local.json
 core/SyncPlatform/**/appsettings.Production.json
 core/SyncPlatform/**/appsettings.Staging.json
 !core/SyncPlatform/**/*.example
 **/secrets.json
+**/LOCAL_DEV_CONFIG.PRIVATE.md
 **/.env
 **/.env.*
 !**/.env.example

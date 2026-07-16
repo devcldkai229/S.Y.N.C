@@ -214,6 +214,20 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tôi đồng ý nhận thông báo khuyến mãi và mẹo sức khỏe';
 
   @override
+  String get smartPushEnabledLabel => 'Nhắc thông minh từ AI Coach';
+
+  @override
+  String get smartPushEnabledHint =>
+      'Nhận 1–2 lần/ngày nhắc tập luyện & dinh dưỡng theo lịch hệ thống';
+
+  @override
+  String get allowAiNotificationLabel => 'Cho phép nội dung do AI viết';
+
+  @override
+  String get allowAiNotificationHint =>
+      'Tắt sẽ dùng mẫu tin cố định thay vì câu chữ do AI sinh';
+
+  @override
   String get onboardingValidationRequired =>
       'Vui lòng điền đầy đủ thông tin bắt buộc.';
 
@@ -469,7 +483,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get authErrorEmailNotVerified =>
-      'Email chưa được xác minh. Mở link trong email hoặc dùng màn Verify email (token từ log IAM khi SMTP tắt).';
+      'Email chưa được xác minh. Mở link trong email hoặc dùng màn Verify email (token từ log IAM khi Brevo tắt).';
 
   @override
   String get authErrorInvalidCredentials => 'Email hoặc mật khẩu không đúng.';
@@ -489,4 +503,253 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get authErrorGeneric => 'Yêu cầu xác thực thất bại.';
+
+  @override
+  String get aiRoadmapLoadFailed => 'Không thể tải lộ trình. Thử lại nhé.';
+
+  @override
+  String get aiRoadmapRetry => 'Thử lại';
+
+  @override
+  String aiRoadmapGoalChip(String goal) {
+    return 'Mục tiêu: $goal';
+  }
+
+  @override
+  String aiRoadmapWeekOf(int current, int total) {
+    return 'Tuần $current/$total';
+  }
+
+  @override
+  String get aiRoadmapWhyTitle => 'Vì sao';
+
+  @override
+  String aiRoadmapWeightCurrent(String kg) {
+    return '$kg kg hiện tại';
+  }
+
+  @override
+  String aiRoadmapWeightTarget(String kg) {
+    return 'mục tiêu $kg kg';
+  }
+
+  @override
+  String get aiRoadmapWeightDash => '—';
+
+  @override
+  String get aiRoadmapReadinessTitle => 'Mức sẵn sàng hôm nay';
+
+  @override
+  String get aiRoadmapReadinessReady => 'Sẵn sàng';
+
+  @override
+  String get aiRoadmapReadinessModerate => 'Vừa';
+
+  @override
+  String get aiRoadmapReadinessRest => 'Nên nghỉ';
+
+  @override
+  String get aiRoadmapFatigueToReady => 'Mệt → Khoẻ';
+
+  @override
+  String get aiRoadmapFatigueChip => 'Mức mệt mỏi';
+
+  @override
+  String get aiRoadmapSorenessChip => 'Đau cơ';
+
+  @override
+  String get aiRoadmapNextSession => 'Buổi tiếp theo';
+
+  @override
+  String get aiRoadmapStart => 'Bắt đầu';
+
+  @override
+  String get aiRoadmapAskAi => 'Hỏi AI';
+
+  @override
+  String get aiRoadmapSessionWhy => 'Vì sao';
+
+  @override
+  String get aiRoadmapWeekSchedule => 'Lịch tập tuần này';
+
+  @override
+  String get aiRoadmapStatusDone => 'Đã xong';
+
+  @override
+  String get aiRoadmapStatusUpcoming => 'Sắp tới';
+
+  @override
+  String get aiRoadmapStatusNext => 'Tiếp theo';
+
+  @override
+  String get aiRoadmapIntensityLight => 'Nhẹ';
+
+  @override
+  String get aiRoadmapIntensityModerate => 'Vừa';
+
+  @override
+  String get aiRoadmapIntensityHigh => 'Cao';
+
+  @override
+  String aiRoadmapMetaDuration(int min) {
+    return '$min phút';
+  }
+
+  @override
+  String aiRoadmapMetaExercises(int count) {
+    return '$count bài';
+  }
+
+  @override
+  String aiRoadmapAskAiPrompt(String session) {
+    return 'Vì sao hôm nay tôi tập $session, có thể đổi nhẹ hơn không?';
+  }
+
+  @override
+  String get aiRoadmapEmptyTitle => 'Cyn — Trợ lí theo dõi quá trình của bạn';
+
+  @override
+  String get aiRoadmapEmptyBody =>
+      'Mình sẽ tạo lộ trình tập phù hợp với thể trạng và mục tiêu riêng của bạn.';
+
+  @override
+  String get aiRoadmapEmptyCta => 'Bắt đầu';
+
+  @override
+  String get aiRoadmapEmptyAutoMessage =>
+      'Tôi muốn tạo lộ trình theo dõi bởi Cyn!';
+
+  @override
+  String get aiRoadmapGoalFatLoss => 'giảm mỡ';
+
+  @override
+  String get aiRoadmapGoalMuscleGain => 'tăng cơ';
+
+  @override
+  String get aiRoadmapGoalGeneralHealth => 'sức khoẻ tổng quát';
+
+  @override
+  String get profileEdit => 'Chỉnh sửa';
+
+  @override
+  String get profileGroupPersonalize => 'Cá nhân hoá';
+
+  @override
+  String get profileGroupActivity => 'Hoạt động';
+
+  @override
+  String get profileGroupAccount => 'Tài khoản';
+
+  @override
+  String profileFollowersBtn(int count) {
+    return 'Người theo dõi · $count';
+  }
+
+  @override
+  String profileFollowingBtn(int count) {
+    return 'Đang theo dõi · $count';
+  }
+
+  @override
+  String get profileStatLevel => 'Level';
+
+  @override
+  String get profileStatStreak => 'Streak';
+
+  @override
+  String get profileStatCoins => 'Coins';
+
+  @override
+  String get profileStatXp => 'XP';
+
+  @override
+  String get profileChangeCover => 'Đổi ảnh nền';
+
+  @override
+  String get profileMacrosDaily => 'Macro hàng ngày';
+
+  @override
+  String get profileVouchersTitle => 'Voucher của tôi';
+
+  @override
+  String get profileVouchersEmpty =>
+      'Chưa có voucher. Đổi SyncCoins trong Shop để nhận ưu đãi!';
+
+  @override
+  String get profileLogout => 'Đăng xuất';
+
+  @override
+  String get profileLogoutConfirmTitle => 'Đăng xuất';
+
+  @override
+  String get profileLogoutConfirmBody =>
+      'Bạn có chắc muốn đăng xuất khỏi tài khoản?';
+
+  @override
+  String get profileAvatarUpdated => 'Đã cập nhật ảnh đại diện';
+
+  @override
+  String get profileCoverUpdated => 'Đã cập nhật ảnh nền';
+
+  @override
+  String get profileUploadFailed => 'Không thể tải ảnh lên';
+
+  @override
+  String get profileCompleteCta => 'Hoàn thiện hồ sơ →';
+
+  @override
+  String get profileNoVouchersShort => 'Chưa có voucher';
+
+  @override
+  String profileVoucherCount(int count) {
+    return '$count voucher';
+  }
+
+  @override
+  String get socialStoryEnded => 'Đã hết story';
+
+  @override
+  String get socialCreateStory => 'Tạo story';
+
+  @override
+  String get socialPostStory => 'Đăng';
+
+  @override
+  String get socialPickMediaHint => 'Ảnh hoặc video · tự xóa sau 24 giờ';
+
+  @override
+  String get socialPickMediaEmpty => 'Chọn ảnh hoặc video';
+
+  @override
+  String get socialStoryCaptionHint => 'Thêm chú thích (tuỳ chọn)';
+
+  @override
+  String socialStoriesCreated(int count) {
+    return 'Đã đăng $count story (tồn tại 24 giờ)';
+  }
+
+  @override
+  String get socialStoryPhoto => 'Ảnh';
+
+  @override
+  String get socialStoryVideo => 'Video';
+
+  @override
+  String get socialStoryCamera => 'Camera';
+
+  @override
+  String get cynLocationPermissionReason =>
+      'Cho phép truy cập vị trí để tìm quán gần bạn';
+
+  @override
+  String get cynLocationGrantedFollowUp =>
+      'Mình đã chia sẻ vị trí. Tiếp tục tìm quán gần mình giúp nhé.';
+
+  @override
+  String get cynLocationDenied =>
+      'Bạn chưa cho phép vị trí. Bật quyền trong Cài đặt để tìm quán gần đây.';
+
+  @override
+  String get cynLocationUnavailable =>
+      'Không lấy được vị trí lúc này. Thử lại sau nhé.';
 }

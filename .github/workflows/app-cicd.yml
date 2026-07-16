@@ -1,0 +1,261 @@
+name: app-cicd
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CI/CD master: detect-changes → quality(Sonar+test) → build → Trivy → ECR
+#   → migration(one-off ECS task) → deploy dev(rolling) → deploy prod(approval)
+# Auth: GitHub OIDC → AWS (không lưu access key).
+#
+# Cần cấu hình sẵn (Settings → Secrets/Variables → Actions):
+#   secrets: AWS_OIDC_ROLE_ARN, SONAR_TOKEN (tùy chọn)
+#   vars:    AWS_REGION, ECR_REGISTRY (vd 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com),
+#            ECS_CLUSTER_DEV, ECS_CLUSTER_PROD,
+#            MIGRATE_SUBNETS (subnet-aaa,subnet-bbb), MIGRATE_SG (sg-xxx),
+#            SYNC_PUBLIC_URL_DEV, SYNC_PUBLIC_URL_PROD
+#   environment "production" bật Required reviewers (manual approval).
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [main]
+    paths: ["core/**", "ai/**", ".github/workflows/app-cicd.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["core/**", "ai/**", ".github/workflows/app-cicd.yml"]
+
+permissions:
+  id-token: write   # OIDC
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: app-cicd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  # Service có DB quan hệ (EF migrations). Còn lại dùng Mongo (không migration).
+  DB_SERVICES: "iam order payment notification"
+
+jobs:
+  # 1) Phát hiện service thay đổi → tạo ma trận build
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            gateway: 'core/SyncPlatform/src/Gateway/**'
+            iam: 'core/SyncPlatform/src/Services/Iam/**'
+            roadmap: 'core/SyncPlatform/src/Services/Roadmap/**'
+            exercise: 'core/SyncPlatform/src/Services/Exercise/**'
+            nutrition: 'core/SyncPlatform/src/Services/Nutrition/**'
+            marketplace: 'core/SyncPlatform/src/Services/Marketplace/**'
+            order: 'core/SyncPlatform/src/Services/Order/**'
+            payment: 'core/SyncPlatform/src/Services/Payment/**'
+            notification: 'core/SyncPlatform/src/Services/Notification/**'
+            social: 'core/SyncPlatform/src/Services/Social/**'
+            ai: 'ai/sync-agent-service/**'
+
+  # 2) Quality gate: SonarCloud + test (non-blocking vì test còn placeholder)
+  quality:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "10.0.x" }
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: .NET tests (non-blocking)
+        run: dotnet test core/SyncPlatform --nologo --verbosity quiet || echo "no/failed tests (placeholder)"
+      - name: Python lint + tests (non-blocking)
+        working-directory: ai/sync-agent-service
+        run: |
+          python -m pip install -q ".[dev]" || true
+          ruff check app || true
+          pytest -q tests || echo "no/failed py tests (placeholder)"
+      - name: SonarCloud scan
+        if: ${{ env.SONAR_ENABLED == 'true' && secrets.SONAR_TOKEN != '' }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ENABLED: ${{ vars.SONAR_ENABLED }}
+        uses: SonarSource/sonarcloud-github-action@master
+
+  # 3) Build image (chỉ service đổi) → Trivy → push ECR (chỉ push khi merge main)
+  build-push:
+    needs: [detect]
+    if: ${{ needs.detect.outputs.services != '[]' && needs.detect.outputs.services != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve build args
+        id: meta
+        run: |
+          case "${{ matrix.service }}" in
+            gateway)     CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Gateway/Gateway.API.csproj ;;
+            iam)         CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Iam/Iam.API/Iam.API.csproj ;;
+            roadmap)     CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Roadmap/Roadmap.API/Roadmap.API.csproj ;;
+            exercise)    CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Exercise/Exercise.API/Exercise.API.csproj ;;
+            nutrition)   CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Nutrition/Nutrition.API/Nutrition.API.csproj ;;
+            marketplace) CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Marketplace/Marketplace.API/Marketplace.API.csproj ;;
+            order)       CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Order/Order.API/Order.API.csproj ;;
+            payment)     CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Payment/Payment.API/Payment.API.csproj ;;
+            notification)CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Notification/Notification.API/Notification.API.csproj ;;
+            social)      CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Social/Social.API/Social.API.csproj ;;
+            ai)          CTX=ai/sync-agent-service; DF=ai/sync-agent-service/Dockerfile; PROJECT="" ;;
+            *) echo "Unknown service"; exit 1 ;;
+          esac
+          {
+            echo "ctx=$CTX"; echo "df=$DF"; echo "project=$PROJECT";
+            echo "image=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}";
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build image
+        run: |
+          if [ -n "${{ steps.meta.outputs.project }}" ]; then
+            docker build -f "${{ steps.meta.outputs.df }}" \
+              --build-arg PROJECT="${{ steps.meta.outputs.project }}" \
+              -t "${{ steps.meta.outputs.image }}" "${{ steps.meta.outputs.ctx }}"
+          else
+            docker build -f "${{ steps.meta.outputs.df }}" \
+              -t "${{ steps.meta.outputs.image }}" "${{ steps.meta.outputs.ctx }}"
+          fi
+
+      - name: Trivy scan (đầu giai đoạn: warn; prod-hardening: đổi exit-code=1)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.image }}
+          format: table
+          exit-code: "0"          # đổi "1" + severity khi siết prod
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+      # Chỉ push ECR khi đã merge vào main (PR chỉ build để kiểm tra)
+      - name: Configure AWS (OIDC)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: ECR login
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Push image (tag=sha)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: docker push "${{ steps.meta.outputs.image }}"
+
+  # 4) Deploy DEV (rolling) — migration trước, rồi update service, smoke
+  deploy-dev:
+    needs: [detect, build-push]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run migration (chỉ service có DB) — expand, idempotent
+        run: |
+          CLUSTER=${{ vars.ECS_CLUSTER_DEV }}
+          SVC=${{ matrix.service }}
+          run_migrate() {
+            local family=$1
+            echo "Running migration task: $family"
+            TASK=$(aws ecs run-task --cluster "$CLUSTER" \
+              --task-definition "$family" --launch-type EC2 \
+              --network-configuration "awsvpcConfiguration={subnets=[${{ vars.MIGRATE_SUBNETS }}],securityGroups=[${{ vars.MIGRATE_SG }}]}" \
+              --query 'tasks[0].taskArn' --output text)
+            aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
+            CODE=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" \
+              --query 'tasks[0].containers[0].exitCode' --output text)
+            echo "Migration exit code: $CODE"; [ "$CODE" = "0" ]
+          }
+          if echo "$DB_SERVICES" | grep -qw "$SVC"; then run_migrate "sync-dev-$SVC-migrate"; fi
+          if [ "$SVC" = "ai" ]; then run_migrate "sync-dev-ai-migrate"; fi
+
+      - name: Deploy service (rolling, force new image)
+        run: |
+          CLUSTER=${{ vars.ECS_CLUSTER_DEV }}
+          IMAGE=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}
+          bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-dev-${{ matrix.service }}" "$IMAGE"
+          # AI dùng chung image cho worker
+          if [ "${{ matrix.service }}" = "ai" ]; then
+            bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-dev-ai-worker" "$IMAGE"
+          fi
+
+      - name: Smoke test (public health)
+        run: |
+          URL="${{ vars.SYNC_PUBLIC_URL_DEV }}"
+          if [ -n "$URL" ]; then
+            curl -fsS "$URL/health" || curl -fsS "$URL/healthz" || (echo "smoke failed" && exit 1)
+          fi
+
+  # 5) Deploy PROD — manual approval (environment) + blue/green gateway
+  deploy-prod:
+    needs: [detect, deploy-dev]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    environment: production      # bật Required reviewers để chặn approval
+    strategy:
+      fail-fast: true
+      max-parallel: 3
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run migration (expand, idempotent)
+        run: |
+          CLUSTER=${{ vars.ECS_CLUSTER_PROD }}
+          SVC=${{ matrix.service }}
+          run_migrate() {
+            TASK=$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$1" --launch-type EC2 \
+              --network-configuration "awsvpcConfiguration={subnets=[${{ vars.MIGRATE_SUBNETS }}],securityGroups=[${{ vars.MIGRATE_SG }}]}" \
+              --query 'tasks[0].taskArn' --output text)
+            aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
+            CODE=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" --query 'tasks[0].containers[0].exitCode' --output text)
+            [ "$CODE" = "0" ]
+          }
+          if echo "$DB_SERVICES" | grep -qw "$SVC"; then run_migrate "sync-prod-$SVC-migrate"; fi
+          if [ "$SVC" = "ai" ]; then run_migrate "sync-prod-ai-migrate"; fi
+
+      - name: Deploy (gateway=blue/green CodeDeploy · còn lại=rolling)
+        run: |
+          CLUSTER=${{ vars.ECS_CLUSTER_PROD }}
+          IMAGE=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}
+          if [ "${{ matrix.service }}" = "gateway" ]; then
+            bash .github/scripts/ecs-bluegreen.sh "sync-prod-gateway" "$IMAGE"
+          else
+            bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-prod-${{ matrix.service }}" "$IMAGE"
+            if [ "${{ matrix.service }}" = "ai" ]; then
+              bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-prod-ai-worker" "$IMAGE"
+            fi
+          fi
+
+      - name: Smoke test
+        run: |
+          URL="${{ vars.SYNC_PUBLIC_URL_PROD }}"
+          [ -n "$URL" ] && (curl -fsS "$URL/health" || (echo "smoke failed" && exit 1)) || true

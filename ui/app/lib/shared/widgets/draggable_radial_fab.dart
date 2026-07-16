@@ -25,7 +25,8 @@ class DraggableRadialFab extends StatefulWidget {
     required this.items,
     this.fabSize = 64,
     this.itemSize = 56,
-    this.arcRadius = 135,
+    /// Horizontal arc radius (clamped to screen width so side items stay on-screen).
+    this.arcRadius = 170,
   });
 
   final List<RadialFabMenuItem> items;
@@ -42,7 +43,9 @@ class _DraggableRadialFabState extends State<DraggableRadialFab>
   static const double _navBarHeight = 72;
   static const double _labelWidth = 76;
   /// Lifts the whole arc above the nav bar top edge (circle + label clearance).
-  static const double _arcLift = 58;
+  static const double _arcLift = 78;
+  /// Stretch vertical radius so items sit farther apart without clipping sides.
+  static const double _verticalRadiusFactor = 1.22;
 
   static const Duration _openDuration = Duration(milliseconds: 220);
   static const Duration _closeDuration = Duration(milliseconds: 150);
@@ -96,10 +99,16 @@ class _DraggableRadialFabState extends State<DraggableRadialFab>
     );
   }
 
-  Offset _polarOffset(double angle, double radius) {
-    final dx = radius * math.cos(angle);
-    final dy = -radius * math.sin(angle);
+  Offset _polarOffset(double angle, double radiusX, double radiusY) {
+    final dx = radiusX * math.cos(angle);
+    final dy = -radiusY * math.sin(angle);
     return Offset(dx, dy);
+  }
+
+  /// Keep outermost icons + labels inside the screen horizontally.
+  double _clampedRadiusX(double screenWidth) {
+    final maxR = (screenWidth / 2) - (_labelWidth / 2) - 10;
+    return math.min(widget.arcRadius, math.max(120, maxR));
   }
 
   Future<void> _open() async {
@@ -160,6 +169,8 @@ class _DraggableRadialFabState extends State<DraggableRadialFab>
     final center = _fabCenter(screenSize, padding);
     final angles = _itemAngles(widget.items.length);
     final fabRadius = widget.fabSize / 2;
+    final radiusX = _clampedRadiusX(screenSize.width);
+    final radiusY = radiusX * _verticalRadiusFactor;
 
     return AnimatedBuilder(
       animation: Listenable.merge([_expandController, _overlayController]),
@@ -205,7 +216,7 @@ class _DraggableRadialFabState extends State<DraggableRadialFab>
                       final a = _itemAnimValue(index);
                       if (a < 0.05) return const SizedBox.shrink();
 
-                      final o = _polarOffset(angle, widget.arcRadius * a);
+                      final o = _polarOffset(angle, radiusX * a, radiusY * a);
                       return Positioned(
                         left: center.dx + o.dx - _labelWidth / 2,
                         top: center.dy + o.dy - widget.itemSize / 2,

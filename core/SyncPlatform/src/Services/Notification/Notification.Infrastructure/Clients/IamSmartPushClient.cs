@@ -11,13 +11,11 @@ public class IamSmartPushClient : IIamSmartPushClient
     private readonly HttpClient _httpClient;
     private static readonly JsonSerializerOptions JsonOpts = new()
     {
+        PropertyNameCaseInsensitive = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
-    public IamSmartPushClient(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
+    public IamSmartPushClient(HttpClient httpClient) => _httpClient = httpClient;
 
     public async Task<IReadOnlyList<DueSmartPushUserDto>> GetDueUsersAsync(DateTime utcNow, CancellationToken cancellationToken)
     {
@@ -26,10 +24,20 @@ public class IamSmartPushClient : IIamSmartPushClient
         response.EnsureSuccessStatusCode();
 
         var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<List<DueSmartPushUserDto>>>(JsonOpts, cancellationToken);
-        if (apiResponse == null || !apiResponse.Success || apiResponse.Data == null)
-        {
+        if (apiResponse is not { Success: true, Data: not null })
             throw new HttpRequestException($"Failed to retrieve due users from IAM: {apiResponse?.Message ?? "No response"}");
-        }
+
+        return apiResponse.Data;
+    }
+
+    public async Task<IReadOnlyList<SmartPushEnabledUserDto>> GetEnabledUsersAsync(CancellationToken cancellationToken)
+    {
+        var response = await _httpClient.GetAsync("/api/internal/smart-push/enabled-users", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<List<SmartPushEnabledUserDto>>>(JsonOpts, cancellationToken);
+        if (apiResponse is not { Success: true, Data: not null })
+            throw new HttpRequestException($"Failed to retrieve enabled users from IAM: {apiResponse?.Message ?? "No response"}");
 
         return apiResponse.Data;
     }
@@ -39,16 +47,12 @@ public class IamSmartPushClient : IIamSmartPushClient
         var url = $"/api/internal/smart-push/context/{userId}";
         var response = await _httpClient.GetAsync(url, cancellationToken);
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
             return null;
-        }
         response.EnsureSuccessStatusCode();
 
         var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<IamSmartPushContextDto>>(JsonOpts, cancellationToken);
-        if (apiResponse == null || !apiResponse.Success || apiResponse.Data == null)
-        {
+        if (apiResponse is not { Success: true, Data: not null })
             throw new HttpRequestException($"Failed to retrieve context for user {userId} from IAM: {apiResponse?.Message ?? "No response"}");
-        }
 
         return apiResponse.Data;
     }

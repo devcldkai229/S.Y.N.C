@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
+import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/features/social/cubit/social_cubit.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
 import 'package:sync_app/features/social/widgets/social_comments_sheet.dart';
@@ -35,21 +37,30 @@ class _SocialScreenView extends StatefulWidget {
   State<_SocialScreenView> createState() => _SocialScreenViewState();
 }
 
-class _SocialScreenViewState extends State<_SocialScreenView> {
+class _SocialScreenViewState extends State<_SocialScreenView> with WidgetsBindingObserver {
   final _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController
       ..removeListener(_onScroll)
       ..dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<SocialCubit>().refreshCurrentUser();
+    }
   }
 
   void _onScroll() {
@@ -65,13 +76,65 @@ class _SocialScreenViewState extends State<_SocialScreenView> {
     await context.read<SocialCubit>().loadAll(refresh: true);
   }
 
-  void _openStory(BuildContext context, SocialCubit cubit, SocialStoryFeedGroup group) {
-    SocialStoryViewer.show(
+  Future<void> _openStory(
+    BuildContext context,
+    SocialCubit cubit,
+    SocialState state,
+    SocialStoryFeedGroup tapped,
+  ) async {
+    final repo = getIt<SocialRepository>();
+    final sorted = sortStoryGroupsForViewer(
+      state.storyGroups,
+      currentUserId: state.currentUserId,
+      seenAuthorIds: state.seenStoryAuthorIds,
+    );
+
+    final hydrated = <SocialStoryFeedGroup>[];
+    for (final g in sorted) {
+      if (g.stories.isNotEmpty) {
+        hydrated.add(g);
+        continue;
+      }
+      try {
+        final stories = await repo.loadStoriesByUser(g.authorId);
+        if (stories.isEmpty) continue;
+        hydrated.add(
+          SocialStoryFeedGroup(
+            authorId: g.authorId,
+            authorSnapshot: g.authorSnapshot,
+            stories: stories,
+            storyCount: stories.length,
+            latestAt: g.latestAt,
+            hasUnseen: g.hasUnseen,
+            coverThumbUrl: g.coverThumbUrl,
+          ),
+        );
+      } catch (_) {
+        // Skip groups we cannot load.
+      }
+    }
+
+    if (!context.mounted || hydrated.isEmpty) return;
+
+    var initialIndex = hydrated.indexWhere((g) => g.authorId == tapped.authorId);
+    if (initialIndex < 0) initialIndex = 0;
+
+    final ended = await SocialStoryViewer.show(
       context,
-      group: group,
-      onViewed: (story) => cubit.viewStory(story, authorId: group.authorId),
+      groups: hydrated,
+      initialGroupIndex: initialIndex,
+      onViewed: (story) => cubit.viewStory(story, authorId: story.authorId),
       onLike: (story) => cubit.likeStory(story.id),
     );
+
+    if (ended == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.socialStoryEnded),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _openUserProfile(BuildContext context, SocialState state, String userId) {
@@ -139,7 +202,7 @@ class _SocialScreenViewState extends State<_SocialScreenView> {
                         myStories: state.myStories,
                         seenAuthorIds: state.seenStoryAuthorIds,
                         onCreateStory: () => SocialCreateStorySheet.show(context),
-                        onStoryTap: (group) => _openStory(context, cubit, group),
+                        onStoryTap: (group) => _openStory(context, cubit, state, group),
                       ),
                     );
                   },

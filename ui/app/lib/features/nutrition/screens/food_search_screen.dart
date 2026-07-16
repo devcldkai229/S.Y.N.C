@@ -10,9 +10,14 @@ import 'package:sync_app/features/nutrition/widgets/food_row.dart';
 import 'package:sync_app/shared/widgets/sync_shimmer_box.dart';
 
 class FoodSearchScreen extends StatefulWidget {
-  const FoodSearchScreen({super.key, required this.mealType});
+  const FoodSearchScreen({
+    super.key,
+    required this.mealType,
+    this.diaryDate,
+  });
 
   final MealTypeUi mealType;
+  final DateTime? diaryDate;
 
   @override
   State<FoodSearchScreen> createState() => _FoodSearchScreenState();
@@ -52,7 +57,11 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => FoodDetailSheet(food: food, mealType: widget.mealType),
+      builder: (_) => FoodDetailSheet(
+        food: food,
+        mealType: widget.mealType,
+        diaryDate: widget.diaryDate,
+      ),
     );
   }
 

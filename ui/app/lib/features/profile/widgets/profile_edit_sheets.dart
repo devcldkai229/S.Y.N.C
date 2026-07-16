@@ -246,6 +246,8 @@ class _PreferencesEditorSheetState extends State<_PreferencesEditorSheet> {
   late String _motivation;
   late bool _dataConsent;
   late bool _marketingConsent;
+  late bool _smartPushEnabled;
+  late bool _allowAiGeneratedNotification;
 
   @override
   void initState() {
@@ -257,6 +259,8 @@ class _PreferencesEditorSheetState extends State<_PreferencesEditorSheet> {
     _motivation = widget.initial.motivationStyle.isNotEmpty ? widget.initial.motivationStyle : 'Supportive';
     _dataConsent = widget.initial.dataSharingConsent;
     _marketingConsent = widget.initial.marketingConsent;
+    _smartPushEnabled = widget.initial.smartPushEnabled;
+    _allowAiGeneratedNotification = widget.initial.allowAiGeneratedNotification;
   }
 
   @override
@@ -320,6 +324,25 @@ class _PreferencesEditorSheetState extends State<_PreferencesEditorSheet> {
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
             ),
+            SwitchListTile(
+              value: _smartPushEnabled,
+              onChanged: (v) => setState(() {
+                _smartPushEnabled = v;
+                if (!v) _allowAiGeneratedNotification = false;
+              }),
+              title: Text(l10n.smartPushEnabledLabel, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: Text(l10n.smartPushEnabledHint, style: const TextStyle(fontSize: 12)),
+              contentPadding: EdgeInsets.zero,
+            ),
+            SwitchListTile(
+              value: _allowAiGeneratedNotification,
+              onChanged: !_smartPushEnabled
+                  ? null
+                  : (v) => setState(() => _allowAiGeneratedNotification = v),
+              title: Text(l10n.allowAiNotificationLabel, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              subtitle: Text(l10n.allowAiNotificationHint, style: const TextStyle(fontSize: 12)),
+              contentPadding: EdgeInsets.zero,
+            ),
             const SizedBox(height: 16),
             PrimaryButton(
               label: l10n.actionSave,
@@ -334,6 +357,9 @@ class _PreferencesEditorSheetState extends State<_PreferencesEditorSheet> {
                     motivationStyle: _motivation,
                     dataSharingConsent: _dataConsent,
                     marketingConsent: _marketingConsent,
+                    smartPushEnabled: _smartPushEnabled,
+                    allowAiGeneratedNotification:
+                        _smartPushEnabled && _allowAiGeneratedNotification,
                   ),
                 );
               },

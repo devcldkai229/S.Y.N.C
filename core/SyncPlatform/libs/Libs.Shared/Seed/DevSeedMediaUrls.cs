@@ -3,8 +3,8 @@ using Libs.Shared.Storage;
 namespace Libs.Shared.Seed;
 
 /// <summary>
-/// Public media URLs for local dev seed data (bucket: sync-public-assets for Social seed assets).
-/// IAM / Roadmap user uploads use <see cref="StorageBuckets.PrivateAssets"/> via gateway proxy.
+/// Public media URLs for local dev seed data (bucket: sync-pub-assets).
+/// IAM / Social user uploads use <see cref="StorageBuckets.PrivateAssets"/> (presigned on display).
 /// </summary>
 public static class DevSeedMediaUrls
 {

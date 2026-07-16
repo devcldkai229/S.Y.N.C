@@ -1,7 +1,6 @@
-using Libs.Storage.Configuration;
 using Iam.API.Services;
 using Iam.Application.Common;
-using Libs.Storage.Services;
+using Libs.Storage.Configuration;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -14,16 +13,13 @@ namespace Iam.API.Controllers;
 public class MeMediaController : ControllerBase
 {
     private readonly IMediaStorage _storage;
-    private readonly IMediaUrlResolver _media;
     private readonly ObjectStorageOptions _options;
 
     public MeMediaController(
         IMediaStorage storage,
-        IMediaUrlResolver media,
         IOptions<ObjectStorageOptions> options)
     {
         _storage = storage;
-        _media = media;
         _options = options.Value;
     }
 
@@ -56,13 +52,15 @@ public class MeMediaController : ControllerBase
 
             var objectName = $"profiles/{Guid.NewGuid():N}{ext}";
             await using var stream = file.OpenReadStream();
-            await _storage.UploadAsync(
+            // Prefer gateway URL from UploadAsync (bucket/key) — not ResolveAfterUpload,
+            // which mis-parses "profiles/..." as bucket=profiles.
+            var url = await _storage.UploadAsync(
                 stream,
                 file.Length,
                 objectName,
                 file.ContentType ?? "application/octet-stream",
                 cancellationToken);
-            urls.Add(_media.ResolveAfterUpload(objectName));
+            urls.Add(url);
         }
 
         return Ok(ApiResponse<IReadOnlyList<string>>.SuccessResponse(urls, "Profile media uploaded."));

@@ -62,6 +62,12 @@ public class PartnerSearchRequest
 
     public double? RadiusKm { get; set; }
 
+    /// <summary>Filter partners with RatingAverage &gt;= MinRating.</summary>
+    public decimal? MinRating { get; set; }
+
+    /// <summary>Dish/keyword matched against food menu item names; partners must sell matching items.</summary>
+    public string? Dish { get; set; }
+
     public int PageNumber { get; set; } = 1;
 
     public int PageSize { get; set; } = 20;

@@ -16,9 +16,11 @@ public static class MongoDbIndexInitializer
         await ConfigureStoryIndexesAsync(database);
         await ConfigureBlogIndexesAsync(database);
         await ConfigureBlogInteractionIndexesAsync(database);
+        await ConfigureBlogCommentIndexesAsync(database);
         await ConfigureUserSocialSettingsIndexesAsync(database);
         await ConfigureStoryInteractionIndexesAsync(database);
         await ConfigureStoryViewIndexesAsync(database);
+        await ConfigureTrendingPostIndexesAsync(database);
     }
 
     private static async Task ConfigurePostIndexesAsync(IMongoDatabase database)
@@ -27,12 +29,16 @@ public static class MongoDbIndexInitializer
         var ix = Builders<Post>.IndexKeys;
 
         var feedIndex = new CreateIndexModel<Post>(
-            ix.Ascending(x => x.IsPublic).Descending(x => x.CreatedAt),
-            new CreateIndexOptions { Name = "IX_IsPublic_CreatedAt_Desc" });
+            ix.Ascending(x => x.IsPublic).Descending(x => x.CreatedAt).Descending(x => x.Id),
+            new CreateIndexOptions { Name = "IX_IsPublic_CreatedAt_Id_Desc" });
 
         var authorIndex = new CreateIndexModel<Post>(
-            ix.Ascending(x => x.AuthorId).Descending(x => x.CreatedAt),
-            new CreateIndexOptions { Name = "IX_AuthorId_CreatedAt_Desc" });
+            ix.Ascending(x => x.AuthorId).Descending(x => x.CreatedAt).Descending(x => x.Id),
+            new CreateIndexOptions { Name = "IX_AuthorId_CreatedAt_Id_Desc" });
+
+        var followingFeedIndex = new CreateIndexModel<Post>(
+            ix.Ascending(x => x.AuthorId).Ascending(x => x.IsPublic).Descending(x => x.CreatedAt).Descending(x => x.Id),
+            new CreateIndexOptions { Name = "IX_AuthorId_IsPublic_CreatedAt_Id_Desc" });
 
         var typeIndex = new CreateIndexModel<Post>(
             ix.Ascending(x => x.PostType),
@@ -51,13 +57,25 @@ public static class MongoDbIndexInitializer
                     Builders<Post>.Filter.Gt(x => x.ShareCode, string.Empty)),
             });
 
-        await collection.Indexes.CreateManyAsync([feedIndex, authorIndex, typeIndex, shareCodeIndex]);
+        await collection.Indexes.CreateManyAsync([feedIndex, authorIndex, followingFeedIndex, typeIndex, shareCodeIndex]);
 
-        var contentTextIndex = new CreateIndexModel<Post>(
-            ix.Text(x => x.Content),
-            new CreateIndexOptions { Name = "IX_Content_Text" });
+        // Keep existing Content text index; add ascending for normalized regex/prefix search.
+        try
+        {
+            var contentTextIndex = new CreateIndexModel<Post>(
+                ix.Text(x => x.Content),
+                new CreateIndexOptions { Name = "IX_Content_Text" });
+            await collection.Indexes.CreateOneAsync(contentTextIndex);
+        }
+        catch
+        {
+            // Text index may already exist under another name.
+        }
 
-        await collection.Indexes.CreateOneAsync(contentTextIndex);
+        var contentNormalizedIndex = new CreateIndexModel<Post>(
+            ix.Ascending(x => x.ContentNormalized),
+            new CreateIndexOptions { Name = "IX_ContentNormalized" });
+        await collection.Indexes.CreateOneAsync(contentNormalizedIndex);
     }
 
     private static async Task ConfigureInteractionIndexesAsync(IMongoDatabase database)
@@ -216,6 +234,18 @@ public static class MongoDbIndexInitializer
         await collection.Indexes.CreateManyAsync([uniqueInteraction]);
     }
 
+    private static async Task ConfigureBlogCommentIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<BlogComment>("BlogComments");
+        var ix = Builders<BlogComment>.IndexKeys;
+
+        var blogCreatedIndex = new CreateIndexModel<BlogComment>(
+            ix.Ascending(x => x.BlogId).Descending(x => x.CreatedAt),
+            new CreateIndexOptions { Name = "IX_BlogId_CreatedAt_Desc" });
+
+        await collection.Indexes.CreateManyAsync([blogCreatedIndex]);
+    }
+
     private static async Task ConfigureStoryInteractionIndexesAsync(IMongoDatabase database)
     {
         var collection = database.GetCollection<StoryInteraction>("StoryInteractions");
@@ -237,6 +267,26 @@ public static class MongoDbIndexInitializer
             ix.Ascending(x => x.StoryId).Ascending(x => x.ViewerId),
             new CreateIndexOptions { Unique = true, Name = "UIX_StoryId_ViewerId" });
 
-        await collection.Indexes.CreateManyAsync([uniqueView]);
+        var viewerIndex = new CreateIndexModel<StoryView>(
+            ix.Ascending(x => x.ViewerId).Ascending(x => x.StoryId),
+            new CreateIndexOptions { Name = "IX_ViewerId_StoryId" });
+
+        await collection.Indexes.CreateManyAsync([uniqueView, viewerIndex]);
+    }
+
+    private static async Task ConfigureTrendingPostIndexesAsync(IMongoDatabase database)
+    {
+        var collection = database.GetCollection<TrendingPost>("TrendingPosts");
+        var ix = Builders<TrendingPost>.IndexKeys;
+
+        var scoreIndex = new CreateIndexModel<TrendingPost>(
+            ix.Descending(x => x.Score).Descending(x => x.Id),
+            new CreateIndexOptions { Name = "IX_Score_Id_Desc" });
+
+        var postIdIndex = new CreateIndexModel<TrendingPost>(
+            ix.Ascending(x => x.PostId),
+            new CreateIndexOptions { Name = "IX_PostId" });
+
+        await collection.Indexes.CreateManyAsync([scoreIndex, postIdIndex]);
     }
 }

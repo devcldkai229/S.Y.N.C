@@ -1,3 +1,4 @@
+using Amazon.Extensions.NETCore.Setup;
 using Amazon.S3;
 using Libs.Storage.Configuration;
 using Libs.Storage.Services;
@@ -13,6 +14,8 @@ public static class StorageServiceExtensions
         IConfiguration configuration)
     {
         services.Configure<ObjectStorageOptions>(configuration.GetSection(ObjectStorageOptions.SectionName));
+        var awsOptions = configuration.GetAWSOptions();
+        services.AddDefaultAWSOptions(awsOptions);
         services.AddAWSService<IAmazonS3>();
         services.AddSingleton<S3ObjectStorage>();
         services.AddSingleton<IMediaUrlResolver, MediaUrlResolver>();

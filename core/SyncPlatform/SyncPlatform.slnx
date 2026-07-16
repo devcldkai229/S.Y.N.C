@@ -1,8 +1,8 @@
 <Solution>
   <Folder Name="/libs/">
-    <Project Path="libs/Contract/Contract.csproj" />
     <Project Path="libs/Libs.Auth/Libs.Auth.csproj" />
     <Project Path="libs/Libs.Shared/Libs.Shared.csproj" />
+    <Project Path="libs/Libs.Storage/Libs.Storage.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/Gateway/">
@@ -43,6 +43,7 @@
   <Folder Name="/src/Services/Notification/">
     <Project Path="src/Services/Notification/Notification.API/Notification.API.csproj" />
     <Project Path="src/Services/Notification/Notification.Application/Notification.Application.csproj" />
+    <Project Path="src/Services/Notification/Notification.Application.Tests/Notification.Application.Tests.csproj" />
     <Project Path="src/Services/Notification/Notification.Domain/Notification.Domain.csproj" />
     <Project Path="src/Services/Notification/Notification.Infrastructure/Notification.Infrastructure.csproj" />
   </Folder>

@@ -30,12 +30,12 @@ public interface IUserFollowService
         Guid blockedUserId,
         CancellationToken cancellationToken = default);
 
-    Task<(IReadOnlyList<UserFollowDto> Items, PaginationMetadata Pagination)> GetFollowersAsync(
+    Task<(IReadOnlyList<FollowListItemDto> Items, PaginationMetadata Pagination)> GetFollowersAsync(
         Guid userId,
         FollowListQuery query,
         CancellationToken cancellationToken = default);
 
-    Task<(IReadOnlyList<UserFollowDto> Items, PaginationMetadata Pagination)> GetFollowingAsync(
+    Task<(IReadOnlyList<FollowListItemDto> Items, PaginationMetadata Pagination)> GetFollowingAsync(
         Guid userId,
         FollowListQuery query,
         CancellationToken cancellationToken = default);

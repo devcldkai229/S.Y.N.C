@@ -9,6 +9,7 @@ abstract final class ApiPaths {
   static const authResendVerification = '/v1/auth/resend-verification';
   static const authGoogle = '/v1/auth/google';
   static const authRefresh = '/v1/auth/refresh';
+  static const authLogout = '/v1/auth/logout';
   static const authVerifyEmail = '/v1/auth/verify-email';
   static const authForgotPassword = '/v1/auth/forgot-password';
   static const authResetPassword = '/v1/auth/reset-password';
@@ -42,6 +43,7 @@ abstract final class ApiPaths {
 
   // Roadmap
   static const roadmaps = '/v1/roadmap/roadmaps';
+  static const roadmapOverview = '/v1/roadmap/roadmaps/me/overview';
   static const sessions = '/v1/roadmap/sessions';
   static const recoveryProfiles = '/v1/roadmap/recovery-profiles';
   static const customWorkouts = '/v1/roadmap/workouts';
@@ -79,6 +81,7 @@ abstract final class ApiPaths {
   static const socialStories = '/v1/social/stories';
   static const socialStoriesFeed = '/v1/social/stories/feed';
   static const socialStoriesMe = '/v1/social/stories/me';
+  static String socialStoriesByUser(String userId) => '/v1/social/stories/user/$userId';
   static String socialCommentReplies(String commentId) =>
       '/v1/comments/$commentId/replies';
 
@@ -98,8 +101,19 @@ abstract final class ApiPaths {
   static String socialUserFollowStatus(String userId) =>
       '/v1/social/users/$userId/follow-status';
   static String socialUserFollow(String userId) => '/v1/social/users/$userId/follow';
+  static String socialUserFollowers(String userId) =>
+      '/v1/social/users/$userId/followers';
+  static String socialUserFollowing(String userId) =>
+      '/v1/social/users/$userId/following';
   static const socialUsersSearch = '/v1/social/users/search';
   static const socialPostsSearch = '/v1/posts/search';
+
+  // Social — blogs
+  static const socialBlogs = '/v1/social/blogs';
+  static const socialBlogsSearch = '/v1/social/blogs/search';
+  static String socialBlogById(String id) => '/v1/social/blogs/$id';
+  static String socialBlogLike(String id) => '/v1/social/blogs/$id/like';
+  static String socialBlogComments(String id) => '/v1/social/blogs/$id/comments';
 
   // Nutrition (gateway → /api/v1/nutrition/*)
   static const nutritionFoods = '/v1/nutrition/foods';

@@ -8,6 +8,10 @@ public interface IOrderService
 {
     Task<PlaceOrderResultDto> PlaceOrderAsync(Guid userId, PlaceOrderDto dto, CancellationToken cancellationToken = default);
 
+    Task<QuoteOrderResultDto> QuoteOrderAsync(
+        QuoteOrderRequestDto request,
+        CancellationToken cancellationToken = default);
+
     Task<OrderDto> ConfirmOrderPaymentAsync(
         Guid orderId,
         Guid transactionId,

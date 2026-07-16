@@ -5,6 +5,7 @@ import 'package:sync_app/core/models/api_models.dart';
 import 'package:sync_app/core/network/api_paths.dart';
 import 'package:sync_app/core/network/multipart_file_utils.dart';
 import 'package:sync_app/core/network/dio_errors.dart';
+import 'package:sync_app/features/workouts/models/roadmap_overview_models.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 
 class WorkoutApiService {
@@ -19,6 +20,30 @@ class WorkoutApiService {
       queryParameters: {'pageNumber': 1, 'pageSize': pageSize},
     );
     return _parsePagedList(response.data, PersonalizedRoadmap.fromJson);
+  }
+
+  /// Aggregated AI Roadmap overview (phases, readiness, week sessions).
+  Future<RoadmapOverview?> getRoadmapOverview({String? experienceLevel}) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiPaths.roadmapOverview,
+        queryParameters: <String, dynamic>{
+          if (experienceLevel != null && experienceLevel.isNotEmpty)
+            'experienceLevel': experienceLevel,
+        },
+      );
+      final json = response.data ?? const {};
+      if (json['success'] != true) return null;
+      final data = json['data'];
+      if (data is Map<String, dynamic>) {
+        return RoadmapOverview.fromJson(data);
+      }
+      return null;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      if (isOptionalApiDioError(e)) return null;
+      rethrow;
+    }
   }
 
   /// All sessions belonging to a roadmap (non-paged list).

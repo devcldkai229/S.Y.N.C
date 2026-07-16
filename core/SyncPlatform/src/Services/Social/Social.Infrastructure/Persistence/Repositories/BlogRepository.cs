@@ -85,6 +85,37 @@ public class BlogRepository : IBlogRepository
         return (items, total);
     }
 
+    public async Task<(IReadOnlyList<Blog> Items, int TotalRecords)> SearchPublishedAsync(
+        string query,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var q = query.Trim();
+        var escaped = System.Text.RegularExpressions.Regex.Escape(q);
+        var regex = new MongoDB.Bson.BsonRegularExpression(escaped, "i");
+
+        var textFilter = Builders<Blog>.Filter.Or(
+            Builders<Blog>.Filter.Regex(x => x.Title, regex),
+            Builders<Blog>.Filter.Regex(x => x.Content, regex),
+            Builders<Blog>.Filter.AnyEq(x => x.Tags, q.ToLowerInvariant()),
+            Builders<Blog>.Filter.Regex("Tags", regex));
+
+        var filter = Builders<Blog>.Filter.And(
+            Builders<Blog>.Filter.Eq(x => x.Status, BlogStatus.Published),
+            textFilter);
+
+        var total = (int)await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
+
+        var items = await _collection.Find(filter)
+            .SortByDescending(x => x.PublishedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Limit(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, total);
+    }
+
     public async Task<(IReadOnlyList<Blog> Items, int TotalRecords)> GetByAuthorAsync(
         Guid authorId,
         int pageNumber,
@@ -117,6 +148,16 @@ public class BlogRepository : IBlogRepository
     {
         var update = Builders<Blog>.Update
             .Inc(x => x.ShareCount, 1)
+            .Set(x => x.UpdatedAt, DateTimeOffset.UtcNow);
+
+        var result = await _collection.UpdateOneAsync(x => x.Id == blogId, update, cancellationToken: cancellationToken);
+        return result.ModifiedCount > 0;
+    }
+
+    public async Task<bool> IncrementCommentCountAsync(Guid blogId, CancellationToken cancellationToken = default)
+    {
+        var update = Builders<Blog>.Update
+            .Inc(x => x.CommentCount, 1)
             .Set(x => x.UpdatedAt, DateTimeOffset.UtcNow);
 
         var result = await _collection.UpdateOneAsync(x => x.Id == blogId, update, cancellationToken: cancellationToken);

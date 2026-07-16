@@ -13,6 +13,7 @@ class CynChatMessage {
     this.pendingAction,
     this.handoffLabel,
     this.error = false,
+    this.displayPayloads = const [],
   });
 
   final String id;
@@ -24,6 +25,7 @@ class CynChatMessage {
   final Map<String, dynamic>? pendingAction;
   final String? handoffLabel;
   final bool error;
+  final List<Map<String, dynamic>> displayPayloads;
 
   CynChatMessage copyWith({
     String? id,
@@ -35,6 +37,7 @@ class CynChatMessage {
     Map<String, dynamic>? pendingAction,
     String? handoffLabel,
     bool? error,
+    List<Map<String, dynamic>>? displayPayloads,
     bool clearPendingAction = false,
     bool clearHandoff = false,
   }) {
@@ -48,6 +51,7 @@ class CynChatMessage {
       pendingAction: clearPendingAction ? null : (pendingAction ?? this.pendingAction),
       handoffLabel: clearHandoff ? null : (handoffLabel ?? this.handoffLabel),
       error: error ?? this.error,
+      displayPayloads: displayPayloads ?? this.displayPayloads,
     );
   }
 }
@@ -62,6 +66,8 @@ class CynAiStreamEvent {
   factory CynAiStreamEvent.done() => const CynAiStreamEvent._('done', '[DONE]');
   factory CynAiStreamEvent.error(String message) => CynAiStreamEvent._('error', message);
   factory CynAiStreamEvent.finalPayload(String json) => CynAiStreamEvent._('final', json);
+  factory CynAiStreamEvent.displayPayload(String json) =>
+      CynAiStreamEvent._('display_payload', json);
   factory CynAiStreamEvent.raw(String event, String data) => CynAiStreamEvent._(event, data);
 
   Map<String, dynamic>? get jsonData {

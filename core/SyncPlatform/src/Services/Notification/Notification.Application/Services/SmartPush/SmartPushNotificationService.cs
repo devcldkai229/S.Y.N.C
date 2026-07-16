@@ -1,10 +1,12 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Notification.Application.Clients;
 using Notification.Application.DTOs;
 using Notification.Application.DTOs.SmartPush;
+using Notification.Application.Options;
 using Notification.Domain.Enums;
-using Notification.Domain.Repositories;
+using Notification.Domain.Models;
 using Notification.Application.Services;
 
 namespace Notification.Application.Services.SmartPush;
@@ -13,317 +15,450 @@ public class SmartPushNotificationService : ISmartPushNotificationService
 {
     private readonly IIamSmartPushClient _iamClient;
     private readonly IRoadmapActivityClient _roadmapClient;
-    private readonly INutritionClient _nutritionClient;
+    private readonly INutritionActivityClient _nutritionClient;
     private readonly ISmartPushDecisionService _decisionService;
-    private readonly IDeepSeekClient _deepSeekClient;
+    private readonly IOpenAiClient _openAiClient;
     private readonly ISmartPushAiUsagePolicy _aiUsagePolicy;
     private readonly ISmartPushDeepLinkResolver _deepLinkResolver;
     private readonly ISmartPushTemplateService _templateService;
+    private readonly ISmartPushGenerationCache _generationCache;
+    private readonly ISmartPushScheduleRepository _scheduleRepo;
+    private readonly ISmartPushScheduleService _scheduleService;
     private readonly INotificationService _notificationService;
-    private readonly INotificationMessageRepository _messageRepository;
+    private readonly SmartPushOptions _options;
     private readonly ILogger<SmartPushNotificationService> _logger;
 
     public SmartPushNotificationService(
         IIamSmartPushClient iamClient,
         IRoadmapActivityClient roadmapClient,
-        INutritionClient nutritionClient,
+        INutritionActivityClient nutritionClient,
         ISmartPushDecisionService decisionService,
-        IDeepSeekClient deepSeekClient,
+        IOpenAiClient openAiClient,
         ISmartPushAiUsagePolicy aiUsagePolicy,
         ISmartPushDeepLinkResolver deepLinkResolver,
         ISmartPushTemplateService templateService,
+        ISmartPushGenerationCache generationCache,
+        ISmartPushScheduleRepository scheduleRepo,
+        ISmartPushScheduleService scheduleService,
         INotificationService notificationService,
-        INotificationMessageRepository messageRepository,
+        IOptions<SmartPushOptions> options,
         ILogger<SmartPushNotificationService> logger)
     {
         _iamClient = iamClient;
         _roadmapClient = roadmapClient;
         _nutritionClient = nutritionClient;
         _decisionService = decisionService;
-        _deepSeekClient = deepSeekClient;
+        _openAiClient = openAiClient;
         _aiUsagePolicy = aiUsagePolicy;
         _deepLinkResolver = deepLinkResolver;
         _templateService = templateService;
+        _generationCache = generationCache;
+        _scheduleRepo = scheduleRepo;
+        _scheduleService = scheduleService;
         _notificationService = notificationService;
-        _messageRepository = messageRepository;
+        _options = options.Value;
         _logger = logger;
     }
 
-    public async Task ProcessDueUsersAsync(
-        DateTime utcNow, 
-        Guid? targetUserId = null, 
-        bool sendImmediately = false, 
-        CancellationToken cancellationToken = default)
+    public async Task ProcessDueUsersAsync(DateTime utcNow, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("SmartPush Notification Planner started at UTC {UtcNow}", utcNow);
+        var now = new DateTimeOffset(DateTime.SpecifyKind(utcNow, DateTimeKind.Utc));
+        var batch = Math.Clamp(_options.ClaimBatchSize, 1, 500);
+        _logger.LogInformation("Claiming due smart push schedules at {UtcNow} (batch={Batch})", now, batch);
 
-        IReadOnlyList<DueSmartPushUserDto> dueUsers;
+        IReadOnlyList<SmartPushSchedule> claimed;
         try
         {
-            if (targetUserId.HasValue)
-            {
-                var userContext = await _iamClient.GetContextAsync(targetUserId.Value, cancellationToken);
-                if (userContext == null)
-                {
-                    _logger.LogWarning("User {UserId} not found in IAM. Cannot run test scan.", targetUserId.Value);
-                    return;
-                }
-                
-                dueUsers = new List<DueSmartPushUserDto>
-                {
-                    new DueSmartPushUserDto(
-                        UserId: userContext.UserId,
-                        PreferredReminderTime: TimeSpan.FromHours(22),
-                        TimeZoneId: userContext.TimeZoneId,
-                        MotivationStyle: userContext.MotivationStyle
-                    )
-                };
-            }
-            else
-            {
-                dueUsers = await _iamClient.GetDueUsersAsync(utcNow, cancellationToken);
-            }
+            claimed = await _scheduleRepo.ClaimDueAsync(now, batch, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch active users from IAM Service.");
+            _logger.LogError(ex, "Failed to claim due smart push schedules.");
             return;
         }
 
-        _logger.LogInformation("Found {Count} active smart push users from IAM Service.", dueUsers.Count);
+        _logger.LogInformation("Claimed {Count} due schedules.", claimed.Count);
+        var dueScanned = claimed.Count;
+        var triggered = 0;
+        var suppressed = 0;
+        var sent = 0;
+        var llmFallback = 0;
 
-        foreach (var dueUser in dueUsers)
+        foreach (var schedule in claimed)
         {
             try
             {
-                var tzId = string.IsNullOrWhiteSpace(dueUser.TimeZoneId) ? "Asia/Ho_Chi_Minh" : dueUser.TimeZoneId;
-                TimeZoneInfo userTz;
-                try
+                var outcome = await ProcessClaimedScheduleAsync(schedule, now, force: false, cancellationToken);
+                switch (outcome)
                 {
-                    userTz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
-                }
-                catch (Exception)
-                {
-                    tzId = "Asia/Ho_Chi_Minh";
-                    userTz = TimeZoneInfo.FindSystemTimeZoneById(tzId);
-                }
-
-                var userLocalNow = TimeZoneInfo.ConvertTime(utcNow, userTz);
-
-                // 1. Only process user when local time is between 22:00 and 23:59 (bypass if sendImmediately)
-                if (!sendImmediately && userLocalNow.Hour < 22)
-                {
-                    _logger.LogDebug("User {UserId} local time is {LocalTime}. Outside 22:00-23:59 planning window. Skipping.", dueUser.UserId, userLocalNow);
-                    continue;
-                }
-
-                // 2. Calculate tomorrowLocalDate according to user's timezone.
-                var tomorrowLocalDate = DateOnly.FromDateTime(userLocalNow.Date.AddDays(1));
-                var tomorrowLocalDateStr = tomorrowLocalDate.ToString("yyyy-MM-dd");
-
-                // 3. Get the topics already scheduled for tomorrowLocalDate (bypass if sendImmediately)
-                var scheduledTopics = sendImmediately 
-                    ? new List<string>() 
-                    : await _messageRepository.GetScheduledTopicsForDateAsync(dueUser.UserId, tomorrowLocalDateStr, cancellationToken);
-                _logger.LogInformation("User {UserId} has scheduled topics for tomorrow {Date}: [{Topics}]", dueUser.UserId, tomorrowLocalDateStr, string.Join(", ", scheduledTopics));
-
-                // 4. Fetch context from IAM
-                var iamContext = await _iamClient.GetContextAsync(dueUser.UserId, cancellationToken);
-                if (iamContext == null)
-                {
-                    _logger.LogWarning("User profile context not found in IAM for user {UserId}. Skipping.", dueUser.UserId);
-                    continue;
-                }
-
-                // 5. Fetch activity from Roadmap
-                var roadmapActivity = await _roadmapClient.GetTodayActivityAsync(dueUser.UserId, tzId, cancellationToken);
-
-                // 6. Fetch nutrition from Nutrition
-                var todayLocalDateStr = userLocalNow.ToString("yyyy-MM-dd");
-                TodayNutritionDto? nutrition = null;
-                try
-                {
-                    nutrition = await _nutritionClient.GetTodayNutritionAsync(dueUser.UserId, todayLocalDateStr, cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to retrieve today nutrition summary for user {UserId}. Using default.", dueUser.UserId);
-                }
-
-                nutrition ??= new TodayNutritionDto(
-                    UserId: dueUser.UserId,
-                    Date: DateOnly.FromDateTime(userLocalNow.Date),
-                    TargetCalories: 0,
-                    ConsumedCalories: 0,
-                    TargetProteinGram: 0,
-                    ConsumedProteinGram: 0,
-                    TargetCarbGram: 0,
-                    ConsumedCarbGram: 0,
-                    TargetFatGram: 0,
-                    ConsumedFatGram: 0,
-                    WaterIntakeMl: 0,
-                    MealsLoggedCount: 0
-                );
-
-                // 7. Merge contexts
-                var context = new SmartPushContextDto(
-                    UserId: iamContext.UserId,
-                    FullName: iamContext.FullName,
-                    BurnoutRiskScore: iamContext.BurnoutRiskScore,
-                    CurrentStreak: iamContext.CurrentStreak,
-                    LongestStreak: iamContext.LongestStreak,
-                    CurrentLevel: iamContext.CurrentLevel,
-                    CurrentXP: iamContext.CurrentXP,
-                    MotivationStyle: iamContext.MotivationStyle,
-                    FitnessGoal: iamContext.FitnessGoal,
-                    ActivityLevel: iamContext.ActivityLevel,
-                    FitnessExperienceLevel: iamContext.FitnessExperienceLevel,
-                    WorkoutLocationPreference: iamContext.WorkoutLocationPreference,
-                    SmartPushEnabled: iamContext.SmartPushEnabled,
-                    AllowAiGeneratedNotification: iamContext.AllowAiGeneratedNotification,
-                    TimeZoneId: iamContext.TimeZoneId,
-                    AgentPersona: iamContext.AgentPersona,
-                    HasWorkoutScheduledToday: roadmapActivity?.HasWorkoutScheduledToday ?? false,
-                    TodayWorkoutName: roadmapActivity?.TodayWorkoutName,
-                    HasStartedWorkoutToday: roadmapActivity?.HasStartedWorkoutToday ?? false,
-                    CompletedWorkoutToday: roadmapActivity?.CompletedWorkoutToday ?? false,
-                    LatestStartedAt: roadmapActivity?.LatestStartedAt,
-                    LatestCompletedAt: roadmapActivity?.LatestCompletedAt,
-                    ActualDurationMinutes: roadmapActivity?.ActualDurationMinutes ?? 0,
-                    CompletionRate: roadmapActivity?.CompletionRate ?? 0,
-                    PerceivedDifficulty: roadmapActivity?.PerceivedDifficulty ?? 0,
-                    EnergyLevelBefore: roadmapActivity?.EnergyLevelBefore ?? 0,
-                    EnergyLevelAfter: roadmapActivity?.EnergyLevelAfter ?? 0,
-                    CaloriesBurned: roadmapActivity?.CaloriesBurned ?? 0,
-                    SkippedExercisesCount: roadmapActivity?.SkippedExercisesCount ?? 0,
-                    SubscriptionTier: iamContext.SubscriptionTier,
-                    HasWorkoutScheduledTomorrow: roadmapActivity?.HasWorkoutScheduledTomorrow ?? false,
-                    TomorrowWorkoutName: roadmapActivity?.TomorrowWorkoutName,
-                    TomorrowExerciseNames: roadmapActivity?.TomorrowExerciseNames ?? new List<string>(),
-                    TodayWorkoutAiCoachFeedback: roadmapActivity?.TodayWorkoutAiCoachFeedback,
-                    TodayWorkoutSessionFeedback: roadmapActivity?.TodayWorkoutSessionFeedback,
-                    NutritionTargetCalories: nutrition.TargetCalories,
-                    NutritionConsumedCalories: nutrition.ConsumedCalories,
-                    NutritionTargetProtein: nutrition.TargetProteinGram,
-                    NutritionConsumedProtein: nutrition.ConsumedProteinGram,
-                    NutritionTargetCarbs: nutrition.TargetCarbGram,
-                    NutritionConsumedCarbs: nutrition.ConsumedCarbGram,
-                    NutritionTargetFat: nutrition.TargetFatGram,
-                    NutritionConsumedFat: nutrition.ConsumedFatGram,
-                    NutritionWaterIntakeMl: nutrition.WaterIntakeMl,
-                    NutritionMealsLoggedCount: nutrition.MealsLoggedCount
-                );
-
-                // 8. Evaluate 3 topics: streak, exercise, nutrition
-                var topics = new[] { "streak", "exercise", "nutrition" };
-                foreach (var topic in topics)
-                {
-                    // If already scheduled for tomorrow, skip
-                    if (scheduledTopics.Contains(topic, StringComparer.OrdinalIgnoreCase))
-                    {
-                        _logger.LogInformation("Topic {Topic} already scheduled for tomorrow for user {UserId}. Skipping.", topic, dueUser.UserId);
-                        continue;
-                    }
-
-                    var decision = _decisionService.Decide(context, topic);
-                    if (!decision.ShouldSend)
-                    {
-                        _logger.LogInformation("Decision engine resolved to SKIP topic {Topic} for user {UserId}. Reason: {Reason}", topic, dueUser.UserId, decision.Reason);
-                        continue;
-                    }
-
-                    // Set ScheduledForUtc based on local tomorrow time milestones (bypass if sendImmediately)
-                    DateTimeOffset? scheduledForUtc = null;
-                    DateTime? tomorrowDateTimeLocal = null;
-
-                    if (!sendImmediately)
-                    {
-                        var timeOfDay = topic.ToLowerInvariant() switch
-                        {
-                            "streak" => new TimeSpan(8, 30, 0),
-                            "exercise" => new TimeSpan(12, 30, 0),
-                            "nutrition" => new TimeSpan(18, 30, 0),
-                            _ => new TimeSpan(12, 0, 0)
-                        };
-
-                        var dtLocal = userLocalNow.Date.AddDays(1).Add(timeOfDay);
-                        tomorrowDateTimeLocal = dtLocal;
-                        var offset = userTz.GetUtcOffset(dtLocal);
-                        scheduledForUtc = new DateTimeOffset(dtLocal, offset);
-                    }
-
-                    var deepLink = _deepLinkResolver.ResolveDeepLink(context, decision);
-
-                    _logger.LogInformation("Decision engine resolved to SCHEDULE/SEND topic {Topic} for user {UserId} at {ScheduledForUtc} (local {TomorrowDateTimeLocal}). TriggerType={TriggerType}, DeepLink={DeepLink}",
-                        topic, dueUser.UserId, scheduledForUtc, tomorrowDateTimeLocal, decision.TriggerType, deepLink);
-
-                    // Generate Message via DeepSeek or Fallback templates
-                    GeneratedPushMessageDto generated;
-                    bool isAiGenerated = false;
-                    var shouldUseAi = _aiUsagePolicy.ShouldUseAi(context, decision);
-
-                    if (shouldUseAi)
-                    {
-                        try
-                        {
-                            generated = await _deepSeekClient.GenerateAsync(context, decision, deepLink, cancellationToken);
-                            isAiGenerated = true;
-                            _logger.LogInformation("Successfully generated push message via DeepSeek for user {UserId} topic {Topic}.", dueUser.UserId, topic);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex, "DeepSeek generation failed for user {UserId} topic {Topic}. Falling back to templates.", dueUser.UserId, topic);
-                            generated = _templateService.BuildMessage(context, decision, deepLink);
-                        }
-                    }
-                    else
-                    {
-                        generated = _templateService.BuildMessage(context, decision, deepLink);
-                    }
-
-                    var dataPayload = new Dictionary<string, object?>
-                    {
-                        { "source", "SmartPushNotificationEngine" },
-                        { "generatedBy", isAiGenerated ? "DeepSeek" : "Template" },
-                        { "aiGenerated", isAiGenerated },
-                        { "triggerType", decision.TriggerType },
-                        { "topic", topic },
-                        { "deepLink", deepLink }
-                    };
-
-                    var sendDto = new SendNotificationDto
-                    {
-                        UserId = context.UserId,
-                        Type = NotificationType.WorkoutReminder,
-                        Channel = NotificationChannel.Push,
-                        Priority = NotificationPriority.Normal,
-                        Title = generated.Title,
-                        Body = generated.Body,
-                        DeepLink = deepLink,
-                        DataPayloadJson = JsonSerializer.Serialize(dataPayload),
-                        AiContextSnapshotJson = isAiGenerated ? JsonSerializer.Serialize(context) : null,
-                        ScheduledFor = scheduledForUtc
-                    };
-
-                    // Creates in DB with Pending status since ScheduledFor is in the future
-                    var msgDto = await _notificationService.SendNotificationAsync(sendDto, cancellationToken);
-
-                    // Atomically populate custom fields: SmartPushTopic, SmartPushDecisionCode, UserLocalDate
-                    var entity = await _messageRepository.GetByIdAsync(msgDto.Id, cancellationToken);
-                    if (entity != null)
-                    {
-                        entity.SmartPushTopic = topic;
-                        entity.SmartPushDecisionCode = decision.TriggerType;
-                        entity.UserLocalDate = tomorrowLocalDateStr;
-                        await _messageRepository.UpdateAsync(entity.Id, entity, cancellationToken);
-                        _logger.LogInformation("Successfully scheduled and stored Pending Smart Push Notification to user {UserId} for topic {Topic}.", dueUser.UserId, topic);
-                    }
+                    case ProcessOutcome.Sent:
+                        sent++;
+                        triggered++;
+                        break;
+                    case ProcessOutcome.Suppressed:
+                        suppressed++;
+                        break;
+                    case ProcessOutcome.LlmFallbackSent:
+                        sent++;
+                        triggered++;
+                        llmFallback++;
+                        break;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while planning Smart Push Notification for user {UserId}", dueUser.UserId);
+                _logger.LogError(ex, "Error processing smart push for user {UserId}", schedule.UserId);
+                try
+                {
+                    schedule.NextFireAtUtc = now.AddHours(1);
+                    schedule.UpdatedAt = DateTimeOffset.UtcNow;
+                    await _scheduleRepo.UpsertAsync(schedule, cancellationToken);
+                }
+                catch (Exception rescheduleEx)
+                {
+                    _logger.LogError(rescheduleEx, "Failed to backoff-reschedule user {UserId}", schedule.UserId);
+                }
             }
         }
+
+        _logger.LogInformation(
+            "Smart push cycle metrics: due_scanned={Due}, triggered={Triggered}, suppressed={Suppressed}, sent={Sent}, llm_fallback={Fallback}",
+            dueScanned, triggered, suppressed, sent, llmFallback);
+    }
+
+    public async Task SeedUserScheduleAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var iam = await _iamClient.GetContextAsync(userId, cancellationToken)
+            ?? throw new InvalidOperationException($"IAM context not found for user {userId}.");
+
+        var enabled = new SmartPushEnabledUserDto(
+            iam.UserId,
+            iam.TimeZoneId,
+            iam.PreferredReminderTime,
+            iam.PeakEnergyTimeWindow,
+            iam.LastActiveAt,
+            iam.SmartPushEnabled,
+            iam.AllowAiGeneratedNotification);
+
+        var existing = await _scheduleRepo.GetAsync(userId, cancellationToken);
+        var schedule = _scheduleService.BuildOrRefreshSchedule(enabled, DateTimeOffset.UtcNow, existing);
+        // Force soon fire for test seed
+        schedule.NextFireAtUtc = DateTimeOffset.UtcNow.AddSeconds(5);
+        schedule.Enabled = enabled.SmartPushEnabled && enabled.AllowAiGeneratedNotification;
+        await _scheduleRepo.UpsertAsync(schedule, cancellationToken);
+        _logger.LogInformation("Seeded smart push schedule for user {UserId}, next_fire={Next}", userId, schedule.NextFireAtUtc);
+    }
+
+    public async Task ProcessUserNowAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var existing = await _scheduleRepo.GetAsync(userId, cancellationToken);
+        if (existing is null)
+            await SeedUserScheduleAsync(userId, cancellationToken);
+
+        var schedule = await _scheduleRepo.GetAsync(userId, cancellationToken)
+            ?? throw new InvalidOperationException("Schedule missing after seed.");
+
+        schedule.NextFireAtUtc = DateTimeOffset.UtcNow;
+        await _scheduleRepo.UpsertAsync(schedule, cancellationToken);
+        await ProcessClaimedScheduleAsync(schedule, DateTimeOffset.UtcNow, force: true, cancellationToken);
+    }
+
+    public async Task NightlyRecomputeAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("Starting nightly smart push schedule recompute.");
+        IReadOnlyList<SmartPushEnabledUserDto> users;
+        try
+        {
+            users = await _iamClient.GetEnabledUsersAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Nightly recompute failed to load enabled users from IAM.");
+            return;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var user in users)
+        {
+            try
+            {
+                var existing = await _scheduleRepo.GetAsync(user.UserId, cancellationToken);
+                var schedule = _scheduleService.BuildOrRefreshSchedule(user, now, existing);
+                await _scheduleRepo.UpsertAsync(schedule, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to refresh schedule for user {UserId}", user.UserId);
+            }
+        }
+
+        _logger.LogInformation("Nightly recompute finished for {Count} users.", users.Count);
+    }
+
+    private enum ProcessOutcome { None, Sent, Suppressed, LlmFallbackSent }
+
+    private async Task<ProcessOutcome> ProcessClaimedScheduleAsync(
+        SmartPushSchedule schedule,
+        DateTimeOffset utcNow,
+        bool force,
+        CancellationToken ct)
+    {
+        var iam = await _iamClient.GetContextAsync(schedule.UserId, ct);
+        if (iam is null)
+        {
+            schedule.Enabled = false;
+            schedule.NextFireAtUtc = null;
+            schedule.UpdatedAt = DateTimeOffset.UtcNow;
+            await _scheduleRepo.UpsertAsync(schedule, ct);
+            return ProcessOutcome.None;
+        }
+
+        var enabledUser = new SmartPushEnabledUserDto(
+            iam.UserId,
+            iam.TimeZoneId,
+            iam.PreferredReminderTime,
+            iam.PeakEnergyTimeWindow,
+            iam.LastActiveAt,
+            iam.SmartPushEnabled,
+            iam.AllowAiGeneratedNotification);
+
+        if (!(iam.SmartPushEnabled && iam.AllowAiGeneratedNotification))
+        {
+            schedule.Enabled = false;
+            schedule.NextFireAtUtc = null;
+            schedule.UpdatedAt = DateTimeOffset.UtcNow;
+            await _scheduleRepo.UpsertAsync(schedule, ct);
+            return ProcessOutcome.None;
+        }
+
+        // Quota already used today
+        var tz = ResolveTz(iam.TimeZoneId);
+        var localNow = TimeZoneInfo.ConvertTime(utcNow, tz);
+        var localDate = DateOnly.FromDateTime(localNow.DateTime);
+        if (schedule.DayKeyLocal != localDate)
+        {
+            schedule.SentToday = 0;
+            schedule.DayKeyLocal = localDate;
+        }
+
+        if (!force && schedule.SentToday >= schedule.SlotsPerDay)
+        {
+            _scheduleService.RescheduleAfterSuppress(schedule, utcNow, enabledUser);
+            await _scheduleRepo.UpsertAsync(schedule, ct);
+            return ProcessOutcome.Suppressed;
+        }
+
+        TodayWorkoutActivityDto? roadmap = null;
+        try
+        {
+            roadmap = await _roadmapClient.GetTodayActivityAsync(schedule.UserId, iam.TimeZoneId, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Roadmap activity fetch failed for {UserId}", schedule.UserId);
+        }
+
+        TodayNutritionSignalDto? nutrition = null;
+        try
+        {
+            nutrition = await _nutritionClient.GetTodaySummaryAsync(schedule.UserId, iam.TimeZoneId, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Nutrition summary fetch failed for {UserId}", schedule.UserId);
+        }
+
+        var context = BuildContext(iam, roadmap, nutrition, utcNow, localDate);
+        var decision = await _decisionService.DecideAsync(context, ct);
+
+        if (!decision.ShouldSend)
+        {
+            _logger.LogInformation("Suppressing push for {UserId}: {Reason}", schedule.UserId, decision.Reason);
+            _scheduleService.RescheduleAfterSuppress(schedule, utcNow, enabledUser);
+            await _scheduleRepo.UpsertAsync(schedule, ct);
+            return ProcessOutcome.Suppressed;
+        }
+
+        var deepLink = _deepLinkResolver.ResolveDeepLink(context, decision);
+        var cacheKey = BuildCacheKey(context, decision);
+        GeneratedPushMessageDto generated;
+        var isAiGenerated = false;
+        var usedFallback = false;
+        var shouldUseAi = _aiUsagePolicy.ShouldUseAi(context, decision);
+
+        if (_generationCache.TryGet(cacheKey, out var cached))
+        {
+            generated = new GeneratedPushMessageDto(cached.Title, cached.Body, deepLink);
+            isAiGenerated = true;
+        }
+        else if (shouldUseAi)
+        {
+            try
+            {
+                generated = await _openAiClient.GenerateAsync(context, decision, deepLink, ct);
+                isAiGenerated = true;
+                _generationCache.Set(cacheKey, generated.Title, generated.Body);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "OpenAI generation failed for {UserId}; using template.", schedule.UserId);
+                generated = _templateService.BuildMessage(context, decision, deepLink);
+                usedFallback = true;
+            }
+        }
+        else
+        {
+            generated = _templateService.BuildMessage(context, decision, deepLink);
+        }
+
+        var dedupKey = $"{context.UserId:D}:{localDate:yyyy-MM-dd}:{decision.TriggerType}";
+        var log = new SmartPushLog
+        {
+            UserId = context.UserId,
+            SentAtUtc = utcNow,
+            LocalDate = localDate,
+            Trigger = decision.TriggerType,
+            DedupKey = dedupKey,
+            Channel = "inapp",
+            Title = generated.Title,
+            Body = generated.Body
+        };
+
+        if (!await _scheduleRepo.TryInsertLogAsync(log, ct))
+        {
+            _logger.LogInformation("Dedup prevented send for {UserId} key={Dedup}", schedule.UserId, dedupKey);
+            _scheduleService.RescheduleAfterSuppress(schedule, utcNow, enabledUser);
+            await _scheduleRepo.UpsertAsync(schedule, ct);
+            return ProcessOutcome.Suppressed;
+        }
+
+        var dataPayload = new Dictionary<string, object?>
+        {
+            ["source"] = "SmartPushNotificationEngine",
+            ["generatedBy"] = isAiGenerated ? "OpenAI" : "Template",
+            ["aiGenerated"] = isAiGenerated,
+            ["triggerType"] = decision.TriggerType,
+            ["model"] = isAiGenerated ? (_options.Model ?? "gpt-4o-mini") : null,
+            ["deepLink"] = deepLink,
+            ["currentStreak"] = context.CurrentStreak,
+            ["burnoutRiskScore"] = context.BurnoutRiskScore,
+            ["completionRate"] = context.CompletionRate
+        };
+
+        var sendDto = new SendNotificationDto
+        {
+            UserId = context.UserId,
+            Type = NotificationType.WorkoutReminder,
+            Channel = NotificationChannel.Push,
+            Priority = NotificationPriority.Normal,
+            Title = generated.Title,
+            Body = generated.Body,
+            DeepLink = deepLink,
+            DataPayloadJson = JsonSerializer.Serialize(dataPayload),
+            AiContextSnapshotJson = isAiGenerated ? JsonSerializer.Serialize(BuildAnonSnapshot(context, decision)) : null
+        };
+
+        var message = await _notificationService.SendNotificationAsync(sendDto, ct);
+        _logger.LogInformation(
+            "Sent Smart Push to {UserId}. MessageId={MessageId}, Trigger={Trigger}",
+            schedule.UserId, message.Id, decision.TriggerType);
+
+        _scheduleService.MarkSent(schedule, decision.TriggerType, utcNow);
+        schedule.NextFireAtUtc = _scheduleService.ComputeNextFire(enabledUser, utcNow, schedule);
+        schedule.UpdatedAt = DateTimeOffset.UtcNow;
+        await _scheduleRepo.UpsertAsync(schedule, ct);
+
+        return usedFallback ? ProcessOutcome.LlmFallbackSent : ProcessOutcome.Sent;
+    }
+
+    private static SmartPushContextDto BuildContext(
+        IamSmartPushContextDto iam,
+        TodayWorkoutActivityDto? roadmap,
+        TodayNutritionSignalDto? nutrition,
+        DateTimeOffset utcNow,
+        DateOnly localDate) =>
+        new(
+            UserId: iam.UserId,
+            FullName: iam.FullName,
+            BurnoutRiskScore: iam.BurnoutRiskScore,
+            CurrentStreak: iam.CurrentStreak,
+            LongestStreak: iam.LongestStreak,
+            CurrentLevel: iam.CurrentLevel,
+            CurrentXP: iam.CurrentXP,
+            MotivationStyle: iam.MotivationStyle,
+            FitnessGoal: iam.FitnessGoal,
+            ActivityLevel: iam.ActivityLevel,
+            FitnessExperienceLevel: iam.FitnessExperienceLevel,
+            WorkoutLocationPreference: iam.WorkoutLocationPreference,
+            SmartPushEnabled: iam.SmartPushEnabled,
+            AllowAiGeneratedNotification: iam.AllowAiGeneratedNotification,
+            TimeZoneId: iam.TimeZoneId,
+            AgentPersona: iam.AgentPersona,
+            HasWorkoutScheduledToday: roadmap?.HasWorkoutScheduledToday ?? false,
+            TodayWorkoutName: roadmap?.TodayWorkoutName,
+            HasStartedWorkoutToday: roadmap?.HasStartedWorkoutToday ?? false,
+            CompletedWorkoutToday: roadmap?.CompletedWorkoutToday ?? false,
+            LatestStartedAt: roadmap?.LatestStartedAt,
+            LatestCompletedAt: roadmap?.LatestCompletedAt,
+            ActualDurationMinutes: roadmap?.ActualDurationMinutes ?? 0,
+            CompletionRate: roadmap?.CompletionRate ?? 0,
+            PerceivedDifficulty: roadmap?.PerceivedDifficulty ?? 0,
+            EnergyLevelBefore: roadmap?.EnergyLevelBefore ?? 0,
+            EnergyLevelAfter: roadmap?.EnergyLevelAfter ?? 0,
+            CaloriesBurned: roadmap?.CaloriesBurned ?? 0,
+            SkippedExercisesCount: roadmap?.SkippedExercisesCount ?? 0,
+            SubscriptionTier: iam.SubscriptionTier,
+            RecoveryScore: iam.RecoveryScore,
+            ChurnRiskScore: iam.ChurnRiskScore,
+            PeakEnergyTimeWindow: iam.PeakEnergyTimeWindow,
+            LastActiveAt: iam.LastActiveAt,
+            PreferredReminderTime: iam.PreferredReminderTime,
+            WorkoutSource: roadmap?.WorkoutSource ?? "none",
+            TodayWorkoutType: roadmap?.TodayWorkoutType,
+            ScheduledLocalTime: roadmap?.ScheduledLocalTime,
+            MissedRecentCount: roadmap?.MissedRecentCount ?? 0,
+            MealsLoggedToday: nutrition?.MealsLoggedToday ?? 0,
+            RemainingCaloriesPct: nutrition?.RemainingCaloriesPct ?? 100,
+            WaterPct: nutrition?.WaterPct ?? 100,
+            LastMealLoggedAt: nutrition?.LastMealLoggedAt,
+            UtcNow: utcNow.UtcDateTime,
+            LocalDate: localDate
+        );
+
+    private static string BuildCacheKey(SmartPushContextDto context, SmartPushDecision decision)
+    {
+        var bucket =
+            $"{(context.HasWorkoutScheduledToday ? 1 : 0)}" +
+            $"{(context.CompletedWorkoutToday ? 1 : 0)}" +
+            $"{Math.Clamp(context.MissedRecentCount, 0, 3)}" +
+            $"{Math.Clamp(context.MealsLoggedToday, 0, 4)}" +
+            $"{context.RemainingCaloriesPct / 25}" +
+            $"{context.WaterPct / 25}" +
+            $"{context.WorkoutSource}";
+        return $"{decision.TriggerType}|{context.AgentPersona}|{context.MotivationStyle}|{bucket}|vi";
+    }
+
+    private static object BuildAnonSnapshot(SmartPushContextDto context, SmartPushDecision decision) => new
+    {
+        trigger = decision.TriggerType,
+        motivationStyle = context.MotivationStyle,
+        agentPersona = context.AgentPersona,
+        streak = context.CurrentStreak,
+        burnout = context.BurnoutRiskScore,
+        recovery = context.RecoveryScore,
+        hasWorkoutToday = context.HasWorkoutScheduledToday,
+        workoutSource = context.WorkoutSource,
+        completedToday = context.CompletedWorkoutToday,
+        missedRecentCount = context.MissedRecentCount,
+        mealsLoggedToday = context.MealsLoggedToday,
+        remainingCaloriesPct = context.RemainingCaloriesPct,
+        waterPct = context.WaterPct
+    };
+
+    private static TimeZoneInfo ResolveTz(string? tzId)
+    {
+        var id = string.IsNullOrWhiteSpace(tzId) ? "Asia/Ho_Chi_Minh" : tzId;
+        try { return TimeZoneInfo.FindSystemTimeZoneById(id); }
+        catch { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh"); }
     }
 }

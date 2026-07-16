@@ -1,14 +1,22 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// Requests platform media permissions before opening [ImagePicker].
 abstract final class MediaPermissions {
+  /// True chỉ khi chạy native (Android/iOS). Web/desktop KHÔNG chạm `Platform`
+  /// vì `dart:io` ném `UnsupportedError` trên web.
+  static bool get _isAndroid => !kIsWeb && Platform.isAndroid;
+  static bool get _isNativeMobile =>
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
   static Future<bool> ensurePhotos(BuildContext context) {
+    if (kIsWeb) return Future.value(true);
     final permissions = <Permission>[
       Permission.photos,
-      if (Platform.isAndroid) Permission.videos,
+      if (_isAndroid) Permission.videos,
     ];
     return _ensure(
       context,
@@ -18,8 +26,9 @@ abstract final class MediaPermissions {
   }
 
   static Future<bool> ensureVideoLibrary(BuildContext context) {
+    if (kIsWeb) return Future.value(true);
     final permissions = <Permission>[
-      if (Platform.isAndroid) Permission.videos else Permission.photos,
+      if (_isAndroid) Permission.videos else Permission.photos,
     ];
     return _ensure(
       context,
@@ -29,6 +38,7 @@ abstract final class MediaPermissions {
   }
 
   static Future<bool> ensureCamera(BuildContext context) {
+    if (kIsWeb) return Future.value(true);
     return _ensure(
       context,
       permissions: const [Permission.camera],
@@ -41,7 +51,7 @@ abstract final class MediaPermissions {
     required List<Permission> permissions,
     required String label,
   }) async {
-    if (!Platform.isAndroid && !Platform.isIOS) return true;
+    if (!_isNativeMobile) return true;
 
     for (final permission in permissions) {
       var status = await permission.status;

@@ -7,7 +7,9 @@ public interface IPostService
 {
     Task<PostDto> CreateAsync(Guid authorId, CreatePostDto dto, CancellationToken cancellationToken = default);
     Task<PostDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<CursorFeedResult<PostDto>> GetPublicFeedCursorAsync(
+
+    /// <summary>Home feed: following (default) or discovery/trending with cold-start backfill.</summary>
+    Task<CursorFeedResult<PostDto>> GetFeedCursorAsync(
         FeedCursorQuery query,
         CancellationToken cancellationToken = default);
 
@@ -44,10 +46,4 @@ public sealed class PagedResult<T>
 {
     public required IReadOnlyList<T> Items { get; init; }
     public required PaginationMetadata Pagination { get; init; }
-}
-
-public sealed class CursorFeedResult<T>
-{
-    public required IReadOnlyList<T> Items { get; init; }
-    public string? NextCursor { get; init; }
 }
