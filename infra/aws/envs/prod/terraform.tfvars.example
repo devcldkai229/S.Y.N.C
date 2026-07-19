@@ -1,0 +1,4 @@
+# Copy → terraform.tfvars (commit được — không chứa secret) rồi điền giá trị thật.
+state_bucket    = "sync-tfstate-REPLACE_ACCOUNT_ID"
+alert_email     = ""
+certificate_arn = "" # ARN ACM khi có domain → bật HTTPS listener 443
