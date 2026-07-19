@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +40,6 @@ builder.Services.AddProblemDetails();
 builder.Services.AddNotificationApplication();
 builder.Services.AddNotificationInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<SmartPushNotificationWorker>();
-builder.Services.AddHostedService<SmartPushNightlyRecomputeWorker>();
 
 builder.Services.AddCors(options =>
 {
