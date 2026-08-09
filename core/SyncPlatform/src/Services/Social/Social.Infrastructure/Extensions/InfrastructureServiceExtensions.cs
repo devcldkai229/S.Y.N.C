@@ -29,7 +29,11 @@ public static class InfrastructureServiceExtensions
     {
         RegisterBsonConventions();
 
-        services.AddMemoryCache();
+        services.AddMemoryCache(options =>
+        {
+            // Required when MemoryCacheEntryOptions.Size is set on entries.
+            options.SizeLimit = 2048;
+        });
         services.AddS3ObjectStorage(configuration);
         services.Configure<AwsLocationOptions>(configuration.GetSection(AwsLocationOptions.SectionName));
 
@@ -71,6 +75,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
         services.AddScoped<IPostRepository, PostRepository>();
         services.AddScoped<IInteractionRepository, InteractionRepository>();
+        services.AddScoped<IContentReportRepository, ContentReportRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IPostEngagementRepository, PostEngagementRepository>();
         services.AddScoped<ICommunityChallengeRepository, CommunityChallengeRepository>();
@@ -85,6 +90,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IBlogRepository, BlogRepository>();
         services.AddScoped<IBlogInteractionRepository, BlogInteractionRepository>();
         services.AddScoped<IBlogCommentRepository, BlogCommentRepository>();
+        services.AddScoped<IAccountAnonymizationService, AccountAnonymizationService>();
 
         services.AddHostedService<TrendingFeedHostedService>();
 

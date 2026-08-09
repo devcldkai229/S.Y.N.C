@@ -1,6 +1,7 @@
 # S3 thay MinIO: dùng bucket CÓ SẴN (data source) — TF không sở hữu /
-# không destroy bucket. CloudFront + OAC + bucket policy do TF quản.
+# không destroy bucket. CloudFront + OAC + bucket policy chỉ khi enable_cloudfront=true.
 # Dev/prod chung bucket → tách bằng Storage__KeyPrefix = "<env>/" trên ECS.
+# Chỉ prod bật CF (dev media qua Gateway) — tránh hai state ghi đè bucket policy.
 #
 # Tên mặc định khớp app (.NET StorageBuckets / Flutter MediaUrlResolver):
 #   sync-pub-assets / sync-private-assets
@@ -20,8 +21,24 @@ variable "private_bucket_name" {
   default = "sync-private-assets"
 }
 variable "enable_cloudfront" {
-  type    = bool
-  default = true
+  description = "false = data source bucket only (no CF/CORS/policy). true = prod media CDN."
+  type        = bool
+  default     = true
+}
+variable "aliases" {
+  description = "Custom domains e.g. [cdn.example.com]. Empty → default CF cert."
+  type        = list(string)
+  default     = []
+}
+variable "acm_certificate_arn" {
+  description = "us-east-1 ACM ARN when aliases set"
+  type        = string
+  default     = ""
+}
+
+locals {
+  use_custom_ssl    = var.enable_cloudfront && length(var.aliases) > 0 && var.acm_certificate_arn != ""
+  cf_hosted_zone_id = "Z2FDTNDATAQYW2"
 }
 
 data "aws_s3_bucket" "public_assets" {
@@ -32,8 +49,9 @@ data "aws_s3_bucket" "private_assets" {
   bucket = var.private_bucket_name
 }
 
-# CORS cho pub-assets (idempotent; không tạo/xoá bucket)
+# CORS + CF/policy chỉ env có media CDN (prod) — tránh dev/prod tranh bucket policy
 resource "aws_s3_bucket_cors_configuration" "public_assets" {
+  count  = var.enable_cloudfront ? 1 : 0
   bucket = data.aws_s3_bucket.public_assets.id
   cors_rule {
     allowed_methods = ["GET", "HEAD"]
@@ -55,9 +73,11 @@ resource "aws_cloudfront_origin_access_control" "this" {
 resource "aws_cloudfront_distribution" "public_assets" {
   count               = var.enable_cloudfront ? 1 : 0
   enabled             = true
+  is_ipv6_enabled     = true
   comment             = "SYNC public assets"
   default_root_object = ""
   price_class         = "PriceClass_200" # gồm Singapore/Asia
+  aliases             = local.use_custom_ssl ? var.aliases : []
 
   origin {
     domain_name              = data.aws_s3_bucket.public_assets.bucket_regional_domain_name
@@ -81,8 +101,20 @@ resource "aws_cloudfront_distribution" "public_assets" {
     }
   }
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
+  dynamic "viewer_certificate" {
+    for_each = local.use_custom_ssl ? [1] : []
+    content {
+      acm_certificate_arn      = var.acm_certificate_arn
+      ssl_support_method       = "sni-only"
+      minimum_protocol_version = "TLSv1.2_2021"
+    }
+  }
+
+  dynamic "viewer_certificate" {
+    for_each = local.use_custom_ssl ? [] : [1]
+    content {
+      cloudfront_default_certificate = true
+    }
   }
 }
 
@@ -115,3 +147,12 @@ output "private_bucket" { value = data.aws_s3_bucket.private_assets.bucket }
 output "public_bucket_arn" { value = data.aws_s3_bucket.public_assets.arn }
 output "private_bucket_arn" { value = data.aws_s3_bucket.private_assets.arn }
 output "cdn_domain" { value = var.enable_cloudfront ? aws_cloudfront_distribution.public_assets[0].domain_name : null }
+output "distribution_id" {
+  value = var.enable_cloudfront ? aws_cloudfront_distribution.public_assets[0].id : null
+}
+output "distribution_arn" {
+  value = var.enable_cloudfront ? aws_cloudfront_distribution.public_assets[0].arn : null
+}
+output "hosted_zone_id" {
+  value = local.cf_hosted_zone_id
+}

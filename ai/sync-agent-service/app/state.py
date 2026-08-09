@@ -57,6 +57,9 @@ class SyncAgentState(TypedDict, total=False):
     user_latitude: float | None
     user_longitude: float | None
 
+    # --- Client platform (android | ios | web) — Play Billing gating ---
+    client_platform: str
+
     # --- Session commerce cart (persisted via checkpointer) ---
     cart: list[dict[str, Any]]
 

@@ -1,8 +1,7 @@
-"""Model Router — chọn LLM theo tier, provider policy (DeepSeek vs OpenAI).
+"""Model Router — chọn LLM theo tier (OpenAI-only, tuỳ chọn Ollama local).
 
-- Tier nano/small  -> DeepSeek (non-sensitive chat + intent)
-- Tier mid/large   -> OpenAI (tool-calling + biometric prompts)
-- sensitive=True   -> ép OpenAI; fail-safe nếu DeepSeek bị chọn nhầm
+- Mọi tier mặc định -> OpenAI (gpt-4o-mini / gpt-4o / embeddings / realtime)
+- sensitive=True    -> fail-safe: chỉ cho phép provider OpenAI (chặn Ollama local)
 """
 from __future__ import annotations
 
@@ -40,8 +39,8 @@ def _coerce_tier(tier: ModelTier | str) -> ModelTier:
 
 
 def _assert_safe(spec: ModelSpec, sensitive: bool) -> None:
-    if sensitive and spec.provider == "deepseek":
-        raise ValueError("BIOMETRIC không được gửi tới DeepSeek")
+    if sensitive and spec.provider != SENSITIVE_PROVIDER:
+        raise ValueError(f"BIOMETRIC không được gửi tới provider '{spec.provider}'")
 
 
 def resolve_tier(tier: ModelTier | str, sensitive: bool = False) -> ModelTier:
@@ -69,17 +68,6 @@ def _build_chat_client(tier: ModelTier, streaming: bool = True) -> Any:
     """
     spec: ModelSpec = MODEL_REGISTRY[tier]
     settings = get_settings()
-
-    if spec.provider == "deepseek":
-        from langchain_openai import ChatOpenAI
-
-        return ChatOpenAI(
-            model=spec.name,
-            api_key=settings.deepseek_api_key,
-            base_url=settings.deepseek_base_url,
-            temperature=0.3,
-            streaming=streaming,
-        )
 
     if spec.provider == "ollama":
         from langchain_ollama import ChatOllama  # optional: pip install .[local]
@@ -127,45 +115,15 @@ def estimate_cost(tier: ModelTier, input_tokens: int, output_tokens: int) -> flo
 
 
 def _classifier_effective_provider(s: Any) -> str:
-    """Provider thực dùng cho classifier.
-
-    Cấu hình mặc định là openai/gpt-4o-mini; nếu KHÔNG có OpenAI key thì
-    classifier sẽ chết ở invoke-time mỗi turn (intent_llm_failed → degraded).
-    Chat chính chạy deepseek nên tự chuyển classifier sang deepseek khi đó.
-    """
-    provider = s.intent_classifier_provider
-    if provider == "openai" and not (s.openai_api_key or "").strip():
-        if (s.deepseek_api_key or "").strip():
-            return "deepseek"
-    return provider
-
-
-def _build_deepseek_classifier(s: Any, model_name: str) -> Any:
-    from langchain_openai import ChatOpenAI
-
-    return ChatOpenAI(
-        model=model_name,
-        api_key=s.deepseek_api_key,
-        base_url=s.deepseek_base_url,
-        temperature=0,
-        max_tokens=s.intent_classifier_max_tokens,
-    )
+    """Provider dùng cho intent classifier (openai mặc định, hoặc ollama local)."""
+    return s.intent_classifier_provider
 
 
 @lru_cache(maxsize=1)
 def get_classifier_model() -> Any:
-    """Intent classifier — structured JSON; mặc định gpt-4o-mini, tự fallback deepseek."""
+    """Intent classifier — structured JSON; mặc định gpt-4o-mini (OpenAI)."""
     s = get_settings()
     provider = _classifier_effective_provider(s)
-    if provider == "deepseek":
-        # Nếu là auto-fallback từ openai thì intent_classifier_model vẫn là tên
-        # model OpenAI → dùng deepseek-chat.
-        model_name = (
-            s.intent_classifier_model
-            if s.intent_classifier_provider == "deepseek"
-            else "deepseek-chat"
-        )
-        return _build_deepseek_classifier(s, model_name)
     if provider == "ollama":
         from langchain_ollama import ChatOllama
 
@@ -190,23 +148,9 @@ def get_classifier_model() -> Any:
 
 @lru_cache(maxsize=1)
 def get_classifier_structured_method() -> str:
-    """`json_schema` chỉ OpenAI hỗ trợ; deepseek/ollama dùng `json_mode`."""
+    """`json_schema` chỉ OpenAI hỗ trợ; ollama dùng `json_mode`."""
     s = get_settings()
     return "json_schema" if _classifier_effective_provider(s) == "openai" else "json_mode"
-
-
-@lru_cache(maxsize=1)
-def get_classifier_fallback_model() -> Any | None:
-    """Deepseek dự phòng khi classifier chính lỗi runtime (auth/quota/mạng).
-
-    Trả None nếu classifier chính đã là deepseek hoặc không có deepseek key.
-    """
-    s = get_settings()
-    if _classifier_effective_provider(s) == "deepseek":
-        return None
-    if not (s.deepseek_api_key or "").strip():
-        return None
-    return _build_deepseek_classifier(s, "deepseek-chat")
 
 
 @lru_cache(maxsize=128)

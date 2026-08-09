@@ -47,7 +47,7 @@ class SemanticMemory:
             return pool
         import asyncpg
 
-        self._pool = await asyncpg.create_pool(self.dsn, min_size=1, max_size=8)
+        self._pool = await asyncpg.create_pool(self.dsn, min_size=1, max_size=5)
         self._owns_pool = True
         return self._pool
 

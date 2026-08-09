@@ -23,6 +23,7 @@ import 'package:sync_app/features/marketplace/models/marketplace_listing_filter.
 import 'package:sync_app/features/marketplace/utils/marketplace_nav.dart';
 import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
 import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 
 class MarketplaceHomeScreen extends StatelessWidget {
   const MarketplaceHomeScreen({super.key});
@@ -96,6 +97,12 @@ class _MarketplaceHomeView extends StatelessWidget {
                         : () => MarketplaceCartSheet.show(context),
                   ),
                 ),
+                if (FeatureTrialFlags.syncFoodsOrderingDisabled)
+                  const SliverToBoxAdapter(
+                    child: FeatureTrialBanner(
+                      message: FeatureTrialBanner.syncFoodsMessage,
+                    ),
+                  ),
                 SliverToBoxAdapter(
                   child: MarketplaceHeroBanner(
                     onTap: () => MarketplaceNav.openListing(

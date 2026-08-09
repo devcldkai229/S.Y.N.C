@@ -18,7 +18,7 @@ class AppConfig {
     if (fromEnv.isNotEmpty) return fromEnv;
     // Release builds must set BASE_URL; refuse silent HTTP LAN defaults.
     if (kReleaseMode) {
-      return 'https://api.sync-lifestyle.app/api';
+      return 'https://api.synctis.in/api';
     }
     if (kIsWeb) return 'http://localhost:5057/api';
     switch (defaultTargetPlatform) {
@@ -51,6 +51,7 @@ class AppConfig {
   static String get nutritionHubUrl {
     const fromEnv = String.fromEnvironment('NUTRITION_HUB_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
+    if (kReleaseMode) return 'https://api.synctis.in/hubs/nutrition';
     if (kIsWeb) return 'http://localhost:5122/hubs/nutrition';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -66,6 +67,7 @@ class AppConfig {
   static String get roadmapHubUrl {
     const fromEnv = String.fromEnvironment('ROADMAP_HUB_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
+    if (kReleaseMode) return 'https://api.synctis.in/hubs/roadmap';
     if (kIsWeb) return 'http://localhost:5118/hubs/roadmap';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -79,10 +81,10 @@ class AppConfig {
   static String get notificationHubUrl {
     const fromEnv = String.fromEnvironment('NOTIFICATION_HUB_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
+    if (kReleaseMode) return 'https://api.synctis.in/hubs/notifications';
     if (kIsWeb) return 'http://localhost:5106/hubs/notifications';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://$_devLanHost:5106/hubs/notifications';
       case TargetPlatform.iOS:
         return 'http://$_devLanHost:5106/hubs/notifications';
       default:
@@ -90,20 +92,36 @@ class AppConfig {
     }
   }
 
+  /// Sent to CYN AI so Android can refuse VietQR Premium (Play Billing only).
+  static String get clientPlatform {
+    if (kIsWeb) return 'web';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.iOS:
+        return 'ios';
+      default:
+        return 'unknown';
+    }
+  }
+
   static const bool isProduction = bool.fromEnvironment('dart.vm.product');
 
   /// Public legal site (deployed with `ui/web`). Override:
-  /// `--dart-define=LEGAL_BASE_URL=https://sync-lifestyle.app`
+  /// `--dart-define=LEGAL_BASE_URL=https://synctis.in`
   static String get legalBaseUrl {
     const fromEnv = String.fromEnvironment('LEGAL_BASE_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv.replaceAll(RegExp(r'/$'), '');
-    return 'https://sync-lifestyle.app';
+    return 'https://synctis.in';
   }
 
   static String get privacyPolicyUrl => '$legalBaseUrl/privacy';
   static String get termsOfServiceUrl => '$legalBaseUrl/terms';
   static String get accountDeletionUrl => '$legalBaseUrl/account-deletion';
   static String get communityStandardsUrl => '$legalBaseUrl/community-standards';
+  static String get healthDisclaimerUrl => '$legalBaseUrl/health-disclaimer';
+  static String get refundPolicyUrl => '$legalBaseUrl/refund-policy';
+  static String get contactUrl => '$legalBaseUrl/contact';
 
   /// On Android Play builds, digital Premium must not use in-app VietQR.
   /// Food/order VietQR stays allowed. Full Play Billing lands in a follow-up.

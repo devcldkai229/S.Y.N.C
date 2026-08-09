@@ -70,55 +70,38 @@ async def test_non_handoff_hop_still_streams(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# C. Classifier: tự chuyển deepseek khi thiếu OpenAI key + fallback runtime
+# C. Classifier: structured method theo provider (OpenAI json_schema / Ollama json_mode)
 # ---------------------------------------------------------------------------
 
 
-def _settings(openai_key: str, deepseek_key: str, provider: str = "openai"):
+def _settings(openai_key: str, provider: str = "openai"):
     return SimpleNamespace(
         intent_classifier_provider=provider,
         intent_classifier_model="gpt-4o-mini",
         intent_classifier_max_tokens=200,
         openai_api_key=openai_key,
-        deepseek_api_key=deepseek_key,
-        deepseek_base_url="https://api.deepseek.com",
         ollama_base_url="http://localhost:11434",
     )
 
 
-def test_classifier_auto_switches_to_deepseek_without_openai_key():
+def test_classifier_effective_provider_returns_configured():
     from app.models.router import _classifier_effective_provider
 
-    assert _classifier_effective_provider(_settings("", "ds-key")) == "deepseek"
-    assert _classifier_effective_provider(_settings("sk-x", "ds-key")) == "openai"
-    # Không có key nào → giữ openai (lỗi rõ ràng thay vì im lặng đổi provider).
-    assert _classifier_effective_provider(_settings("", "")) == "openai"
+    assert _classifier_effective_provider(_settings("sk-x", "openai")) == "openai"
+    assert _classifier_effective_provider(_settings("", "ollama")) == "ollama"
 
 
 def test_classifier_structured_method_matches_provider(monkeypatch):
     import app.models.router as router_mod
 
-    monkeypatch.setattr(router_mod, "get_settings", lambda: _settings("", "ds-key"))
+    monkeypatch.setattr(router_mod, "get_settings", lambda: _settings("", "ollama"))
     router_mod.get_classifier_structured_method.cache_clear()
     assert router_mod.get_classifier_structured_method() == "json_mode"
 
-    monkeypatch.setattr(router_mod, "get_settings", lambda: _settings("sk-x", "ds-key"))
+    monkeypatch.setattr(router_mod, "get_settings", lambda: _settings("sk-x", "openai"))
     router_mod.get_classifier_structured_method.cache_clear()
     assert router_mod.get_classifier_structured_method() == "json_schema"
     router_mod.get_classifier_structured_method.cache_clear()
-
-
-def test_classifier_fallback_none_when_primary_is_deepseek(monkeypatch):
-    import app.models.router as router_mod
-
-    monkeypatch.setattr(router_mod, "get_settings", lambda: _settings("", "ds-key"))
-    router_mod.get_classifier_fallback_model.cache_clear()
-    assert router_mod.get_classifier_fallback_model() is None
-
-    monkeypatch.setattr(router_mod, "get_settings", lambda: _settings("sk-x", "ds-key"))
-    router_mod.get_classifier_fallback_model.cache_clear()
-    assert router_mod.get_classifier_fallback_model() is not None
-    router_mod.get_classifier_fallback_model.cache_clear()
 
 
 # ---------------------------------------------------------------------------

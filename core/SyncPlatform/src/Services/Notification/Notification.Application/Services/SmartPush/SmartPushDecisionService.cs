@@ -41,6 +41,11 @@ public class SmartPushDecisionService : ISmartPushDecisionService
             await Try("TodayWorkoutReminder",
                 context.HasWorkoutScheduledToday && !context.CompletedWorkoutToday,
                 "Có buổi tập hôm nay chưa hoàn thành.")
+            ?? await Try("WeighInReminder",
+                context.DaysSinceLastWeighIn is null or > 7,
+                context.DaysSinceLastWeighIn is null
+                    ? "Chưa có lịch sử cân — nhắc weigh-in."
+                    : $"Đã {context.DaysSinceLastWeighIn} ngày chưa cân.")
             ?? await Try("StreakProtection",
                 context.CurrentStreak >= 3 && !context.HasStartedWorkoutToday && isAfternoonOrEvening,
                 $"Streak {context.CurrentStreak}, chưa hoạt động hôm nay.")

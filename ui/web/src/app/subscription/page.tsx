@@ -3,122 +3,94 @@ import PricingSection from "@/components/landing/PricingSection";
 import MySubscriptionStatus from "@/components/landing/MySubscriptionStatus";
 import CTASection from "@/components/landing/CTASection";
 import DisplayTextSection from "@/components/landing/DisplayTextSection";
-import ParticleCursor from "@/components/ui/ParticleCursor";
+import Footer from "@/components/landing/Footer";
+import CursorTrailBackground from "@/components/ui/CursorTrailBackground";
 import { Check, Shield, RefreshCcw, HeadphonesIcon } from "lucide-react";
 import { FadeUp, StaggerContainer, StaggerItem } from "@/components/ui/motion";
 
 const guarantees = [
   {
     icon: Shield,
-    title: "Bảo mật thanh toán",
-    description: "Mọi giao dịch được mã hóa SSL 256-bit. Thông tin của bạn luôn an toàn.",
+    title: "Thanh toán an toàn",
+    description: "Web qua PayOS / VietQR; Android qua Google Play Billing. Mã hóa SSL, không lưu thẻ trên SYNC.",
   },
   {
     icon: RefreshCcw,
-    title: "Hủy bất cứ lúc nào",
-    description: "Không ràng buộc hợp đồng. Hủy gói Premium trong 1 click, không mất phí.",
+    title: "Hủy giữ quyền tới hết hạn",
+    description: "Hủy 1 click — bạn vẫn dùng Premium đến ngày hết hạn, rồi mới về Free. Không mất dữ liệu.",
   },
   {
     icon: HeadphonesIcon,
-    title: "Hỗ trợ tận tâm",
-    description: "Đội ngũ hỗ trợ sẵn sàng giải đáp mọi thắc mắc của bạn 7 ngày/tuần.",
+    title: "Giá trị thấy được ngay",
+    description: "CYN không giới hạn, Adaptive theo cân, Insight & SmartPush AI — không chỉ “gói ẩn”.",
   },
 ];
 
 const faqs = [
   {
     q: "Gói Free có bị giới hạn thời gian không?",
-    a: "Không. Gói Free là miễn phí mãi mãi, bạn có thể dùng vô thời hạn mà không cần nhập thẻ tín dụng.",
+    a: "Không. Free miễn phí mãi mãi: lộ trình Foundation, nhật ký tập/ăn, cộng đồng và CYN AI 30 lượt/tháng — không cần thẻ.",
+  },
+  {
+    q: "Premium mở khóa những gì khác Free?",
+    a: "CYN không giới hạn; Adaptive Coaching điều chỉnh calo/macro theo cân thật; Insight (biểu đồ & dự đoán); SmartPush AI cá nhân hóa; giáo án/video HD; ưu đãi Marketplace và đặt đơn hỗ trợ AI (tối đa 10 lần/tháng).",
   },
   {
     q: "Tôi có thể nâng cấp từ Free lên Premium bất cứ lúc nào không?",
-    a: "Có, bạn có thể nâng cấp ngay lập tức. Gói Premium sẽ kích hoạt tức thì sau khi thanh toán thành công.",
+    a: "Có. Thanh toán thành công là Premium kích hoạt ngay. Trên web dùng PayOS / VietQR; trên Android dùng Google Play Billing.",
   },
   {
-    q: "Phương thức thanh toán nào được hỗ trợ?",
-    a: "SYNC hỗ trợ thanh toán qua VNPay, Momo, và các thẻ nội địa/quốc tế phổ biến.",
+    q: "Nếu tôi hủy Premium, dữ liệu có mất không?",
+    a: "Không. Lịch sử tập, dinh dưỡng và hồ sơ giữ nguyên. Bạn giữ quyền Premium tới hết hạn, sau đó về Free với hạn mức AI Free.",
   },
   {
-    q: "Nếu tôi hủy Premium, dữ liệu của tôi có bị mất không?",
-    a: "Không. Toàn bộ lịch sử tập luyện và dữ liệu của bạn được giữ nguyên khi chuyển về gói Free.",
+    q: "Có tự gia hạn không?",
+    a: "Đợt này thanh toán theo tháng, gia hạn thủ công (web). Trên Android theo chính sách Google Play Billing của gói đăng ký.",
   },
 ];
 
 export default function SubscriptionPage() {
   return (
-    <>
+    <div className="relative min-h-screen bg-[#FAFCFA]">
       <Navbar />
       <main className="pt-16">
-        {/* Hero — same background treatment as HeroSection */}
-        <section className="relative py-28 px-4 bg-white text-center overflow-hidden">
-          {/* Particle field */}
-          <ParticleCursor />
-
-          {/* Soft radial fade so centre stays readable */}
-          <div
-            className="absolute inset-0 pointer-events-none z-[6]"
-            style={{
-              background:
-                "radial-gradient(ellipse 70% 60% at 50% 40%, white 20%, rgba(255,255,255,0.55) 55%, transparent 80%)",
-            }}
-          />
-
-          {/* Animated gradient blobs */}
-          <div
-            className="absolute -top-32 -left-32 w-[550px] h-[550px] rounded-full pointer-events-none z-[3]"
-            style={{
-              background: "radial-gradient(circle, rgba(26,131,68,0.10) 0%, transparent 70%)",
-              animation: "blob-drift 16s ease-in-out infinite",
-            }}
-          />
-          <div
-            className="absolute -bottom-20 -right-32 w-[480px] h-[480px] rounded-full pointer-events-none z-[3]"
-            style={{
-              background: "radial-gradient(circle, rgba(26,131,68,0.07) 0%, transparent 70%)",
-              animation: "blob-drift 22s ease-in-out infinite reverse",
-            }}
-          />
-
-          {/* Content */}
+        <section className="relative py-28 px-4 text-center overflow-hidden">
           <FadeUp className="relative z-10 max-w-3xl mx-auto">
-            <span className="inline-flex items-center gap-1.5 bg-primary-50 text-primary text-xs font-semibold px-3 py-1.5 rounded-full border border-primary/20 mb-6">
+            <span className="inline-flex items-center gap-1.5 bg-primary-50/90 text-primary text-xs font-semibold px-3 py-1.5 rounded-full border border-primary/20 mb-6 backdrop-blur-sm">
               <Check className="w-3.5 h-3.5" />
-              Đơn giản · Minh bạch · Không ẩn phí
+              99.000đ/tháng · Hủy giữ quyền tới hết hạn
             </span>
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 tracking-tight leading-[1.05] mb-6">
-              Đầu tư cho sức khỏe
+            <h1 className="font-heading text-5xl md:text-6xl font-bold text-gray-900 tracking-tight leading-[1.05] mb-6">
+              Premium cho người
               <br />
-              <span className="text-primary">không cần tốn nhiều.</span>
+              <span className="text-primary">muốn tiến thật.</span>
             </h1>
-            <p className="text-xl text-gray-400 leading-relaxed max-w-xl mx-auto">
-              Bắt đầu với gói Free, nâng cấp khi bạn sẵn sàng chinh phục những mục tiêu lớn hơn.
+            <p className="text-xl text-gray-500 leading-relaxed max-w-xl mx-auto">
+              Free đủ để bắt đầu. Premium mở CYN không giới hạn, Adaptive theo cân thật,
+              Insight sâu và SmartPush AI — coach đồng hành mỗi ngày.
             </p>
           </FadeUp>
         </section>
 
-        {/* Gói hiện tại của user (chỉ hiện khi đã login) */}
         <MySubscriptionStatus />
-
-        {/* Pricing cards */}
         <PricingSection />
 
-        {/* Guarantees */}
-        <section className="py-20 px-4 bg-gray-50">
+        <section className="py-20 px-4 bg-gray-50/80">
           <div className="max-w-4xl mx-auto">
             <FadeUp className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+              <h2 className="font-heading text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
                 Cam kết từ SYNC
               </h2>
             </FadeUp>
             <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6" stagger={0.1}>
               {guarantees.map((g) => (
                 <StaggerItem key={g.title}>
-                  <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-all duration-300 h-full">
+                  <div className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md hover:border-primary/15 transition-all duration-300 h-full">
                     <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center mb-4">
                       <g.icon className="w-5 h-5 text-primary" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2">{g.title}</h3>
-                    <p className="text-gray-400 text-sm leading-relaxed">{g.description}</p>
+                    <p className="text-gray-500 text-sm leading-relaxed">{g.description}</p>
                   </div>
                 </StaggerItem>
               ))}
@@ -126,13 +98,14 @@ export default function SubscriptionPage() {
           </div>
         </section>
 
-        {/* FAQ */}
-        <section className="py-20 px-4 bg-white">
+        <section className="py-20 px-4 bg-white/80">
           <div className="max-w-2xl mx-auto">
             <FadeUp className="text-center mb-12">
-              <p className="text-primary font-medium text-sm mb-3 uppercase tracking-wide">FAQ</p>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+              <p className="text-primary font-medium text-sm mb-3 uppercase tracking-wide">
                 Câu hỏi thường gặp
+              </p>
+              <h2 className="font-heading text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+                Giải đáp nhanh
               </h2>
             </FadeUp>
             <StaggerContainer className="space-y-4" stagger={0.08}>
@@ -151,6 +124,8 @@ export default function SubscriptionPage() {
         <CTASection />
       </main>
       <DisplayTextSection />
-    </>
+      <Footer />
+      <CursorTrailBackground mode="fixed" variant="light" />
+    </div>
   );
 }

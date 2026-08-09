@@ -1,9 +1,11 @@
 # Secrets & config:
-#   - shell_secrets   : CHỈ tạo vỏ Secrets Manager — GIÁ TRỊ do người vận hành
-#                       `aws secretsmanager put-secret-value` (không nằm trong TF state).
-#   - managed_secrets : secret hạ tầng TF tự sinh/ghép (pg conn, mongo uri, amqp url)
-#                       — giá trị CÓ trong state (state bucket đã encrypt + private).
-#   - ssm_params      : config thường (không nhạy cảm) → SSM Parameter Store (free).
+#   - shell_secrets    : CHỈ tạo vỏ Secrets Manager — GIÁ TRỊ do người vận hành
+#                        `aws secretsmanager put-secret-value` (không nằm trong TF state).
+#   - managed_secrets  : secret hạ tầng TF tự sinh (db password) — giá trị CÓ trong
+#                        state (state bucket đã encrypt + private).
+#   - ssm_params       : config thường TF biết giá trị (db host/port/user) → SSM (free).
+#   - ssm_shell_params : config thường do người vận hành điền → SSM placeholder
+#                        `aws ssm put-parameter --overwrite` (ignore_changes giữ giá trị).
 
 terraform {
   required_providers {
@@ -24,9 +26,14 @@ variable "managed_secrets" {
   sensitive   = true
 }
 variable "ssm_params" {
-  description = "map path→value config thường"
+  description = "map path→value config thường (TF biết giá trị)"
   type        = map(string)
   default     = {}
+}
+variable "ssm_shell_params" {
+  description = "Danh sách path config thường do người vận hành điền (placeholder CHANGE_ME)"
+  type        = list(string)
+  default     = []
 }
 variable "recovery_window_days" {
   type    = number
@@ -82,6 +89,18 @@ resource "aws_ssm_parameter" "this" {
   value    = each.value
 }
 
+# Placeholder cho config người vận hành điền — ignore_changes để không ghi đè.
+resource "aws_ssm_parameter" "shell" {
+  for_each = toset(var.ssm_shell_params)
+  name     = "${local.prefix}/${each.value}"
+  type     = "String"
+  value    = "CHANGE_ME"
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
 output "secret_arns" {
   description = "map path→ARN (cả shell lẫn managed)"
   value = merge(
@@ -93,5 +112,12 @@ output "secret_prefix_arn" {
   value = "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:${local.prefix}/*"
 }
 output "param_arns" {
-  value = { for k, p in aws_ssm_parameter.this : k => p.arn }
+  description = "map path→ARN (cả ssm_params lẫn ssm_shell_params)"
+  value = merge(
+    { for k, p in aws_ssm_parameter.this : k => p.arn },
+    { for k, p in aws_ssm_parameter.shell : k => p.arn },
+  )
+}
+output "ssm_shell_param_names" {
+  value = [for s in var.ssm_shell_params : "${local.prefix}/${s}"]
 }

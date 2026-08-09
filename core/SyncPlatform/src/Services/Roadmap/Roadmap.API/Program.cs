@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Libs.Storage.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,8 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cloud (ECS): ghép ConnectionStrings từ SSM + Secrets Manager. Local: no-op.
+builder.Configuration.AddComposedMongoConnection("RoadmapDatabase");
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

@@ -16,6 +16,11 @@ variable "s3_bucket_arns" {
   type    = list(string)
   default = []
 }
+variable "sqs_queue_arns" {
+  description = "ARNs SQS (queue + DLQ) cho AI consumer/publisher"
+  type        = list(string)
+  default     = []
+}
 
 data "aws_caller_identity" "current" {}
 
@@ -81,6 +86,17 @@ data "aws_iam_policy_document" "task_app" {
       "geo:GetPlace", "geo:CalculateRoute", "geo:GetMap*",
     ]
     resources = ["*"]
+  }
+  dynamic "statement" {
+    for_each = length(var.sqs_queue_arns) > 0 ? [1] : []
+    content {
+      sid = "SqsAiInterventions"
+      actions = [
+        "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl", "sqs:SendMessage", "sqs:ChangeMessageVisibility",
+      ]
+      resources = var.sqs_queue_arns
+    }
   }
 }
 

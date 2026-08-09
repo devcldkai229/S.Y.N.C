@@ -57,6 +57,12 @@ public class User : BaseAuditableEntity
 
     public DateTimeOffset? LastActiveAt { get; set; }
 
+    /// <summary>
+    /// When set, the grace-period hard-delete job may scrub remaining data after this UTC time.
+    /// Cleared once the grace job has processed the account.
+    /// </summary>
+    public DateTimeOffset? ScheduledHardDeleteAt { get; set; }
+
     public virtual BiometricProfile? BiometricProfile { get; set; }
 
     public virtual UserPreference? UserPreference { get; set; }

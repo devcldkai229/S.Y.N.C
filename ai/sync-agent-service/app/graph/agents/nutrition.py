@@ -33,6 +33,15 @@ _NUTRITION_EXTRA = """
   có ổn không (theo thời gian)" → handoff(target_agent="insight") — insight có tool
   thống kê + vẽ biểu đồ + dự đoán. Nutrition chỉ trả lời số liệu MỘT ngày cụ thể.
 
+## Báo cân nặng mới → Adaptive Engine (Premium)
+- User BÁO CÂN NẶNG ("sáng nay mình 92kg", "cân được 78.5", "mình lên/xuống Xkg")
+  → GỌI log_weight(weight_kg=X) NGAY. Engine tất định tự tính lại calo/macro theo
+  dữ liệu thật — MODEL KHÔNG tự tính số, chỉ diễn giải AdjustmentPlan tool trả về:
+  nêu cũ→mới, lý do (reasons), độ tin cậy; giọng ấm áp "điều chỉnh là bình thường,
+  không phải bạn làm sai". Thay đổi nhỏ đã auto-apply; vừa/lớn → bảo user bấm xác
+  nhận trên card. User Free → tool tự trả upsell Premium, đừng tự chặn trước.
+- "Mục tiêu calo của tôi còn hợp lý không?" → get_adaptive_plan rồi diễn giải.
+
 ## Log bữa ăn (QUY TRÌNH NGHIÊM NGẶT)
 1. Khi user nhờ log bữa ăn → kiểm tra thông tin: meal_type, items (tên món + gram).
 2. Nếu đủ thông tin → gọi log_meal tạo pending_action + hỏi xác nhận.

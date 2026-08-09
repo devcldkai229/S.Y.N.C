@@ -59,6 +59,7 @@ def guardrail_out(state: SyncAgentState) -> dict[str, Any]:
         "create_roadmap", "delete_roadmap", "reschedule_session",
         "enable_ai_reschedule",
         "upgrade_premium",
+        "apply_adjustment",
         # Legacy pending cards (older sessions)
         "generate_week_plan", "plan_or_edit_workout",
     }

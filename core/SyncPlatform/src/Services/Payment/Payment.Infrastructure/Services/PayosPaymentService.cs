@@ -74,6 +74,25 @@ public class PayosPaymentService : IPayosPaymentService
         if (!plan.IsActive)
             throw new BadRequestException("Subscription plan is not currently active.");
 
+        // Paid plans only — block repurchase while Premium entitlement is still valid.
+        if (plan.MonthlyPrice > 0)
+        {
+            var now = DateTimeOffset.UtcNow;
+            var hasActivePremium = await _db.UserSubscriptions.AnyAsync(
+                s => s.UserId == userId &&
+                     (
+                         (s.Status == SubscriptionStatus.Active &&
+                          (s.ExpiredAt == null || s.ExpiredAt > now)) ||
+                         (s.Status == SubscriptionStatus.Cancelled &&
+                          s.ExpiredAt != null && s.ExpiredAt > now)
+                     ),
+                cancellationToken);
+
+            if (hasActivePremium)
+                throw new BadRequestException(
+                    "Bạn đang sử dụng gói Premium còn hạn. Không thể mua thêm.");
+        }
+
         if (request.BillingCycle == BillingCycle.Yearly)
         {
             _logger.LogWarning(

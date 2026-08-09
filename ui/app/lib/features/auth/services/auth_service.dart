@@ -256,6 +256,13 @@ class AuthService {
 
     if (rememberMe) {
       await _saveSession(envelope.data!);
+    } else {
+      // Session-only: keep access for this process; no refresh → re-login after expiry.
+      await _storage.write(
+        key: AuthStorageKeys.accessToken,
+        value: envelope.data!.accessToken,
+      );
+      await _storage.delete(key: AuthStorageKeys.refreshToken);
     }
     return envelope.data!;
   }
@@ -351,8 +358,16 @@ class AuthService {
   }
 
   Future<bool> isLoggedIn() async {
+    // Long-lived mobile session = refresh token + deviceId on disk.
     final refresh = await _storage.read(key: AuthStorageKeys.refreshToken);
-    if (refresh != null && refresh.isNotEmpty) return true;
+    final deviceId = await _storage.read(key: AuthStorageKeys.deviceId);
+    if (refresh != null &&
+        refresh.isNotEmpty &&
+        deviceId != null &&
+        deviceId.isNotEmpty) {
+      return true;
+    }
+    // Ephemeral (rememberMe=false): access-only until JWT expires.
     final access = await _storage.read(key: AuthStorageKeys.accessToken);
     return access != null &&
         access.isNotEmpty &&
@@ -360,7 +375,8 @@ class AuthService {
   }
 
   /// Returns a non-expired access token, refreshing when needed.
-  Future<String?> getValidAccessToken() => _coordinator.getValidAccessToken();
+  Future<String?> getValidAccessToken({bool notifyOnFailure = true}) =>
+      _coordinator.getValidAccessToken(notifyOnFailure: notifyOnFailure);
 
   Future<void> logout() async {
     try {

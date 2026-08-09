@@ -5,10 +5,15 @@
 #   dg   = sync-<env>-<service>-dg
 # và ALB 2 target group (blue/green) + 2 listener (prod/test).
 # Usage: ecs-bluegreen.sh <app-name e.g. sync-prod-gateway> <image>
+# Requires CLUSTER or ECS_CLUSTER_PROD in the environment.
 set -euo pipefail
 
 APP="$1"; IMAGE="$2"
 CLUSTER="${ECS_CLUSTER_PROD:-${CLUSTER:-}}"
+if [ -z "$CLUSTER" ]; then
+  echo "✗ CLUSTER / ECS_CLUSTER_PROD is empty — export CLUSTER before calling this script" >&2
+  exit 1
+fi
 SERVICE="$APP"
 DG="${APP}-dg"
 CONTAINER_NAME="${CONTAINER_NAME:-app}"

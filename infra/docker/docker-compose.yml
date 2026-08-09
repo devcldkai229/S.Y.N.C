@@ -1,157 +1,567 @@
-version: '3.8'
+# SYNC Platform — local full stack (profiles).
+# Infra only:  docker compose up -d
+# Full stack:  docker compose --profile app --profile ui up -d --build
+# Or:         .\scripts\up-full.ps1 -Build
+# Secrets:     copy .env.example → .env
+
+name: sync-platform
+
+x-dotnet-build: &dotnet-build
+  context: ../../core/SyncPlatform
+  dockerfile: Dockerfile.compose
+
+x-aws-vol: &aws-vol
+  - ${AWS_CREDENTIALS_DIR:-${USERPROFILE}/.aws}:/home/app/.aws:ro
+
+x-dotnet-env: &dotnet-env
+  ASPNETCORE_URLS: http://+:8080
+  ASPNETCORE_ENVIRONMENT: Docker
+  Jwt__Issuer: ${JWT_ISSUER:-sync-lifestyle-iam-dev}
+  Jwt__Audience: ${JWT_AUDIENCE:-sync-lifestyle-clients-dev}
+  Jwt__SecretKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env (copy .env.example)}
+  InternalApiKey: ${INTERNAL_API_KEY:-dev_internal_api_key_sync_platform}
+  IamService__InternalApiKey: ${INTERNAL_API_KEY:-dev_internal_api_key_sync_platform}
+  AWS__Region: ${AWS_REGION:-ap-southeast-1}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+  AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+  AWS_PROFILE: ${AWS_PROFILE:-default}
+  Storage__Bucket: ${STORAGE_BUCKET:-sync-private-assets}
+  Storage__KeyPrefix: ${STORAGE_KEY_PREFIX:-docker/}
+  Storage__PublicBaseUrl: ${PUBLIC_MEDIA_BASE_URL:-http://localhost:5057/api/v1/media}
+
+x-ai-env: &ai-env
+  INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev_internal_api_key_sync_platform}
+  JWT_ISSUER: ${JWT_ISSUER:-sync-lifestyle-iam-dev}
+  JWT_AUDIENCE: ${JWT_AUDIENCE:-sync-lifestyle-clients-dev}
+  JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  TAVILY_API_KEY: ${TAVILY_API_KEY:-}
+  REDIS_URL: redis://sync-redis:6379/2
+  POSTGRES_DSN: postgresql://postgres:${POSTGRES_PASSWORD:-12345}@sync-postgres:5432/sync_ai
+  AMQP_URL: amqp://${RABBITMQ_USER:-sync_mq_user}:${RABBITMQ_PASSWORD:-SyncMqSecurePassword2026}@sync-rabbitmq:5672/
+  AI_SQS_QUEUE_URL: ""
+  IAM_BASE_URL: http://iam:8080
+  ROADMAP_BASE_URL: http://roadmap:8080
+  EXERCISE_BASE_URL: http://exercise:8080
+  NUTRITION_BASE_URL: http://nutrition:8080
+  MARKETPLACE_BASE_URL: http://marketplace:8080
+  ORDER_BASE_URL: http://order:8080
+  PAYMENT_BASE_URL: http://payment:8080
+  NOTIFICATION_BASE_URL: http://notification:8080
+  SOCIAL_BASE_URL: http://social:8080
+  LANGFUSE_ENABLED: ${LANGFUSE_ENABLED:-false}
+  LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+  LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+  ENVIRONMENT: docker
+  CORS_ALLOWED_ORIGINS: "*"
+  PENDING_ACTION_TTL_SECONDS: "1800"
+  FLOW_LOG_ENABLED: "true"
 
 services:
+  # ── Infra ─────────────────────────────────────────────────────────────────
   sync-postgres:
     image: pgvector/pgvector:pg17
     container_name: sync-postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 12345
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-12345}
     ports:
-      - "5434:5432"
+      - "${POSTGRES_HOST_PORT:-5434}:5432"
     volumes:
       - sync_postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d:ro
-    networks:
-      - sync-network
+    networks: [sync-network]
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 8
 
   sync-mongodb:
     image: mongo:8.0
     container_name: sync-mongodb
     ports:
-      # Host 27018 avoids conflict with a local Windows MongoDB on 127.0.0.1:27017
-      - "27018:27017"
+      - "${MONGO_HOST_PORT:-27018}:27017"
     volumes:
       - sync_mongodb_data:/data/db
-    networks:
-      - sync-network
+    networks: [sync-network]
     restart: unless-stopped
     healthcheck:
       test: echo 'db.runCommand({ping:1})' | mongosh localhost:27017/test --quiet
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 8
 
   sync-rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: sync-rabbitmq
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MGMT_PORT:-15672}:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: sync_mq_user
-      RABBITMQ_DEFAULT_PASS: SyncMqSecurePassword2026
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-sync_mq_user}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-SyncMqSecurePassword2026}
     volumes:
       - sync_rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - sync-network
+    networks: [sync-network]
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_local_readiness"]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
       interval: 15s
       timeout: 10s
-      retries: 5
+      retries: 8
 
   sync-redis:
     image: redis:7-alpine
     container_name: sync-redis
     command: redis-server --appendonly yes
     ports:
-      - "6379:6379"
+      - "${REDIS_HOST_PORT:-6379}:6379"
     volumes:
       - sync_redis_data:/data
-    networks:
-      - sync-network
+    networks: [sync-network]
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 8
 
-  # sync-ai-postgres:
-  #   image: pgvector/pgvector:pg17
-  #   container_name: sync-ai-postgres
-  #   environment:
-  #     POSTGRES_USER: ai_user
-  #     POSTGRES_PASSWORD: ai_secure_pass
-  #     POSTGRES_DB: sync_ai_agent
-  #   ports:
-  #     - "5435:5432"
-  #   volumes:
-  #     - sync_ai_postgres_data:/var/lib/postgresql/data
-  #   networks:
-  #     - sync-network
-  #   restart: unless-stopped
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U ai_user -d sync_ai_agent"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  # ── .NET microservices (profile: app) ─────────────────────────────────────
+  iam:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Iam/Iam.API/Iam.API.csproj
+    container_name: sync-iam
+    ports:
+      - "5288:8080"
+    environment:
+      <<: *dotnet-env
+      ConnectionStrings__IamDatabase: Host=sync-postgres;Port=5432;Database=sync_iam;Username=postgres;Password=${POSTGRES_PASSWORD:-12345}
+      PaymentService__BaseUrl: http://payment:8080
+      SocialService__BaseUrl: http://social:8080
+      NotificationService__BaseUrl: http://notification:8080
+      NotificationService__InternalApiKey: ${INTERNAL_API_KEY:-dev_internal_api_key_sync_platform}
+      RoadmapService__BaseUrl: http://roadmap:8080
+      Email__VerificationBaseUrl: ${EMAIL_VERIFICATION_BASE_URL:-http://localhost:5057}
+      Email__Brevo__Enabled: ${BREVO_ENABLED:-false}
+      Email__Brevo__Host: ${BREVO_HOST:-smtp-relay.brevo.com}
+      Email__Brevo__Port: ${BREVO_PORT:-587}
+      Email__Brevo__UserName: ${BREVO_USERNAME:-}
+      Email__Brevo__Password: ${BREVO_PASSWORD:-}
+      Email__Brevo__FromEmail: ${EMAIL_FROM:-ngykhai229@gmail.com}
+      Email__Brevo__FromName: ${EMAIL_FROM_NAME:-Sync Lifestyle}
+      Email__Brevo__UseSsl: "true"
+      GoogleAuth__ClientId: ${GOOGLE_CLIENT_ID:-}
+      GoogleAuth__ClientIds__0: ${GOOGLE_CLIENT_ID:-}
+      GoogleAuth__ClientIds__1: ${GOOGLE_CLIENT_ID_2:-}
+      Iam__Seed__ApplyMigrations: "true"
+      Iam__Seed__SeedDemoUsers: ${IAM_SEED_DEMO_USERS:-true}
+      Iam__Seed__DemoUserPassword: ${IAM_DEMO_USER_PASSWORD:-SyncDemo123!}
+      Iam__Seed__Enabled: "true"
+      DevSeed__Enabled: "true"
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-postgres:
+        condition: service_healthy
 
-  # rcm (sync-rcm-service):
-  #   build:
-  #     context: ../../ai/sync-rcm-service
-  #     dockerfile: Dockerfile
-  #   container_name: sync-rcm
-  #   environment:
-  #     DATABASE_URL: postgresql+asyncpg://postgres:12345@sync-postgres:5432/sync_ai_agent
-  #     OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-  #     OPENAI_BASE_URL: https://api.openai.com/v1
-  #     OPENAI_MODEL: gpt-4o-mini
-  #     OPENAI_EMBEDDING_MODEL: text-embedding-3-small
-  #     EMBEDDING_DIM: "1536"
-  #     # `$` escaped as `$$` so Compose does not treat it as variable interpolation
-  #     JWT_SECRET_KEY: "uANeK_nCAd:N$$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{"
-  #     JWT_ISSUER: sync-lifestyle-iam-dev
-  #     JWT_AUDIENCE: sync-lifestyle-clients-dev
-  #     # host.docker.internal lets the container reach .NET services running on the host
-  #     EXERCISE_SERVICE_URL: http://host.docker.internal:5187
-  #     IAM_SERVICE_URL: http://host.docker.internal:5288
-  #     ROADMAP_SERVICE_URL: http://host.docker.internal:5118
-  #   ports:
-  #     - "5300:8000"
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   networks:
-  #     - sync-network
-  #   depends_on:
-  #     - sync-postgres
-  #   restart: unless-stopped
+  payment:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Payment/Payment.API/Payment.API.csproj
+    container_name: sync-payment
+    ports:
+      - "5084:8080"
+    environment:
+      <<: *dotnet-env
+      ConnectionStrings__PaymentDatabase: Host=sync-postgres;Port=5432;Database=sync_payment;Username=postgres;Password=${POSTGRES_PASSWORD:-12345}
+      PayOS__ClientId: ${PAYOS_CLIENT_ID:-}
+      PayOS__ApiKey: ${PAYOS_API_KEY:-}
+      PayOS__ChecksumKey: ${PAYOS_CHECKSUM_KEY:-}
+      PayOS__ReturnUrl: ${PAYOS_RETURN_URL:-http://localhost:3000/payment/success}
+      PayOS__CancelUrl: ${PAYOS_CANCEL_URL:-http://localhost:3000/payment/cancel}
+      GooglePlay__PackageName: ${GOOGLE_PLAY_PACKAGE_NAME:-com.sync.sync_app}
+      GooglePlay__DevSimulateVerify: ${GOOGLE_PLAY_DEV_SIMULATE:-true}
+      Services__IamBaseUrl: http://iam:8080
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-postgres:
+        condition: service_healthy
+      iam:
+        condition: service_started
 
-  # Optional local — comment out if not using self-hosted LLM / tracing
-  # sync-ollama:
-  #   image: ollama/ollama:latest
-  #   container_name: sync-ollama
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - sync_ollama_data:/root/.ollama
-  #   networks:
-  #     - sync-network
-  #   restart: unless-stopped
+  roadmap:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Roadmap/Roadmap.API/Roadmap.API.csproj
+    container_name: sync-roadmap
+    ports:
+      - "5118:8080"
+    environment:
+      <<: *dotnet-env
+      ConnectionStrings__RoadmapDatabase: mongodb://sync-mongodb:27017
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-mongodb:
+        condition: service_healthy
 
-  # sync-langfuse:
-  #   image: langfuse/langfuse:latest
-  #   container_name: sync-langfuse
-  #   depends_on:
-  #     - sync-postgres
-  #   ports:
-  #     - "3001:3000"
-  #   environment:
-  #     DATABASE_URL: postgresql://postgres:12345@sync-postgres:5432/langfuse
-  #     NEXTAUTH_SECRET: change-me
-  #     SALT: change-me-salt
-  #     NEXTAUTH_URL: http://localhost:3001
-  #   networks:
-  #     - sync-network
-  #   restart: unless-stopped
+  exercise:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Exercise/Exercise.API/Exercise.API.csproj
+    container_name: sync-exercise
+    ports:
+      - "5187:8080"
+    environment:
+      <<: *dotnet-env
+      ConnectionStrings__ExerciseDatabase: mongodb://sync-mongodb:27017
+      Storage__MediaProxyBaseUrl: http://localhost:5057/api/v1/exercise/exercises/media/
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-mongodb:
+        condition: service_healthy
+
+  notification:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Notification/Notification.API/Notification.API.csproj
+    container_name: sync-notification
+    ports:
+      - "5106:8080"
+    environment:
+      <<: *dotnet-env
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__NotificationDatabase: mongodb://sync-mongodb:27017
+      ConnectionStrings__SmartPushDatabase: Host=sync-postgres;Port=5432;Database=sync_smart_push;Username=postgres;Password=${POSTGRES_PASSWORD:-12345}
+      IamService__BaseUrl: http://iam:8080
+      RoadmapService__BaseUrl: http://roadmap:8080
+      NutritionService__BaseUrl: http://nutrition:8080
+      AiService__BaseUrl: http://ai:8088
+      OpenAI__ApiKey: ${OPENAI_API_KEY:-}
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-postgres:
+        condition: service_healthy
+      sync-mongodb:
+        condition: service_healthy
+
+  social:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Social/Social.API/Social.API.csproj
+    container_name: sync-social
+    ports:
+      - "5120:8080"
+    environment:
+      <<: *dotnet-env
+      ConnectionStrings__SocialDatabase: mongodb://sync-mongodb:27017
+      IamService__BaseUrl: http://iam:8080
+      NotificationService__BaseUrl: http://notification:8080
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-mongodb:
+        condition: service_healthy
+
+  nutrition:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Nutrition/Nutrition.API/Nutrition.API.csproj
+    container_name: sync-nutrition
+    ports:
+      - "5122:8080"
+    environment:
+      <<: *dotnet-env
+      ConnectionStrings__NutritionDatabase: mongodb://sync-mongodb:27017
+      IamService__BaseUrl: http://iam:8080
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-mongodb:
+        condition: service_healthy
+
+  marketplace:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Marketplace/Marketplace.API/Marketplace.API.csproj
+    container_name: sync-marketplace
+    ports:
+      - "5119:8080"
+    environment:
+      <<: *dotnet-env
+      ConnectionStrings__MarketplaceDatabase: mongodb://sync-mongodb:27017
+      IamService__BaseUrl: http://iam:8080
+      OrderService__BaseUrl: http://order:8080
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-mongodb:
+        condition: service_healthy
+
+  order:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Services/Order/Order.API/Order.API.csproj
+    container_name: sync-order
+    ports:
+      - "5123:8080"
+    environment:
+      <<: *dotnet-env
+      ConnectionStrings__OrderDatabase: Host=sync-postgres;Port=5432;Database=sync_order;Username=postgres;Password=${POSTGRES_PASSWORD:-12345}
+      ConnectionStrings__Redis: sync-redis:6379
+      MarketplaceService__BaseUrl: http://marketplace:8080
+      PaymentService__BaseUrl: http://payment:8080
+      NotificationService__BaseUrl: http://notification:8080
+      NutritionService__BaseUrl: http://nutrition:8080
+      Order__SimulateDeliveryProgress: "true"
+      Ahamove__ApiKey: ${AHAMOVE_API_KEY:-}
+      Ahamove__Mobile: ${AHAMOVE_MOBILE:-}
+      Ahamove__UseSandboxSimulation: ${AHAMOVE_USE_SANDBOX:-true}
+    volumes: *aws-vol
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-postgres:
+        condition: service_healthy
+      sync-redis:
+        condition: service_healthy
+
+  # ── AI + RCM ──────────────────────────────────────────────────────────────
+  # RCM entrypoint runs scripts.init_db (with retries) then uvicorn — no separate
+  # rcm-init job (avoids DNS race when postgres reattaches to compose network).
+  rcm:
+    build:
+      context: ../../ai/sync-rcm-service
+      dockerfile: Dockerfile
+    container_name: sync-rcm
+    ports:
+      - "5300:8000"
+    environment:
+      # Prefer composed parts (config.py) + full URL — same host as service name
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-12345}@sync-postgres:5432/sync_ai_agent
+      DB_POSTGRES_HOST: sync-postgres
+      DB_POSTGRES_PORT: "5432"
+      DB_POSTGRES_USER: postgres
+      DB_POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-12345}
+      DB_POSTGRES_NAME: sync_ai_agent
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: https://api.openai.com/v1
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING_DIM: "1536"
+      JWT_SECRET_KEY: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-sync-lifestyle-iam-dev}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-sync-lifestyle-clients-dev}
+      EXERCISE_SERVICE_URL: http://exercise:8080
+      IAM_SERVICE_URL: http://iam:8080
+      ROADMAP_SERVICE_URL: http://roadmap:8080
+      RCM_INIT_RETRIES: "40"
+      RCM_INIT_RETRY_DELAY: "2"
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-postgres:
+        condition: service_healthy
+      exercise:
+        condition: service_started
+      iam:
+        condition: service_started
+
+  ai:
+    build:
+      context: ../../ai/sync-agent-service
+      dockerfile: Dockerfile
+    container_name: sync-ai
+    ports:
+      - "8088:8088"
+    environment:
+      <<: *ai-env
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-postgres:
+        condition: service_healthy
+      sync-redis:
+        condition: service_healthy
+      sync-rabbitmq:
+        condition: service_healthy
+      iam:
+        condition: service_started
+
+  ai-worker:
+    build:
+      context: ../../ai/sync-agent-service
+      dockerfile: Dockerfile
+    container_name: sync-ai-worker
+    command: ["python", "-m", "app.events.consumer"]
+    healthcheck:
+      disable: true
+    environment:
+      <<: *ai-env
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      sync-rabbitmq:
+        condition: service_healthy
+      ai:
+        condition: service_started
+
+  gateway:
+    build:
+      <<: *dotnet-build
+      args:
+        PROJECT: src/Gateway/Gateway.API.csproj
+    container_name: sync-gateway
+    ports:
+      - "5057:8080"
+    environment:
+      <<: *dotnet-env
+      RateLimiting__Enabled: "false"
+    volumes:
+      - ./config/gateway.appsettings.Docker.json:/app/appsettings.Docker.json:ro
+      - ${AWS_CREDENTIALS_DIR:-${USERPROFILE}/.aws}:/home/app/.aws:ro
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [app]
+    depends_on:
+      iam:
+        condition: service_started
+      payment:
+        condition: service_started
+      roadmap:
+        condition: service_started
+      exercise:
+        condition: service_started
+      notification:
+        condition: service_started
+      social:
+        condition: service_started
+      nutrition:
+        condition: service_started
+      marketplace:
+        condition: service_started
+      order:
+        condition: service_started
+      ai:
+        condition: service_started
+      rcm:
+        condition: service_started
+
+  # ── Frontend (profile: ui) ────────────────────────────────────────────────
+  web:
+    build:
+      context: ../../ui/web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5057}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        NEXT_PUBLIC_LEGAL_WEBSITE: ${NEXT_PUBLIC_LEGAL_WEBSITE:-https://synctis.in}
+        NEXT_PUBLIC_LEGAL_ENTITY_NAME: ${NEXT_PUBLIC_LEGAL_ENTITY_NAME:-SYNC}
+        NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN: ${NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN:-SYNC}
+        NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL: ${NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL:-}
+        NEXT_PUBLIC_LEGAL_SUPPORT_PHONE: ${NEXT_PUBLIC_LEGAL_SUPPORT_PHONE:-}
+        NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS: ${NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS:-}
+    container_name: sync-web
+    ports:
+      - "${WEB_HOST_PORT:-3000}:80"
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [ui]
+    depends_on:
+      gateway:
+        condition: service_started
+
+  mobile-web:
+    build:
+      context: ../../ui/app
+      dockerfile: Dockerfile.web
+      args:
+        BASE_URL: ${FLUTTER_BASE_URL:-http://localhost:5057/api}
+    container_name: sync-mobile-web
+    ports:
+      - "${MOBILE_WEB_HOST_PORT:-3002}:80"
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [ui]
+    depends_on:
+      gateway:
+        condition: service_started
+
+  # ── Optional ──────────────────────────────────────────────────────────────
+  sync-ollama:
+    image: ollama/ollama:latest
+    container_name: sync-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - sync_ollama_data:/root/.ollama
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [optional]
+
+  sync-langfuse:
+    image: langfuse/langfuse:latest
+    container_name: sync-langfuse
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-12345}@sync-postgres:5432/langfuse
+      NEXTAUTH_SECRET: ${LANGFUSE_NEXTAUTH_SECRET:-sync_langfuse_nextauth_dev_change_me}
+      SALT: ${LANGFUSE_SALT:-sync_langfuse_salt_dev_change_me}
+      NEXTAUTH_URL: http://localhost:3001
+    networks: [sync-network]
+    restart: unless-stopped
+    profiles: [optional]
+    depends_on:
+      sync-postgres:
+        condition: service_healthy
+
+  mobile-apk:
+    build:
+      context: ../../ui/app
+      dockerfile: Dockerfile.apk
+      args:
+        BASE_URL: ${FLUTTER_APK_BASE_URL:-http://10.0.2.2:5057/api}
+    container_name: sync-mobile-apk-build
+    volumes:
+      - ./artifacts/mobile:/out
+    profiles: [mobile-apk]
 
 networks:
   sync-network:
@@ -162,5 +572,4 @@ volumes:
   sync_mongodb_data:
   sync_rabbitmq_data:
   sync_redis_data:
-  # sync_ollama_data:
-  # sync_ai_postgres_data:
+  sync_ollama_data:

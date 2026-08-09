@@ -19,7 +19,7 @@ public class SmartPushDeepLinkResolver : ISmartPushDeepLinkResolver
         {
             "BurnoutRecovery" or "RecoveryGentleReminder" => "sync://recovery/today",
             "NutritionNudge" => "sync://nutrition/today",
-            "ProgressCelebrate" => "sync://profile/progress",
+            "ProgressCelebrate" or "WeighInReminder" => "sync://profile/progress",
             "ChurnReengage" or "GentleCheckIn" => "sync://roadmap/current",
             _ => "sync://workout/today"
         };

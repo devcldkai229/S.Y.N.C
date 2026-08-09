@@ -1,12 +1,16 @@
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sync_app/core/config/app_config.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/context_navigation.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/features/cyn/models/cyn_chat_models.dart';
 import 'package:sync_app/features/cyn/state/cyn_chat_session_store.dart';
 import 'package:sync_app/features/cyn/widgets/cyn_insight_charts.dart';
@@ -150,6 +154,7 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
                 onBack: () => context.popOrGoHome(),
                 onToggleMode: _toggleMode,
               ),
+              if (!isVoiceMode) const _CynMedicalDisclaimerBanner(),
               Expanded(
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 320),
@@ -213,6 +218,10 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
                             );
                           },
                           onPremiumUpsell: () {
+                            if (AppConfig.requiresPlayBillingForPremium) {
+                              context.push(AppRoutes.subscription);
+                              return;
+                            }
                             _store.send(
                               'Mình muốn nâng cấp Premium để mở AI Insights và biểu đồ.',
                             );
@@ -366,6 +375,61 @@ class _CynChatAppBar extends StatelessWidget {
   }
 }
 
+class _CynMedicalDisclaimerBanner extends StatefulWidget {
+  const _CynMedicalDisclaimerBanner();
+
+  @override
+  State<_CynMedicalDisclaimerBanner> createState() => _CynMedicalDisclaimerBannerState();
+}
+
+class _CynMedicalDisclaimerBannerState extends State<_CynMedicalDisclaimerBanner> {
+  static const _prefsKey = 'cyn_medical_disclaimer_acked';
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final prefs = getIt<SharedPreferences>();
+    _visible = prefs.getBool(_prefsKey) != true;
+  }
+
+  Future<void> _dismiss() async {
+    await getIt<SharedPreferences>().setBool(_prefsKey, true);
+    if (mounted) setState(() => _visible = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_visible) return const SizedBox.shrink();
+    return Material(
+      color: const Color(0xFFFFF8E7),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFFB45309)),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'CYN là trợ lý fitness/dinh dưỡng, không phải bác sĩ — không chẩn đoán hay kê đơn. '
+                'Với chấn thương hoặc triệu chứng bất thường, hãy gặp chuyên gia y tế.',
+                style: TextStyle(fontSize: 12, height: 1.35, color: Color(0xFF78350F)),
+              ),
+            ),
+            IconButton(
+              onPressed: _dismiss,
+              icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF78350F)),
+              tooltip: 'Đã hiểu',
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _MessagingBody extends StatelessWidget {
   const _MessagingBody({
     super.key,
@@ -399,6 +463,7 @@ class _MessagingBody extends StatelessWidget {
         switch (msg.role) {
           case CynMessageRole.cyn:
             return _CynBubble(
+              messageId: msg.id,
               text: msg.text,
               time: msg.time,
               isStreaming: msg.isStreaming,
@@ -431,6 +496,7 @@ class _MessagingBody extends StatelessWidget {
 
 class _CynBubble extends StatelessWidget {
   const _CynBubble({
+    required this.messageId,
     required this.text,
     this.time,
     this.isStreaming = false,
@@ -446,6 +512,7 @@ class _CynBubble extends StatelessWidget {
     this.onPremiumUpsell,
   });
 
+  final String messageId;
   final String text;
   final String? time;
   final bool isStreaming;
@@ -459,6 +526,88 @@ class _CynBubble extends StatelessWidget {
   final void Function(String method)? onPaymentMethodSelected;
   final void Function(Map<String, dynamic> data)? onDeliveryInfoSubmitted;
   final VoidCallback? onPremiumUpsell;
+
+  Future<void> _reportAiContent(BuildContext context) async {
+    final reason = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        const reasons = [
+          'Nội dung không phù hợp',
+          'Tư vấn y khoa nguy hiểm',
+          'Spam / lừa đảo',
+          'Khác',
+        ];
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Báo cáo nội dung AI',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                ...reasons.map(
+                  (r) => ListTile(
+                    title: Text(r),
+                    onTap: () => Navigator.pop(ctx, r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (reason == null || !context.mounted) return;
+    try {
+      final targetId = _stableGuidFromString(messageId);
+      await getIt<SocialRepository>().reportAiContent(
+        targetId: targetId,
+        reason: reason,
+        details: text.length > 500 ? '${text.substring(0, 500)}…' : text,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã gửi báo cáo. Cảm ơn bạn.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Không gửi được báo cáo: $e'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Deterministic UUID-ish Guid string from local message id (for AiContent target).
+  static String _stableGuidFromString(String raw) {
+    final bytes = utf8.encode(raw);
+    var h1 = 0x811c9dc5;
+    var h2 = 0x01000193;
+    for (final b in bytes) {
+      h1 = ((h1 ^ b) * 0x01000193) & 0xffffffff;
+      h2 = ((h2 ^ (b << 1)) * 0x811c9dc5) & 0xffffffff;
+    }
+    final a = h1.toRadixString(16).padLeft(8, '0');
+    final b = (h2 & 0xffff).toRadixString(16).padLeft(4, '0');
+    final c = ((h2 >> 16) & 0x0fff | 0x4000).toRadixString(16).padLeft(4, '0');
+    final d = (0x8000 | (h1 & 0x3fff)).toRadixString(16).padLeft(4, '0');
+    final e = ((h1 ^ h2) & 0xffffffff).toRadixString(16).padLeft(8, '0') +
+        ((h1 + h2) & 0xffff).toRadixString(16).padLeft(4, '0');
+    return '$a-$b-$c-$d-${e.substring(0, 12)}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -503,36 +652,63 @@ class _CynBubble extends StatelessWidget {
                     ),
                   ),
                 ],
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: error ? const Color(0xFFFEE2E2) : const Color(0xFFF3F4F6),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(18),
-                      topRight: Radius.circular(18),
-                      bottomRight: Radius.circular(18),
-                      bottomLeft: Radius.circular(4),
-                    ),
-                    border: error ? Border.all(color: Colors.red.shade200) : null,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                GestureDetector(
+                  onLongPress: isStreaming || text.isEmpty
+                      ? null
+                      : () => _reportAiContent(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: error ? const Color(0xFFFEE2E2) : const Color(0xFFF3F4F6),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(18),
+                        topRight: Radius.circular(18),
+                        bottomRight: Radius.circular(18),
+                        bottomLeft: Radius.circular(4),
                       ),
-                    ],
-                  ),
-                  child: showTyping
-                      ? const _TypingDots()
-                      : _StreamingText(
-                          text: text,
-                          isStreaming: isStreaming,
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.45,
-                            color: error ? Colors.red.shade800 : AppColors.textPrimary,
-                          ),
+                      border: error ? Border.all(color: Colors.red.shade200) : null,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
                         ),
+                      ],
+                    ),
+                    child: showTyping
+                        ? const _TypingDots()
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _StreamingText(
+                                text: text,
+                                isStreaming: isStreaming,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.45,
+                                  color: error ? Colors.red.shade800 : AppColors.textPrimary,
+                                ),
+                              ),
+                              if (!isStreaming && text.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: InkWell(
+                                    onTap: () => _reportAiContent(context),
+                                    child: Text(
+                                      'Báo cáo',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textMuted.withValues(alpha: 0.9),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                  ),
                 ),
                 if (pendingAction != null && onConfirm != null) ...[
                   const SizedBox(height: 8),
@@ -661,11 +837,28 @@ class _DisplayPayloadCard extends StatelessWidget {
     if (type == 'premium_upsell') {
       return CynPremiumUpsellCard(
         payload: payload,
-        onUpgrade: onPremiumUpsell,
+        onUpgrade: onPremiumUpsell ??
+            () {
+              if (AppConfig.requiresPlayBillingForPremium) {
+                context.push(AppRoutes.subscription);
+              }
+            },
+      );
+    }
+    if (type == 'play_billing_cta') {
+      return _ctaCard(
+        title: 'Nâng cấp Premium',
+        body:
+            'Trên Android, Premium thanh toán qua Google Play (không dùng VietQR trong app).',
+        buttonLabel: 'Xem gói Premium',
+        onPressed: () => context.push(AppRoutes.subscription),
       );
     }
     if (type == 'chart' || type == 'insight_dashboard') {
       return CynInsightChartCard(payload: payload);
+    }
+    if (type == 'adjustment_plan') {
+      return _AdjustmentPlanCard(payload: payload);
     }
     if (type == 'weekly_report') {
       return CynWeeklyReportCard(payload: payload);
@@ -690,7 +883,20 @@ class _DisplayPayloadCard extends StatelessWidget {
       final purpose = payload['purpose']?.toString() ?? '';
       final url = payload['checkoutUrl']?.toString() ?? '';
       final amount = payload['amount'];
-      final title = purpose == 'premium_upgrade'
+      final isPremiumUpgrade = purpose == 'premium_upgrade';
+
+      // Android Play: do not open VietQR for digital Premium.
+      if (isPremiumUpgrade && AppConfig.requiresPlayBillingForPremium) {
+        return _ctaCard(
+          title: 'Nâng cấp Premium',
+          body:
+              'Trên Android, Premium thanh toán qua Google Play (không dùng VietQR trong app).',
+          buttonLabel: 'Xem gói Premium',
+          onPressed: () => context.push(AppRoutes.subscription),
+        );
+      }
+
+      final title = isPremiumUpgrade
           ? 'Thanh toán Premium'
           : 'Thanh toán VietQR';
       final amountLabel = amount is num ? '${amount.toStringAsFixed(0)}đ' : null;
@@ -699,7 +905,7 @@ class _DisplayPayloadCard extends StatelessWidget {
         body: amountLabel != null
             ? 'Số tiền: $amountLabel. Mở link để quét VietQR.'
             : 'Mở link VietQR để hoàn tất thanh toán.',
-        buttonLabel: purpose == 'premium_upgrade'
+        buttonLabel: isPremiumUpgrade
             ? 'Thanh toán Premium'
             : 'Mở VietQR',
         onPressed: url.isEmpty
@@ -1579,6 +1785,140 @@ class _PaymentMethodRadioCardState extends State<_PaymentMethodRadioCard> {
   }
 }
 
+/// Card Adaptive Engine: so sánh mục tiêu CŨ → MỚI + lý do + độ tin cậy.
+class _AdjustmentPlanCard extends StatelessWidget {
+  const _AdjustmentPlanCard({required this.payload});
+
+  final Map<String, dynamic> payload;
+
+  Map<String, dynamic> _asMap(dynamic v) =>
+      v is Map ? Map<String, dynamic>.from(v) : const {};
+
+  String _fmt(dynamic v) {
+    if (v == null) return '—';
+    if (v is num) return v.round().toString();
+    return v.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final old = _asMap(payload['old']);
+    final neu = _asMap(payload['new']);
+    final confidence = payload['confidence']?.toString() ?? '';
+    final autoApplied = payload['autoApplied'] == true;
+    final etaWeeks = payload['etaWeeks'];
+    final reasonsRaw = payload['reasons'];
+    final reasons = reasonsRaw is List
+        ? reasonsRaw.map((e) => e.toString()).take(3).toList()
+        : const <String>[];
+
+    Widget row(String label, dynamic oldV, dynamic newV, String unit) {
+      final changed = _fmt(oldV) != _fmt(newV);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 76,
+              child: Text(label,
+                  style: const TextStyle(
+                      fontSize: 12.5, color: AppColors.textMuted)),
+            ),
+            Text('${_fmt(oldV)}$unit',
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textMuted,
+                  decoration: changed ? TextDecoration.lineThrough : null,
+                )),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Icon(Icons.arrow_forward,
+                  size: 12, color: AppColors.textMuted),
+            ),
+            Text('${_fmt(newV)}$unit',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                )),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_fix_high,
+                  size: 16, color: AppColors.primaryGreen),
+              const SizedBox(width: 6),
+              const Expanded(
+                child: Text('Điều chỉnh mục tiêu (Adaptive)',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary)),
+              ),
+              if (autoApplied)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text('Đã áp dụng',
+                      style: TextStyle(
+                          fontSize: 11, color: AppColors.primaryGreen)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          row('Calo', old['calories'], neu['calories'], ' kcal'),
+          row('Đạm', old['protein_g'], neu['protein_g'], 'g'),
+          row('Tinh bột', old['carb_g'], neu['carb_g'], 'g'),
+          row('Béo', old['fat_g'], neu['fat_g'], 'g'),
+          if (etaWeeks is num) ...[
+            const SizedBox(height: 4),
+            Text('Dự kiến đạt mục tiêu sau ~${etaWeeks.toStringAsFixed(1)} tuần',
+                style:
+                    const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+          ],
+          if (reasons.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            ...reasons.map((r) => Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text('• $r',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                          height: 1.3)),
+                )),
+          ],
+          if (confidence.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Độ tin cậy: $confidence',
+                style: const TextStyle(
+                    fontSize: 11.5,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.textMuted)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _PendingActionCard extends StatelessWidget {
   const _PendingActionCard({
     required this.action,
@@ -1601,6 +1941,7 @@ class _PendingActionCard extends StatelessWidget {
       'upgrade_premium' => 'Nâng cấp Premium',
       'enable_ai_reschedule' => 'Cho phép AI chỉnh lịch tập',
       'plan_or_edit_workout' || 'generate_week_plan' => 'Xác nhận lịch tập',
+      'apply_adjustment' => 'Xác nhận điều chỉnh mục tiêu',
       'create_roadmap' || 'delete_roadmap' || 'reschedule_session' =>
         'Xác nhận lộ trình',
       'log_meal' => 'Xác nhận nhật ký bữa ăn',

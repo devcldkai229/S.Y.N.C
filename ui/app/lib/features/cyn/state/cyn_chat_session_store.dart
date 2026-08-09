@@ -273,6 +273,7 @@ class CynChatSessionStore extends ChangeNotifier {
           type == 'chart' ||
           type == 'insight_dashboard' ||
           type == 'premium_upsell' ||
+          type == 'adjustment_plan' ||
           type == 'weekly_report') {
         _patchById(
           cynMessageId,
@@ -331,6 +332,7 @@ class CynChatSessionStore extends ChangeNotifier {
               'generate_week_plan' ||
               'enable_ai_reschedule' =>
                 'Cần xác nhận trước khi lưu lịch tập',
+              'apply_adjustment' => 'Cần xác nhận điều chỉnh mục tiêu',
               'upgrade_premium' => 'Cần xác nhận nâng Premium',
               'create_order' ||
               'pay_with_wallet' ||
@@ -480,7 +482,7 @@ class CynChatSessionStore extends ChangeNotifier {
           if (raw is Map) {
             final map = Map<String, dynamic>.from(raw);
             final t = map['type']?.toString() ?? '';
-            if (t == 'payment_qr' || t == 'order_success') {
+            if (t == 'payment_qr' || t == 'order_success' || t == 'play_billing_cta') {
               followUpPayloads.add(map);
             }
           }
@@ -489,14 +491,17 @@ class CynChatSessionStore extends ChangeNotifier {
 
       if (confirmed && followUpPayloads.isNotEmpty) {
         final hasQr = followUpPayloads.any((p) => p['type'] == 'payment_qr');
+        final hasPlay = followUpPayloads.any((p) => p['type'] == 'play_billing_cta');
         _messages.add(
           CynChatMessage(
             id: _newMessageId(),
             role: CynMessageRole.cyn,
             text: result['message']?.toString() ??
-                (hasQr
-                    ? 'Đã tạo VietQR. Quét mã hoặc mở link để thanh toán.'
-                    : 'Đặt đơn thành công.'),
+                (hasPlay
+                    ? 'Mở Gói đăng ký để mua Premium qua Google Play.'
+                    : hasQr
+                        ? 'Đã tạo VietQR. Quét mã hoặc mở link để thanh toán.'
+                        : 'Đặt đơn thành công.'),
             time: _formatTime(),
             displayPayloads: followUpPayloads,
           ),
@@ -517,6 +522,25 @@ class CynChatSessionStore extends ChangeNotifier {
           ),
         );
       }
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      if (status == 404) {
+        // Expired / already confirmed — drop the stale card so user can replan.
+        _patchById(message.id, clearPendingAction: true);
+        _snackbarHint =
+            'Yêu cầu đã hết hạn. Hãy nhờ Cyn lên lịch lại.';
+        _messages.add(
+          CynChatMessage(
+            id: _newMessageId(),
+            role: CynMessageRole.system,
+            text: 'Yêu cầu đã hết hạn. Hãy nhờ Cyn lên lịch lại.',
+            time: _formatTime(),
+          ),
+        );
+        return;
+      }
+      _snackbarHint = 'Không xác nhận được: $e';
+      rethrow;
     } catch (e) {
       _snackbarHint = 'Không xác nhận được: $e';
       rethrow;
@@ -536,6 +560,8 @@ class CynChatSessionStore extends ChangeNotifier {
     return switch (type) {
       'upgrade_premium' =>
         'Đã xác nhận nâng Premium — mở VietQR để thanh toán.',
+      'apply_adjustment' =>
+        'Đã cập nhật mục tiêu calo/macro theo Adaptive Engine ✓',
       'enable_ai_reschedule' =>
         'Đã cho phép AI chỉnh lịch và lưu lịch tập ✓',
       'plan_or_edit_workout' || 'generate_week_plan' =>

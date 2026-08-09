@@ -154,6 +154,23 @@ public class InternalRoadmapAiController : ControllerBase
         return Ok(ApiResponse<PersonalizedRoadmapDto?>.SuccessResponse(result, "Active roadmap retrieved."));
     }
 
+    /// <summary>
+    /// Sync body weight/fat (and optional phase) onto the user's active PersonalizedRoadmap.
+    /// No active roadmap → 204 (weigh-in must not fail).
+    /// </summary>
+    [HttpPatch("users/{userId:guid}/body-metrics")]
+    public async Task<ActionResult<ApiResponse<PersonalizedRoadmapDto>>> SyncBodyMetrics(
+        Guid userId,
+        [FromBody] InternalSyncBodyMetricsDto request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _roadmapService.SyncBodyMetricsAsync(userId, request, cancellationToken);
+        if (result is null)
+            return NoContent();
+
+        return Ok(ApiResponse<PersonalizedRoadmapDto>.SuccessResponse(result, "Body metrics synced."));
+    }
+
     [HttpGet("{roadmapId:guid}")]
     public async Task<ActionResult<ApiResponse<PersonalizedRoadmapDto>>> GetRoadmap(
         Guid roadmapId,
@@ -283,6 +300,18 @@ public class InternalRoadmapAiController : ControllerBase
         return Ok(ApiResponse<RoadmapIntensityAdjustmentDto>.SuccessResponse(
             result,
             "Intensity adjustment applied."));
+    }
+
+    /// <summary>Adaptive Engine — deload/progress volume on upcoming sessions.</summary>
+    [HttpPost("users/{userId:guid}/apply-training-adjustment")]
+    public async Task<ActionResult<ApiResponse<ApplyTrainingAdjustmentResultDto>>> ApplyTrainingAdjustment(
+        Guid userId,
+        [FromBody] ApplyTrainingAdjustmentRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        var result = await _sessionService.ApplyTrainingAdjustmentAsync(userId, request, cancellationToken);
+        return Ok(ApiResponse<ApplyTrainingAdjustmentResultDto>.SuccessResponse(
+            result, result.Message));
     }
 }
 

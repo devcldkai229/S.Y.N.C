@@ -15,10 +15,8 @@ namespace Social.Infrastructure.Services;
 
 /// <summary>
 /// Road-network routes via Amazon Location Service Route Calculator.
-/// Results are cached in-memory for <see cref="RouteCacheTtl"/> to avoid
-/// redundant AWS calls when the same user re-fetches a challenge route.
-/// When all travel modes are requested simultaneously they are dispatched
-/// in parallel via Task.WhenAll to reduce wall-clock latency.
+/// Default mode is Motorbike (xe máy). Results are cached to avoid redundant AWS calls.
+/// Motorbike uses a short per-attempt timeout so Grab Motorcycle hangs fail over quickly.
 /// </summary>
 public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalculator
 {
@@ -26,7 +24,7 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
     private const double MotorbikeFallbackSpeedKmh = 30;
     private const double WalkingFallbackSpeedKmh = 5;
 
-    private static readonly TimeSpan RouteCacheTtl = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan RouteCacheTtl = TimeSpan.FromMinutes(15);
 
     private readonly IAmazonLocationService _location;
     private readonly IMemoryCache _cache;
@@ -53,14 +51,17 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
         ChallengeRouteTravelMode? travelMode = null,
         CancellationToken cancellationToken = default)
     {
+        // Motorbike is the product default (VN commuting); avoids 3× AWS when mode omitted.
+        var effectiveMode = travelMode ?? ChallengeRouteTravelMode.Motorbike;
+
         if (!_options.IsConfigured)
         {
             _logger.LogDebug("AwsLocation is not configured; using Haversine fallback.");
             return await new HaversineChallengeRouteCalculator().CalculateRouteAsync(
-                userLat, userLng, destinationLat, destinationLng, travelMode, cancellationToken);
+                userLat, userLng, destinationLat, destinationLng, effectiveMode, cancellationToken);
         }
 
-        var cacheKey = BuildCacheKey(userLat, userLng, destinationLat, destinationLng, travelMode);
+        var cacheKey = BuildCacheKey(userLat, userLng, destinationLat, destinationLng, effectiveMode);
         if (_cache.TryGetValue(cacheKey, out ChallengeRouteDto? cached) && cached is not null)
         {
             _logger.LogDebug("Route cache hit: {Key}", cacheKey);
@@ -71,27 +72,13 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
             "AWS Location route: {Calculator} ({Provider}), mode={Mode}",
             _options.RouteCalculatorName,
             _options.DataProvider,
-            travelMode?.ToString() ?? "all");
+            effectiveMode);
 
-        var modes = ResolveModes(travelMode);
+        var route = await CalculateOneModeAsync(
+            userLat, userLng, destinationLat, destinationLng, effectiveMode, cancellationToken);
+
         var result = new ChallengeRouteDto();
-
-        if (modes.Count == 1)
-        {
-            var route = await CalculateOneModeAsync(
-                userLat, userLng, destinationLat, destinationLng, modes[0], cancellationToken);
-            AssignMode(result, modes[0], route);
-        }
-        else
-        {
-            // Dispatch all modes in parallel — cuts latency from ~3× to ~1× one AWS call.
-            var tasks = modes.Select(mode =>
-                CalculateOneModeAsync(userLat, userLng, destinationLat, destinationLng, mode, cancellationToken));
-
-            var routes = await Task.WhenAll(tasks);
-            for (var i = 0; i < modes.Count; i++)
-                AssignMode(result, modes[i], routes[i]);
-        }
+        AssignMode(result, effectiveMode, route);
 
         _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
         {
@@ -110,17 +97,32 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
         ChallengeRouteTravelMode mode,
         CancellationToken cancellationToken)
     {
-        var route = mode switch
+        try
         {
-            ChallengeRouteTravelMode.Car => await CalculateModeAsync(
-                userLat, userLng, destinationLat, destinationLng, TravelMode.Car, cancellationToken),
-            ChallengeRouteTravelMode.Walking => await CalculateModeAsync(
-                userLat, userLng, destinationLat, destinationLng, TravelMode.Walking, cancellationToken),
-            _ => await CalculateMotorbikeAsync(
-                userLat, userLng, destinationLat, destinationLng, cancellationToken),
-        };
+            var route = mode switch
+            {
+                ChallengeRouteTravelMode.Car => await CalculateModeAsync(
+                    userLat, userLng, destinationLat, destinationLng, TravelMode.Car, cancellationToken),
+                ChallengeRouteTravelMode.Walking => await CalculateModeAsync(
+                    userLat, userLng, destinationLat, destinationLng, TravelMode.Walking, cancellationToken),
+                _ => await CalculateMotorbikeAsync(
+                    userLat, userLng, destinationLat, destinationLng, cancellationToken),
+            };
 
-        return NormalizeRoute(route, userLat, userLng, destinationLat, destinationLng);
+            return NormalizeRoute(route, userLat, userLng, destinationLat, destinationLng);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "AWS Location {Mode} failed; using Haversine fallback.",
+                mode);
+            return HaversineFallback(mode, userLat, userLng, destinationLat, destinationLng);
+        }
     }
 
     private static void AssignMode(ChallengeRouteDto result, ChallengeRouteTravelMode mode, TravelModeRouteDto route)
@@ -138,26 +140,20 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
         double userLng,
         double destLat,
         double destLng,
-        ChallengeRouteTravelMode? mode)
+        ChallengeRouteTravelMode mode)
     {
-        // Round to ~11 m grid (4 decimal places) to allow minor GPS jitter to still hit cache.
+        // ~11 m grid — GPS jitter still hits cache.
         var uLat = Math.Round(userLat, 4);
         var uLng = Math.Round(userLng, 4);
         var dLat = Math.Round(destLat, 4);
         var dLng = Math.Round(destLng, 4);
-        return $"route:{uLat}:{uLng}:{dLat}:{dLng}:{mode?.ToString() ?? "all"}";
+        return $"route:{uLat}:{uLng}:{dLat}:{dLng}:{mode}";
     }
 
-    private static IReadOnlyList<ChallengeRouteTravelMode> ResolveModes(ChallengeRouteTravelMode? travelMode) =>
-        travelMode.HasValue
-            ? [travelMode.Value]
-            :
-            [
-                ChallengeRouteTravelMode.Car,
-                ChallengeRouteTravelMode.Motorbike,
-                ChallengeRouteTravelMode.Walking,
-            ];
-
+    /// <summary>
+    /// Grab Motorcycle first (most accurate for xe máy), then Bicycle, then Car.
+    /// Each attempt uses a short linked timeout so one hung mode does not cost the full SDK timeout × 3.
+    /// </summary>
     private async Task<TravelModeRouteDto> CalculateMotorbikeAsync(
         double userLat,
         double userLng,
@@ -165,30 +161,85 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
         double destinationLng,
         CancellationToken cancellationToken)
     {
+        var modes = new List<TravelMode>(3);
         if (string.Equals(_options.DataProvider, "Grab", StringComparison.OrdinalIgnoreCase))
+            modes.Add(TravelMode.Motorcycle);
+        modes.Add(TravelMode.Bicycle);
+        modes.Add(TravelMode.Car);
+
+        Exception? lastError = null;
+        for (var i = 0; i < modes.Count; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            var travelMode = modes[i];
             try
             {
-                return await CalculateModeAsync(
-                    userLat, userLng, destinationLat, destinationLng, TravelMode.Motorcycle, cancellationToken);
+                return await CalculateModeWithAttemptTimeoutAsync(
+                    userLat, userLng, destinationLat, destinationLng, travelMode, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Grab Motorcycle route failed; trying Bicycle.");
+                lastError = ex;
+                var nextLabel = i + 1 < modes.Count ? modes[i + 1].Value : null;
+                _logger.LogWarning(
+                    ex,
+                    "Motorbike routing via {Mode} failed{Next}.",
+                    travelMode,
+                    nextLabel is null ? "" : $"; trying {nextLabel}");
             }
         }
+
+        throw lastError
+            ?? new InvalidOperationException("Motorbike route calculation failed with no underlying error.");
+    }
+
+    private async Task<TravelModeRouteDto> CalculateModeWithAttemptTimeoutAsync(
+        double userLat,
+        double userLng,
+        double destinationLat,
+        double destinationLng,
+        TravelMode travelMode,
+        CancellationToken cancellationToken)
+    {
+        var attemptSeconds = _options.RouteAttemptTimeoutSeconds > 0
+            ? _options.RouteAttemptTimeoutSeconds
+            : 8;
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        linked.CancelAfter(TimeSpan.FromSeconds(attemptSeconds));
 
         try
         {
             return await CalculateModeAsync(
-                userLat, userLng, destinationLat, destinationLng, TravelMode.Bicycle, cancellationToken);
+                userLat, userLng, destinationLat, destinationLng, travelMode, linked.Token);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "Bicycle route failed for motorbike; trying Car.");
-            return await CalculateModeAsync(
-                userLat, userLng, destinationLat, destinationLng, TravelMode.Car, cancellationToken);
+            throw new TimeoutException(
+                $"AWS Location {travelMode} timed out after {attemptSeconds}s.");
         }
+    }
+
+    private static TravelModeRouteDto HaversineFallback(
+        ChallengeRouteTravelMode mode,
+        double userLat,
+        double userLng,
+        double destinationLat,
+        double destinationLng)
+    {
+        var distanceKm = GeoDistanceHelper.HaversineKm(userLat, userLng, destinationLat, destinationLng);
+        var polyline = HaversineChallengeRouteCalculator.BuildPolyline(
+            userLat, userLng, destinationLat, destinationLng);
+        var speed = mode switch
+        {
+            ChallengeRouteTravelMode.Car => CarFallbackSpeedKmh,
+            ChallengeRouteTravelMode.Walking => WalkingFallbackSpeedKmh,
+            _ => MotorbikeFallbackSpeedKmh,
+        };
+        return HaversineChallengeRouteCalculator.BuildRoute(distanceKm, speed, polyline);
     }
 
     private async Task<TravelModeRouteDto> CalculateModeAsync(
@@ -341,7 +392,16 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
     {
         var region = RegionEndpoint.GetBySystemName(options.Region);
         var credentials = ResolveCredentials(options);
-        return new AmazonLocationServiceClient(credentials, region);
+        var timeoutSeconds = options.RequestTimeoutSeconds > 0
+            ? options.RequestTimeoutSeconds
+            : 12;
+        var config = new AmazonLocationServiceConfig
+        {
+            RegionEndpoint = region,
+            Timeout = TimeSpan.FromSeconds(timeoutSeconds),
+            MaxErrorRetry = 1,
+        };
+        return new AmazonLocationServiceClient(credentials, config);
     }
 
     private static AWSCredentials ResolveCredentials(AwsLocationOptions options)

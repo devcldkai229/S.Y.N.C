@@ -7,4 +7,5 @@ public interface IIamSmartPushClient
     Task<IReadOnlyList<DueSmartPushUserDto>> GetDueUsersAsync(DateTime utcNow, CancellationToken cancellationToken);
     Task<IReadOnlyList<SmartPushEnabledUserDto>> GetEnabledUsersAsync(CancellationToken cancellationToken);
     Task<IamSmartPushContextDto?> GetContextAsync(Guid userId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Guid>> GetPremiumUserIdsAsync(CancellationToken cancellationToken);
 }

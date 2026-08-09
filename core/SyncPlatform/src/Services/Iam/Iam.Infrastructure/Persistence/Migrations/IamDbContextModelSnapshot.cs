@@ -193,6 +193,71 @@ namespace Iam.Infrastructure.Persistence.Migrations
                     b.ToTable("achievements", "iam");
                 });
 
+            modelBuilder.Entity("Iam.Domain.Models.BiometricHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<decimal?>("BodyFatPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("body_fat_percentage");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<decimal?>("MuscleMassKg")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("muscle_mass_kg");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("note");
+
+                    b.Property<DateTime>("RecordedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("recorded_at_utc");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("source");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<decimal>("WeightKg")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("weight_kg");
+
+                    b.HasKey("Id")
+                        .HasName("pk_biometric_history");
+
+                    b.HasIndex("UserId", "RecordedAtUtc")
+                        .HasDatabaseName("ix_biometric_history_user_id_recorded_at_utc");
+
+                    b.ToTable("biometric_history", "iam");
+                });
+
             modelBuilder.Entity("Iam.Domain.Models.BiometricProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -230,6 +295,10 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("current_weight_kg");
+
+                    b.Property<int?>("DailyCalorieTarget")
+                        .HasColumnType("integer")
+                        .HasColumnName("daily_calorie_target");
 
                     b.Property<int?>("DailyCarbTargetGram")
                         .HasColumnType("integer")
@@ -296,6 +365,14 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("numeric(5,2)")
                         .HasColumnName("target_weight_kg");
+
+                    b.Property<DateTime?>("TargetsAdjustedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("targets_adjusted_at_utc");
+
+                    b.Property<bool>("TargetsManagedByEngine")
+                        .HasColumnType("boolean")
+                        .HasColumnName("targets_managed_by_engine");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -388,6 +465,114 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_gamification_profiles_user_id");
 
                     b.ToTable("gamification_profiles", "iam");
+                });
+
+            modelBuilder.Entity("Iam.Domain.Models.TargetAdjustmentLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("AppliedMode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("applied_mode");
+
+                    b.Property<string>("ConfidenceLevel")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("confidence_level");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int>("EstimatedTdee")
+                        .HasColumnType("integer")
+                        .HasColumnName("estimated_tdee");
+
+                    b.Property<int>("FormulaTdee")
+                        .HasColumnType("integer")
+                        .HasColumnName("formula_tdee");
+
+                    b.Property<int>("NewCalories")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_calories");
+
+                    b.Property<int>("NewCarbGram")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_carb_gram");
+
+                    b.Property<int>("NewFatGram")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_fat_gram");
+
+                    b.Property<int>("NewProteinGram")
+                        .HasColumnType("integer")
+                        .HasColumnName("new_protein_gram");
+
+                    b.Property<int?>("PrevCalories")
+                        .HasColumnType("integer")
+                        .HasColumnName("prev_calories");
+
+                    b.Property<int?>("PrevCarbGram")
+                        .HasColumnType("integer")
+                        .HasColumnName("prev_carb_gram");
+
+                    b.Property<int?>("PrevFatGram")
+                        .HasColumnType("integer")
+                        .HasColumnName("prev_fat_gram");
+
+                    b.Property<int?>("PrevProteinGram")
+                        .HasColumnType("integer")
+                        .HasColumnName("prev_protein_gram");
+
+                    b.Property<string>("ReasonCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("reason_code");
+
+                    b.Property<string>("ReasonText")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("reason_text");
+
+                    b.Property<bool>("RoadmapChanged")
+                        .HasColumnType("boolean")
+                        .HasColumnName("roadmap_changed");
+
+                    b.Property<string>("Trigger")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("trigger");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_target_adjustment_logs");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .HasDatabaseName("ix_target_adjustment_logs_user_id_created_at");
+
+                    b.ToTable("target_adjustment_logs", "iam");
                 });
 
             modelBuilder.Entity("Iam.Domain.Models.User", b =>
@@ -495,6 +680,10 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
                         .HasColumnName("role");
+
+                    b.Property<DateTimeOffset?>("ScheduledHardDeleteAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("scheduled_hard_delete_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -748,6 +937,76 @@ namespace Iam.Infrastructure.Persistence.Migrations
                     b.ToTable("user_devices", "iam");
                 });
 
+            modelBuilder.Entity("Iam.Domain.Models.UserLevelSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("ComputedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computed_at");
+
+                    b.Property<decimal>("ConsistencyScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("consistency_score");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<decimal>("LevelScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("level_score");
+
+                    b.Property<decimal>("ProgressionScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("progression_score");
+
+                    b.Property<decimal>("RecoveryCapacityScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("recovery_capacity_score");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("tier");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<decimal>("VolumeLoadWeekly")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)")
+                        .HasColumnName("volume_load_weekly");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_level_snapshots");
+
+                    b.HasIndex("UserId", "ComputedAt")
+                        .HasDatabaseName("ix_user_level_snapshots_user_id_computed_at");
+
+                    b.ToTable("user_level_snapshots", "iam");
+                });
+
             modelBuilder.Entity("Iam.Domain.Models.UserPreference", b =>
                 {
                     b.Property<Guid>("Id")
@@ -938,6 +1197,18 @@ namespace Iam.Infrastructure.Persistence.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Iam.Domain.Models.BiometricHistory", b =>
+                {
+                    b.HasOne("Iam.Domain.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_biometric_history_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Iam.Domain.Models.BiometricProfile", b =>
                 {
                     b.HasOne("Iam.Domain.Models.User", "User")
@@ -958,6 +1229,18 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_gamification_profiles_users_user_id");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Iam.Domain.Models.TargetAdjustmentLog", b =>
+                {
+                    b.HasOne("Iam.Domain.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_target_adjustment_logs_users_user_id");
 
                     b.Navigation("User");
                 });
@@ -1003,6 +1286,18 @@ namespace Iam.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_user_devices_users_user_id");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Iam.Domain.Models.UserLevelSnapshot", b =>
+                {
+                    b.HasOne("Iam.Domain.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_level_snapshots_users_user_id");
 
                     b.Navigation("User");
                 });

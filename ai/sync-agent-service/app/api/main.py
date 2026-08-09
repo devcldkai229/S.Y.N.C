@@ -17,7 +17,7 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
@@ -125,7 +125,7 @@ async def lifespan(app: FastAPI):
         import asyncpg
 
         pg_pool = await asyncpg.create_pool(
-            settings.postgres_dsn, min_size=2, max_size=10,
+            settings.postgres_dsn, min_size=1, max_size=5,
         )
         set_pg_pool(pg_pool)
         _ctx["pg_pool"] = pg_pool
@@ -191,12 +191,25 @@ class ChatRequest(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     timezone: str | None = None
+    client_platform: str | None = None  # android | ios | web
 
 
 class ConfirmRequest(BaseModel):
     session_id: str
     action_id: str
     confirmed: bool = True
+    client_platform: str | None = None
+
+
+def _normalize_client_platform(raw: str | None) -> str:
+    p = (raw or "").strip().lower()
+    if p in ("android", "ios", "web"):
+        return p
+    return "unknown"
+
+
+def _is_android_play_client(platform: str | None) -> bool:
+    return _normalize_client_platform(platform) == "android"
 
 
 _SUPPORTED_ACTION_TYPES = frozenset({
@@ -213,6 +226,7 @@ _SUPPORTED_ACTION_TYPES = frozenset({
     "enable_ai_reschedule",
     "upgrade_premium",
     "log_meal",
+    "apply_adjustment",
 })
 
 
@@ -491,16 +505,39 @@ async def _execute_confirmed_action(user_id: str, action: dict) -> dict:
         )
         staged = action.get("staged_plan") or {}
         if not isinstance(staged, dict) or not staged:
+            _log.warning(
+                "enable_ai_reschedule: empty staged_plan roadmap_id=%s action_id=%s",
+                roadmap_id,
+                action.get("action_id"),
+            )
             return {
                 "enabled": True,
                 "roadmap": patched,
                 "scheduled": None,
                 "message": "Đã bật quyền AI chỉnh lịch.",
             }
+        has_sessions = bool(staged.get("sessions"))
+        has_ops = isinstance(staged.get("ops"), dict) and any(
+            staged["ops"].get(k) for k in ("add", "update", "reschedule", "remove")
+        )
+        if not has_sessions and not has_ops:
+            _log.warning(
+                "enable_ai_reschedule: staged_plan without sessions/ops roadmap_id=%s keys=%s",
+                roadmap_id,
+                list(staged.keys()),
+            )
         write = await execute_workout_plan_write(user_id, {
             **staged,
             "roadmap_id": staged.get("roadmap_id") or roadmap_id,
         })
+        if isinstance(write, dict) and write.get("status") == "error":
+            return {
+                "enabled": True,
+                "roadmap": patched,
+                "status": "error",
+                "message": write.get("message") or "Đã bật quyền nhưng chưa lưu được lịch tập.",
+                **{k: v for k, v in write.items() if k not in ("status",)},
+            }
         msg = "Đã cho phép AI chỉnh lịch và lưu lịch tập."
         if not write.get("verified"):
             msg = (
@@ -515,6 +552,26 @@ async def _execute_confirmed_action(user_id: str, action: dict) -> dict:
         }
 
     if action_type == "upgrade_premium":
+        # VN Play policy: digital Premium in Android app must use Play Billing, not VietQR.
+        platform = _normalize_client_platform(
+            action.get("client_platform") or action.get("platform")
+        )
+        if platform == "android":
+            display = {
+                "type": "play_billing_cta",
+                "purpose": "premium_upgrade",
+                "planName": "Premium",
+                "route": "/subscription",
+            }
+            return {
+                "upgraded_checkout": None,
+                "display_payload": [display],
+                "status": "play_billing_required",
+                "message": (
+                    "Trên Android, nâng Premium qua Google Play trong mục Gói đăng ký — "
+                    "không dùng VietQR trong app."
+                ),
+            }
         link = await dotnet.create_premium_payment_link(
             user_id,
             plan_code=str(action.get("plan_hint") or "Premium"),
@@ -582,23 +639,101 @@ async def _execute_confirmed_action(user_id: str, action: dict) -> dict:
         result = await dotnet.log_meal(user_id, action.get("payload", {}))
         return {"meal_log": result}
 
+    if action_type == "apply_adjustment":
+        from app.tools.adaptive_tools import execute_apply_adjustment
+
+        return await execute_apply_adjustment(user_id, action)
+
     raise ValueError(f"Unsupported action type: {action_type}")
+
+
+class WeeklyRecalcRequest(BaseModel):
+    """Internal batch — Premium users with weight history → run adaptive pipeline."""
+    user_ids: list[str] = Field(default_factory=list)
+    trigger: str = "Weekly"
+
+
+def _require_internal_key(x_internal_api_key: str | None = Header(default=None, alias="X-Internal-Api-Key")) -> None:
+    expected = get_settings().internal_api_key
+    if not x_internal_api_key or x_internal_api_key != expected:
+        raise HTTPException(status_code=401, detail="Invalid or missing X-Internal-Api-Key")
+
+
+@app.post("/ai/internal/adaptive/weekly-recalc")
+async def weekly_adaptive_recalc(
+    req: WeeklyRecalcRequest,
+    _: None = Depends(_require_internal_key),
+) -> dict[str, Any]:
+    """Cron/Notification hook: chạy Adaptive Engine cho danh sách Premium user.
+
+    Minimal viable — caller (Notification SmartPush nightly / external cron) truyền
+    user_ids đã lọc Premium + có weigh-in. Không tự query IAM list ở đây.
+    """
+    from app.tools.adaptive_tools import get_adaptive_plan
+    from app.tools.context import ToolRunContext
+
+    results: list[dict[str, Any]] = []
+    for uid in req.user_ids[:50]:  # soft cap
+        try:
+            raw = await dotnet.get_user_snapshot(uid)
+            snap = raw if isinstance(raw, dict) else {}
+            tier = str(snap.get("subscriptionTier") or snap.get("SubscriptionTier") or "Free")
+            if tier.lower() not in ("premium", "ultra"):
+                results.append({"userId": uid, "status": "skipped_not_premium", "tier": tier})
+                continue
+            state = {
+                "user_id": uid,
+                "user_snapshot": snap,
+                "subscription_tier": tier,
+            }
+            ctx = ToolRunContext(user_id=uid, state=state)
+            out = await get_adaptive_plan(ctx, trigger=req.trigger or "Weekly")
+            results.append({
+                "userId": uid,
+                "status": out.get("status"),
+                "changeClass": (out.get("plan") or {}).get("change_class"),
+                "autoApply": (out.get("plan") or {}).get("auto_apply"),
+            })
+        except Exception as exc:  # noqa: BLE001
+            results.append({"userId": uid, "status": "error", "error": str(exc)[:200]})
+
+    return {
+        "processed": len(results),
+        "results": results,
+        "note": (
+            "Caller should supply Premium userIds with recent BiometricHistory. "
+            "Weigh-in reminders are handled by Notification SmartPush (WeighInReminder)."
+        ),
+    }
 
 
 @app.post("/ai/chat/confirm")
 async def confirm_action(req: ConfirmRequest, auth: AuthContext = Depends(require_auth)):
-    """Xác nhận pending_action (write actions) sau confirmation gate."""
+    """Xác nhận pending_action (write actions) sau confirmation gate.
+
+    Graph `pending_actions` reset mỗi chat turn (tránh re-chip). Lookup thứ tự:
+    graph snapshot → Redis TTL store (xem app.pending_store).
+    """
+    from app import pending_store
+
     graph = _ctx["graph"]
     config = trace_config(auth.user_id, req.session_id, {})
     snap = await graph.aget_state(config)
-    if not snap or not snap.values:
-        raise HTTPException(status_code=404, detail="Không tìm thấy hội thoại")
-
-    pending = list(snap.values.get("pending_actions") or [])
+    snap_values = (snap.values if snap and snap.values else {}) or {}
+    pending = list(snap_values.get("pending_actions") or [])
     action = next((a for a in pending if a.get("action_id") == req.action_id), None)
+    from_redis = False
+    if not action:
+        stored = await pending_store.get_pending(
+            auth.user_id, req.session_id, req.action_id,
+        )
+        if stored:
+            action = stored
+            from_redis = True
+
     if not action:
         _log.warning(
-            "confirm: action_id=%s not in pending_actions (count=%s types=%s) session=%s",
+            "confirm: action_id=%s not in pending (graph_count=%s types=%s redis=miss) session=%s",
             req.action_id,
             len(pending),
             [a.get("type") for a in pending if isinstance(a, dict)],
@@ -611,11 +746,21 @@ async def confirm_action(req: ConfirmRequest, auth: AuthContext = Depends(requir
 
     if not req.confirmed:
         remaining = [a for a in pending if a.get("action_id") != req.action_id]
-        await graph.aupdate_state(config, {"pending_actions": remaining, "requires_confirmation": bool(remaining)})
+        if snap and snap.values is not None:
+            await graph.aupdate_state(
+                config,
+                {"pending_actions": remaining, "requires_confirmation": bool(remaining)},
+            )
+        await pending_store.delete_pending(auth.user_id, req.session_id, req.action_id)
         return {"status": "cancelled", "action_id": req.action_id}
 
     if action.get("type") not in _SUPPORTED_ACTION_TYPES:
         raise HTTPException(status_code=400, detail=f"Loại hành động '{action.get('type')}' chưa hỗ trợ xác nhận")
+
+    action = dict(action)
+    action["client_platform"] = _normalize_client_platform(
+        req.client_platform or snap_values.get("client_platform")
+    )
 
     try:
         result = await _execute_confirmed_action(auth.user_id, action)
@@ -623,9 +768,10 @@ async def confirm_action(req: ConfirmRequest, auth: AuthContext = Depends(requir
         from app.tools.dotnet import readable_error
 
         _log.exception(
-            "confirm_execute_failed action_id=%s type=%s",
+            "confirm_execute_failed action_id=%s type=%s from_redis=%s",
             req.action_id,
             action.get("type"),
+            from_redis,
         )
         # Soft error — keep pending so client can retry; never bare 502/RetryError.
         friendly = readable_error(exc)
@@ -651,7 +797,9 @@ async def confirm_action(req: ConfirmRequest, auth: AuthContext = Depends(requir
     }
     if action.get("type") == "create_order":
         patch["cart"] = []
-    await graph.aupdate_state(config, patch)
+    if snap and snap.values is not None:
+        await graph.aupdate_state(config, patch)
+    await pending_store.delete_pending(auth.user_id, req.session_id, req.action_id)
     return {"status": "completed", "action_id": req.action_id, **result}
 
 
@@ -749,6 +897,7 @@ async def chat(req: ChatRequest, request: Request, auth: AuthContext = Depends(r
         flow_data("Vị trí client", f"{req.latitude},{req.longitude}", indent=1)
     if req.timezone and str(req.timezone).strip():
         state["user_timezone"] = str(req.timezone).strip()
+    state["client_platform"] = _normalize_client_platform(req.client_platform)
     config = trace_config(auth.user_id, req.session_id, {"trace_id": trace_id})
 
     flow("→ Bắt đầu LangGraph pipeline (guardrail → supervisor [context∥intent] → agent → SSE)", indent=1)
@@ -855,6 +1004,18 @@ async def chat(req: ChatRequest, request: Request, auth: AuthContext = Depends(r
                             flow_data(f"Agent [{node}] — phản hồi (rút gọn)", final_resp, indent=2)
                         for pa in out.get("pending_actions") or []:
                             flow_data("SSE → pending_action", pa, indent=2)
+                            if isinstance(pa, dict) and pa.get("action_id"):
+                                try:
+                                    from app import pending_store
+
+                                    await pending_store.save_pending(
+                                        auth.user_id, req.session_id, pa,
+                                    )
+                                except Exception:
+                                    _log.exception(
+                                        "pending_store save failed action_id=%s",
+                                        pa.get("action_id"),
+                                    )
                             yield {
                                 "event": "pending_action",
                                 "data": json.dumps(pa, ensure_ascii=False),

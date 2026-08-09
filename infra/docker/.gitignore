@@ -1,0 +1,6 @@
+# Local env with secrets (never commit)
+.env
+.env.local
+
+# Local stack artifacts (APK builds)
+artifacts/

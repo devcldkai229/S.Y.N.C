@@ -107,6 +107,7 @@ public class SmartPushDecisionServiceTests
         public int WaterPct { get; set; } = 80;
         public DateTime UtcNow { get; set; } = new DateTime(2026, 7, 14, 10, 0, 0, DateTimeKind.Utc);
         public DateOnly LocalDate { get; set; } = new(2026, 7, 14);
+        public int? DaysSinceLastWeighIn { get; set; } = 1;
 
         public SmartPushContextDto Build() => new(
             UserId, "Nguyen Van A", BurnoutRiskScore, CurrentStreak, 10, 1, 100,
@@ -122,7 +123,8 @@ public class SmartPushDecisionServiceTests
             RemainingCaloriesPct: RemainingCaloriesPct,
             WaterPct: WaterPct,
             UtcNow: UtcNow,
-            LocalDate: LocalDate);
+            LocalDate: LocalDate,
+            DaysSinceLastWeighIn: DaysSinceLastWeighIn);
     }
 
     private static SmartPushDecisionService Create(Mock<ISmartPushScheduleRepository>? repo = null)
@@ -173,5 +175,19 @@ public class SmartPushDecisionServiceTests
         }), CancellationToken.None);
 
         Assert.False(decision.ShouldSend);
+    }
+
+    [Fact]
+    public async Task Decide_WeighInReminder_WhenStale()
+    {
+        var svc = Create();
+        var decision = await svc.DecideAsync(BaseContext(b =>
+        {
+            b.HasWorkoutScheduledToday = false;
+            b.DaysSinceLastWeighIn = 10;
+        }), CancellationToken.None);
+
+        Assert.True(decision.ShouldSend);
+        Assert.Equal("WeighInReminder", decision.TriggerType);
     }
 }

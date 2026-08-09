@@ -34,6 +34,7 @@ class CynAiChatService {
       'message': message,
       'session_id': sessionId,
       'locale': locale,
+      'client_platform': AppConfig.clientPlatform,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (timezone != null && timezone.isNotEmpty) 'timezone': timezone,
@@ -77,6 +78,7 @@ class CynAiChatService {
         'session_id': sessionId,
         'action_id': actionId,
         'confirmed': confirmed,
+        'client_platform': AppConfig.clientPlatform,
       },
     );
     return Map<String, dynamic>.from(response.data ?? {});

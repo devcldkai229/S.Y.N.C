@@ -150,6 +150,13 @@
           "Path": "/api/v1/admin/challenges/{**catch-all}"
         }
       },
+      "social-admin-reports-route": {
+        "ClusterId": "social-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/social/admin/reports/{**catch-all}"
+        }
+      },
       "social-posts-route": {
         "ClusterId": "social-cluster",
         "Match": {

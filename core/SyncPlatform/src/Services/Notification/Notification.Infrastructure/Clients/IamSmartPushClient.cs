@@ -56,4 +56,16 @@ public class IamSmartPushClient : IIamSmartPushClient
 
         return apiResponse.Data;
     }
+
+    public async Task<IReadOnlyList<Guid>> GetPremiumUserIdsAsync(CancellationToken cancellationToken)
+    {
+        var response = await _httpClient.GetAsync("/api/internal/smart-push/premium-user-ids", cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<List<Guid>>>(JsonOpts, cancellationToken);
+        if (apiResponse is not { Success: true, Data: not null })
+            throw new HttpRequestException($"Failed to retrieve premium user ids from IAM: {apiResponse?.Message ?? "No response"}");
+
+        return apiResponse.Data;
+    }
 }

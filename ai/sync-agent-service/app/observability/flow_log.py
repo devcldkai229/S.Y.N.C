@@ -78,7 +78,7 @@ def flow_banner() -> None:
     print(
         f"\n{_PREFIX} ═══ SYNC AI Agent — log luồng xử lý (dev) ═══\n"
         f"{_PREFIX}   Môi trường: {s.environment} | Langfuse: {langfuse}\n"
-        f"{_PREFIX}   DeepSeek + OpenAI | Redis: {s.redis_url}\n",
+        f"{_PREFIX}   OpenAI | Redis: {s.redis_url}\n",
         file=sys.stdout,
         flush=True,
     )

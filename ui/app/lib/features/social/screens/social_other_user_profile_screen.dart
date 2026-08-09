@@ -273,6 +273,48 @@ class _OtherUserProfileBodyState extends State<_OtherUserProfileBody> {
     });
   }
 
+  Future<void> _blockUser() async {
+    final name = _displayName;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.cardBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Chặn người dùng', style: TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+          'Bạn sẽ không thấy bài viết của $name. Họ cũng không thể tương tác với bạn.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Huỷ', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'Chặn',
+              style: TextStyle(color: Colors.red.shade600, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _socialRepo.blockUser(widget.userId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã chặn $name')),
+      );
+      context.popOrGoHome();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(mapApiError(e))),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -286,6 +328,7 @@ class _OtherUserProfileBodyState extends State<_OtherUserProfileBody> {
               tagline: 'Fitness Enthusiast',
               coverUrl: _backgroundUrl,
               onBack: () => context.popOrGoHome(),
+              onBlock: _blockUser,
               followCounts: _followCounts,
               level: _level,
               streak: _streak,
@@ -380,6 +423,7 @@ class _ProfileHeader extends StatelessWidget {
     required this.tagline,
     required this.coverUrl,
     required this.onBack,
+    required this.onBlock,
     required this.followCounts,
     required this.level,
     required this.streak,
@@ -396,6 +440,7 @@ class _ProfileHeader extends StatelessWidget {
   final String tagline;
   final String? coverUrl;
   final VoidCallback onBack;
+  final VoidCallback onBlock;
   final FollowCounts followCounts;
   final int level;
   final int streak;
@@ -460,6 +505,27 @@ class _ProfileHeader extends StatelessWidget {
                         icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
                         style: IconButton.styleFrom(
                           backgroundColor: Colors.black.withValues(alpha: 0.35),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: topPad + 8,
+                      right: 4,
+                      child: Material(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        shape: const CircleBorder(),
+                        child: PopupMenuButton<String>(
+                          onSelected: (v) {
+                            if (v == 'block') onBlock();
+                          },
+                          padding: EdgeInsets.zero,
+                          icon: const Icon(Icons.more_vert_rounded, color: Colors.white, size: 22),
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(
+                              value: 'block',
+                              child: Text('Chặn người dùng'),
+                            ),
+                          ],
                         ),
                       ),
                     ),

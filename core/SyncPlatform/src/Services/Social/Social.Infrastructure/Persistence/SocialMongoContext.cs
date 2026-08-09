@@ -38,4 +38,7 @@ public sealed class SocialMongoContext
 
     public IMongoCollection<StoryView> StoryViews =>
         _db.GetCollection<StoryView>("StoryViews");
+
+    public IMongoCollection<ContentReport> ContentReports =>
+        _db.GetCollection<ContentReport>("ContentReports");
 }

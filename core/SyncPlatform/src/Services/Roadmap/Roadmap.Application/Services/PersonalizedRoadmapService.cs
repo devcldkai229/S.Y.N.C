@@ -121,7 +121,36 @@ public class PersonalizedRoadmapService : IPersonalizedRoadmapService
         return entity.ToDto();
     }
 
+    public async Task<PersonalizedRoadmapDto?> SyncBodyMetricsAsync(
+        Guid userId,
+        InternalSyncBodyMetricsDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var active = await GetActiveByUserIdAsync(userId, cancellationToken);
+        if (active is null)
+            return null;
 
+        var hasAny =
+            dto.CurrentWeightKg is not null
+            || dto.TargetWeightKg is not null
+            || dto.InitialFatPercentage is not null
+            || dto.TargetFatPercentage is not null
+            || dto.CurrentPhase is not null;
+        if (!hasAny)
+            return active;
+
+        return await PatchForAiAsync(
+            active.Id,
+            new InternalPatchPersonalizedRoadmapDto
+            {
+                CurrentWeightKg = dto.CurrentWeightKg,
+                TargetWeightKg = dto.TargetWeightKg,
+                InitialFatPercentage = dto.InitialFatPercentage,
+                TargetFatPercentage = dto.TargetFatPercentage,
+                CurrentPhase = dto.CurrentPhase,
+            },
+            cancellationToken);
+    }
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {

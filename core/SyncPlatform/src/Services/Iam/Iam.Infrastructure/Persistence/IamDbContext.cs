@@ -17,6 +17,9 @@ public class IamDbContext : DbContext
     public DbSet<UserVoucher> UserVouchers => Set<UserVoucher>();
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
+    public DbSet<BiometricHistory> BiometricHistories => Set<BiometricHistory>();
+    public DbSet<TargetAdjustmentLog> TargetAdjustmentLogs => Set<TargetAdjustmentLog>();
+    public DbSet<UserLevelSnapshot> UserLevelSnapshots => Set<UserLevelSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

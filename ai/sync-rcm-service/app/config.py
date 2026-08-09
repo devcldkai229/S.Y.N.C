@@ -5,7 +5,9 @@ from configs/appsettings.Shared.Development.json) so JWTs minted by IAM validate
 here too. LLM + embeddings align with sync-agent-service (OpenAI).
 """
 from functools import lru_cache
+from urllib.parse import quote
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,6 +18,24 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://postgres:12345@localhost:5434/sync_ai_agent"
     )
+
+    # Cloud (ECS): password ← Secrets Manager, host/port/user ← SSM. App tự ghép
+    # DATABASE_URL (asyncpg) từ các phần này. Local: để trống, dùng database_url trên.
+    db_postgres_host: str = ""
+    db_postgres_port: str = "5432"
+    db_postgres_user: str = ""
+    db_postgres_password: str = ""
+    db_postgres_name: str = "sync_ai_agent"
+
+    @model_validator(mode="after")
+    def _compose_database_url(self) -> "Settings":
+        if self.db_postgres_host:
+            pwd = quote(self.db_postgres_password, safe="")
+            self.database_url = (
+                f"postgresql+asyncpg://{self.db_postgres_user}:{pwd}"
+                f"@{self.db_postgres_host}:{self.db_postgres_port}/{self.db_postgres_name}"
+            )
+        return self
 
     # --- OpenAI (chat + embeddings; same provider as sync-agent-service) ---
     openai_api_key: str = ""

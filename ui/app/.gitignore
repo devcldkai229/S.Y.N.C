@@ -25,6 +25,7 @@ migrate_working_dir/
 
 # Local AWS map keys (never commit)
 dart_defines.aws.json
+dart_defines.prod.json
 
 # Flutter/Dart/Pub related
 **/doc/api/

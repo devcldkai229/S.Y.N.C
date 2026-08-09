@@ -102,6 +102,32 @@ class SocialRepository {
 
   Future<void> unfollowUser(String userId) => _remote.unfollowUser(userId);
 
+  Future<void> blockUser(String userId) => _remote.blockUser(userId);
+
+  Future<void> reportPost({
+    required String postId,
+    required String reason,
+    String? details,
+  }) =>
+      _remote.reportContent(
+        targetId: postId,
+        reason: reason,
+        targetType: 'Post',
+        details: details,
+      );
+
+  Future<void> reportAiContent({
+    required String targetId,
+    required String reason,
+    String? details,
+  }) =>
+      _remote.reportContent(
+        targetId: targetId,
+        reason: reason,
+        targetType: 'AiContent',
+        details: details,
+      );
+
   Future<PagedSearchPage<FollowListItem>> loadFollowers({
     required String userId,
     int pageNumber = 1,

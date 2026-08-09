@@ -27,6 +27,13 @@
     "MonthlyDurationDays": 30,
     "YearlyDurationDays": 365
   },
+  "GooglePlay": {
+    "PackageName": "com.sync.sync_app",
+    "ServiceAccountJson": "",
+    "RtdnSharedSecret": "",
+    "DevSimulateVerify": true,
+    "MonthlyDurationDays": 30
+  },
   "Services": {
     "IamBaseUrl": "http://localhost:5288"
   },

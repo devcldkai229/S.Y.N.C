@@ -52,4 +52,12 @@ public class InternalSmartPushController : ControllerBase
 
         return Ok(ApiResponse<IamSmartPushContextDto>.SuccessResponse(result, "User smart push context retrieved successfully."));
     }
+
+    [HttpGet("premium-user-ids")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<Guid>>>> GetPremiumUserIds(
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.GetPremiumOrUltraUserIdsAsync(cancellationToken);
+        return Ok(ApiResponse<IReadOnlyList<Guid>>.SuccessResponse(result, "Premium user ids retrieved."));
+    }
 }

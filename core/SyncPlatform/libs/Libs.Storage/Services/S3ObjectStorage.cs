@@ -25,7 +25,7 @@ public sealed class S3ObjectStorage
         string contentType,
         CancellationToken cancellationToken = default)
     {
-        var key = objectKey.TrimStart('/');
+        var key = ApplyKeyPrefix(objectKey);
         var request = new PutObjectRequest
         {
             BucketName = _options.Bucket,
@@ -109,6 +109,7 @@ public sealed class S3ObjectStorage
 
     public async Task<bool> ObjectExistsAsync(string objectKey, CancellationToken cancellationToken = default)
     {
+        var key = ApplyKeyPrefix(objectKey);
         var client = S3BucketClientResolver.Resolve(_s3, _options.Bucket);
         var disposeClient = !ReferenceEquals(client, _s3);
         try
@@ -116,7 +117,7 @@ public sealed class S3ObjectStorage
             await client.GetObjectMetadataAsync(new GetObjectMetadataRequest
             {
                 BucketName = _options.Bucket,
-                Key = objectKey.TrimStart('/'),
+                Key = key,
             }, cancellationToken);
             return true;
         }
@@ -129,6 +130,18 @@ public sealed class S3ObjectStorage
             if (disposeClient)
                 client.Dispose();
         }
+    }
+
+    private string ApplyKeyPrefix(string objectKey)
+    {
+        var key = objectKey.TrimStart('/');
+        if (string.IsNullOrWhiteSpace(_options.KeyPrefix))
+            return key;
+
+        var prefix = _options.KeyPrefix.Trim().Trim('/') + "/";
+        if (!key.StartsWith(prefix, StringComparison.Ordinal))
+            key = prefix + key;
+        return key;
     }
 
     private static string GuessContentType(string objectKey)

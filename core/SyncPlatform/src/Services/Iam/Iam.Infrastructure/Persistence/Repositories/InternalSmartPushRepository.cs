@@ -1,3 +1,4 @@
+using Iam.Domain.Enums;
 using Iam.Domain.Models;
 using Iam.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -30,5 +31,16 @@ public class InternalSmartPushRepository : IInternalSmartPushRepository
             .Include(u => u.GamificationProfile)
             .Include(u => u.BiometricProfile)
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetPremiumOrUltraUserIdsAsync(CancellationToken cancellationToken)
+    {
+        return await _db.Users
+            .AsNoTracking()
+            .Where(u => u.DeletedAt == null
+                && (u.SubscriptionTier == SubscriptionTier.Premium
+                    || u.SubscriptionTier == SubscriptionTier.Ultra))
+            .Select(u => u.Id)
+            .ToListAsync(cancellationToken);
     }
 }

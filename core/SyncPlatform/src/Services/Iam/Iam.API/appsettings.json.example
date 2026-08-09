@@ -8,9 +8,18 @@
     }
   },
   "InternalApiKey": "dev_internal_api_key_sync_platform",
+  "PaymentService": {
+    "BaseUrl": "http://localhost:5084"
+  },
+  "SocialService": {
+    "BaseUrl": "http://localhost:5120"
+  },
   "NotificationService": {
     "BaseUrl": "http://localhost:5106",
     "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
+  "RoadmapService": {
+    "BaseUrl": "http://localhost:5118"
   },
   "ConnectionStrings": {
     "IamDatabase": "Host=localhost;Port=5434;Database=sync_iam;Username=postgres;Password=12345;Include Error Detail=false"

@@ -48,6 +48,11 @@ public class SmartPushTemplateService : ISmartPushTemplateService
             new("Dạo này thế nào?", "CYN gửi lời hỏi thăm — hôm nay bạn muốn tập hay nghỉ nhẹ?"),
             new("Check-in nhẹ", "Không áp lực — chỉ muốn biết bạn ổn chứ?")
         ],
+        ["WeighInReminder"] =
+        [
+            new("Nhắc cân nặng", "Đã hơn 1 tuần chưa cập nhật cân. Cân nhanh giúp CYN tinh chỉnh mục tiêu nhé."),
+            new("Weigh-in thôi!", "Lịch sử cân trống / quá cũ — mở app log cân để Adaptive Coach theo dõi tiến độ.")
+        ],
         // Backward-compatible aliases
         ["ScheduledWorkoutReminder"] =
         [

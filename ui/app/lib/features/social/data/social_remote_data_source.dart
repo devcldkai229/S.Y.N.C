@@ -392,6 +392,37 @@ class SocialRemoteDataSource {
     }
   }
 
+  Future<void> blockUser(String userId) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.socialUserBlock(userId),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Block failed').toString());
+    }
+  }
+
+  Future<void> reportContent({
+    required String targetId,
+    required String reason,
+    String targetType = 'Post',
+    String? details,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.socialReports,
+      data: {
+        'targetId': targetId,
+        'targetType': targetType,
+        'reason': reason,
+        if (details != null && details.isNotEmpty) 'details': details,
+      },
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Report failed').toString());
+    }
+  }
+
   Future<PagedSearchPage<FollowListItem>> fetchFollowers({
     required String userId,
     int pageNumber = 1,

@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using Payment.API.Exceptions;
@@ -13,6 +14,8 @@ using Payment.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cloud (ECS): ghép ConnectionStrings từ SSM + Secrets Manager. Local: no-op.
+builder.Configuration.AddComposedPostgresConnection("PaymentDatabase");
 
 // â”€â”€ Services â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

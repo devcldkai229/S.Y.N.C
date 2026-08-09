@@ -23,11 +23,11 @@ const testimonials = [
 
 export default function TestimonialsSection() {
   return (
-    <section id="testimonials" className="py-24 px-4 bg-gray-50">
+    <section id="testimonials" className="relative z-[2] py-28 px-4 bg-gray-50/90">
       <div className="max-w-7xl mx-auto">
         <FadeUp className="text-center mb-16">
           <p className="text-primary font-medium text-sm mb-3 uppercase tracking-wide">Đánh giá</p>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">
+          <h2 className="font-heading text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">
             Kết quả thực, con người thực
           </h2>
         </FadeUp>

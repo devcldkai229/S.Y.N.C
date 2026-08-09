@@ -1,4 +1,9 @@
-"""RabbitMQ event consumer — proactive AI interventions."""
+"""Event consumer — proactive AI interventions.
+
+Backend chọn theo config:
+- AI_SQS_QUEUE_URL set  → SQS long-poll (boto3) — dùng trên AWS.
+- ngược lại             → RabbitMQ (AMQP_URL) hoặc stub — dùng local/dev.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -56,10 +61,15 @@ async def handle_event(event_type: str, payload: dict[str, Any]) -> None:
         _log.info("event_ignored_light", extra={"type": event_type, "user_id": user_id})
 
 
+def _parse_event(raw_body: str, fallback_type: str | None = None) -> tuple[str, dict[str, Any]]:
+    body = json.loads(raw_body)
+    event_type = body.get("eventType") or body.get("EventType") or fallback_type
+    return event_type, body
+
+
 async def _on_message(message: Any) -> None:
     try:
-        body = json.loads(message.body.decode())
-        event_type = body.get("eventType") or body.get("EventType") or message.routing_key
+        event_type, body = _parse_event(message.body.decode(), message.routing_key)
         await handle_event(event_type, body)
         await message.ack()
     except Exception:
@@ -67,16 +77,48 @@ async def _on_message(message: Any) -> None:
         await message.reject(requeue=False)
 
 
-async def run_consumer(amqp_url: str | None = None) -> None:
-    """Connect to RabbitMQ and consume AI intervention queue."""
+async def _run_sqs_consumer(queue_url: str) -> None:
+    """Long-poll SQS. Message lỗi không bị xóa → SQS redrive sang DLQ."""
+    import boto3
+
     from app.config import get_settings
 
-    url = amqp_url or get_settings().amqp_url
+    settings = get_settings()
+    client = boto3.client("sqs", region_name=settings.aws_region)
+    _log.info("sqs_consumer_started", extra={"queue_url": queue_url})
 
+    while True:
+        try:
+            resp = await asyncio.to_thread(
+                client.receive_message,
+                QueueUrl=queue_url,
+                MaxNumberOfMessages=settings.sqs_max_messages,
+                WaitTimeSeconds=settings.sqs_wait_time_seconds,
+            )
+        except Exception:
+            _log.exception("sqs_receive_error")
+            await asyncio.sleep(5)
+            continue
+
+        for msg in resp.get("Messages", []):
+            try:
+                event_type, payload = _parse_event(msg["Body"])
+                await handle_event(event_type, payload)
+                await asyncio.to_thread(
+                    client.delete_message,
+                    QueueUrl=queue_url,
+                    ReceiptHandle=msg["ReceiptHandle"],
+                )
+            except Exception:
+                # Không xóa → sau maxReceiveCount lần, SQS chuyển message sang DLQ.
+                _log.exception("event_handler_error")
+
+
+async def _run_rabbitmq_consumer(amqp_url: str) -> None:
     try:
         import aio_pika
 
-        connection = await aio_pika.connect_robust(url)
+        connection = await aio_pika.connect_robust(amqp_url)
         channel = await connection.channel()
         queue = await channel.declare_queue("sync.ai.interventions", durable=True)
         await queue.consume(_on_message)
@@ -86,6 +128,17 @@ async def run_consumer(amqp_url: str | None = None) -> None:
         _log.warning("rabbitmq_unavailable_stub_mode")
         while True:
             await asyncio.sleep(3600)
+
+
+async def run_consumer(amqp_url: str | None = None) -> None:
+    """Chọn backend: SQS (AWS) nếu có AI_SQS_QUEUE_URL, ngược lại RabbitMQ/stub."""
+    from app.config import get_settings
+
+    settings = get_settings()
+    if settings.ai_sqs_queue_url:
+        await _run_sqs_consumer(settings.ai_sqs_queue_url)
+    else:
+        await _run_rabbitmq_consumer(amqp_url or settings.amqp_url)
 
 
 if __name__ == "__main__":

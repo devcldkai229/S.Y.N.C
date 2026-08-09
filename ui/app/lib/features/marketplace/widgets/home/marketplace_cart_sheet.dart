@@ -6,7 +6,7 @@ import 'package:sync_app/features/marketplace/cubit/marketplace_cart_cubit.dart'
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
 import 'package:sync_app/features/marketplace/utils/marketplace_formatters.dart';
 import 'package:sync_app/features/order/widgets/cart_item_tile.dart';
-
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 class MarketplaceCartSheet extends StatelessWidget {
   const MarketplaceCartSheet({super.key, required this.cart, required this.cubit});
 
@@ -53,8 +53,30 @@ class MarketplaceCartSheet extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            const Text('Giỏ hàng', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Giỏ hàng',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Đóng',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                  color: MarketplaceTheme.textMuted,
+                ),
+              ],
+            ),
+            if (FeatureTrialFlags.syncFoodsOrderingDisabled) ...[
+              const SizedBox(height: 4),
+              const FeatureTrialBanner(
+                message: FeatureTrialBanner.syncFoodsMessage,
+                margin: EdgeInsets.zero,
+              ),
+            ],
             const SizedBox(height: 16),
             Material(
               color: MarketplaceTheme.lightGreen,
@@ -115,15 +137,21 @@ class MarketplaceCartSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             FilledButton(
-              onPressed: () {
-                Navigator.pop(context);
-                context.push(AppRoutes.orderCheckout);
-              },
+              onPressed: FeatureTrialFlags.syncFoodsOrderingDisabled
+                  ? null
+                  : () {
+                      Navigator.pop(context);
+                      context.push(AppRoutes.orderCheckout);
+                    },
               style: FilledButton.styleFrom(
                 backgroundColor: MarketplaceTheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              child: const Text('Tiếp tục thanh toán'),
+              child: Text(
+                FeatureTrialFlags.syncFoodsOrderingDisabled
+                    ? 'Thanh toán tạm khóa (thử nghiệm)'
+                    : 'Tiếp tục thanh toán',
+              ),
             ),
           ],
         ),

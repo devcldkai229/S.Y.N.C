@@ -1,6 +1,7 @@
 -- Chạy 1 lần sau khi RDS lên (idempotent) — qua SSM port-forward hoặc bastion:
---   psql "host=<rds-endpoint> user=sync_admin dbname=postgres" -f init-databases.sql
--- Mật khẩu sync_admin: Secrets Manager /sync/<env>/db/pg-iam (phần Password=...).
+--   bash infra/aws/scripts/init-db.sh -e prod
+-- Password: Secrets Manager /sync/<env>/db/postgres-password
+-- User: SSM /sync/<env>/db/pg-user
 -- Postgres không có CREATE DATABASE IF NOT EXISTS → dùng \gexec.
 
 SELECT format('CREATE DATABASE %I', db)

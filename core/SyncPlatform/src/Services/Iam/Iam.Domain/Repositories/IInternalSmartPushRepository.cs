@@ -6,4 +6,5 @@ public interface IInternalSmartPushRepository
 {
     Task<IReadOnlyList<User>> GetUsersForSmartPushAsync(CancellationToken cancellationToken);
     Task<User?> GetUserSmartPushContextAsync(Guid userId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Guid>> GetPremiumOrUltraUserIdsAsync(CancellationToken cancellationToken);
 }

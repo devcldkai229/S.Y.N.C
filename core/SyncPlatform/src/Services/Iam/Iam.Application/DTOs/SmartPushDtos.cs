@@ -39,5 +39,7 @@ public sealed record IamSmartPushContextDto(
     int ChurnRiskScore = 0,
     string? PeakEnergyTimeWindow = null,
     DateTimeOffset? LastActiveAt = null,
-    TimeSpan? PreferredReminderTime = null
+    TimeSpan? PreferredReminderTime = null,
+    /// <summary>Null = chưa từng cân; dùng cho WeighInReminder (&gt;7 ngày).</summary>
+    int? DaysSinceLastWeighIn = null
 );

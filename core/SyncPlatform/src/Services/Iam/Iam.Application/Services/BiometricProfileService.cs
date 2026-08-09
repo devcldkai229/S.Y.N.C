@@ -1,9 +1,11 @@
+using Iam.Application.Abstractions;
 using Iam.Application.DTOs;
 using Iam.Application.Exceptions;
 using Iam.Application.Mappers;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
 using Iam.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace Iam.Application.Services;
 
@@ -11,13 +13,22 @@ public class BiometricProfileService : IBiometricProfileService
 {
     private readonly IUserRepository _userRepository;
     private readonly IBiometricProfileRepository _biometricRepository;
+    private readonly IBiometricHistoryRepository _historyRepository;
+    private readonly IRoadmapBodyMetricsClient _roadmapBodyMetrics;
+    private readonly ILogger<BiometricProfileService> _logger;
 
     public BiometricProfileService(
         IUserRepository userRepository,
-        IBiometricProfileRepository biometricRepository)
+        IBiometricProfileRepository biometricRepository,
+        IBiometricHistoryRepository historyRepository,
+        IRoadmapBodyMetricsClient roadmapBodyMetrics,
+        ILogger<BiometricProfileService> logger)
     {
         _userRepository = userRepository;
         _biometricRepository = biometricRepository;
+        _historyRepository = historyRepository;
+        _roadmapBodyMetrics = roadmapBodyMetrics;
+        _logger = logger;
     }
 
     public async Task<BiometricProfileDto> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -68,6 +79,11 @@ public class BiometricProfileService : IBiometricProfileService
 
         var profile = user.BiometricProfile 
             ?? throw new BadRequestException("Please complete basic information (Step 1) first.");
+
+        // Đổi goal/activity = trigger ProfileChange → engine phải tính lại nền
+        // từ formula; nhả quyền quản targets về công thức tới lần engine chạy sau.
+        if (profile.FitnessGoal != dto.FitnessGoal || profile.ActivityLevel != dto.ActivityLevel)
+            profile.TargetsManagedByEngine = false;
 
         profile.CurrentWeightKg = dto.CurrentWeightKg;
         profile.TargetWeightKg = dto.TargetWeightKg;
@@ -192,6 +208,28 @@ public class BiometricProfileService : IBiometricProfileService
         BiometricTargetCalculator.Recalculate(profile);
 
         await _biometricRepository.UpdateAsync(profile, cancellationToken);
+
+        // Ghi BiometricHistory — nguồn dữ liệu của Adaptive Coaching Engine
+        // (weigh-in từ app UI cũng phải vào chuỗi, không chỉ từ AI chat).
+        await _historyRepository.CreateAsync(new BiometricHistory
+        {
+            UserId = userId,
+            RecordedAtUtc = DateTime.UtcNow,
+            WeightKg = dto.CurrentWeightKg,
+            Source = "Manual",
+        }, cancellationToken);
+
+        // Mirror cân sang PersonalizedRoadmap (best-effort) — overview AI Roadmap không bị stale.
+        await _roadmapBodyMetrics.SyncAsync(
+            userId,
+            dto.CurrentWeightKg,
+            profile.CurrentBodyFatPercentage,
+            cancellationToken);
+
+        // Fire-and-forget signal — không chạy engine trên request path; CYN/SmartPush/weekly recalc pick up.
+        _logger.LogInformation(
+            "Adaptive WeighInLogged user={UserId} weightKg={WeightKg}",
+            userId, dto.CurrentWeightKg);
 
         return profile.ToDto();
     }

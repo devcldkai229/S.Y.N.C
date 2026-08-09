@@ -152,7 +152,7 @@ def _print_service_guide() -> None:
         "  1. Docker: cd infra/docker && docker compose up -d\n"
         "  2. .NET: .\\core\\SyncPlatform\\scripts\\run-all.ps1\n"
         "  3. AI:   cd ai/sync-agent-service && uvicorn app.api.main:app --port 8088\n"
-        "  4. LLM keys trong ai/sync-agent-service/.env (OPENAI_API_KEY / DEEPSEEK_API_KEY)\n"
+        "  4. LLM keys trong ai/sync-agent-service/.env (OPENAI_API_KEY)\n"
     )
 
 

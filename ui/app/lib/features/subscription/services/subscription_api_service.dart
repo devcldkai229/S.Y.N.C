@@ -77,4 +77,24 @@ class SubscriptionApiService {
       data: {'cancellationReason': reason},
     );
   }
+
+  /// Verify a Google Play Billing purchaseToken and activate Premium on the server.
+  Future<void> verifyGooglePlayPurchase({
+    required String productId,
+    required String purchaseToken,
+    String? planId,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.googlePlayVerify,
+      data: {
+        'productId': productId,
+        'purchaseToken': purchaseToken,
+        if (planId != null && planId.isNotEmpty) 'planId': planId,
+      },
+    );
+    final json = response.data ?? {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Google Play verify failed.').toString());
+    }
+  }
 }

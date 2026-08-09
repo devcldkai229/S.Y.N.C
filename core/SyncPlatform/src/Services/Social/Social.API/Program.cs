@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using MongoDB.Bson;
@@ -7,6 +8,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using Social.API.Exceptions;
+using Social.API.Middleware;
 using Social.API.Options;
 using Social.Application.Common;
 using Social.Application.Extensions;
@@ -18,6 +20,8 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cloud (ECS): ghép ConnectionStrings từ SSM + Secrets Manager. Local: no-op.
+builder.Configuration.AddComposedMongoConnection("SocialDatabase");
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
@@ -86,6 +90,7 @@ if (app.Environment.IsDevelopment())
     app.UseCors("DevCors");
 }
 
+app.UseMiddleware<InternalApiKeyMiddleware>();
 app.UseSyncJwtAuthentication();
 
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();

@@ -56,7 +56,13 @@ Future<void> configureDependencies() async {
   final prefs = await SharedPreferences.getInstance();
   getIt.registerSingleton<SharedPreferences>(prefs);
   getIt.registerLazySingleton(() => LocaleCubit(prefs));
-  getIt.registerLazySingleton(() => const FlutterSecureStorage());
+  // Keychain (iOS) / Keystore AES-GCM (Android) — survives app restarts.
+  getIt.registerLazySingleton(
+    () => const FlutterSecureStorage(
+      aOptions: AndroidOptions(),
+      iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
+    ),
+  );
   getIt.registerLazySingleton(
     () => TokenRefreshCoordinator(
       storage: getIt<FlutterSecureStorage>(),

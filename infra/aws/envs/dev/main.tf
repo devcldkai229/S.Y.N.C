@@ -26,9 +26,38 @@ variable "alert_email" {
   type    = string
   default = ""
 }
+variable "domain_name" {
+  type    = string
+  default = ""
+}
+variable "enable_dns" {
+  type    = bool
+  default = false
+}
+variable "create_hosted_zone" {
+  type    = bool
+  default = false
+}
+variable "certificate_arn" {
+  description = "Optional ACM ap-southeast-1 ARN for ALB HTTPS (manual)"
+  type        = string
+  default     = ""
+}
 
 provider "aws" {
   region = var.region
+  default_tags {
+    tags = {
+      project    = "sync"
+      env        = "dev"
+      managed-by = "terraform"
+    }
+  }
+}
+
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
   default_tags {
     tags = {
       project    = "sync"
@@ -50,6 +79,11 @@ data "terraform_remote_state" "shared" {
 module "stack" {
   source = "../../modules/stack"
 
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
+
   env                 = "dev"
   region              = var.region
   ecr_repository_urls = data.terraform_remote_state.shared.outputs.ecr_repository_urls
@@ -66,10 +100,13 @@ module "stack" {
   rds_multi_az            = false
   rds_deletion_protection = false
   rds_skip_final_snapshot = true
-  mq_deployment_mode      = "SINGLE_INSTANCE"
 
-  enable_bluegreen = false
-  certificate_arn  = ""
+  enable_bluegreen   = false
+  enable_media_cdn   = false
+  certificate_arn    = var.certificate_arn
+  domain_name        = var.domain_name
+  enable_dns         = var.enable_dns
+  create_hosted_zone = var.create_hosted_zone
 
   jwt_issuer   = "sync-lifestyle-iam-dev"
   jwt_audience = "sync-lifestyle-clients-dev"
@@ -86,7 +123,14 @@ output "migrate_subnets" { value = module.stack.migrate_subnets }
 output "migrate_security_group" { value = module.stack.migrate_security_group }
 output "rds_endpoint" { value = module.stack.rds_endpoint }
 output "redis_endpoint" { value = module.stack.redis_endpoint }
-output "mq_console_url" { value = module.stack.mq_console_url }
+output "ai_sqs_queue_url" { value = module.stack.ai_sqs_queue_url }
 output "mongo_private_ip" { value = module.stack.mongo_private_ip }
 output "cdn_domain" { value = module.stack.cdn_domain }
+output "cdn_url" { value = module.stack.cdn_url }
+output "web_bucket" { value = module.stack.web_bucket }
+output "web_distribution_id" { value = module.stack.web_distribution_id }
+output "web_url" { value = module.stack.web_url }
+output "api_url" { value = module.stack.api_url }
+output "dns_name_servers" { value = module.stack.dns_name_servers }
 output "secret_names" { value = module.stack.secret_names }
+output "ssm_param_names" { value = module.stack.ssm_param_names }

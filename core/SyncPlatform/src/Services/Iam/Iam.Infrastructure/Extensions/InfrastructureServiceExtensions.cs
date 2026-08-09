@@ -5,6 +5,7 @@ using Iam.Domain.Repositories;
 using Iam.Infrastructure.Clients;
 using Iam.Infrastructure.Persistence;
 using Iam.Infrastructure.Persistence.Repositories;
+using Iam.Infrastructure.Workers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +34,9 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
         services.AddScoped<IBiometricProfileRepository, BiometricProfileRepository>();
+        services.AddScoped<IBiometricHistoryRepository, BiometricHistoryRepository>();
+        services.AddScoped<ITargetAdjustmentLogRepository, TargetAdjustmentLogRepository>();
+        services.AddScoped<IUserLevelSnapshotRepository, UserLevelSnapshotRepository>();
         services.AddScoped<IUserMeRepository, UserMeRepository>();
         services.AddScoped<IInternalSmartPushRepository, InternalSmartPushRepository>();
         services.AddScoped<IAdminDashboardReadRepository, AdminDashboardReadRepository>();
@@ -50,6 +54,28 @@ public static class InfrastructureServiceExtensions
             if (!string.IsNullOrEmpty(apiKey))
                 client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
         });
+
+        services.AddHttpClient<IAccountDeletionCascadeClient, AccountDeletionCascadeClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            client.Timeout = TimeSpan.FromSeconds(10);
+
+            var apiKey = config["InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
+
+        services.AddHttpClient<IRoadmapBodyMetricsClient, RoadmapBodyMetricsClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            client.Timeout = TimeSpan.FromSeconds(5);
+
+            var apiKey = config["InternalApiKey"] ?? config["RoadmapService:InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
+
+        services.AddHostedService<AccountHardDeleteHostedService>();
 
         return services;
     }

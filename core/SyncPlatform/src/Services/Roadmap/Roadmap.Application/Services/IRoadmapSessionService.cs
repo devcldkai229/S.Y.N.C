@@ -27,6 +27,15 @@ public interface IRoadmapSessionService
         CancellationToken cancellationToken = default);
     Task<RoadmapSessionDto> UpdateAsync(Guid id, UpdateRoadmapSessionDto dto, CancellationToken cancellationToken = default);
     Task<RoadmapSessionDto> AdjustIntensityAsync(Guid sessionId, Guid userId, double factor, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Adaptive Engine — chỉnh volume/load các session sắp tới (deload/progress).
+    /// </summary>
+    Task<ApplyTrainingAdjustmentResultDto> ApplyTrainingAdjustmentAsync(
+        Guid userId,
+        ApplyTrainingAdjustmentRequestDto request,
+        CancellationToken cancellationToken = default);
+
     Task<RoadmapSessionDto> SubstituteExerciseAsync(
         Guid sessionId,
         Guid userId,

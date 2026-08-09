@@ -8,10 +8,10 @@
 | Nhóm | Thành phần | Đặc tính |
 |------|-----------|----------|
 | **Backend .NET 10** | Gateway (YARP, public) + 9 microservices: IAM, Roadmap, Exercise, Nutrition, Marketplace, Order, Payment, Notification, Social | Stateless HTTP; Notification/Nutrition/Order có **SignalR (WebSocket)** |
-| **AI service** | `sync-agent-service` (FastAPI, SSE streaming) + **event consumer worker** | Stateless; gọi LLM ngoài (DeepSeek/OpenAI) — KHÔNG cần GPU |
+| **AI service** | `sync-agent-service` (FastAPI, SSE streaming) + **event consumer worker** | Stateless; gọi LLM ngoài (OpenAI) — KHÔNG cần GPU |
 | **Data stores** | PostgreSQL (+**pgvector** cho AI), MongoDB, Redis, RabbitMQ, Object storage (MinIO) | Stateful |
 | **Frontend** | Web Next.js (khách + admin), Mobile Flutter | Web cần host; Mobile build → store |
-| **Nền** | JWT, Internal API Key, DeepSeek/OpenAI keys | Secrets |
+| **Nền** | JWT, Internal API Key, OpenAI keys | Secrets |
 
 > Điểm cộng chi phí: AI dùng **API ngoài** → không cần EC2 GPU/Bedrock. pgvector chạy chung trên Postgres → **không tốn vector DB riêng**.
 
@@ -62,7 +62,7 @@ flowchart TB
     S3[("S3 (media, MinIO→S3)")]
     ECR["ECR (images)"]
     SSM["SSM Params + Secrets Manager"]
-    LLM["DeepSeek / OpenAI API"]
+    LLM["OpenAI API"]
 
     R53 --> CF --> AMP
     R53 --> ALB --> GW --> SVC
@@ -165,7 +165,7 @@ infra/terraform/
 
 **Cắt thêm nếu cần cực rẻ (dev/MVP):** NAT instance thay NAT GW (−$27), self-host Mongo+RabbitMQ+Redis trên chính ECS EC2 (−$80+), single instance t4g.medium → tổng có thể về **~$90–120/mo**. Đổi lại giảm HA — chấp nhận ở giai đoạn đầu.
 
-> Chi phí LLM (DeepSeek/OpenAI) tính riêng theo usage, không nằm trong AWS.
+> Chi phí LLM (OpenAI) tính riêng theo usage, không nằm trong AWS.
 
 ---
 

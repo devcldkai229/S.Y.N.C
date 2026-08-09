@@ -36,7 +36,10 @@ def _tier(ctx: ToolRunContext) -> str:
 def _premium_block(ctx: ToolRunContext, *, feature: str = "AI Insights & biểu đồ") -> dict[str, Any]:
     """Server-side gate: Free cannot see advanced stats/charts."""
     action_id = str(uuid.uuid4())
+    is_android = str(ctx.state.get("client_platform") or "").lower() == "android"
     payload = premium_upsell_payload(feature=feature)
+    if is_android:
+        payload = {**payload, "cta": "play_billing", "route": "/subscription"}
     ctx.display_payload.append(payload)
     ctx.pending_actions.append({
         "action_id": action_id,
@@ -45,13 +48,19 @@ def _premium_block(ctx: ToolRunContext, *, feature: str = "AI Insights & biểu 
         "summary": "Nâng Premium để mở AI Insights, biểu đồ và dự đoán mục tiêu.",
         "status": "awaiting_confirmation",
         "feature": feature,
+        "client_platform": ctx.state.get("client_platform") or "unknown",
     })
+    msg = (
+        "Tính năng thống kê đa kỳ + biểu đồ + dự đoán dành cho Premium. "
+        + (
+            "Trên Android hãy mở Gói đăng ký và mua qua Google Play."
+            if is_android
+            else "Bạn có muốn nâng cấp không? Bấm xác nhận để nhận mã VietQR."
+        )
+    )
     return {
         "status": "premium_required",
-        "message": (
-            "Tính năng thống kê đa kỳ + biểu đồ + dự đoán dành cho Premium. "
-            "Bạn có muốn nâng cấp không? Bấm xác nhận để nhận mã VietQR."
-        ),
+        "message": msg,
         "action_id": action_id,
         "charts": [],
     }
@@ -148,11 +157,24 @@ def _goal_kind(goal: str | None) -> str:
     return "maintain"
 
 
-def _goal_calorie_band(goal: str | None, target: float) -> dict[str, Any]:
-    """(encouraged, band_min, band_max, label, kind) cho 1 mức target chuẩn."""
+def _goal_calorie_band(goal: str | None, target: float, *, engine_managed: bool = False) -> dict[str, Any]:
+    """(encouraged, band_min, band_max, label, kind) cho 1 mức target chuẩn.
+
+    engine_managed=True nghĩa là target ĐÃ là mục tiêu goal-adjusted do Adaptive
+    Engine tính (đã gồm deficit/surplus) → tuân thủ đo ±10% quanh nó, KHÔNG trừ
+    thêm deficit lần nữa (tránh double-count).
+    """
     kind = _goal_kind(goal)
     if target <= 0:
         return {"encouraged": target, "band_min": 0.0, "band_max": 0.0, "label": "", "kind": kind}
+    if engine_managed:
+        return {
+            "encouraged": target,
+            "band_min": target * 0.9,
+            "band_max": target * 1.1,
+            "label": "±10% quanh mục tiêu Adaptive Engine",
+            "kind": kind,
+        }
     if kind == "deficit":
         return {
             "encouraged": target - _DEFICIT_ENCOURAGED,
@@ -231,6 +253,7 @@ async def get_nutrition_stats(
     snap = ctx.state.get("user_snapshot") or {}
     goal = str(snap.get("fitnessGoal") or snap.get("FitnessGoal") or "")
     goal_kind = _goal_kind(goal)
+    engine_managed = bool(snap.get("targetsManagedByEngine") or snap.get("TargetsManagedByEngine"))
 
     x_labels: list[str] = []
     cal_in: list[float | None] = []
@@ -277,7 +300,7 @@ async def get_nutrition_stats(
         # Tuân thủ = ngày calo nạp nằm trong VÙNG hợp mục tiêu (giảm mỡ → vùng thâm
         # hụt, không phải ±10% quanh maintenance — nếu không luôn ra 0%).
         if cin is not None and ctg and float(ctg) > 0:
-            band = _goal_calorie_band(goal, float(ctg))
+            band = _goal_calorie_band(goal, float(ctg), engine_managed=engine_managed)
             encouraged_tgt.append(band["encouraged"])
             in_band = band["band_min"] <= float(cin) <= band["band_max"]
             adherence.append(100.0 if in_band else 0.0)
@@ -303,7 +326,10 @@ async def get_nutrition_stats(
 
     charts: list[dict[str, Any]] = []
     avg_encouraged = _avg([v for v in encouraged_tgt if v is not None])
-    band_desc = _goal_calorie_band(goal, avg_tgt or 0).get("label") if avg_tgt else ""
+    band_desc = (
+        _goal_calorie_band(goal, avg_tgt or 0, engine_managed=engine_managed).get("label")
+        if avg_tgt else ""
+    )
 
     cal_series = [
         series("Đã nạp", cal_in),
@@ -312,7 +338,8 @@ async def get_nutrition_stats(
     cal_ann: list[dict[str, Any]] = [target_line(avg_tgt)] if avg_tgt else []
     # Giảm mỡ/tăng cơ: thêm đường "mục tiêu khuyến nghị" (thâm hụt/thặng dư) để
     # user thấy mức nên nhắm tới, không chỉ mức maintenance.
-    if goal_kind != "maintain" and any(v is not None for v in encouraged_tgt):
+    # Engine-managed: target ĐÃ là mục tiêu khuyến nghị → không vẽ đường trùng.
+    if goal_kind != "maintain" and not engine_managed and any(v is not None for v in encouraged_tgt):
         enc_label = "Mục tiêu khuyến nghị (thâm hụt)" if goal_kind == "deficit" else "Mục tiêu khuyến nghị (thặng dư)"
         cal_series.append(series(enc_label, encouraged_tgt, style="dashed"))
         if avg_encouraged is not None:
@@ -735,7 +762,7 @@ async def get_body_progress(
     emit_charts: bool = True,
     **_: Any,
 ) -> dict[str, Any]:
-    """Weight trend via energy-balance projection (BiometricHistory TODO)."""
+    """Weight trend from BiometricHistory (IAM weight-history); energy-balance fallback."""
     if not insight_premium_allowed(_tier(ctx)):
         return _premium_block(ctx)
 
@@ -747,6 +774,84 @@ async def get_body_progress(
     tdee = _snap_num(snap, "baseTDEE", "BaseTDEE", "tdee") or 0
     bf = _snap_num(snap, "bodyFatPercent", "BodyFatPercent", "currentBodyFatPercent")
 
+    # ── Real weigh-ins from IAM BiometricHistory ─────────────────────────────
+    hist_raw = await dotnet.get_weight_history(
+        ctx.user_id,
+        from_iso=from_d.isoformat(),
+        to_iso=(to_d + timedelta(days=1)).isoformat(),
+    )
+    weigh_pts: list[tuple[str, float]] = []
+    for item in _unwrap_items(hist_raw):
+        if not isinstance(item, dict):
+            continue
+        ts = str(item.get("recordedAtUtc") or item.get("RecordedAtUtc") or "")[:10]
+        w = item.get("weightKg", item.get("WeightKg"))
+        try:
+            wv = float(w) if w is not None else 0.0
+        except (TypeError, ValueError):
+            continue
+        if ts and wv > 0:
+            weigh_pts.append((ts, wv))
+    weigh_pts.sort(key=lambda p: p[0])
+
+    if weigh_pts:
+        x_labels = [p[0][5:] for p in weigh_pts]  # MM-DD
+        series_w = [round(p[1], 2) for p in weigh_pts]
+        latest = series_w[-1]
+        first = series_w[0]
+        span_days = max(1, (
+            date.fromisoformat(weigh_pts[-1][0]) - date.fromisoformat(weigh_pts[0][0])
+        ).days)
+        kg_per_week = ((latest - first) / span_days) * 7 if span_days else 0.0
+        ann = []
+        if target:
+            ann.append(target_line(target, label="Mục tiêu cân"))
+        chart = chart_payload(
+            chart_type="line",
+            title=f"Cân nặng — {label}",
+            subtitle=f"{len(weigh_pts)} lần cân từ BiometricHistory",
+            unit="kg",
+            granularity="day",
+            x_labels=x_labels,
+            series=[
+                series("Cân đo", series_w),
+                *([series("Mục tiêu", [target] * len(series_w), style="dashed")] if target else []),
+            ],
+            annotations=ann,
+            summary=(
+                f"{first:.1f} → {latest:.1f} kg (~{kg_per_week:+.2f} kg/tuần) "
+                f"trên {span_days} ngày, {len(weigh_pts)} lần cân."
+            ),
+        )
+        if emit_charts:
+            ctx.display_payload.append(chart)
+        factors = [
+            f"{len(weigh_pts)} lần cân",
+            f"{span_days} ngày cửa sổ",
+            f"~{kg_per_week:+.2f} kg/tuần",
+        ]
+        if bf is not None:
+            factors.append(f"% mỡ hiện tại {bf:.1f}%")
+        conf = "cao" if len(weigh_pts) >= 6 else ("trung bình" if len(weigh_pts) >= 3 else "thấp")
+        return {
+            "status": "ok",
+            "period": label,
+            "currentWeightKg": latest,
+            "targetWeightKg": target,
+            "kgPerWeekEstimate": kg_per_week,
+            "weighInCount": len(weigh_pts),
+            "source": "biometric_history",
+            "confidence": conf,
+            "factors": factors,
+            "charts": [chart],
+            "summary": (
+                f"Cân {latest:.1f}kg từ lịch sử thật; "
+                f"~{kg_per_week:+.2f} kg/tuần (độ tin cậy: {conf})."
+            ),
+            "disclaimer": "Số liệu từ BiometricHistory — không phải tư vấn y khoa.",
+        }
+
+    # ── Fallback: energy-balance projection when history empty ───────────────
     nut = await dotnet.get_nutrition_timeseries(
         ctx.user_id,
         from_date=from_d.isoformat(),
@@ -792,7 +897,7 @@ async def get_body_progress(
     if weight is None:
         return {
             "status": "insufficient_data",
-            "message": "Chưa có cân nặng hiện tại trong hồ sơ — không vẽ được tiến độ cơ thể.",
+            "message": "Chưa có cân nặng hiện tại trong hồ sơ và chưa có BiometricHistory.",
             "charts": [],
         }
 
@@ -801,32 +906,26 @@ async def get_body_progress(
         return {
             "status": "insufficient_data",
             "message": (
-                f"Thiếu dữ liệu đa nguồn: meal log {logged}/{days} ngày, "
-                f"{sessions} buổi tập. Cần ≥60% ngày ăn + ≥4 buổi để dự đoán cân."
+                f"Chưa có lịch sử cân; meal log {logged}/{days} ngày, "
+                f"{sessions} buổi tập — chưa đủ để ước lượng."
             ),
             "confidence": "thấp",
-            "factors": [f"meal {logged}/{days}", f"workout {sessions} buổi"],
+            "factors": [f"meal {logged}/{days}", f"workout {sessions} buổi", "không có BiometricHistory"],
             "charts": [],
-            "note": "BiometricHistory chưa có — sẽ dùng cân bằng năng lượng khi đủ dữ liệu.",
         }
 
     avg_in = _avg(cal_in_vals) or 0
-    # Approximate TDEE+activity: prefer profile TDEE; add avg burn/day soft.
     avg_burn_day = burn / max(1, days)
-    energy_out = tdee if tdee > 0 else (avg_in)  # fallback neutral
+    energy_out = tdee if tdee > 0 else (avg_in)
     if tdee > 0 and avg_burn_day > 0:
-        # Avoid double-counting exercise if TDEE already includes activity —
-        # use TDEE as primary out; mention workout burn as factor only.
         energy_out = tdee
 
     daily_balance = avg_in - energy_out
     kg_per_day = daily_balance / _KCAL_PER_KG
     kg_per_week = kg_per_day * 7
 
-    # Project from current weight backward/forward for chart (synthetic).
     n_pts = min(8, max(4, days // 7))
     x_labels = [f"T{i+1}" for i in range(n_pts)]
-    # Historical estimate walking back
     hist = []
     for i in range(n_pts):
         weeks_ago = n_pts - 1 - i
@@ -842,7 +941,7 @@ async def get_body_progress(
     chart = chart_payload(
         chart_type="line",
         title=f"Cân nặng (ước lượng) — {label}",
-        subtitle="Từ cân bằng năng lượng + mốc hiện tại (chưa có BiometricHistory)",
+        subtitle="Fallback cân bằng năng lượng (chưa có BiometricHistory)",
         unit="kg",
         granularity="week",
         x_labels=x_labels + [f"+{i+1}t" for i in range(4)],
@@ -866,7 +965,7 @@ async def get_body_progress(
         f"{sessions} buổi tập",
         f"calo TB {avg_in:,.0f}",
         f"TDEE ~{energy_out:,.0f}" if energy_out else "thiếu TDEE",
-        "không có BiometricHistory",
+        "fallback — không có BiometricHistory",
     ]
     if bf is not None:
         factors.append(f"% mỡ hiện tại {bf:.1f}% (1 điểm, chưa có trend)")
@@ -878,14 +977,14 @@ async def get_body_progress(
         "targetWeightKg": target,
         "kgPerWeekEstimate": kg_per_week,
         "dailyEnergyBalance": daily_balance,
+        "source": "energy_balance_fallback",
         "confidence": conf,
         "factors": factors,
         "charts": [chart],
         "summary": (
             f"Cân hiện tại {weight:.1f}kg; ước {kg_per_week:+.2f} kg/tuần "
-            f"(độ tin cậy: {conf}). Đây là ước lượng từ cân bằng năng lượng, không phải cân đo."
+            f"(độ tin cậy: {conf}). Chưa có lịch sử cân — dùng cân bằng năng lượng."
         ),
-        "todo": "Thêm BiometricHistory/weigh-in log để vẽ trend thật.",
         "disclaimer": "Ước lượng — không phải tư vấn y khoa.",
     }
 

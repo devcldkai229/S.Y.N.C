@@ -150,4 +150,16 @@ public class MeController : ControllerBase
         var result = await _shop.PurchaseAsync(request.ItemCode, cancellationToken);
         return Ok(ApiResponse<PurchaseResultDto>.SuccessResponse(result, $"'{result.ItemName}' purchased successfully!"));
     }
+
+    /// <summary>
+    /// DELETE /api/v1/me — Soft-delete the authenticated account (Play / privacy requirement).
+    /// </summary>
+    [HttpDelete]
+    [ProducesResponseType(typeof(ApiResponse<object?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<object?>>> DeleteAccount(CancellationToken cancellationToken)
+    {
+        await _userMeService.DeleteAccountAsync(cancellationToken);
+        return Ok(ApiResponse<object?>.SuccessResponse(null, "Account deleted. Sessions have been revoked."));
+    }
 }

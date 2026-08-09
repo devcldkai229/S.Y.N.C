@@ -3,6 +3,7 @@
   "ConnectionStrings": {
     "SocialDatabase": "mongodb://localhost:27018"
   },
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
   "MongoDB": {
     "SocialDatabaseName": "sync_social"
   },
@@ -32,7 +33,9 @@
     "Profile": "default",
     "PlaceIndexName": "sync-place-index",
     "MapName": "sync-map",
-    "MapStyle": "Hybrid"
+    "MapStyle": "Hybrid",
+    "RequestTimeoutSeconds": 12,
+    "RouteAttemptTimeoutSeconds": 8
   },
   "AllowedHosts": "*",
   "Logging": {

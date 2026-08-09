@@ -10,4 +10,6 @@ public interface IInternalSmartPushService
     Task<IReadOnlyList<SmartPushEnabledUserDto>> GetEnabledUsersAsync(CancellationToken cancellationToken);
 
     Task<IamSmartPushContextDto?> GetSmartPushContextAsync(Guid userId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<Guid>> GetPremiumOrUltraUserIdsAsync(CancellationToken cancellationToken);
 }

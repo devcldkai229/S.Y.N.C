@@ -19,6 +19,13 @@
     "MonthlyDurationDays": 30,
     "YearlyDurationDays": 365
   },
+  "GooglePlay": {
+    "PackageName": "com.sync.sync_app",
+    "ServiceAccountJson": "",
+    "RtdnSharedSecret": "",
+    "DevSimulateVerify": false,
+    "MonthlyDurationDays": 30
+  },
   "AllowedHosts": "*",
   "Jwt": {
     "Issuer": "sync-lifestyle-iam",
@@ -27,5 +34,6 @@
     "AccessTokenExpiryMinutes": 15,
     "RefreshTokenExpiryDays": 7
   },
-  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1."
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1. Production: DevSimulateVerify must stay false; set ServiceAccountJson.",
+  "_prodNote": "Never enable DevSimulateVerify in deployed environments."
 }

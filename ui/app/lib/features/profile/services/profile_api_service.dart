@@ -171,6 +171,15 @@ class ProfileApiService {
     return envelope.data!;
   }
 
+  /// Soft-delete the authenticated account (Play / privacy requirement).
+  Future<void> deleteAccount() async {
+    final response = await _dio.delete<Map<String, dynamic>>(ApiPaths.meDelete);
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Xoá tài khoản thất bại.').toString());
+    }
+  }
+
   ProfileSettings _parseSettings(Map<String, dynamic>? data) {
     final envelope = ApiEnvelope.fromJson(data ?? {}, ProfileSettings.fromJson);
     if (!envelope.success || envelope.data == null) {

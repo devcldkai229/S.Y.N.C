@@ -12,6 +12,7 @@ class SubscriptionPlan {
     required this.premiumMarketplaceAccess,
     required this.priorityAiResponses,
     required this.isActive,
+    this.googlePlayProductId,
   });
 
   final String id;
@@ -26,8 +27,15 @@ class SubscriptionPlan {
   final bool premiumMarketplaceAccess;
   final bool priorityAiResponses;
   final bool isActive;
+  final String? googlePlayProductId;
 
   bool get isFree => monthlyPrice <= 0;
+
+  /// Play Console subscription product id (fallback for Premium monthly seed).
+  String get playProductId =>
+      (googlePlayProductId != null && googlePlayProductId!.isNotEmpty)
+          ? googlePlayProductId!
+          : 'sync_premium_monthly';
 
   factory SubscriptionPlan.fromJson(Map<String, dynamic> json) {
     return SubscriptionPlan(
@@ -43,6 +51,7 @@ class SubscriptionPlan {
       premiumMarketplaceAccess: json['premiumMarketplaceAccess'] == true,
       priorityAiResponses: json['priorityAiResponses'] == true,
       isActive: json['isActive'] == true,
+      googlePlayProductId: json['googlePlayProductId']?.toString(),
     );
   }
 }
@@ -66,12 +75,30 @@ class ActiveSubscription {
   final String? expiresAt;
   final DateTime? expiredAt;
 
-  bool get isActive => status.toLowerCase() == 'active';
+  /// .NET may serialize enum as name ("Active") or number (Active=1).
+  bool get isActive {
+    final s = status.trim().toLowerCase();
+    final notExpired =
+        expiredAt == null || expiredAt!.isAfter(DateTime.now().toUtc());
+
+    // Trial=0, Active=1 — still entitled while not past expiry.
+    if (s == 'active' || s == '1' || s == 'trial' || s == '0') {
+      return notExpired;
+    }
+    // Cancelled=3 but still within paid period.
+    if (s == 'cancelled' || s == '3') {
+      return expiredAt != null && expiredAt!.isAfter(DateTime.now().toUtc());
+    }
+    return false;
+  }
 
   factory ActiveSubscription.fromJson(Map<String, dynamic> json) {
     final plan = json['plan'] as Map<String, dynamic>? ?? {};
-    final planNameVal = (plan['name'] ?? json['planName'] ?? json['subscriptionPlanName'] ?? '').toString();
-    final startedAtVal = DateTime.tryParse(json['startedAt']?.toString() ?? '') ?? DateTime.now();
+    final planNameVal =
+        (plan['name'] ?? json['planName'] ?? json['subscriptionPlanName'] ?? '')
+            .toString();
+    final startedAtVal =
+        DateTime.tryParse(json['startedAt']?.toString() ?? '') ?? DateTime.now();
 
     DateTime? expiredAtVal;
     if (json['expiredAt'] != null) {
@@ -90,6 +117,12 @@ class ActiveSubscription {
       expiredAt: expiredAtVal,
     );
   }
+}
+
+/// True when IAM / profile reports a paid digital tier (Premium / Ultra).
+bool isPaidSubscriptionTier(String? tier) {
+  final t = (tier ?? '').trim().toLowerCase();
+  return t.contains('premium') || t.contains('ultra');
 }
 
 class PaymentLink {

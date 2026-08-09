@@ -1,14 +1,15 @@
 """Cấu hình tập trung + Model Registry.
 
 Triết lý "right model for right task": mỗi `ModelTier` map tới một provider/model
-cụ thể. Runtime mặc định API-only: DeepSeek (non-sensitive) + OpenAI (biometric).
+cụ thể. Runtime mặc định API-only: OpenAI (mọi tier).
 """
 from __future__ import annotations
 
 from enum import Enum
 from functools import lru_cache
+from urllib.parse import quote
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -51,11 +52,16 @@ class ModelSpec:
         return f"<ModelSpec {self.provider}:{self.name}>"
 
 
-# Registry mặc định — API-only (DeepSeek + OpenAI).
-# DeepSeek KHÔNG được pii_safe; biometric luôn qua OpenAI (xem router.resolve_tier).
+# Registry mặc định — API-only (OpenAI). Mọi tier đều pii_safe.
 MODEL_REGISTRY: dict[ModelTier, ModelSpec] = {
-    ModelTier.NANO: ModelSpec("deepseek", "deepseek-chat", pii_safe=False),
-    ModelTier.SMALL: ModelSpec("deepseek", "deepseek-chat", pii_safe=False),
+    ModelTier.NANO: ModelSpec(
+        "openai", "gpt-4o-mini", pii_safe=True,
+        approx_input_cost_per_1k=0.00015, approx_output_cost_per_1k=0.0006,
+    ),
+    ModelTier.SMALL: ModelSpec(
+        "openai", "gpt-4o-mini", pii_safe=True,
+        approx_input_cost_per_1k=0.00015, approx_output_cost_per_1k=0.0006,
+    ),
     ModelTier.MID: ModelSpec(
         "openai", "gpt-4o-mini", pii_safe=True,
         approx_input_cost_per_1k=0.00015, approx_output_cost_per_1k=0.0006,
@@ -83,8 +89,6 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_realtime_model: str = "gpt-4o-realtime-preview"
     openai_embedding_model: str = "text-embedding-3-small"
-    deepseek_api_key: str = ""
-    deepseek_base_url: str = "https://api.deepseek.com"
     ollama_base_url: str = "http://localhost:11434"  # optional local extra only
 
     # .NET internal integration
@@ -103,6 +107,15 @@ class Settings(BaseSettings):
     vision_enabled: bool = False
     redis_url: str = "redis://localhost:6379/2"
     postgres_dsn: str = "postgresql://postgres:12345@localhost:5434/sync_ai"
+
+    # Cloud (ECS): password ← Secrets Manager, host/port/user ← SSM. App tự ghép
+    # POSTGRES_DSN từ các phần này (xem _compose_postgres_dsn). Local: để trống,
+    # dùng thẳng POSTGRES_DSN ở trên.
+    db_postgres_host: str = ""
+    db_postgres_port: str = "5432"
+    db_postgres_user: str = ""
+    db_postgres_password: str = ""
+    db_postgres_name: str = "sync_ai"
 
     # JWT
     jwt_issuer: str = "sync-iam"
@@ -123,7 +136,16 @@ class Settings(BaseSettings):
     semantic_cache_ttl_seconds: int = 86400
     semantic_cache_threshold: float = 0.92
 
-    # AMQP (RabbitMQ)
+    # Pending write-actions survive next chat turns (confirm button still works).
+    pending_action_ttl_seconds: int = 1800
+
+    # Event queue.
+    # Prod (AWS): SQS — set AI_SQS_QUEUE_URL → consumer dùng boto3 long-poll.
+    # Local/dev: để trống → fallback RabbitMQ (AMQP_URL) hoặc stub.
+    ai_sqs_queue_url: str = ""
+    aws_region: str = "ap-southeast-1"
+    sqs_wait_time_seconds: int = 20
+    sqs_max_messages: int = 10
     amqp_url: str = "amqp://sync_mq_user:SyncMqSecurePassword2026@localhost:5672/"
 
     # Runtime
@@ -140,7 +162,7 @@ class Settings(BaseSettings):
 
     # Intent classification — gpt-4o-mini JSON schema (text scrub, không snapshot)
     intent_classifier_model: str = "gpt-4o-mini"
-    intent_classifier_provider: str = "openai"  # deepseek | openai | ollama (local)
+    intent_classifier_provider: str = "openai"  # openai | ollama (local)
     intent_classifier_timeout_seconds: float = 5.0
     intent_confidence_threshold: float = 0.55
     intent_cache_enabled: bool = True
@@ -148,6 +170,17 @@ class Settings(BaseSettings):
     intent_classifier_max_tokens: int = 200
     context_snapshot_cache_enabled: bool = True
     context_snapshot_cache_ttl_seconds: int = 300
+
+    @model_validator(mode="after")
+    def _compose_postgres_dsn(self) -> "Settings":
+        # Chỉ ghép khi có host (cloud); password URL-encode để an toàn ký tự đặc biệt.
+        if self.db_postgres_host:
+            pwd = quote(self.db_postgres_password, safe="")
+            self.postgres_dsn = (
+                f"postgresql://{self.db_postgres_user}:{pwd}"
+                f"@{self.db_postgres_host}:{self.db_postgres_port}/{self.db_postgres_name}"
+            )
+        return self
 
     @property
     def cors_origins(self) -> list[str]:

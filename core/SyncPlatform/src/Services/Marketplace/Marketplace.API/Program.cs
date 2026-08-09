@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Marketplace.API.Exceptions;
 using Marketplace.API.Middleware;
 using Marketplace.Application.Common;
@@ -18,6 +19,8 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cloud (ECS): ghép ConnectionStrings từ SSM + Secrets Manager. Local: no-op.
+builder.Configuration.AddComposedMongoConnection("MarketplaceDatabase");
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

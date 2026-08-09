@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:sync_app/core/config/app_config.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/core/locale/locale_cubit.dart';
@@ -303,6 +305,42 @@ class _ProfileScreenBodyState extends State<_ProfileScreenBody> {
                               title: l10n.fullSetupProfile,
                               onTap: () => context.push(AppRoutes.onboarding),
                             ),
+                            _SettingsRow(
+                              icon: Icons.privacy_tip_outlined,
+                              title: 'Chính sách bảo mật',
+                              onTap: () => _openUrl(AppConfig.privacyPolicyUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.description_outlined,
+                              title: 'Điều khoản sử dụng',
+                              onTap: () => _openUrl(AppConfig.termsOfServiceUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.local_hospital_outlined,
+                              title: 'Miễn trừ y tế',
+                              onTap: () => _openUrl(AppConfig.healthDisclaimerUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.receipt_long_outlined,
+                              title: 'Hoàn tiền & huỷ gói',
+                              onTap: () => _openUrl(AppConfig.refundPolicyUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.people_outline,
+                              title: 'Tiêu chuẩn cộng đồng',
+                              onTap: () => _openUrl(AppConfig.communityStandardsUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.mail_outline,
+                              title: 'Liên hệ & pháp nhân',
+                              onTap: () => _openUrl(AppConfig.contactUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.delete_forever_outlined,
+                              title: 'Xoá tài khoản',
+                              subtitle: 'Ẩn danh dữ liệu & thu hồi phiên',
+                              onTap: () => context.push(AppRoutes.deleteAccount),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -332,6 +370,12 @@ class _ProfileScreenBodyState extends State<_ProfileScreenBody> {
         );
       },
     );
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _showDetailSheet({

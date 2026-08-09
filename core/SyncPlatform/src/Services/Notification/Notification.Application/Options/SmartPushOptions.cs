@@ -17,6 +17,7 @@ public class SmartPushOptions
         ["StreakProtection"] = 1,
         ["GentleCheckIn"] = 3,
         ["ProgressCelebrate"] = 1,
+        ["WeighInReminder"] = 3,
     };
     public int GenerationCacheTtlMinutes { get; set; } = 240;
     public int ClaimBatchSize { get; set; } = 200;

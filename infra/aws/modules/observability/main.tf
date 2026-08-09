@@ -1,5 +1,5 @@
 # Observability: SNS topic (email) + alarms nền tảng (ALB 5xx/unhealthy,
-# RDS CPU/storage/conn, MQ message count). Log groups per-service nằm ở
+# RDS CPU/storage/conn). Log groups per-service nằm ở
 # module ecs-service. Retention ngắn để rẻ.
 
 terraform {
@@ -16,7 +16,6 @@ variable "alert_email" {
 variable "alb_arn_suffix" { type = string }
 variable "target_group_arn_suffix" { type = string }
 variable "rds_identifier" { type = string }
-variable "mq_broker_name" { type = string }
 
 resource "aws_sns_topic" "alerts" {
   name = "${var.name}-alerts"
@@ -101,20 +100,6 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   comparison_operator = "GreaterThanThreshold"
   dimensions          = { DBInstanceIdentifier = var.rds_identifier }
   alarm_actions       = local.actions
-}
-
-resource "aws_cloudwatch_metric_alarm" "mq_messages" {
-  alarm_name          = "${var.name}-mq-backlog"
-  namespace           = "AWS/AmazonMQ"
-  metric_name         = "MessageCount"
-  statistic           = "Average"
-  period              = 300
-  evaluation_periods  = 2
-  threshold           = 1000
-  comparison_operator = "GreaterThanThreshold"
-  dimensions          = { Broker = var.mq_broker_name }
-  alarm_actions       = local.actions
-  treat_missing_data  = "notBreaching"
 }
 
 output "sns_topic_arn" { value = aws_sns_topic.alerts.arn }

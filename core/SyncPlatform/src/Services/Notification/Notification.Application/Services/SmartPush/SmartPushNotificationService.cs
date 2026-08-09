@@ -16,6 +16,7 @@ public class SmartPushNotificationService : ISmartPushNotificationService
     private readonly IIamSmartPushClient _iamClient;
     private readonly IRoadmapActivityClient _roadmapClient;
     private readonly INutritionActivityClient _nutritionClient;
+    private readonly IAdaptiveAiClient _adaptiveAiClient;
     private readonly ISmartPushDecisionService _decisionService;
     private readonly IOpenAiClient _openAiClient;
     private readonly ISmartPushAiUsagePolicy _aiUsagePolicy;
@@ -32,6 +33,7 @@ public class SmartPushNotificationService : ISmartPushNotificationService
         IIamSmartPushClient iamClient,
         IRoadmapActivityClient roadmapClient,
         INutritionActivityClient nutritionClient,
+        IAdaptiveAiClient adaptiveAiClient,
         ISmartPushDecisionService decisionService,
         IOpenAiClient openAiClient,
         ISmartPushAiUsagePolicy aiUsagePolicy,
@@ -47,6 +49,7 @@ public class SmartPushNotificationService : ISmartPushNotificationService
         _iamClient = iamClient;
         _roadmapClient = roadmapClient;
         _nutritionClient = nutritionClient;
+        _adaptiveAiClient = adaptiveAiClient;
         _decisionService = decisionService;
         _openAiClient = openAiClient;
         _aiUsagePolicy = aiUsagePolicy;
@@ -193,6 +196,18 @@ public class SmartPushNotificationService : ISmartPushNotificationService
         }
 
         _logger.LogInformation("Nightly recompute finished for {Count} users.", users.Count);
+
+        // Weekly Adaptive Coaching recalibration (Premium/Ultra) — best-effort.
+        try
+        {
+            var premiumIds = await _iamClient.GetPremiumUserIdsAsync(cancellationToken);
+            await _adaptiveAiClient.TriggerWeeklyRecalcAsync(premiumIds, cancellationToken);
+            _logger.LogInformation("Adaptive weekly-recalc triggered for {Count} premium users.", premiumIds.Count);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Adaptive weekly-recalc skipped (IAM/AI unavailable).");
+        }
     }
 
     private enum ProcessOutcome { None, Sent, Suppressed, LlmFallbackSent }
@@ -422,7 +437,8 @@ public class SmartPushNotificationService : ISmartPushNotificationService
             WaterPct: nutrition?.WaterPct ?? 100,
             LastMealLoggedAt: nutrition?.LastMealLoggedAt,
             UtcNow: utcNow.UtcDateTime,
-            LocalDate: localDate
+            LocalDate: localDate,
+            DaysSinceLastWeighIn: iam.DaysSinceLastWeighIn
         );
 
     private static string BuildCacheKey(SmartPushContextDto context, SmartPushDecision decision)

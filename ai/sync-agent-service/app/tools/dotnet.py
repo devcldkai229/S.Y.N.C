@@ -18,6 +18,8 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 from app.config import get_settings
 
 _TIMEOUT = httpx.Timeout(5.0, connect=2.0)
+# Batch writes (schedule-week many sessions) can exceed the default 5s.
+_WRITE_TIMEOUT = httpx.Timeout(30.0, connect=5.0)
 _LIMITS = httpx.Limits(max_keepalive_connections=20, max_connections=50)
 
 
@@ -172,6 +174,18 @@ async def _post(base: str, path: str, user_id: str, payload: dict[str, Any]) -> 
 
 
 @_dotnet_retry
+async def _post_long(
+    base: str, path: str, user_id: str, payload: dict[str, Any],
+) -> dict[str, Any]:
+    """POST with longer timeout for multi-session writes (schedule-week)."""
+    r = await _request(
+        "POST", f"{base}{path}", user_id, json=payload, timeout=_WRITE_TIMEOUT,
+    )
+    _raise_for_status(r)
+    return _normalize(_unwrap(r.json()))
+
+
+@_dotnet_retry
 async def _put(base: str, path: str, user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
     r = await _request("PUT", f"{base}{path}", user_id, json=payload)
     _raise_for_status(r)
@@ -183,6 +197,8 @@ async def _patch(base: str, path: str, user_id: str, payload: dict[str, Any]) ->
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         r = await client.patch(f"{base}{path}", headers=_headers(user_id), json=payload)
         _raise_for_status(r)
+        if r.status_code == 204 or not r.content:
+            return {}
         return _normalize(_unwrap(r.json()))
 
 
@@ -419,11 +435,115 @@ async def schedule_week(user_id: str, sessions: list[dict[str, Any]]) -> dict[st
     s = get_settings()
     for sess in sessions:
         sess.setdefault("userId", user_id)
-    return await _post(
+    return await _post_long(
         s.roadmap_base_url,
         "/api/internal/roadmap/sessions/schedule-week",
         user_id,
         {"sessions": sessions},
+    )
+
+
+# ── Adaptive Coaching Engine (IAM) ───────────────────────────────────────────
+async def log_weigh_in(
+    user_id: str,
+    *,
+    weight_kg: float,
+    body_fat_percentage: float | None = None,
+    note: str | None = None,
+    source: str = "Manual",
+) -> dict[str, Any]:
+    """POST /api/internal/biometrics/{userId}/weigh-in — ghi BiometricHistory."""
+    s = get_settings()
+    payload: dict[str, Any] = {"weightKg": weight_kg, "source": source}
+    if body_fat_percentage is not None:
+        payload["bodyFatPercentage"] = body_fat_percentage
+    if note:
+        payload["note"] = note
+    return await _post(
+        s.iam_base_url, f"/api/internal/biometrics/{user_id}/weigh-in", user_id, payload,
+    )
+
+
+async def get_weight_history(
+    user_id: str,
+    *,
+    from_iso: str,
+    to_iso: str,
+) -> dict[str, Any]:
+    """GET /api/internal/biometrics/{userId}/weight-history"""
+    s = get_settings()
+    return await _get(
+        s.iam_base_url,
+        f"/api/internal/biometrics/{user_id}/weight-history",
+        user_id,
+        **{"from": from_iso, "to": to_iso},
+    )
+
+
+async def apply_adaptive_targets(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """POST /api/internal/biometrics/{userId}/apply-targets — áp targets + audit log."""
+    s = get_settings()
+    return await _post(
+        s.iam_base_url, f"/api/internal/biometrics/{user_id}/apply-targets", user_id, payload,
+    )
+
+
+async def create_level_snapshot(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """POST /api/internal/biometrics/{userId}/level-snapshots"""
+    s = get_settings()
+    return await _post(
+        s.iam_base_url, f"/api/internal/biometrics/{user_id}/level-snapshots", user_id, payload,
+    )
+
+
+async def get_latest_level_snapshot(user_id: str) -> dict[str, Any]:
+    """GET /api/internal/biometrics/{userId}/level-snapshots/latest"""
+    s = get_settings()
+    return await _get(
+        s.iam_base_url, f"/api/internal/biometrics/{user_id}/level-snapshots/latest", user_id,
+    )
+
+
+async def apply_training_adjustment(user_id: str, payload: dict[str, Any]) -> dict[str, Any]:
+    """POST /api/internal/roadmap/users/{userId}/apply-training-adjustment"""
+    s = get_settings()
+    return await _post(
+        s.roadmap_base_url,
+        f"/api/internal/roadmap/users/{user_id}/apply-training-adjustment",
+        user_id,
+        payload,
+    )
+
+
+async def sync_roadmap_body_metrics(
+    user_id: str,
+    *,
+    current_weight_kg: float | None = None,
+    target_weight_kg: float | None = None,
+    initial_fat_percentage: float | None = None,
+    target_fat_percentage: float | None = None,
+    current_phase: str | None = None,
+) -> dict[str, Any]:
+    """PATCH /api/internal/roadmap/users/{userId}/body-metrics — mirror cân/mỡ lên active roadmap."""
+    s = get_settings()
+    payload: dict[str, Any] = {}
+    if current_weight_kg is not None:
+        payload["currentWeightKg"] = current_weight_kg
+    if target_weight_kg is not None:
+        payload["targetWeightKg"] = target_weight_kg
+    if initial_fat_percentage is not None:
+        payload["initialFatPercentage"] = initial_fat_percentage
+    if target_fat_percentage is not None:
+        payload["targetFatPercentage"] = target_fat_percentage
+    if current_phase:
+        payload["currentPhase"] = current_phase
+    if not payload:
+        return {}
+    return await _patch(
+        s.roadmap_base_url,
+        f"/api/internal/roadmap/users/{user_id}/body-metrics",
+        user_id,
+        payload,
     )
 
 

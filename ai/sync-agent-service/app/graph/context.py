@@ -28,7 +28,7 @@ def _local_now(tz_name: str = _DEFAULT_TZ) -> str:
         tz = ZoneInfo(_DEFAULT_TZ)
     return datetime.now(tz).isoformat(timespec="seconds")
 
-_CONTEXT_CACHE_VERSION = "v2"
+_CONTEXT_CACHE_VERSION = "v3"
 
 # Field an toàn để đưa vào prompt (không chứa PII định danh trực tiếp).
 _SAFE_FIELDS = (
@@ -37,9 +37,11 @@ _SAFE_FIELDS = (
     "currentBodyFatPercentage", "goalBodyFatPercentage", "muscleMassKg",
     "workoutLocationPreference", "baseTDEE", "bmr",
     "dailyProteinTargetGram", "dailyCarbTargetGram", "dailyFatTargetGram",
+    "dailyCalorieTarget", "targetsManagedByEngine", "targetsAdjustedAtUtc",
     "agentPersona", "motivationStyle", "allergies", "dislikedFoods",
     "injuries", "medications",
     "adherenceScore", "burnoutRiskScore", "recoveryScore", "maxAutoOrderLimitPerOrder",
+    "subscriptionTier",
 )
 
 
@@ -83,6 +85,39 @@ async def _cache_put_snapshot(user_id: str, snapshot: dict[str, Any]) -> None:
         )
     except Exception:  # pragma: no cover
         pass
+
+
+async def invalidate_user_snapshot_cache(user_id: str) -> None:
+    """Drop Redis context cache after weigh-in / apply-targets so next turn sees fresh IAM."""
+    s = get_settings()
+    if not s.context_snapshot_cache_enabled:
+        return
+    r = get_redis()
+    if r is None:
+        return
+    try:
+        await r.delete(_snapshot_cache_key(user_id))
+    except Exception:  # pragma: no cover
+        pass
+
+
+async def refresh_user_snapshot(state: dict[str, Any] | SyncAgentState) -> dict[str, Any]:
+    """Invalidate cache, re-fetch IAM snapshot, write into state. Soft-fails to {}."""
+    user_id = str(state.get("user_id") or "")
+    if not user_id:
+        return {}
+    await invalidate_user_snapshot_cache(user_id)
+    try:
+        raw = await dotnet.get_user_snapshot(user_id)
+        snapshot = _deidentify(raw if isinstance(raw, dict) else {})
+    except Exception:  # pragma: no cover
+        snapshot = {}
+    if snapshot:
+        await _cache_put_snapshot(user_id, snapshot)
+    # Mutable ToolRunContext.state / SyncAgentState dict
+    if isinstance(state, dict):
+        state["user_snapshot"] = snapshot
+    return snapshot
 
 
 def _snapshot_state(

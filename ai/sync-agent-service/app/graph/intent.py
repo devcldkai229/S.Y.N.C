@@ -479,7 +479,6 @@ def try_emotional_fast_path(text: str) -> IntentResult | None:
 
 async def _llm_classify(text: str, recent_context: str | None) -> IntentResult:
     from app.models.router import (
-        get_classifier_fallback_model,
         get_classifier_model,
         get_classifier_structured_method,
     )
@@ -495,16 +494,7 @@ async def _llm_classify(text: str, recent_context: str | None) -> IntentResult:
         )
         return IntentResult(**out.model_dump(), source="llm")
 
-    try:
-        return await _invoke(get_classifier_model(), get_classifier_structured_method())
-    except Exception:
-        # Classifier chính lỗi (thiếu key/quota/mạng) — thử deepseek trước khi
-        # degrade, để câu hỏi không rơi về coach mù intent.
-        fallback = get_classifier_fallback_model()
-        if fallback is None:
-            raise
-        _log.warning("intent_primary_failed_try_deepseek", extra={"node": "intent"})
-        return await _invoke(fallback, "json_mode")
+    return await _invoke(get_classifier_model(), get_classifier_structured_method())
 
 
 def _record_heuristic(result: IntentResult, label: str) -> IntentResult:

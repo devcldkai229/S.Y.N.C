@@ -617,9 +617,54 @@ async def assemble_workout_plan_context(
     }
 
 
+def _exercise_lookup_queries(name: str) -> list[str]:
+    """Generate search strings: full name → strip parens/weights → tokens ≥3 chars."""
+    import re
+
+    raw = (name or "").strip()
+    if not raw:
+        return []
+    queries: list[str] = []
+    seen: set[str] = set()
+
+    def _add(q: str) -> None:
+        q = q.strip()
+        if not q:
+            return
+        key = q.lower()
+        if key in seen:
+            return
+        seen.add(key)
+        queries.append(q)
+
+    _add(raw)
+    # Drop parenthetical qualifiers: "Squat (bodyweight)" → "Squat"
+    no_paren = re.sub(r"\([^)]*\)", " ", raw)
+    no_paren = re.sub(r"\s+", " ", no_paren).strip()
+    _add(no_paren)
+    # Strip trailing sets/reps-ish tokens: "Bench Press 3x10" → "Bench Press"
+    no_reps = re.sub(
+        r"\b\d+\s*[x×]\s*\d+\b|\b\d+\s*(kg|lbs?|reps?|sets?)\b",
+        " ",
+        no_paren,
+        flags=re.IGNORECASE,
+    )
+    no_reps = re.sub(r"\s+", " ", no_reps).strip()
+    _add(no_reps)
+    for token in re.split(r"[\s/,\-]+", no_reps):
+        t = token.strip(" .,:;+()")
+        if len(t) >= 3 and not t.isdigit():
+            _add(t)
+    return queries
+
+
 async def resolve_exercise_ids(user_id: str, sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Replace placeholder/missing exerciseId with catalog Ids via search_exercises."""
-    cache: dict[str, tuple[str, str]] = {}
+    """Replace placeholder/missing exerciseId with catalog Ids via search_exercises.
+
+    Unresolved blocks are dropped. Failed names are collected on
+    ``resolve_exercise_ids.last_unresolved`` for caller error messages.
+    """
+    cache: dict[str, tuple[str, str] | None] = {}
 
     async def _lookup(name: str) -> tuple[str, str] | None:
         key = (name or "").strip().lower()
@@ -630,44 +675,58 @@ async def resolve_exercise_ids(user_id: str, sessions: list[dict[str, Any]]) -> 
         try:
             result = await dotnet.search_exercises(user_id, query=name, limit=3)
         except Exception:
+            cache[key] = None
             return None
         items = _extract_items(result)
         if not items and isinstance(result, dict):
-            # some APIs return {data:[...]} already unwrapped to list in items
             raw = result.get("value")
             if isinstance(raw, list):
                 items = [x for x in raw if isinstance(x, dict)]
         for it in items:
             eid = str(it.get("id") or it.get("Id") or "")
-            ename = str(it.get("nameVi") or it.get("name") or it.get("NameVi") or it.get("Name") or name)
+            ename = str(
+                it.get("nameEn")
+                or it.get("nameVi")
+                or it.get("name")
+                or it.get("NameEn")
+                or it.get("NameVi")
+                or it.get("Name")
+                or name
+            )
             if eid and eid != _ZERO_GUID:
                 cache[key] = (eid, ename)
                 return cache[key]
+        cache[key] = None
+        return None
+
+    async def _resolve_name(name: str) -> tuple[str, str] | None:
+        for q in _exercise_lookup_queries(name):
+            hit = await _lookup(q)
+            if hit:
+                return hit
         return None
 
     out: list[dict[str, Any]] = []
+    global_unresolved: list[str] = []
     for sess in sessions:
         blocks_in = sess.get("executionBlocks") or []
         blocks_out: list[dict[str, Any]] = []
+        unresolved: list[str] = []
         for i, b in enumerate(blocks_in):
             if not isinstance(b, dict):
                 continue
             name = str(b.get("exerciseName") or b.get("ExerciseName") or "")
             eid = str(b.get("exerciseId") or b.get("ExerciseId") or "")
             if not eid or eid == _ZERO_GUID:
-                hit = await _lookup(name)
+                hit = await _resolve_name(name)
                 if hit:
                     eid, resolved_name = hit
                     name = resolved_name or name
                 else:
-                    # try a broader search token from the first word
-                    token = name.split()[0] if name.split() else ""
-                    hit2 = await _lookup(token) if token and token != name else None
-                    if hit2:
-                        eid, resolved_name = hit2
-                        name = name or resolved_name
-                    else:
-                        continue  # drop unresolved block — never keep GUID 0
+                    if name:
+                        unresolved.append(name)
+                        global_unresolved.append(name)
+                    continue  # drop unresolved block — never keep GUID 0
             blocks_out.append({
                 "order": b.get("order", i + 1),
                 "exerciseId": eid,
@@ -679,12 +738,17 @@ async def resolve_exercise_ids(user_id: str, sessions: list[dict[str, Any]]) -> 
                 "tempo": b.get("tempo", "2-0-2"),
             })
         if not blocks_out and blocks_in:
-            # keep session shell only if we couldn't resolve — skip empty
             continue
         sess_out = dict(sess)
         sess_out["executionBlocks"] = blocks_out
+        if unresolved:
+            sess_out["_unresolved_exercises"] = unresolved
         out.append(sess_out)
+    resolve_exercise_ids.last_unresolved = list(dict.fromkeys(global_unresolved))  # type: ignore[attr-defined]
     return out
+
+
+resolve_exercise_ids.last_unresolved = []  # type: ignore[attr-defined]
 
 
 def _sessions_to_schedule_payload(
@@ -699,6 +763,16 @@ def _sessions_to_schedule_payload(
     for s in sessions:
         if str(s.get("sessionType", "")).lower() == "rest":
             continue
+        blocks = s.get("executionBlocks") or []
+        # Never forward internal resolve meta keys to Roadmap API
+        clean_blocks = []
+        for b in blocks:
+            if not isinstance(b, dict):
+                continue
+            clean_blocks.append({
+                k: v for k, v in b.items()
+                if not str(k).startswith("_")
+            })
         payload.append({
             "userId": user_id,
             "roadmapId": roadmap_id or None,
@@ -710,7 +784,7 @@ def _sessions_to_schedule_payload(
             "estimatedDurationMinutes": s.get("estimatedDurationMinutes", default_duration),
             "notificationEnabled": True,
             "notificationMinutesBefore": 30,
-            "executionBlocks": s.get("executionBlocks") or [],
+            "executionBlocks": clean_blocks,
         })
     return payload
 
@@ -913,7 +987,27 @@ async def execute_workout_plan_write(user_id: str, action: Mapping[str, Any]) ->
                 continue
             add_sessions.append(s2)
         if add_sessions:
-            added = await dotnet.schedule_week(user_id, list(add_sessions))
+            try:
+                added = await dotnet.schedule_week(user_id, list(add_sessions))
+            except dotnet.DotnetApiError as exc:
+                msg = (exc.message or "").lower()
+                if exc.status_code == 400 and (
+                    "disabled" in msg or "allowaireschedule" in msg or "ai reschedule" in msg
+                ):
+                    return {
+                        "status": "error",
+                        "mode": "edit",
+                        "reason": "ai_reschedule_disabled",
+                        "message": (
+                            "Lộ trình đang tắt quyền cho AI chỉnh lịch. "
+                            "Bật 'Cho phép AI đổi lịch' rồi thử lại nhé."
+                        ),
+                    }
+                return {
+                    "status": "error",
+                    "mode": "edit",
+                    "message": f"Không lưu được buổi mới: {exc.message}",
+                }
             results["added"] = added
             saved_session_ids.extend(_session_ids_from_schedule_result(added))
         for u in ops.get("update") or []:
@@ -1034,7 +1128,25 @@ async def execute_workout_plan_write(user_id: str, action: Mapping[str, Any]) ->
             "message": "Không có buổi tập hợp lệ để lưu (thiếu exerciseId trong catalog).",
             "mode": "create",
         }
-    result = await dotnet.schedule_week(user_id, sessions)
+    try:
+        result = await dotnet.schedule_week(user_id, sessions)
+    except dotnet.DotnetApiError as exc:
+        msg = (exc.message or "").lower()
+        if exc.status_code == 400 and ("disabled" in msg or "allowaireschedule" in msg or "ai reschedule" in msg):
+            return {
+                "status": "error",
+                "mode": "create",
+                "reason": "ai_reschedule_disabled",
+                "message": (
+                    "Lộ trình đang tắt quyền cho AI chỉnh lịch. "
+                    "Bật 'Cho phép AI đổi lịch' (hoặc xác nhận card bật quyền) rồi thử lại nhé."
+                ),
+            }
+        return {
+            "status": "error",
+            "mode": "create",
+            "message": f"Không lưu được lịch tập: {exc.message}",
+        }
     saved_session_ids = _session_ids_from_schedule_result(result)
     verify = await _verify_saved_sessions(user_id, action, saved_session_ids=saved_session_ids)
     if not verify.get("verified") and not saved_session_ids:
@@ -1646,12 +1758,33 @@ async def plan_or_edit_workout(
                 sessions_json[i]["time"] = slot["time"]
 
     resolved = await resolve_exercise_ids(ctx.user_id, [s for s in sessions_json if isinstance(s, dict)])
+    unresolved_names = list(getattr(resolve_exercise_ids, "last_unresolved", []) or [])
+    # Strip internal meta before schedule payload
+    for s in resolved:
+        s.pop("_unresolved_exercises", None)
+        s.pop("_all_unresolved_exercises", None)
     resolved = _spread_session_times(resolved)
     week_sessions = _sessions_to_schedule_payload(
         ctx.user_id, str(_rid), resolved, default_duration, timezone_id=tz,
     )
     if not week_sessions:
-        return {"error": "Không resolve được bài tập từ catalog (exerciseId). Thử lại với tên bài rõ hơn."}
+        detail = ""
+        if unresolved_names:
+            sample = ", ".join(unresolved_names[:8])
+            more = f" (+{len(unresolved_names) - 8})" if len(unresolved_names) > 8 else ""
+            detail = f" Không khớp catalog: {sample}{more}."
+        return {
+            "error": (
+                "Không resolve được bài tập từ catalog (exerciseId)."
+                f"{detail} Thử lại với tên bài tiếng Anh phổ biến (Squat, Bench Press…)."
+            ),
+        }
+    note_partial = ""
+    if unresolved_names:
+        sample = ", ".join(unresolved_names[:5])
+        note_partial = (
+            f"\n\n(Đã bỏ qua {len(unresolved_names)} bài không có trong thư viện: {sample}.)"
+        )
 
     snap = ctx.state.get("user_snapshot") or {}
     goal = snap.get("fitnessGoal") or ""
@@ -1668,6 +1801,8 @@ async def plan_or_edit_workout(
         why = why[0].upper() + why[1:] + "."
 
     summary = format_sessions_prose(resolved, window=window, reason=why, ask_confirm=False)
+    if note_partial:
+        summary = f"{summary}{note_partial}"
     staged = {
         "mode": "create",
         "roadmap_id": _rid,

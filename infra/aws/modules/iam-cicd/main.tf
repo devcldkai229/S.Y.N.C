@@ -31,9 +31,13 @@ variable "region" { type = string }
 data "aws_caller_identity" "current" {}
 
 locals {
-  oidc_url  = "token.actions.githubusercontent.com"
-  oidc_arn  = var.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_url}"
-  subjects  = ["repo:${var.github_repo}:ref:refs/heads/main", "repo:${var.github_repo}:environment:*"]
+  oidc_url = "token.actions.githubusercontent.com"
+  oidc_arn = var.create_oidc_provider ? aws_iam_openid_connect_provider.github[0].arn : "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_url}"
+  subjects = [
+    "repo:${var.github_repo}:ref:refs/heads/main",
+    "repo:${var.github_repo}:pull_request",
+    "repo:${var.github_repo}:environment:*",
+  ]
   partition = "aws"
 }
 
@@ -119,6 +123,26 @@ data "aws_iam_policy_document" "deploy" {
       "codedeploy:ListDeployments", "codedeploy:StopDeployment",
     ]
     resources = ["arn:${local.partition}:codedeploy:${var.region}:${data.aws_caller_identity.current.account_id}:*"]
+  }
+  statement {
+    sid = "WebStaticS3"
+    actions = [
+      "s3:PutObject", "s3:DeleteObject", "s3:GetObject",
+      "s3:ListBucket", "s3:AbortMultipartUpload", "s3:ListBucketMultipartUploads",
+    ]
+    resources = [
+      "arn:aws:s3:::sync-web-*",
+      "arn:aws:s3:::sync-web-*/*",
+    ]
+  }
+  statement {
+    sid = "WebCloudFrontInvalidate"
+    actions = [
+      "cloudfront:CreateInvalidation",
+      "cloudfront:GetInvalidation",
+      "cloudfront:ListInvalidations",
+    ]
+    resources = ["arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/*"]
   }
 }
 

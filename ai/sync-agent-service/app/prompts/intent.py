@@ -1,7 +1,7 @@
 """Prompt phân loại intent — LLM JSON schema (gpt-4o-mini)."""
 from __future__ import annotations
 
-INTENT_PROMPT_VERSION = "intent-v1.7.0"
+INTENT_PROMPT_VERSION = "intent-v1.8.0"
 
 AGENT_CATALOG: dict[str, str] = {
     "coach": "Trò chuyện chung, động viên, FAQ fitness chung — không gắn bài tập/lộ trình cụ thể.",
@@ -94,6 +94,10 @@ _FEWSHOT: list[tuple[str, str]] = [
      '{"agent":"insight","language":"vi","complexity":"standard","confidence":0.92,"reason":"đánh giá ăn uống theo tuần"}'),
     ("nhận xét chế độ ăn của tôi đi",
      '{"agent":"insight","language":"vi","complexity":"standard","confidence":0.9,"reason":"nhận xét dinh dưỡng"}'),
+    ("sáng nay mình cân được 92kg",
+     '{"agent":"nutrition","language":"vi","complexity":"standard","confidence":0.93,"reason":"báo cân nặng mới"}'),
+    ("mình xuống còn 78.5kg rồi nè",
+     '{"agent":"nutrition","language":"vi","complexity":"standard","confidence":0.92,"reason":"báo cân nặng mới"}'),
 ]
 
 

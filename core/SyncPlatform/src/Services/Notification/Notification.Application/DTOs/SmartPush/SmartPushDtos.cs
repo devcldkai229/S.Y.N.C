@@ -39,7 +39,8 @@ public record IamSmartPushContextDto(
     int ChurnRiskScore = 0,
     string? PeakEnergyTimeWindow = null,
     DateTimeOffset? LastActiveAt = null,
-    TimeSpan? PreferredReminderTime = null
+    TimeSpan? PreferredReminderTime = null,
+    int? DaysSinceLastWeighIn = null
 );
 
 public record TodayWorkoutActivityDto(
@@ -116,7 +117,8 @@ public record SmartPushContextDto(
     int WaterPct = 100,
     DateTimeOffset? LastMealLoggedAt = null,
     DateTime UtcNow = default,
-    DateOnly LocalDate = default
+    DateOnly LocalDate = default,
+    int? DaysSinceLastWeighIn = null
 );
 
 public record GeneratedPushMessageDto(

@@ -51,6 +51,8 @@ public static class InfrastructureServiceExtensions
 
         // ── Application services with infrastructure-bound implementations ──
         services.AddScoped<IPayosPaymentService, PayosPaymentService>();
+        services.AddScoped<IGooglePlayBillingService, GooglePlayBillingService>();
+        services.AddSingleton<IGooglePlayAndroidPublisherClient, GooglePlayAndroidPublisherClient>();
         services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
         services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
         services.AddScoped<IPromotionCampaignService, PromotionCampaignService>();

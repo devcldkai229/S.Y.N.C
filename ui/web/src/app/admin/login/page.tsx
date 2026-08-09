@@ -6,8 +6,9 @@ import { useAuthStore } from "@/stores/auth.store";
 import { api } from "@/services/api";
 import { decodeJwt, isAdminRole } from "@/lib/jwt";
 import { getOrCreateDeviceId } from "@/lib/device";
-import { Eye, EyeOff, Loader2, Zap, ShieldCheck, Lock } from "lucide-react";
-import ParticleCursor from "@/components/ui/ParticleCursor";
+import { Eye, EyeOff, Loader2, ShieldCheck, Lock } from "lucide-react";
+import CursorTrailBackground from "@/components/ui/CursorTrailBackground";
+import { SyncLogo } from "@/components/ui/SyncLogo";
 
 // Backend: ApiResponse<AuthResponse> → api.ts unwraps `.data` for us.
 interface AuthResponse {
@@ -78,39 +79,22 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white overflow-hidden">
+    <div className="relative min-h-screen flex bg-white overflow-hidden">
+      <CursorTrailBackground mode="fixed" variant="light" />
       {/* Left branding panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative bg-white overflow-hidden flex-col justify-between p-12 min-h-screen">
-        <ParticleCursor />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden flex-col justify-between p-12 min-h-screen z-[2]">
         <div
-          className="absolute inset-0 pointer-events-none z-[6]"
+          className="absolute inset-0 pointer-events-none z-[1]"
           style={{
             background:
-              "radial-gradient(ellipse 70% 60% at 40% 50%, rgba(255,255,255,0.88) 20%, rgba(255,255,255,0.45) 60%, transparent 85%)",
-          }}
-        />
-        <div
-          className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full pointer-events-none z-[3]"
-          style={{
-            background: "radial-gradient(circle, rgba(26,131,68,0.12) 0%, transparent 70%)",
-            animation: "blob-drift 16s ease-in-out infinite",
-          }}
-        />
-        <div
-          className="absolute -bottom-24 -right-24 w-[420px] h-[420px] rounded-full pointer-events-none z-[3]"
-          style={{
-            background: "radial-gradient(circle, rgba(26,131,68,0.08) 0%, transparent 70%)",
-            animation: "blob-drift 22s ease-in-out infinite reverse",
+              "radial-gradient(ellipse 75% 65% at 40% 45%, rgba(255,255,255,0.9) 15%, rgba(255,255,255,0.4) 55%, transparent 80%)",
           }}
         />
 
         {/* Logo */}
         <div className="relative z-10">
           <div className="inline-flex items-center gap-2">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white fill-white" />
-            </div>
-            <span className="font-bold text-xl tracking-tight text-primary">SYNC</span>
+            <SyncLogo height={36} priority className="h-9 w-auto" />
             <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-1">
               Admin
             </span>
@@ -121,12 +105,12 @@ export default function AdminLoginPage() {
           <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
             <ShieldCheck className="w-7 h-7 text-primary" />
           </div>
-          <h2 className="text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
+          <h2 className="font-heading text-4xl font-bold text-gray-900 tracking-tight leading-tight mb-4">
             Trang quản trị
             <br />
             <span className="text-primary">SYNC Platform.</span>
           </h2>
-          <p className="text-gray-500 text-base mb-8 leading-relaxed">
+          <p className="text-gray-500 text-base mb-8 leading-relaxed max-w-md">
             Đăng nhập để quản lý người dùng, nội dung và theo dõi hoạt động của toàn hệ thống.
           </p>
           <ul className="space-y-3">
@@ -145,14 +129,14 @@ export default function AdminLoginPage() {
       </div>
 
       {/* Right form panel */}
-      <div className="w-full lg:w-1/2 flex flex-col bg-gray-50 min-h-screen">
+      <div className="w-full lg:w-1/2 flex flex-col bg-white/80 backdrop-blur-md min-h-screen relative z-[2] border-l border-gray-100/80">
         {/* Mobile logo */}
         <div className="flex items-center p-6 lg:hidden">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white fill-white" />
-            </div>
-            <span className="font-bold text-lg tracking-tight text-primary">SYNC Admin</span>
+            <SyncLogo height={32} className="h-8 w-auto" />
+            <span className="text-xs font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+              Admin
+            </span>
           </div>
         </div>
 

@@ -12,7 +12,9 @@ class AuthRepository {
   Future<AuthSession> login({
     required String email,
     required String password,
-  }) => _auth.login(email: email, password: password);
+    bool rememberMe = true,
+  }) =>
+      _auth.login(email: email, password: password, rememberMe: rememberMe);
 
   Future<RegisterResult> register({
     required String fullName,

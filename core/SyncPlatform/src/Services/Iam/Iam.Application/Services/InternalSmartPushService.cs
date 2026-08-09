@@ -7,13 +7,16 @@ namespace Iam.Application.Services;
 public class InternalSmartPushService : IInternalSmartPushService
 {
     private readonly IInternalSmartPushRepository _repository;
+    private readonly IBiometricHistoryRepository _historyRepository;
     private readonly ILogger<InternalSmartPushService> _logger;
 
     public InternalSmartPushService(
         IInternalSmartPushRepository repository,
+        IBiometricHistoryRepository historyRepository,
         ILogger<InternalSmartPushService> logger)
     {
         _repository = repository;
+        _historyRepository = historyRepository;
         _logger = logger;
     }
 
@@ -104,6 +107,15 @@ public class InternalSmartPushService : IInternalSmartPushService
 
         var tzId = string.IsNullOrWhiteSpace(user.TimeZone) ? "Asia/Ho_Chi_Minh" : user.TimeZone;
 
+        int? daysSinceWeighIn = null;
+        var latestWeighIn = await _historyRepository.GetLatestAsync(userId, cancellationToken);
+        if (latestWeighIn != null)
+        {
+            daysSinceWeighIn = Math.Max(
+                0,
+                (int)(DateTime.UtcNow.Date - latestWeighIn.RecordedAtUtc.ToUniversalTime().Date).TotalDays);
+        }
+
         return new IamSmartPushContextDto(
             user.Id,
             user.FullName,
@@ -126,7 +138,11 @@ public class InternalSmartPushService : IInternalSmartPushService
             aiProfile != null ? (int)aiProfile.ChurnRiskScore : 0,
             aiProfile?.PeakEnergyTimeWindow,
             user.LastActiveAt,
-            pref?.PreferredReminderTime
+            pref?.PreferredReminderTime,
+            daysSinceWeighIn
         );
     }
+
+    public Task<IReadOnlyList<Guid>> GetPremiumOrUltraUserIdsAsync(CancellationToken cancellationToken) =>
+        _repository.GetPremiumOrUltraUserIdsAsync(cancellationToken);
 }

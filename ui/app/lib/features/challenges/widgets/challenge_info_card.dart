@@ -3,6 +3,7 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/features/challenges/models/challenge_models.dart';
 import 'package:sync_app/features/challenges/state/challenge_join_state.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_rewards_section.dart';
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 
 class ChallengeInfoCard extends StatelessWidget {
   const ChallengeInfoCard({
@@ -116,10 +117,23 @@ class ChallengeInfoCard extends StatelessWidget {
                     layout: ChallengeRewardsLayout.compact,
                   ),
                 ],
+                if (compact && FeatureTrialFlags.challengesJoinDisabled) ...[
+                  const SizedBox(height: 12),
+                  const FeatureTrialBanner(
+                    message: FeatureTrialBanner.challengesMessage,
+                    margin: EdgeInsets.zero,
+                  ),
+                ],
                 if (!compact) ...[
                   const SizedBox(height: 14),
                   const Divider(height: 1, color: AppColors.borderLight),
                   const SizedBox(height: 14),
+                  if (FeatureTrialFlags.challengesJoinDisabled) ...[
+                    const FeatureTrialBanner(
+                      message: FeatureTrialBanner.challengesMessage,
+                      margin: EdgeInsets.only(bottom: 12),
+                    ),
+                  ],
                   if (onViewRoute != null && challenge.canPreviewRoute) ...[
                     SizedBox(
                       width: double.infinity,
@@ -220,7 +234,9 @@ class ChallengeInfoCard extends StatelessWidget {
                               backgroundColor: AppColors.primaryGreen,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            child: const Text('Tham gia ngay'),
+                            child: Text(
+                              onJoin == null ? 'Tham gia tạm khóa' : 'Tham gia ngay',
+                            ),
                           ),
                         ),
                       ],

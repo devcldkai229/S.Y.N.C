@@ -62,7 +62,7 @@ ENTRYPOINT ["dotnet", "GATEWAY_OR_SERVICE.dll"]   # thay bằng ARG ENTRY (xem d
 ### 2.1 Nguyên tắc
 - **OIDC**: GitHub Actions assume IAM role (không lưu access key). Role chỉ đủ quyền: `ecr:*` (push repo cụ thể), `ecs:UpdateService/RegisterTaskDefinition`, `ecs:RunTask` (migration), `iam:PassRole` cho task role, đọc SSM/Secrets cần thiết.
 - **Change detection (path-filter)**: chỉ build service có thay đổi → tránh build 12 image mỗi commit.
-- **Immutable tag** = `git sha` (7–40 ký tự); thêm **moving tag** `dev`/`prod` trỏ image đang chạy để rollback/nhận diện.
+- **Immutable tag** = `git sha` (7–40 ký tự). ECR repo **IMMUTABLE** — **không** dùng moving tag `:<env>-current` / `previous`. Rollback = task-def revision / SHA cũ.
 - **Tách 2 workflow**: `app` (build→ECR→deploy) và `infra` (terraform plan/apply, duyệt tay).
 
 ### 2.2 Sơ đồ pipeline (master)
@@ -78,14 +78,13 @@ flowchart LR
   build --> trivy["Trivy scan<br/>(warn đầu · fail HIGH/CRIT prod)"]
   trivy --> login["OIDC → AWS · ECR login"]
   login --> pushimg["Push ECR<br/>tag=sha (+ scan-on-push)"]
-  pushimg --> mig["Migration one-off ECS task<br/>(theo service có DB, idempotent)"]
-  mig --> deploy["Deploy ECS service<br/>(dev: rolling · prod: blue/green)"]
-  deploy --> smoke["Smoke: /health · /healthz"]
-  smoke -->|fail| rollback["Rollback revision cũ"]
+  pushimg --> deploy["Deploy ECS service<br/>(dev: rolling · prod: blue/green)"]
+  deploy --> smoke["Smoke: /health · /healthz<br/>+ rolloutState + image SHA check"]
+  smoke -->|fail| rollback["Rollback task-def revision cũ"]
   subgraph prodgate["Chỉ prod"]
     approve["Manual approval (environment protection)"]
   end
-  pushimg -. prod .-> approve --> mig
+  pushimg -. prod .-> approve --> deploy
 ```
 
 ### 2.3 Job chi tiết (skeleton)
@@ -155,9 +154,11 @@ jobs:
 
 ### 2.4 Chiến lược tag & registry
 - **Immutable** `sync/<svc>:<sha>` — nguồn chân lý, không ghi đè.
-- Moving tags: `:<env>-current` (image đang chạy), `:<env>-previous` (để rollback nhanh).
+- **Không** implement `:<env>-current` / `:<env>-previous` khi ECR `image_tag_mutability = IMMUTABLE`.
+- Rollback: `aws ecs update-service --task-definition <previous-revision>` hoặc redeploy SHA cũ.
 - ECR lifecycle policy: giữ N=20 image gần nhất/repo + xoá untagged >7 ngày (tiết kiệm dung lượng).
 - Bật **ECR scan-on-push** (basic/Inspector) làm lớp 2 sau Trivy.
+- **Bootstrap:** trước apply ECS lần đầu, push `sync/<svc>:bootstrap` (khớp `var.image_tag` TF) cho mọi repo.
 
 ---
 
@@ -165,23 +166,24 @@ jobs:
 
 ### 3.1 Layout & state
 ```
-infra/terraform/
+infra/aws/
 ├── modules/
-│   ├── network/        # VPC 2AZ, public/private subnets, 1 NAT (prod)/NAT instance (dev), IGW,
-│   │                   # VPC endpoints: s3+dynamodb (gateway, free), ecr.api/ecr.dkr/logs/ssm/secretsmanager (interface), route tables, SG cơ bản
-│   ├── ecr/            # for_each 12 repo, immutable, scan_on_push, lifecycle policy
-│   ├── ecs-cluster/    # ECS cluster + EC2 ASG (t4g) + 2 capacity providers (on-demand + Spot) + managed scaling + Service Connect namespace (Cloud Map)
-│   ├── ecs-service/    # ★ REUSABLE: task def + service + autoscaling + (tùy) target group/listener rule
-│   ├── alb/            # 1 ALB public + HTTPS listener (ACM) + target group Gateway + WAF assoc
-│   ├── rds/            # RDS Postgres t4g + parameter group (shared_preload_libraries có vector) + subnet group + KMS + backup
-│   ├── redis/          # ElastiCache Redis t4g + subnet/SG
+│   ├── network/        # VPC 2AZ, public/private subnets, NAT, VPC endpoints, SG
+│   ├── ecr/            # for_each repo, immutable, scan_on_push, lifecycle policy
+│   ├── ecs-cluster/    # ECS cluster + EC2 ASG (t4g) + capacity providers + Service Connect
+│   ├── ecs-service/    # task def + service (bridge) + autoscaling
+│   ├── alb/            # 1 ALB public + HTTPS listener (ACM) + TG Gateway
+│   ├── rds/            # RDS Postgres + pgvector
+│   ├── redis/          # ElastiCache Redis
 │   ├── mq/             # Amazon MQ RabbitMQ single (dev)/active-standby (prod)
-│   ├── mongo-ec2/      # ★ Mongo self-host: EC2 t4g.small + EBS gp3 + DLM snapshot + SG + user-data cài mongod
-│   ├── s3-cdn/         # buckets (public-assets, private-assets) + CloudFront + OAC + policy
-│   ├── secrets/        # SSM Parameter Store (config) + Secrets Manager (DB/LLM keys) + KMS
-│   ├── iam-cicd/       # GitHub OIDC provider + deploy role (least-priv) + ECS task exec/task roles
-│   └── observability/  # CloudWatch log groups (retention 14–30d) + alarms + dashboard + (tùy) Container Insights
+│   ├── mongo-ec2/      # Mongo self-host EC2 + EBS + DLM
+│   ├── s3-cdn/         # data source buckets có sẵn + CloudFront + OAC + policy
+│   ├── secrets/        # Secrets Manager
+│   ├── iam-cicd/       # GitHub OIDC + deploy/infra roles
+│   ├── observability/  # CloudWatch + SNS alerts (ops email — không phải SES/Brevo user mail)
+│   └── stack/          # composite per-env
 └── envs/
+```
     ├── dev/   backend.tf (state key=dev) + main.tf gọi modules (single-AZ, NAT instance, Spot cao, RDS single-AZ, MQ single)
     └── prod/  backend.tf (state key=prod) + main.tf (Multi-AZ RDS, NAT GW, ít Spot cho critical, MQ standby)
 ```
@@ -234,16 +236,15 @@ Tài nguyên tạo: `aws_ecs_task_definition` (container def + secrets + log con
 - **AI SSE**: ALB idle timeout nâng (đã có ActivityTimeout 5' ở Gateway) — set ALB idle timeout ~120–300s để stream không đứt.
 
 ### 4.3 DB Migration strategy (quan trọng)
-- **Chạy TRƯỚC khi deploy code mới**, bằng **one-off ECS RunTask** (không nhét migration vào app startup để tránh race đa-instance).
-  - .NET: task chạy **EF migrations bundle** (`./migrate` executable publish kèm) hoặc `dotnet ef database update` image riêng, đọc conn string từ Secrets.
-  - AI: task `psql -f migrations/*.sql` idempotent (`CREATE ... IF NOT EXISTS`, gồm `CREATE EXTENSION vector`).
-- **Expand–Contract (backward-compatible)** để rolling không vỡ: (1) migration chỉ **thêm** (cột nullable/bảng mới) tương thích code cũ → (2) deploy code mới → (3) migration **contract** (xoá cột cũ) ở release sau. Không đổi/khoá schema phá code đang chạy.
+- **Hiện tại (đã chốt):** service .NET gọi `Database.MigrateAsync()` lúc start. Workflow **không** chạy ECS `*-migrate` (TD không tồn tại; task app dùng `network_mode=bridge` nên không dùng `awsvpcConfiguration`).
+- **Tương lai (optional):** one-off ECS RunTask với EF migrations bundle khi cần migrate offline trước scale-out — cần TD migrate riêng (awsvpc hoặc bridge đúng cấu hình) + expand–contract schema.
 - Mongo: không migration schema cứng; nếu cần backfill → job idempotent riêng.
-- Thứ tự trong pipeline: **build→push→migration(expand)→deploy→smoke**.
+- Thứ tự pipeline hiện tại: **build→push→deploy→smoke** (migrate in-process).
 
 ### 4.4 Rollback
-- App: trỏ ECS service về **task def revision trước** (image `:<env>-previous`) — vài giây. Blue/green tự rollback khi health/smoke fail.
-- DB: nhờ expand-contract nên rollback code KHÔNG cần rollback schema (schema mới vẫn tương thích code cũ). Chỉ contract migration mới cần cẩn trọng (làm ở release riêng).
+- App: trỏ ECS service về **task def revision trước** hoặc redeploy image `:<sha-cũ>` — vài giây. Blue/green tự rollback khi health/smoke fail.
+- **Không** dựa vào moving tag `:<env>-previous` (ECR IMMUTABLE).
+- DB: schema migrate tại startup; rollback code cần schema tương thích (expand-contract nếu migration phá).
 - Có **runbook**: lệnh rollback, dashboard cần xem, alarm ngưỡng.
 
 ### 4.5 Thứ tự bring-up lần đầu (P1 fast-track)

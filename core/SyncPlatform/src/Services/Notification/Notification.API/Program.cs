@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -25,6 +26,9 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cloud (ECS): ghép ConnectionStrings từ SSM + Secrets Manager. Local: no-op.
+builder.Configuration.AddComposedMongoConnection("NotificationDatabase");
+builder.Configuration.AddComposedPostgresConnection("SmartPushDatabase");
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

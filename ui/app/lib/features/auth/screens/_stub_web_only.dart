@@ -1,10 +1,8 @@
 // Stub for non-Web platforms.
-// On Web, the real `package:google_sign_in_web/web_only.dart` is used instead.
-// This file is selected by the conditional import in login_screen.dart when
-// `dart.library.io` is available (i.e., Android / iOS / desktop).
+// On Web, [google_web_render_button.dart] is used instead via conditional import
+// in login_screen.dart when `dart.library.io` is unavailable.
 
 import 'package:flutter/material.dart';
 
-/// No-op stub — renderButton() is never called on non-Web platforms because
-/// _GoogleWebButtonWrapper is only rendered when kIsWeb == true.
-Widget renderButton() => const SizedBox.shrink();
+/// No-op stub — only rendered when kIsWeb == true (never on this import).
+Widget renderGoogleIconButton() => const SizedBox.shrink();

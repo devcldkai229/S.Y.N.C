@@ -107,6 +107,19 @@ public static class InfrastructureServiceExtensions
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
+        services.AddHttpClient<IAdaptiveAiClient, AdaptiveAiClient>((sp, client) =>
+        {
+            var config = sp.GetRequiredService<IConfiguration>();
+            var baseUrl = config["AiService:BaseUrl"] ?? "http://localhost:8088";
+            client.BaseAddress = new Uri(baseUrl);
+            client.Timeout = TimeSpan.FromMinutes(5);
+
+            var apiKey = config["AiService:InternalApiKey"]
+                ?? config["IamService:InternalApiKey"];
+            if (!string.IsNullOrEmpty(apiKey))
+                client.DefaultRequestHeaders.Add("X-Internal-Api-Key", apiKey);
+        });
+
         return services;
     }
 

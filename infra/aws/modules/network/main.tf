@@ -1,7 +1,7 @@
 # VPC 2 AZ: public (ALB + NAT) / private (ECS + data). 1 NAT duy nhất để rẻ:
 #   nat_mode = "instance" (t4g.nano, ~$4/mo, dev) | "gateway" (managed, prod).
 # VPC endpoints: S3 + DynamoDB (gateway, free) luôn bật; interface endpoints
-# (ECR/Logs/SSM/Secrets) tùy chọn — cắt data qua NAT nhưng ~$7.3/mo mỗi cái.
+# chỉ giữ ECR (api+dkr) để cắt chi phí — Logs/SSM/Secrets đi qua NAT.
 
 terraform {
   required_providers {
@@ -36,14 +36,15 @@ locals {
   azs            = slice(data.aws_availability_zones.available.names, 0, 2)
   public_cidrs   = [cidrsubnet(var.vpc_cidr, 8, 0), cidrsubnet(var.vpc_cidr, 8, 1)]
   private_cidrs  = [cidrsubnet(var.vpc_cidr, 8, 10), cidrsubnet(var.vpc_cidr, 8, 11)]
-  interface_svcs = ["ecr.api", "ecr.dkr", "logs", "ssm", "secretsmanager"]
+  interface_svcs = ["ecr.api", "ecr.dkr"]
 }
 
 resource "aws_vpc" "this" {
-  cidr_block           = var.vpc_cidr
-  enable_dns_support   = true
-  enable_dns_hostnames = true
-  tags                 = { Name = var.name }
+  cidr_block                       = var.vpc_cidr
+  assign_generated_ipv6_cidr_block = true
+  enable_dns_support               = true
+  enable_dns_hostnames             = true
+  tags                             = { Name = var.name }
 }
 
 resource "aws_internet_gateway" "this" {
@@ -52,20 +53,24 @@ resource "aws_internet_gateway" "this" {
 }
 
 resource "aws_subnet" "public" {
-  count                   = 2
-  vpc_id                  = aws_vpc.this.id
-  cidr_block              = local.public_cidrs[count.index]
-  availability_zone       = local.azs[count.index]
-  map_public_ip_on_launch = true
-  tags                    = { Name = "${var.name}-public-${count.index}", tier = "public" }
+  count                           = 2
+  vpc_id                          = aws_vpc.this.id
+  cidr_block                      = local.public_cidrs[count.index]
+  ipv6_cidr_block                 = cidrsubnet(aws_vpc.this.ipv6_cidr_block, 8, count.index)
+  availability_zone               = local.azs[count.index]
+  map_public_ip_on_launch         = true
+  assign_ipv6_address_on_creation = true
+  tags                            = { Name = "${var.name}-public-${count.index}", tier = "public" }
 }
 
 resource "aws_subnet" "private" {
-  count             = 2
-  vpc_id            = aws_vpc.this.id
-  cidr_block        = local.private_cidrs[count.index]
-  availability_zone = local.azs[count.index]
-  tags              = { Name = "${var.name}-private-${count.index}", tier = "private" }
+  count                           = 2
+  vpc_id                          = aws_vpc.this.id
+  cidr_block                      = local.private_cidrs[count.index]
+  ipv6_cidr_block                 = cidrsubnet(aws_vpc.this.ipv6_cidr_block, 8, count.index + 10)
+  availability_zone               = local.azs[count.index]
+  assign_ipv6_address_on_creation = false
+  tags                            = { Name = "${var.name}-private-${count.index}", tier = "private" }
 }
 
 resource "aws_route_table" "public" {
@@ -77,6 +82,12 @@ resource "aws_route" "public_igw" {
   route_table_id         = aws_route_table.public.id
   destination_cidr_block = "0.0.0.0/0"
   gateway_id             = aws_internet_gateway.this.id
+}
+
+resource "aws_route" "public_igw_ipv6" {
+  route_table_id              = aws_route_table.public.id
+  destination_ipv6_cidr_block = "::/0"
+  gateway_id                  = aws_internet_gateway.this.id
 }
 
 resource "aws_route_table_association" "public" {

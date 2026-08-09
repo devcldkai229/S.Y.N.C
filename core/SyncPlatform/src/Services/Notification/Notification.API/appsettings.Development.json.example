@@ -57,5 +57,9 @@
   "NutritionService": {
     "BaseUrl": "http://localhost:5122",
     "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
+  "AiService": {
+    "BaseUrl": "http://localhost:8088",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
   }
 }

@@ -2,45 +2,83 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Check, Loader2, Tag, Zap, X, Crown } from "lucide-react";
 import { FadeUp, StaggerContainer, StaggerItem } from "@/components/ui/motion";
 import { motion } from "framer-motion";
 import { subscriptionService, SubscriptionPlan } from "@/services/subscription.service";
-import { getUserToken } from "@/stores/user-auth.store";
+import { getUserToken, useUserAuthStore } from "@/stores/user-auth.store";
+import { resolvePremiumAccess } from "@/lib/subscription-access";
 
 const FREE_FEATURES = [
-  { label: "Tạo tài khoản cá nhân", included: true },
-  { label: "5 lần hỏi AI Coach mỗi tháng", included: true },
-  { label: "Nhật ký tập luyện cơ bản", included: true },
-  { label: "Theo dõi tiến trình cơ bản", included: true },
-  { label: "Truy cập cộng đồng", included: true },
-  { label: "AI Coach không giới hạn", included: false },
-  { label: "Kế hoạch tập cá nhân hóa", included: false },
-  { label: "Planner dinh dưỡng", included: false },
-  { label: "Phân tích nâng cao", included: false },
-  { label: "Hỗ trợ ưu tiên 24/7", included: false },
+  { label: "Lộ trình Foundation & bài tập cơ bản", included: true },
+  { label: "CYN AI — 30 lượt hỏi mỗi tháng", included: true },
+  { label: "Nhật ký tập luyện, dinh dưỡng & theo dõi cân", included: true },
+  { label: "Streak, thành tích & cộng đồng SYNC", included: true },
+  { label: "Thông báo nhắc tập theo mẫu chuẩn", included: true },
+  { label: "CYN AI không giới hạn", included: false },
+  { label: "Adaptive Coaching theo cân thật", included: false },
+  { label: "Insight Premium (biểu đồ & dự đoán)", included: false },
+  { label: "SmartPush cá nhân hóa bằng AI", included: false },
+  { label: "Giáo án & video HD Premium", included: false },
 ];
+
+const FALLBACK_PREMIUM_FEATURES = [
+  "Tất cả tính năng gói Free",
+  "CYN AI không giới hạn — coach, dinh dưỡng, lộ trình & đặt lịch tập",
+  "Adaptive Coaching — tự điều chỉnh calo/macro theo cân nặng thực tế",
+  "Insight Premium — thống kê đa kỳ, biểu đồ & dự đoán tiến độ",
+  "SmartPush cá nhân hóa bằng AI (nhắc tập / cân / phục hồi đúng lúc)",
+  "Giáo án & video HD Premium + phản hồi AI ưu tiên",
+  "Marketplace ưu đãi độc quyền · đặt đơn hỗ trợ AI tối đa 10 lần/tháng",
+];
+
+function premiumCtaLabel(isPurchasing: boolean, hasActivePremium: boolean): string {
+  if (isPurchasing) return "Đang xử lý...";
+  if (hasActivePremium) return "Đang sử dụng";
+  return "Nâng cấp Premium";
+}
+
+/** Full-page redirect to PayOS (outside React so hooks immutability lint is clean). */
+function redirectToCheckout(url: string) {
+  window.location.assign(url);
+}
 
 export default function PricingSection() {
   const router = useRouter();
+  const updateSubscriptionTier = useUserAuthStore((s) => s.updateSubscriptionTier);
 
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [hasActivePremium, setHasActivePremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [coupon, setCoupon] = useState("");
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    subscriptionService.getPlans()
-      .then((data) => setPlans(data.filter((p) => p.isActive)))
-      .catch(() => setPlans([]))
+    const token = getUserToken();
+    Promise.all([
+      subscriptionService.getPlans().catch(() => [] as SubscriptionPlan[]),
+      token ? resolvePremiumAccess() : Promise.resolve(null),
+    ])
+      .then(([planData, access]) => {
+        setPlans(planData.filter((p) => p.isActive && p.monthlyPrice > 0));
+        if (access) {
+          setHasActivePremium(access.hasPremium);
+          updateSubscriptionTier(access.subscriptionTier);
+        } else {
+          setHasActivePremium(false);
+        }
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [updateSubscriptionTier]);
 
   const handleSubscribe = async (plan: SubscriptionPlan) => {
     if (!getUserToken()) {
       router.push(`/login?redirect=/subscription`);
+      return;
+    }
+    if (hasActivePremium) {
+      setError("Bạn đang sử dụng gói Premium còn hạn. Không thể mua thêm.");
       return;
     }
     setError("");
@@ -50,9 +88,8 @@ export default function PricingSection() {
         plan.id,
         coupon.trim() || undefined
       );
-      // Save orderCode so that success page can poll
       sessionStorage.setItem("sync_pending_order", String(link.orderCode));
-      window.location.href = link.checkoutUrl;
+      redirectToCheckout(link.checkoutUrl);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Có lỗi xảy ra. Vui lòng thử lại.");
     } finally {
@@ -68,17 +105,24 @@ export default function PricingSection() {
     );
   }
 
-  const premiumPlans = plans.length > 0 ? plans : [{
-    id: "",
-    name: "Premium",
-    monthlyPrice: 99000,
-    currency: "VND",
-    aiUsageLimitPerMonth: 0,
-    premiumWorkoutAccess: true,
-    priorityAiResponses: true,
-    isActive: true,
-    features: ["Tất cả tính năng Free", "Thông báo AI cá nhân hóa", "Bài tập nâng cao", "AI phản hồi ưu tiên"],
-  } as SubscriptionPlan];
+  const premiumPlans =
+    plans.length > 0
+      ? plans
+      : [
+          {
+            id: "",
+            name: "Premium",
+            description:
+              "CYN không giới hạn, Adaptive theo cân thật, Insight & SmartPush AI — 99.000đ/tháng.",
+            monthlyPrice: 99000,
+            currency: "VND",
+            aiUsageLimitPerMonth: 0,
+            premiumWorkoutAccess: true,
+            priorityAiResponses: true,
+            isActive: true,
+            features: FALLBACK_PREMIUM_FEATURES,
+          } as SubscriptionPlan,
+        ];
 
   return (
     <section id="pricing" className="py-24 px-4 bg-white relative overflow-hidden">
@@ -87,28 +131,32 @@ export default function PricingSection() {
         <FadeUp className="text-center mb-12">
           <p className="text-primary font-medium text-sm mb-3 uppercase tracking-wide">Bảng giá</p>
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5 tracking-tight">
-            Chọn gói phù hợp
+            Free để bắt đầu.
             <br />
-            với <span className="text-primary">hành trình của bạn</span>
+            <span className="text-primary">Premium để tiến nhanh hơn.</span>
           </h2>
           <p className="text-gray-400 text-lg max-w-xl mx-auto leading-relaxed">
-            Bắt đầu miễn phí, nâng cấp khi bạn sẵn sàng. Không cam kết dài hạn.
+            Chỉ 99.000đ/tháng — mở khóa CYN không giới hạn, Adaptive Coaching và insight cá nhân hóa.
+            Hủy bất cứ lúc nào, vẫn dùng tới hết hạn.
           </p>
         </FadeUp>
 
-        {/* Coupon input */}
-        <FadeUp delay={0.1} className="flex items-center justify-center gap-2 mb-12">
-          <div className="relative">
-            <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={coupon}
-              onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-              placeholder="Mã khuyến mãi (tuỳ chọn)"
-              className="pl-10 pr-4 py-3 text-sm border border-gray-200 rounded-2xl bg-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-60 transition-all shadow-sm"
-            />
-          </div>
-        </FadeUp>
+        {/* Coupon input — hide when already Premium */}
+        {!hasActivePremium && (
+          <FadeUp delay={0.1} className="flex items-center justify-center gap-2 mb-12">
+            <div className="relative">
+              <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={coupon}
+                onChange={(e) => setCoupon(e.target.value.toUpperCase())}
+                placeholder="Mã khuyến mãi (tuỳ chọn)"
+                className="pl-10 pr-4 py-3 text-sm border border-gray-200 rounded-2xl bg-white outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 w-60 transition-all shadow-sm"
+              />
+            </div>
+          </FadeUp>
+        )}
+        {hasActivePremium && <div className="mb-8" />}
 
         {error && (
           <FadeUp className="max-w-md mx-auto">
@@ -141,12 +189,12 @@ export default function PricingSection() {
               </div>
               <p className="text-gray-400 text-sm mb-1">/ mãi mãi</p>
               <p className="text-gray-500 text-sm leading-relaxed mt-3 mb-8">
-                Khởi đầu hành trình fitness của bạn hoàn toàn miễn phí.
+                Đủ để tạo thói quen — lộ trình, nhật ký và CYN AI giới hạn mỗi tháng.
               </p>
 
               {/* CTA */}
               <div className="w-full text-center bg-gray-100 border border-gray-200 text-gray-500 px-6 py-3.5 rounded-full font-medium mb-8">
-                Gói hiện tại
+                {hasActivePremium ? "Gói Free" : "Đang sử dụng"}
               </div>
 
               {/* Features */}
@@ -182,7 +230,7 @@ export default function PricingSection() {
               : buildFeatures(plan);
 
             return (
-              <StaggerItem key={plan.id}>
+              <StaggerItem key={plan.id || plan.name}>
                 <div
                   className="h-full flex flex-col rounded-3xl p-8 relative overflow-hidden hover:shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 transition-all duration-300 text-white"
                   style={{
@@ -201,7 +249,7 @@ export default function PricingSection() {
                   {/* Popular badge */}
                   <div className="absolute top-6 right-6">
                     <span className="text-xs font-semibold bg-white/20 text-white px-3 py-1 rounded-full border border-white/30">
-                      Phổ biến nhất
+                      Đáng giá nhất
                     </span>
                   </div>
 
@@ -222,24 +270,31 @@ export default function PricingSection() {
                   </div>
                   <p className="text-white/60 text-sm mb-1 relative">/ tháng</p>
                   <p className="text-white/75 text-sm leading-relaxed mt-3 mb-8 relative">
-                    {plan.description || "Mở khóa toàn bộ sức mạnh AI để đạt đỉnh cao thể lực."}
+                    {plan.description ||
+                      "CYN không giới hạn, Adaptive theo cân thật, Insight & SmartPush AI."}
                   </p>
 
                   {/* CTA */}
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="relative mb-8">
+                  <motion.div
+                    whileHover={hasActivePremium ? undefined : { scale: 1.02 }}
+                    whileTap={hasActivePremium ? undefined : { scale: 0.98 }}
+                    className="relative mb-8"
+                  >
                     <button
                       onClick={() => handleSubscribe(plan)}
-                      disabled={isPurchasing || !plan.id}
-                      className="w-full flex items-center justify-center gap-2 bg-white text-primary py-3.5 rounded-full font-semibold hover:bg-white/95 transition-colors duration-200 shadow-lg shadow-black/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={isPurchasing || !plan.id || hasActivePremium}
+                      className="w-full flex items-center justify-center gap-2 bg-white text-primary py-3.5 rounded-full font-semibold hover:bg-white/95 transition-colors duration-200 shadow-lg shadow-black/20 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {isPurchasing && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {isPurchasing ? "Đang xử lý..." : "Nâng cấp ngay"}
+                      {premiumCtaLabel(isPurchasing, hasActivePremium)}
                     </button>
                   </motion.div>
 
                   {/* Features */}
                   <div className="border-t border-white/20 pt-6 relative flex-1">
-                    <p className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-4">Bao gồm tất cả</p>
+                    <p className="text-xs font-semibold text-white/50 uppercase tracking-wide mb-4">
+                      Bao gồm tất cả
+                    </p>
                     <ul className="space-y-3">
                       {features.map((f) => (
                         <li key={f} className="flex items-start gap-3">
@@ -260,7 +315,7 @@ export default function PricingSection() {
         {/* Bottom note */}
         <FadeUp delay={0.3}>
           <p className="text-center text-gray-400 text-sm mt-10">
-            Hủy bất cứ lúc nào · Không cần thẻ tín dụng để bắt đầu · Thanh toán an toàn qua VNPay, Momo & PayOS
+            Hủy bất cứ lúc nào · Giữ Premium tới hết hạn · Web: PayOS / VietQR · Android: Google Play Billing
           </p>
         </FadeUp>
       </div>
@@ -271,9 +326,12 @@ export default function PricingSection() {
 function buildFeatures(plan: SubscriptionPlan): string[] {
   return [
     "Tất cả tính năng Free",
-    "Thông báo AI cá nhân hóa",
-    plan.premiumWorkoutAccess && "Bài tập nâng cao & video HD",
-    plan.priorityAiResponses && "AI phản hồi ưu tiên",
-    plan.aiUsageLimitPerMonth === 0 && "AI không giới hạn",
+    "CYN AI không giới hạn",
+    "Adaptive Coaching theo cân nặng thực tế",
+    "Insight Premium — thống kê, biểu đồ & dự đoán",
+    "SmartPush cá nhân hóa bằng AI",
+    plan.premiumWorkoutAccess && "Giáo án & video HD Premium",
+    plan.priorityAiResponses && "AI phản hồi ưu tiên, model mạnh hơn",
+    plan.aiUsageLimitPerMonth === 0 && "Không giới hạn lượt hỏi CYN mỗi tháng",
   ].filter(Boolean) as string[];
 }

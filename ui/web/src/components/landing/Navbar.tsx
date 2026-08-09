@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Menu, X, Zap, User, LogOut, ChevronDown } from "lucide-react";
+import { SyncLogo } from "@/components/ui/SyncLogo";
 
 interface SyncUser {
   id: string;
@@ -12,10 +13,10 @@ interface SyncUser {
 }
 
 const navLinks = [
-  { label: "Features",     href: "/#features" },
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Testimonials", href: "/#testimonials" },
-  { label: "Pricing",      href: "/subscription" },
+  { label: "Tính năng", href: "/#features" },
+  { label: "Cách hoạt động", href: "/#how-it-works" },
+  { label: "Đánh giá", href: "/#testimonials" },
+  { label: "Bảng giá", href: "/subscription" },
 ];
 
 export default function Navbar() {
@@ -62,11 +63,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Zap className="w-4 h-4 text-white fill-white" />
-            </div>
-            <span className="font-bold text-xl tracking-tight text-primary">SYNC</span>
+          <Link href="/" className="flex items-center">
+            <SyncLogo height={32} priority className="h-8" />
           </Link>
 
           {/* Desktop Nav */}
@@ -143,13 +141,13 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-                  Sign in
+                  Đăng nhập
                 </Link>
                 <Link
                   href="/register"
                   className="text-sm bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition-colors font-medium"
                 >
-                  Get started
+                  Bắt đầu
                 </Link>
               </>
             )}
@@ -208,7 +206,7 @@ export default function Navbar() {
               className="block w-full text-center bg-primary text-white px-4 py-2.5 rounded-full font-medium mt-2"
               onClick={() => setIsOpen(false)}
             >
-              Get started
+              Bắt đầu
             </Link>
           )}
         </div>

@@ -1,0 +1,34 @@
+# Next.js static export -> nginx (local docker-compose profile: ui)
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+
+COPY . .
+ARG NEXT_PUBLIC_API_URL=http://localhost:5057
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID=
+ARG NEXT_PUBLIC_LEGAL_WEBSITE=https://synctis.in
+ARG NEXT_PUBLIC_LEGAL_ENTITY_NAME=
+ARG NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN=
+ARG NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL=
+ARG NEXT_PUBLIC_LEGAL_SUPPORT_PHONE=
+ARG NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS=
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID \
+    NEXT_PUBLIC_LEGAL_WEBSITE=$NEXT_PUBLIC_LEGAL_WEBSITE \
+    NEXT_PUBLIC_LEGAL_ENTITY_NAME=$NEXT_PUBLIC_LEGAL_ENTITY_NAME \
+    NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN=$NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN \
+    NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL=$NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL \
+    NEXT_PUBLIC_LEGAL_SUPPORT_PHONE=$NEXT_PUBLIC_LEGAL_SUPPORT_PHONE \
+    NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS=$NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS
+RUN npm run build
+
+FROM nginx:alpine AS runtime
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/out /usr/share/nginx/html
+EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1
+CMD ["nginx", "-g", "daemon off;"]

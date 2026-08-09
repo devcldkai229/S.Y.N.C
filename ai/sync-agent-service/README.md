@@ -10,7 +10,7 @@ ai/sync-agent-service/
 ├── pyproject.toml
 ├── .env.example
 ├── app/
-│   ├── config.py            # Settings + model registry (DeepSeek/OpenAI)
+│   ├── config.py            # Settings + model registry (OpenAI)
 │   ├── state.py             # SyncAgentState (LangGraph state)
 │   ├── models/
 │   │   └── router.py        # Model routing đa tầng (nano→realtime)
@@ -40,13 +40,13 @@ ai/sync-agent-service/
 
 ```bash
 cd ai/sync-agent-service
-cp .env.example .env                 # OPENAI_API_KEY, DEEPSEEK_API_KEY, INTERNAL_API_KEY, JWT_SIGNING_KEY...
+cp .env.example .env                 # OPENAI_API_KEY, INTERNAL_API_KEY, JWT_SIGNING_KEY...
 py -m pip install -e ".[dev]"        # hoặc: uv sync
 
 # 1) Hạ tầng — Docker (khuyến nghị) hoặc local:
 cd infra/docker
-docker compose up -d sync-postgres sync-redis sync-langfuse
-# Postgres dùng pgvector/pgvector:pg17; DB sync_ai + langfuse tạo qua init-db/ (volume mới)
+docker compose up -d sync-postgres sync-redis sync-rabbitmq
+# Postgres: pgvector; DB sync_ai tạo qua init-db/ (volume mới). Langfuse: profile optional.
 # hoặc thủ công: psql ... -c "CREATE DATABASE sync_ai" + CREATE EXTENSION vector
 
 psql "postgresql://postgres:12345@localhost:5434/sync_ai" -f migrations/0001_init.sql
@@ -60,16 +60,21 @@ py scripts/seed_knowledge.py
 py -m uvicorn app.api.main:app --reload --port 8088
 ```
 
-Hạ tầng AI qua Docker — **sync-agent-service chạy local** (`uvicorn`, không có trong compose):
+Hạ tầng / full stack qua Docker Compose — xem `infra/docker/README.md`:
 
 ```bash
 cd infra/docker
+cp .env.example .env
+docker compose --profile app --profile ui up -d --build   # Gateway + AI + web
+# Chỉ infra:
 docker compose up -d
 ```
 
+Chạy **chỉ AI trên host** (hybrid): infra compose + `uvicorn` như bước 3 bên dưới.
+
 `.env` phải khớp IAM dev: `JWT_ISSUER=sync-lifestyle-iam-dev`, `INTERNAL_API_KEY=dev_internal_api_key_sync_platform`, v.v. (xem `.env.example`).
 
-**API keys bắt buộc:** `OPENAI_API_KEY` (mid/large chat, embeddings, mọi prompt có biometric), `DEEPSEEK_API_KEY` (intent + chat không nhạy cảm).
+**API keys bắt buộc:** `OPENAI_API_KEY` (mọi tier chat, intent classifier, embeddings, mọi prompt có biometric).
 
 **Ollama (tuỳ chọn dev):** `py -m pip install -e ".[local]"` + `INTENT_CLASSIFIER_PROVIDER=ollama` — không dùng trong registry mặc định.
 
@@ -99,7 +104,7 @@ ruff check app tests
 | LangGraph: guardrail_in → load_context → supervisor → agent → guardrail_out | ✅ |
 | **Intent routing bằng LLM** (đọc-hiểu-phân loại, JSON) + cache + fallback VN không dấu | ✅ |
 | Prompt library tiếng Việt (versioned) + LLM tool-calling | ✅ |
-| Model router (DeepSeek + OpenAI) + streaming | ✅ |
+| Model router (OpenAI) + streaming | ✅ |
 | Coach / Nutrition / Workout(read) agents | ✅ |
 | .NET tool adapters (Internal API Key + ApiResponse unwrap) | ✅ |
 | Redis checkpointer + pgvector memory + RAG KB | ✅ |
@@ -128,6 +133,13 @@ AI gọi trực tiếp microservice qua `X-Internal-Api-Key` + `userId` trong pa
 | `send_notification` | `POST Notification /api/internal/notifications/send` |
 
 Gateway: `POST /api/v1/ai/chat` → `localhost:8088` (`ai-route` trong Gateway appsettings).
+
+### Lịch tập (plan_or_edit_workout / confirm)
+
+1. Seed catalog Exercise (`Exercise.ImportTool import-free-exercise-db`) — Mongo `sync_exercise.ExerciseCatalog` không rỗng.
+2. Chat gọi tool → SSE `pending_action` (lưu thêm Redis TTL `PENDING_ACTION_TTL_SECONDS`, mặc định 30 phút).
+3. User bấm Xác nhận → `POST /ai/chat/confirm` (lookup graph + Redis; turn chat sau vẫn confirm được trong TTL).
+4. Write: `POST Roadmap .../sessions/schedule-week` (timeout 30s).
 
 ## Triết lý
 

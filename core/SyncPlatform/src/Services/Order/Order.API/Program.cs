@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
@@ -18,6 +19,8 @@ using Order.Infrastructure.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Cloud (ECS): ghép ConnectionStrings từ SSM + Secrets Manager. Local: no-op.
+builder.Configuration.AddComposedPostgresConnection("OrderDatabase");
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

@@ -67,6 +67,9 @@ public class InternalAiContextService : IInternalAiContextService
             dto.DailyProteinTargetGram = bio.DailyProteinTargetGram;
             dto.DailyCarbTargetGram = bio.DailyCarbTargetGram;
             dto.DailyFatTargetGram = bio.DailyFatTargetGram;
+            dto.DailyCalorieTarget = bio.DailyCalorieTarget;
+            dto.TargetsManagedByEngine = bio.TargetsManagedByEngine;
+            dto.TargetsAdjustedAtUtc = bio.TargetsAdjustedAtUtc;
             if (bio.Injuries != null)
                 dto.Injuries = bio.Injuries.ToList();
             if (bio.Medications != null)

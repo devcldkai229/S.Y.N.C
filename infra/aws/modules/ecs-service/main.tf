@@ -64,6 +64,11 @@ variable "deployment_controller" {
   type    = string
   default = "ECS" # ECS | CODE_DEPLOY (gateway prod blue/green)
 }
+variable "health_check_grace_period_seconds" {
+  description = "Ân hạn health check ALB — đủ cho .NET khởi động + chạy EF migrations"
+  type        = number
+  default     = 180
+}
 variable "target_group_arn" {
   description = "Gắn ALB (gateway). null = không public"
   type        = string
@@ -130,6 +135,17 @@ resource "aws_ecs_service" "this" {
     weight            = 1
   }
 
+  # Service .NET tự chạy Database.MigrateAsync() lúc khởi động → cần thời gian ân
+  # hạn trước khi ALB đánh unhealthy, nếu không sẽ crash-loop vô hạn.
+  # Chỉ hợp lệ khi service có load balancer.
+  health_check_grace_period_seconds = var.target_group_arn != null ? var.health_check_grace_period_seconds : null
+
+  # Cluster nhỏ (1–2 instance t4g, binpack): với desired_count=1 mà giữ mặc định
+  # min=100% thì ECS phải chen task mới trước khi tắt task cũ → dễ treo vì hết RAM.
+  # (Không áp dụng cho CODE_DEPLOY — blue/green tự quản.)
+  deployment_minimum_healthy_percent = var.deployment_controller == "ECS" ? (var.desired_count >= 2 ? 50 : 0) : null
+  deployment_maximum_percent         = var.deployment_controller == "ECS" ? 200 : null
+
   deployment_controller {
     type = var.deployment_controller
   }
@@ -174,9 +190,16 @@ resource "aws_ecs_service" "this" {
     field = "memory"
   }
 
-  # CI đăng ký revision mới + autoscaling đổi desired → TF không ghi đè
+  ordered_placement_strategy {
+    type  = "spread"
+    field = "instanceId"
+  }
+
+  # CI đăng ký revision mới + autoscaling đổi desired → TF không ghi đè.
+  # load_balancer: CodeDeploy blue/green hoán đổi target group trên service —
+  # nếu không ignore, `terraform apply` kế tiếp sẽ revert về TG blue và phá deploy.
   lifecycle {
-    ignore_changes = [task_definition, desired_count]
+    ignore_changes = [task_definition, desired_count, load_balancer]
   }
 }
 

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Web OAuth client ID — used by google_sign_in_android when serverClientId is set in Dart -->
-    <string name="default_web_client_id">366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com</string>
+    <!-- Must be OAuth "Web application" client ID (ID token audience for IAM).
+         Android client ID alone will not produce a server-verifiable idToken. -->
+    <string name="default_web_client_id">366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com</string>
 </resources>

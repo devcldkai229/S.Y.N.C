@@ -18,6 +18,7 @@ import 'package:sync_app/features/challenges/widgets/challenge_list_tile.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_map_marker.dart';
 import 'package:sync_app/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 
 /// Community challenges map + draggable challenge list with global bottom nav.
 class ChallengesMapScreen extends StatefulWidget {
@@ -244,16 +245,20 @@ class _ChallengesMapScreenState extends State<ChallengesMapScreen> {
                   Navigator.pop(ctx);
                   context.push(AppRoutes.challengeDetail(challenge.id));
                 },
-                onJoin: () => ChallengeJoinFlow.confirmJoin(
-                  context,
-                  challenge: challenge,
-                  joinState: _joinState,
-                ),
-                onLeave: () => ChallengeJoinFlow.confirmLeave(
-                  context,
-                  challenge: challenge,
-                  joinState: _joinState,
-                ),
+                onJoin: FeatureTrialFlags.challengesJoinDisabled
+                    ? null
+                    : () => ChallengeJoinFlow.confirmJoin(
+                          context,
+                          challenge: challenge,
+                          joinState: _joinState,
+                        ),
+                onLeave: FeatureTrialFlags.challengesJoinDisabled
+                    ? null
+                    : () => ChallengeJoinFlow.confirmLeave(
+                          context,
+                          challenge: challenge,
+                          joinState: _joinState,
+                        ),
               ),
           ),
         ),
@@ -456,6 +461,11 @@ class _ChallengesDraggableSheet extends StatelessWidget {
                           ],
                         ),
                       ),
+                      if (FeatureTrialFlags.challengesJoinDisabled)
+                        const FeatureTrialBanner(
+                          message: FeatureTrialBanner.challengesMessage,
+                          margin: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                        ),
                       _ChallengeFilterChips(
                         selected: filter,
                         onSelected: onFilterChanged,

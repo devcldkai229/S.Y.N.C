@@ -469,22 +469,33 @@ async def commerce_agent(state: SyncAgentState, config: RunnableConfig) -> dict[
 
     if not commerce_allowed(sub):
         action_id = str(uuid.uuid4())
+        is_android = str(state.get("client_platform") or "").lower() == "android"
         summary = (
             "Gói Free chưa gồm tư vấn quán/món Sync, review và đặt món. "
             "Nâng Premium để mở khóa commerce và hạn mức AI cao hơn."
         )
-        prose = (
-            "Hiện bạn đang dùng gói Free nên mình chưa mở được các nghiệp vụ "
-            "tìm quán, xem món/review hay đặt món trên Sync. "
-            "Gói Premium mở khóa toàn bộ phần này và tăng hạn mức AI. "
-            "Bạn có muốn nâng cấp lên Premium không? Bấm xác nhận để mình gửi mã VietQR thanh toán."
-        )
+        if is_android:
+            prose = (
+                "Hiện bạn đang dùng gói Free nên mình chưa mở được các nghiệp vụ "
+                "tìm quán, xem món/review hay đặt món trên Sync. "
+                "Gói Premium mở khóa toàn bộ phần này. "
+                "Trên Android hãy mở mục Gói đăng ký và mua qua Google Play "
+                "(không dùng VietQR trong app)."
+            )
+        else:
+            prose = (
+                "Hiện bạn đang dùng gói Free nên mình chưa mở được các nghiệp vụ "
+                "tìm quán, xem món/review hay đặt món trên Sync. "
+                "Gói Premium mở khóa toàn bộ phần này và tăng hạn mức AI. "
+                "Bạn có muốn nâng cấp lên Premium không? Bấm xác nhận để mình gửi mã VietQR thanh toán."
+            )
         pending = {
             "action_id": action_id,
             "type": "upgrade_premium",
             "plan_hint": "Premium",
             "summary": summary,
             "status": "awaiting_confirmation",
+            "client_platform": state.get("client_platform") or "unknown",
         }
         return {
             "final_response": prose,

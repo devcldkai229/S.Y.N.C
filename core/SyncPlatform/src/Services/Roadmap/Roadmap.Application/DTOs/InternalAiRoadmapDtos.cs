@@ -19,6 +19,16 @@ public class InternalPatchPersonalizedRoadmapDto
     public RoadmapStatus? RoadmapStatus { get; set; }
 }
 
+/// <summary>Sync body metrics onto the user's active PersonalizedRoadmap (weigh-in / adaptive).</summary>
+public class InternalSyncBodyMetricsDto
+{
+    public decimal? CurrentWeightKg { get; set; }
+    public decimal? TargetWeightKg { get; set; }
+    public decimal? InitialFatPercentage { get; set; }
+    public decimal? TargetFatPercentage { get; set; }
+    public string? CurrentPhase { get; set; }
+}
+
 public class InternalCreatePersonalizedRoadmapRequestDto : CreatePersonalizedRoadmapDto;
 
 public class InternalScheduleSessionRequestDto : ScheduleSessionDto

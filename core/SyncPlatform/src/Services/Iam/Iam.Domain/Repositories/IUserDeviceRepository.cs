@@ -6,6 +6,7 @@ public interface IUserDeviceRepository
 {
     Task<UserDevice?> GetByUserAndDeviceAsync(Guid userId, string deviceId, CancellationToken cancellationToken = default);
     Task<UserDevice?> GetByDeviceIdAsync(string deviceId, CancellationToken cancellationToken = default);
+    Task<List<UserDevice>> ListByUserAsync(Guid userId, CancellationToken cancellationToken = default);
     Task AddAsync(UserDevice device, CancellationToken cancellationToken = default);
     void Update(UserDevice device);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

@@ -19,6 +19,7 @@ import 'package:sync_app/features/order/widgets/price_breakdown.dart';
 import 'package:sync_app/features/marketplace/widgets/home/marketplace_location_picker_sheet.dart';
 import 'package:sync_app/features/order/widgets/voucher_warehouse_sheet.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CheckoutScreen extends StatefulWidget {
@@ -153,6 +154,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   }
 
   Future<void> _placeOrder() async {
+    if (FeatureTrialFlags.syncFoodsOrderingDisabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text(FeatureTrialBanner.syncFoodsMessage)),
+        );
+      }
+      return;
+    }
     final cart = context.read<MarketplaceCartCubit>().state;
     if (cart.partnerId == null || cart.items.isEmpty) return;
     if (_address.text.trim().isEmpty) {
@@ -289,6 +298,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (FeatureTrialFlags.syncFoodsOrderingDisabled)
+            const FeatureTrialBanner(
+              message: FeatureTrialBanner.syncFoodsMessage,
+              margin: EdgeInsets.only(bottom: 12),
+            ),
           Row(
             children: [
               const Expanded(
@@ -393,11 +407,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: FilledButton(
-            onPressed: _placing || _deliveryFee == null || _walletInsufficient(cart) ? null : _placeOrder,
+            onPressed: FeatureTrialFlags.syncFoodsOrderingDisabled ||
+                    _placing ||
+                    _deliveryFee == null ||
+                    _walletInsufficient(cart)
+                ? null
+                : _placeOrder,
             style: FilledButton.styleFrom(backgroundColor: MarketplaceTheme.primary),
             child: _placing
                 ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text('Đặt hàng · ${MarketplaceFormatters.formatVnd(total)}'),
+                : Text(
+                    FeatureTrialFlags.syncFoodsOrderingDisabled
+                        ? 'Đặt hàng tạm khóa (thử nghiệm)'
+                        : 'Đặt hàng · ${MarketplaceFormatters.formatVnd(total)}',
+                  ),
           ),
         ),
       ),

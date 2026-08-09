@@ -26,6 +26,7 @@ locals {
     # Shared S3 buckets — tách env bằng key prefix (dev/… vs prod/…)
     Storage__Bucket        = module.s3_cdn.public_bucket
     Storage__KeyPrefix     = "${var.env}/"
+    Storage__PublicBaseUrl = local.media_public_base_url
   })
 
   # Gateway YARP: override destination sang Service Connect DNS
@@ -35,12 +36,28 @@ locals {
       "ReverseProxy__Clusters__${s}-cluster__Destinations__${s}/primary__Address" => "http://${s}:8080"
     },
     {
-      "ReverseProxy__Clusters__ai-cluster__Destinations__ai/primary__Address"           = "http://ai:8088"
+      "ReverseProxy__Clusters__ai-cluster__Destinations__ai/primary__Address"   = "http://ai:8088"
       "ReverseProxy__Clusters__rcm-cluster__Destinations__rcm/primary__Address" = "http://rcm:8000"
     },
   )
 
-  sec = module.secrets.secret_arns
+  sec   = module.secrets.secret_arns
+  param = module.secrets.param_arns
+
+  # DB connection parts (app tự ghép ConnectionStrings qua composer). Tất cả inject
+  # qua task-def `secrets[]` (valueFrom): host/port/user ← SSM ARN, password ← Secrets
+  # Manager ARN. ECS resolve cả hai loại ARN như nhau khi khởi tạo task.
+  dotnet_pg_conn = {
+    Db__Postgres__Host     = local.param["db/pg-host"]
+    Db__Postgres__Port     = local.param["db/pg-port"]
+    Db__Postgres__User     = local.param["db/pg-user"]
+    Db__Postgres__Password = local.sec["db/postgres-password"]
+  }
+  dotnet_mongo_conn = {
+    Db__Mongo__Host     = local.param["db/mongo-host"]
+    Db__Mongo__User     = local.param["db/mongo-user"]
+    Db__Mongo__Password = local.sec["db/mongo-password"]
+  }
 
   dotnet_shared_secrets = {
     Jwt__SecretKey             = local.sec["shared/jwt-secret"]
@@ -61,20 +78,27 @@ locals {
   }
 
   ai_env = merge(local.ai_base_urls, {
-    ENVIRONMENT  = "production"
-    REDIS_URL    = "redis://${module.redis.endpoint}:6379/2"
-    JWT_ISSUER   = var.jwt_issuer
-    JWT_AUDIENCE = var.jwt_audience
+    ENVIRONMENT      = "production"
+    REDIS_URL        = "redis://${module.redis.endpoint}:6379/2"
+    JWT_ISSUER       = var.jwt_issuer
+    JWT_AUDIENCE     = var.jwt_audience
+    AI_SQS_QUEUE_URL = module.sqs.queue_url
+    # Python tự ghép POSTGRES_DSN từ các phần này + DB_POSTGRES_PASSWORD
+    DB_POSTGRES_NAME = "sync_ai"
   })
 
   ai_secrets = {
-    POSTGRES_DSN     = local.sec["db/pg-ai-dsn"]
-    AMQP_URL         = local.sec["mq/amqp-url"]
-    INTERNAL_API_KEY = local.sec["shared/internal-api-key"]
-    JWT_SIGNING_KEY  = local.sec["shared/jwt-secret"]
-    OPENAI_API_KEY   = local.sec["llm/openai-api-key"]
-    DEEPSEEK_API_KEY = local.sec["llm/deepseek-api-key"]
-    TAVILY_API_KEY   = local.sec["llm/tavily-api-key"]
+    DB_POSTGRES_HOST     = local.param["db/pg-host"]
+    DB_POSTGRES_PORT     = local.param["db/pg-port"]
+    DB_POSTGRES_USER     = local.param["db/pg-user"]
+    DB_POSTGRES_PASSWORD = local.sec["db/postgres-password"]
+    INTERNAL_API_KEY     = local.sec["shared/internal-api-key"]
+    JWT_SIGNING_KEY      = local.sec["shared/jwt-secret"]
+    OPENAI_API_KEY       = local.sec["llm/openai-api-key"]
+    TAVILY_API_KEY       = local.sec["llm/tavily-api-key"]
+    # Optional observability — set LANGFUSE_ENABLED=true after putting real keys
+    LANGFUSE_PUBLIC_KEY = local.param["ai/langfuse-public-key"]
+    LANGFUSE_SECRET_KEY = local.sec["ai/langfuse-secret-key"]
   }
 
   services = {
@@ -93,11 +117,17 @@ locals {
       port       = 8080
       cpu        = 256
       memory     = 640
-      env        = local.dotnet_common_env
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__IamDatabase = local.sec["db/pg-iam"]
-        Email__Brevo__UserName         = local.sec["mail/brevo-username"]
-        Email__Brevo__Password         = local.sec["mail/brevo-password"]
+      env = merge(local.dotnet_common_env, {
+        Db__Postgres__Name         = "sync_iam"
+        Email__VerificationBaseUrl = local.api_base_url
+      })
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
+        Email__Brevo__UserName = local.param["mail/brevo-username"]
+        Email__Brevo__Password = local.sec["mail/brevo-password"]
+        # Google Sign-In audiences (comma-separated IDs OK via ClientId legacy merge,
+        # or put the primary Web client ID). Also map array index 0 for multi-binding.
+        GoogleAuth__ClientId     = local.param["auth/google-client-ids"]
+        GoogleAuth__ClientIds__0 = local.param["auth/google-client-ids"]
       })
       public  = false
       command = null
@@ -107,48 +137,40 @@ locals {
       port       = 8080
       cpu        = 256
       memory     = 512
-      env        = local.dotnet_common_env
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__RoadmapDatabase = local.sec["db/mongo-roadmap"]
-      })
-      public  = false
-      command = null
+      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_roadmap" })
+      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public     = false
+      command    = null
     }
     exercise = {
       image_repo = "exercise"
       port       = 8080
       cpu        = 256
       memory     = 512
-      env        = local.dotnet_common_env
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__ExerciseDatabase = local.sec["db/mongo-exercise"]
-      })
-      public  = false
-      command = null
+      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_exercise" })
+      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public     = false
+      command    = null
     }
     nutrition = {
       image_repo = "nutrition"
       port       = 8080
       cpu        = 256
       memory     = 512
-      env        = local.dotnet_common_env
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__NutritionDatabase = local.sec["db/mongo-nutrition"]
-      })
-      public  = false
-      command = null
+      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_nutrition" })
+      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public     = false
+      command    = null
     }
     marketplace = {
       image_repo = "marketplace"
       port       = 8080
       cpu        = 256
       memory     = 512
-      env        = local.dotnet_common_env
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__MarketplaceDatabase = local.sec["db/mongo-marketplace"]
-      })
-      public  = false
-      command = null
+      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_marketplace" })
+      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public     = false
+      command    = null
     }
     order = {
       image_repo = "order"
@@ -156,12 +178,12 @@ locals {
       cpu        = 256
       memory     = 512
       env = merge(local.dotnet_common_env, {
+        Db__Postgres__Name       = "sync_order"
         ConnectionStrings__Redis = "${module.redis.endpoint}:6379"
       })
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__OrderDatabase = local.sec["db/pg-order"]
-        Ahamove__ApiKey                  = local.sec["delivery/ahamove-api-key"]
-        Ahamove__Mobile                  = local.sec["delivery/ahamove-mobile"]
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
+        Ahamove__ApiKey = local.sec["delivery/ahamove-api-key"]
+        Ahamove__Mobile = local.param["delivery/ahamove-mobile"]
       })
       public  = false
       command = null
@@ -171,12 +193,11 @@ locals {
       port       = 8080
       cpu        = 256
       memory     = 512
-      env        = local.dotnet_common_env
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__PaymentDatabase = local.sec["db/pg-payment"]
-        PayOS__ClientId                    = local.sec["pay/payos-client-id"]
-        PayOS__ApiKey                      = local.sec["pay/payos-api-key"]
-        PayOS__ChecksumKey                 = local.sec["pay/payos-checksum-key"]
+      env        = merge(local.dotnet_common_env, { Db__Postgres__Name = "sync_payment" })
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
+        PayOS__ClientId    = local.sec["pay/payos-client-id"]
+        PayOS__ApiKey      = local.sec["pay/payos-api-key"]
+        PayOS__ChecksumKey = local.sec["pay/payos-checksum-key"]
       })
       public  = false
       command = null
@@ -186,11 +207,12 @@ locals {
       port       = 8080
       cpu        = 256
       memory     = 512
-      env        = local.dotnet_common_env
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__NotificationDatabase = local.sec["db/mongo-notification"]
-        ConnectionStrings__SmartPushDatabase    = local.sec["db/pg-smartpush"]
-        OpenAI__ApiKey                          = local.sec["llm/openai-api-key"]
+      env = merge(local.dotnet_common_env, {
+        Db__Postgres__Name = "sync_smartpush"
+        Db__Mongo__Name    = "sync_notification"
+      })
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, local.dotnet_mongo_conn, {
+        OpenAI__ApiKey = local.sec["llm/openai-api-key"]
       })
       public  = false
       command = null
@@ -200,12 +222,10 @@ locals {
       port       = 8080
       cpu        = 256
       memory     = 512
-      env        = local.dotnet_common_env
-      secrets = merge(local.dotnet_shared_secrets, {
-        ConnectionStrings__SocialDatabase = local.sec["db/mongo-social"]
-      })
-      public  = false
-      command = null
+      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_social" })
+      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public     = false
+      command    = null
     }
     ai = {
       image_repo = "ai"
@@ -219,7 +239,7 @@ locals {
     }
     ai-worker = {
       image_repo = "ai"
-      port       = null # không listen — RabbitMQ consumer
+      port       = null # không listen — SQS consumer
       cpu        = 256
       memory     = 512
       env        = local.ai_env
@@ -233,20 +253,25 @@ locals {
       cpu        = 256
       memory     = 512 # OpenAI API embeddings — no local sentence-transformers
       env = {
-        JWT_ISSUER              = var.jwt_issuer
-        JWT_AUDIENCE            = var.jwt_audience
-        OPENAI_BASE_URL         = "https://api.openai.com/v1"
-        OPENAI_MODEL            = "gpt-4o-mini"
-        OPENAI_EMBEDDING_MODEL  = "text-embedding-3-small"
-        EMBEDDING_DIM           = "1536"
-        IAM_SERVICE_URL         = "http://iam:8080"
-        EXERCISE_SERVICE_URL    = "http://exercise:8080"
-        ROADMAP_SERVICE_URL     = "http://roadmap:8080"
+        JWT_ISSUER             = var.jwt_issuer
+        JWT_AUDIENCE           = var.jwt_audience
+        OPENAI_BASE_URL        = "https://api.openai.com/v1"
+        OPENAI_MODEL           = "gpt-4o-mini"
+        OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+        EMBEDDING_DIM          = "1536"
+        IAM_SERVICE_URL        = "http://iam:8080"
+        EXERCISE_SERVICE_URL   = "http://exercise:8080"
+        ROADMAP_SERVICE_URL    = "http://roadmap:8080"
+        # App tự ghép DATABASE_URL (asyncpg) từ các phần này + DB_POSTGRES_PASSWORD
+        DB_POSTGRES_NAME = "sync_ai_agent"
       }
       secrets = {
-        DATABASE_URL   = local.sec["db/pg-rcm-dsn"]
-        OPENAI_API_KEY = local.sec["llm/openai-api-key"]
-        JWT_SECRET_KEY = local.sec["shared/jwt-secret"]
+        DB_POSTGRES_HOST     = local.param["db/pg-host"]
+        DB_POSTGRES_PORT     = local.param["db/pg-port"]
+        DB_POSTGRES_USER     = local.param["db/pg-user"]
+        DB_POSTGRES_PASSWORD = local.sec["db/postgres-password"]
+        OPENAI_API_KEY       = local.sec["llm/openai-api-key"]
+        JWT_SECRET_KEY       = local.sec["shared/jwt-secret"]
       }
       public  = false
       command = null

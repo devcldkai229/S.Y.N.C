@@ -11,8 +11,13 @@ WORKDIR /src
 COPY . .
 RUN dotnet restore "$PROJECT"
 RUN dotnet publish "$PROJECT" -c Release -o /app /p:UseAppHost=false
-# Chuẩn hoá entrypoint: đổi tên assembly chính thành app.dll (chiseled không có shell).
-RUN cp "/app/$(basename "$PROJECT" .csproj).dll" /app/app.dll
+# Chuẩn hoá entrypoint thành app.dll (chiseled không có shell để chạy dll động).
+# Phải copy CẢ runtimeconfig.json + deps.json, nếu không `dotnet app.dll` sẽ không
+# thấy app.runtimeconfig.json → chạy nhầm self-contained → thiếu libhostpolicy.so.
+RUN set -eux; ASSEMBLY="$(basename "$PROJECT" .csproj)"; \
+    cp "/app/$ASSEMBLY.dll" /app/app.dll; \
+    cp "/app/$ASSEMBLY.runtimeconfig.json" /app/app.runtimeconfig.json; \
+    cp "/app/$ASSEMBLY.deps.json" /app/app.deps.json
 
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble-chiseled AS runtime
 ENV ASPNETCORE_URLS=http://+:8080 \

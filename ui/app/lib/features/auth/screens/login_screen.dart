@@ -15,9 +15,8 @@ import 'package:sync_app/features/auth/widgets/auth_glass_ui.dart';
 import 'package:sync_app/features/auth/widgets/login_video_background.dart';
 import 'package:sync_app/shared/widgets/language_switcher.dart';
 import 'package:sync_app/shared/widgets/google_mark.dart';
-// Web-only import: compiled only when targeting Web via conditional import.
-// On non-Web platforms this file doesn't exist, but it's guarded by kIsWeb.
-import 'package:google_sign_in_web/web_only.dart'
+// Web-only: GIS icon button. Stub on Android/iOS/desktop (dart.library.io).
+import 'package:sync_app/features/auth/screens/google_web_render_button.dart'
     if (dart.library.io) 'package:sync_app/features/auth/screens/_stub_web_only.dart'
     as google_sign_in_web_only;
 
@@ -47,11 +46,22 @@ class _LoginScreenState extends State<LoginScreen> {
     _isAuthEnabled = getIt.isRegistered<AuthRepository>();
     if (_isAuthEnabled) {
       _authRepository = getIt<AuthRepository>();
+      // If user lands on login with a persisted session, restore home.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _tryRestoreSession());
     }
     // On Web, subscribe to the GIS sign-in stream so renderButton() can trigger login.
     if (kIsWeb && _isAuthEnabled) {
       _initWebGoogleStream();
     }
+  }
+
+  Future<void> _tryRestoreSession() async {
+    if (!_isAuthEnabled || !mounted) return;
+    try {
+      if (await _authRepository.isLoggedIn()) {
+        await navigateAfterAuth(context);
+      }
+    } catch (_) {}
   }
 
   void _initWebGoogleStream() {
@@ -295,7 +305,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoginLoading = true);
     try {
-      await _authRepository.login(email: email, password: password);
+      await _authRepository.login(
+        email: email,
+        password: password,
+        rememberMe: _rememberMe,
+      );
       if (!mounted) return;
       await navigateAfterAuth(context);
     } catch (error) {
@@ -447,11 +461,10 @@ class _GoogleWebButtonWrapper extends StatelessWidget {
               ),
             ),
           ),
-          // The official GIS button via web_only.renderButton().
-          // ClipOval clips it to match the circular button design.
-          ClipOval(
-            child: google_sign_in_web_only.renderButton(),
-          ),
+          // Official GIS icon button (not standard text) so it fits the 52px circle.
+          // Default renderButton() is a full-width "Sign in with Google" pill; clipping
+          // that caused truncated Vietnamese text ("nhập bằ…") on a white disc.
+          google_sign_in_web_only.renderGoogleIconButton(),
           // Loading overlay.
           if (isLoading)
             Container(

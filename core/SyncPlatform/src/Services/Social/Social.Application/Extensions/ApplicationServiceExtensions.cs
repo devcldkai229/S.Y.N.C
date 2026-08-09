@@ -10,6 +10,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IPostService, PostService>();
         services.AddScoped<IPostShareCodeBackfillService, PostShareCodeBackfillService>();
         services.AddScoped<IInteractionService, InteractionService>();
+        services.AddScoped<IContentReportService, ContentReportService>();
         services.AddScoped<ICommentService, CommentService>();
         services.AddScoped<ICommunityChallengeService, CommunityChallengeService>();
         services.AddScoped<IChallengeParticipationService, ChallengeParticipationService>();

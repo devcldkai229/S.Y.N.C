@@ -6,6 +6,7 @@ import 'package:sync_app/features/marketplace/cubit/marketplace_cart_cubit.dart'
 import 'package:sync_app/features/marketplace/theme/marketplace_theme.dart';
 import 'package:sync_app/core/utils/currency_formatter.dart';
 import 'package:sync_app/features/order/widgets/cart_item_tile.dart';
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -37,6 +38,11 @@ class CartScreen extends StatelessWidget {
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
+                    if (FeatureTrialFlags.syncFoodsOrderingDisabled)
+                      const FeatureTrialBanner(
+                        message: FeatureTrialBanner.syncFoodsMessage,
+                        margin: EdgeInsets.only(bottom: 12),
+                      ),
                     Text(cart.partnerName ?? 'Bếp', style: const TextStyle(fontWeight: FontWeight.w800)),
                     const SizedBox(height: 12),
                     ...cart.items.map((line) => CartItemTile(
@@ -63,10 +69,14 @@ class CartScreen extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: FilledButton(
-                      onPressed: () => context.push(AppRoutes.orderCheckout),
+                      onPressed: FeatureTrialFlags.syncFoodsOrderingDisabled
+                          ? null
+                          : () => context.push(AppRoutes.orderCheckout),
                       style: FilledButton.styleFrom(backgroundColor: MarketplaceTheme.primary),
                       child: Text(
-                        'Tiến hành thanh toán · ${CurrencyFormatter.formatVnd(cart.subtotal)}',
+                        FeatureTrialFlags.syncFoodsOrderingDisabled
+                            ? 'Thanh toán tạm khóa (thử nghiệm)'
+                            : 'Tiến hành thanh toán · ${CurrencyFormatter.formatVnd(cart.subtotal)}',
                       ),
                     ),
                   ),

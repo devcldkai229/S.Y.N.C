@@ -19,6 +19,9 @@ public class UserDeviceRepository : IUserDeviceRepository
     public Task<UserDevice?> GetByDeviceIdAsync(string deviceId, CancellationToken cancellationToken = default)
         => _db.UserDevices.FirstOrDefaultAsync(d => d.DeviceId == deviceId, cancellationToken);
 
+    public Task<List<UserDevice>> ListByUserAsync(Guid userId, CancellationToken cancellationToken = default)
+        => _db.UserDevices.Where(d => d.UserId == userId).ToListAsync(cancellationToken);
+
     public async Task AddAsync(UserDevice device, CancellationToken cancellationToken = default)
         => await _db.UserDevices.AddAsync(device, cancellationToken);
 

@@ -522,6 +522,12 @@ ai/sync-agent-service/.ruff_cache/
 !/infra/aws/
 # Terraform local artefacts
 infra/aws/**/.terraform/
-infra/aws/**/.terraform.lock.hcl
 infra/aws/**/terraform.tfstate*
 infra/aws/**/tfplan
+# terraform.tfvars có thể chứa giá trị môi trường cụ thể → không commit;
+# chỉ commit *.tfvars.example làm mẫu.
+infra/aws/**/terraform.tfvars
+!infra/aws/**/terraform.tfvars.example
+# .terraform.lock.hcl PHẢI được commit (ghim version provider → build tái lập
+# được giữa máy dev và CI). Đừng ignore file này.
+docs/*

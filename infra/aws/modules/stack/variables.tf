@@ -1,7 +1,24 @@
 variable "env" { type = string } # dev | prod
 variable "region" { type = string }
 
-# Từ envs/shared (remote state)
+# Public DNS / web (indexed early for editor / terraform-ls)
+variable "domain_name" {
+  description = "Apex domain (e.g. sync.vn). Empty with enable_dns=false skips Route53/ACM"
+  type        = string
+  default     = ""
+}
+variable "enable_dns" {
+  description = "When true and domain_name set: Route53 + CloudFront ACM (us-east-1)"
+  type        = bool
+  default     = false
+}
+variable "create_hosted_zone" {
+  description = "true = create Route53 zone; false = use existing public zone (data source)"
+  type        = bool
+  default     = false
+}
+
+# From envs/shared remote state
 variable "ecr_repository_urls" { type = map(string) }
 
 # Network
@@ -18,11 +35,19 @@ variable "instance_type" {
   default = "t4g.medium"
 }
 variable "ondemand" {
-  type    = object({ min = number, max = number, desired = number })
+  type = object({
+    min     = number
+    max     = number
+    desired = number
+  })
   default = { min = 1, max = 3, desired = 1 }
 }
 variable "spot" {
-  type    = object({ min = number, max = number, desired = number })
+  type = object({
+    min     = number
+    max     = number
+    desired = number
+  })
   default = { min = 0, max = 4, desired = 1 }
 }
 
@@ -43,10 +68,6 @@ variable "rds_skip_final_snapshot" {
   type    = bool
   default = true
 }
-variable "mq_deployment_mode" {
-  type    = string
-  default = "SINGLE_INSTANCE"
-}
 variable "mongo_instance_type" {
   type    = string
   default = "t4g.small"
@@ -54,19 +75,25 @@ variable "mongo_instance_type" {
 
 # Ingress
 variable "certificate_arn" {
-  type    = string
-  default = "" # điền ACM ARN khi có domain → bật HTTPS
+  description = "Manual ACM ARN in ap-southeast-1 for ALB HTTPS (dns module does not create ALB certs)"
+  type        = string
+  default     = ""
 }
 variable "enable_bluegreen" {
   type    = bool
   default = false # prod: true (CodeDeploy gateway)
+}
+variable "enable_media_cdn" {
+  description = "CloudFront + bucket policy on sync-pub-assets. false on dev (shared bucket; media via Gateway)."
+  type        = bool
+  default     = false
 }
 
 # App
 variable "jwt_issuer" { type = string }
 variable "jwt_audience" { type = string }
 variable "critical_services" {
-  description = "Service chạy on-demand (còn lại Spot)"
+  description = "Services pinned to on-demand capacity (others prefer Spot)"
   type        = list(string)
   default     = ["gateway", "iam", "payment"]
 }
@@ -87,7 +114,7 @@ variable "alert_email" {
   default = ""
 }
 variable "image_tag" {
-  description = "Tag khởi điểm cho task def (CI thay bằng SHA)"
+  description = "Bootstrap image tag for task definitions (CI replaces with SHA)"
   type        = string
   default     = "bootstrap"
 }

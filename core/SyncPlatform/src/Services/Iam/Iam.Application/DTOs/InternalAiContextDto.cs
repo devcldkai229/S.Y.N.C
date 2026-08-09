@@ -45,6 +45,10 @@ public class InternalAiContextDto
     public int? DailyProteinTargetGram { get; set; }
     public int? DailyCarbTargetGram { get; set; }
     public int? DailyFatTargetGram { get; set; }
+    public int? DailyCalorieTarget { get; set; }
+    public bool TargetsManagedByEngine { get; set; }
+    /// <summary>Lần engine chỉnh targets gần nhất — dùng cap max 1 adjustment/tuần.</summary>
+    public DateTime? TargetsAdjustedAtUtc { get; set; }
     public List<string> Injuries { get; set; } = new();
     public List<string> Medications { get; set; } = new();
 

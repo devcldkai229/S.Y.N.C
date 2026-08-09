@@ -40,7 +40,7 @@ Gateway (local) must route workout/admin to this service **before** the chatbot 
 
 See `core/SyncPlatform/src/Gateway/appsettings.json.example`. Restart Gateway after changing routes.
 
-## Migration from MiniLM / DeepSeek
+## Migration to OpenAI embeddings
 1. Update `.env` to `OPENAI_*` (see `.env.example`).
 2. Run `python -m scripts.init_db` — upgrades `embedding` to `vector(1536)` and
    truncates incompatible rows.

@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Users, Dumbbell, CreditCard, Megaphone,
-  LogOut, Zap, ChevronLeft, ChevronRight, ClipboardList,
+  LogOut, ChevronLeft, ChevronRight, ClipboardList,
   ListChecks, Bell, Send, MessagesSquare, Store, ShoppingCart,
   Wallet, ArrowLeftRight, Salad, Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth.store";
 import { Button } from "@/components/ui/button";
+import { SyncLogo } from "@/components/ui/SyncLogo";
 import { useState } from "react";
 
 type NavItem  = { href: string; label: string; icon: React.ElementType };
@@ -54,6 +56,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/achievements", label: "Thành tựu",  icon: Trophy },
       { href: "/admin/community",    label: "Cộng đồng",  icon: MessagesSquare },
+      { href: "/admin/content-reports", label: "Báo cáo", icon: ClipboardList },
     ],
   },
   {
@@ -85,10 +88,17 @@ export function AdminSidebar() {
     >
       {/* Logo */}
       <div className={cn("flex items-center gap-2 px-4 h-14 border-b border-border shrink-0", collapsed && "justify-center px-0")}>
-        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shrink-0">
-          <Zap className="w-4 h-4 text-primary-foreground fill-current" />
-        </div>
-        {!collapsed && <span className="font-bold text-lg tracking-tight">SYNC</span>}
+        {collapsed ? (
+          <Image
+            src="/images/favicon-32.png"
+            alt="SYNC"
+            width={28}
+            height={28}
+            className="h-7 w-7 rounded"
+          />
+        ) : (
+          <SyncLogo height={28} className="h-7 w-auto" />
+        )}
       </div>
 
       {/* Nav */}

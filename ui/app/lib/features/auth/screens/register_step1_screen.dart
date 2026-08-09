@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/locale/l10n_extensions.dart';
+import 'package:sync_app/core/config/app_config.dart';
 import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/repositories/auth_repository.dart';
 import 'package:sync_app/features/auth/utils/auth_error_mapper.dart';
 import 'package:sync_app/features/auth/widgets/auth_glass_ui.dart';
 import 'package:sync_app/features/auth/widgets/login_video_background.dart';
 import 'package:sync_app/shared/widgets/language_switcher.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RegisterStep1Screen extends StatefulWidget {
   const RegisterStep1Screen({super.key});
@@ -32,6 +34,7 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
   bool _isEmailVerified = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _acceptedLegal = false;
   String _registeredEmail = '';
 
   int get _currentStep => _isEmailVerified ? 3 : (_isCodeSent ? 2 : 1);
@@ -210,6 +213,76 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Checkbox(
+                          value: _acceptedLegal,
+                          onChanged: (v) => setState(() => _acceptedLegal = v ?? false),
+                          activeColor: authCtaGreen,
+                          side: const BorderSide(color: Colors.white70),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              isVi
+                                  ? 'Tôi đồng ý với '
+                                  : 'I agree to the ',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 13,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => launchUrl(
+                                Uri.parse(AppConfig.privacyPolicyUrl),
+                                mode: LaunchMode.externalApplication,
+                              ),
+                              child: Text(
+                                isVi ? 'Chính sách quyền riêng tư' : 'Privacy Policy',
+                                style: const TextStyle(
+                                  color: authCtaGreen,
+                                  fontSize: 13,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: authCtaGreen,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              isVi ? ' và ' : ' and ',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.85),
+                                fontSize: 13,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () => launchUrl(
+                                Uri.parse(AppConfig.termsOfServiceUrl),
+                                mode: LaunchMode.externalApplication,
+                              ),
+                              child: Text(
+                                isVi ? 'Điều khoản dịch vụ' : 'Terms of Service',
+                                style: const TextStyle(
+                                  color: authCtaGreen,
+                                  fontSize: 13,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: authCtaGreen,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 28),
                   AuthCtaButton(
                     label: l10n.actionContinue,
@@ -258,6 +331,15 @@ class _RegisterStep1ScreenState extends State<RegisterStep1Screen> {
       return;
     }
     if (_isLoading) return;
+
+    if (!_acceptedLegal) {
+      _showMessage(
+        Localizations.localeOf(context).languageCode == 'vi'
+            ? 'Vui lòng đồng ý Chính sách quyền riêng tư và Điều khoản dịch vụ.'
+            : 'Please accept the Privacy Policy and Terms of Service.',
+      );
+      return;
+    }
 
     final username = _usernameController.text.trim();
     final email = _emailController.text.trim();

@@ -305,6 +305,120 @@ public class RoadmapSessionService : IRoadmapSessionService
         return entity.ToDto();
     }
 
+    public async Task<ApplyTrainingAdjustmentResultDto> ApplyTrainingAdjustmentAsync(
+        Guid userId,
+        ApplyTrainingAdjustmentRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        var decision = (request.Decision ?? "hold").Trim().ToLowerInvariant();
+        if (decision is "hold" or "substitute")
+        {
+            return new ApplyTrainingAdjustmentResultDto
+            {
+                UserId = userId,
+                Decision = decision,
+                SessionsAdjusted = 0,
+                Status = "skipped",
+                Message = decision == "substitute"
+                    ? "Substitute requires per-exercise flow; no bulk volume change applied."
+                    : "Hold — no upcoming session volume change.",
+            };
+        }
+
+        var roadmaps = await _personalizedRoadmapRepository.GetByUserIdAsync(userId, cancellationToken);
+        var active = roadmaps.FirstOrDefault(r => r.RoadmapStatus == RoadmapStatus.Active)
+            ?? roadmaps.FirstOrDefault();
+        if (active is null)
+        {
+            return new ApplyTrainingAdjustmentResultDto
+            {
+                UserId = userId,
+                Decision = decision,
+                SessionsAdjusted = 0,
+                Status = "no_roadmap",
+                Message = "No active roadmap for user.",
+            };
+        }
+
+        var from = DateTimeOffset.UtcNow.Date;
+        var to = from.AddDays(14);
+        var sessions = await _sessionRepository.GetByRoadmapIdAndDateRangeAsync(
+            active.Id, from, to, cancellationToken);
+
+        var upcoming = sessions
+            .Where(s => s.SessionStatus != SessionStatus.Completed && s.SessionStatus != SessionStatus.Skipped)
+            .ToList();
+
+        var volumeDelta = request.VolumeDeltaPct;
+        if (volumeDelta == 0 && decision == "deload")
+            volumeDelta = -30;
+        if (volumeDelta == 0 && decision == "progress")
+            volumeDelta = 0; // progress uses load factor on weights
+
+        var loadFactor = decision == "progress"
+            ? 1.0 + Math.Clamp(Math.Abs(request.VolumeDeltaPct) > 0
+                ? request.VolumeDeltaPct / 100.0
+                : 0.025, 0.01, 0.10)
+            : 1.0;
+        var setFactor = decision == "deload"
+            ? 1.0 + Math.Clamp(volumeDelta / 100.0, -0.50, -0.10)
+            : 1.0;
+
+        var adjustedIds = new List<Guid>();
+        foreach (var entity in upcoming)
+        {
+            if (entity.ExecutionBlocks.Count == 0)
+                continue;
+
+            if (decision == "deload")
+            {
+                foreach (var block in entity.ExecutionBlocks)
+                {
+                    block.TargetSets = Math.Max(1, (int)Math.Round(block.TargetSets * setFactor));
+                }
+            }
+            else if (decision == "progress")
+            {
+                foreach (var block in entity.ExecutionBlocks)
+                {
+                    block.TargetWeightKg = Math.Round(block.TargetWeightKg * (decimal)loadFactor, 2);
+                }
+            }
+            else
+            {
+                continue;
+            }
+
+            await _sessionRepository.UpdateAsync(entity.Id, entity, cancellationToken);
+            adjustedIds.Add(entity.Id);
+        }
+
+        if (adjustedIds.Count > 0)
+        {
+            await _realtimePublisher.PublishRoadmapUpdatedAsync(
+                userId,
+                "sessions_changed",
+                active.Id,
+                adjustedIds,
+                cancellationToken);
+        }
+
+        return new ApplyTrainingAdjustmentResultDto
+        {
+            UserId = userId,
+            Decision = decision,
+            VolumeDeltaPct = volumeDelta,
+            SessionsAdjusted = adjustedIds.Count,
+            SessionIds = adjustedIds,
+            Phase = request.Phase,
+            EtaWeeks = request.EtaWeeks,
+            Status = adjustedIds.Count > 0 ? "applied" : "noop",
+            Message = adjustedIds.Count > 0
+                ? $"Adjusted {adjustedIds.Count} upcoming session(s) ({decision})."
+                : "No upcoming sessions to adjust.",
+        };
+    }
+
     public async Task<RoadmapSessionDto> SubstituteExerciseAsync(
         Guid sessionId,
         Guid userId,

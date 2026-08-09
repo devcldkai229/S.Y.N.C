@@ -15,7 +15,12 @@ variable "vpc_cidr" { type = string }
 variable "public_subnet_ids" { type = list(string) }
 variable "certificate_arn" {
   type    = string
-  default = "" # điền ARN ACM khi có domain → bật HTTPS
+  default = "" # ARN ACM (có thể “known after apply” khi cert từ module.dns)
+}
+variable "enable_https" {
+  # Plan-time known: do not derive solely from certificate_arn when ARN is unknown until apply.
+  type    = bool
+  default = false
 }
 variable "enable_bluegreen" {
   type    = bool
@@ -27,7 +32,7 @@ variable "health_path" {
 }
 
 locals {
-  https = var.certificate_arn != ""
+  https = var.enable_https
 }
 
 resource "aws_security_group" "alb" {
@@ -36,21 +41,23 @@ resource "aws_security_group" "alb" {
   vpc_id      = var.vpc_id
 
   ingress {
-    description = "HTTP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description      = "HTTP"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 
   dynamic "ingress" {
     for_each = local.https ? [1] : []
     content {
-      description = "HTTPS"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
+      description      = "HTTPS"
+      from_port        = 443
+      to_port          = 443
+      protocol         = "tcp"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = ["::/0"]
     }
   }
 
@@ -67,10 +74,11 @@ resource "aws_security_group" "alb" {
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
   }
 }
 
@@ -79,7 +87,8 @@ resource "aws_lb" "this" {
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
   subnets            = var.public_subnet_ids
-  idle_timeout       = 300 # SSE AI stream không đứt giữa chừng
+  ip_address_type    = "dualstack" # matches Route53 AAAA aliases for api.*
+  idle_timeout       = 300         # SSE AI stream không đứt giữa chừng
 }
 
 # target_type=instance vì task bridge mode đăng ký <instance>:<dynamic-port>
@@ -120,7 +129,9 @@ resource "aws_lb_target_group" "green" {
   }
 }
 
+# :80 forward (no cert) — CodeDeploy có thể hoán TG → ignore default_action
 resource "aws_lb_listener" "http" {
+  count             = local.https ? 0 : 1
   load_balancer_arn = aws_lb.this.arn
   port              = 80
   protocol          = "HTTP"
@@ -130,9 +141,25 @@ resource "aws_lb_listener" "http" {
     target_group_arn = aws_lb_target_group.blue.arn
   }
 
-  # CodeDeploy blue/green hoán đổi TG trên listener → TF không revert
   lifecycle {
     ignore_changes = [default_action]
+  }
+}
+
+# :80 → 443 khi có certificate_arn (manual ACM ALB)
+resource "aws_lb_listener" "http_redirect" {
+  count             = local.https ? 1 : 0
+  load_balancer_arn = aws_lb.this.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
   }
 }
 
@@ -172,6 +199,7 @@ resource "aws_lb_listener" "test" {
 
 output "alb_arn" { value = aws_lb.this.arn }
 output "alb_dns_name" { value = aws_lb.this.dns_name }
+output "alb_zone_id" { value = aws_lb.this.zone_id }
 output "alb_arn_suffix" { value = aws_lb.this.arn_suffix }
 output "security_group_id" { value = aws_security_group.alb.id }
 output "target_group_blue_arn" { value = aws_lb_target_group.blue.arn }
@@ -179,5 +207,5 @@ output "target_group_blue_name" { value = aws_lb_target_group.blue.name }
 output "target_group_blue_arn_suffix" { value = aws_lb_target_group.blue.arn_suffix }
 output "target_group_green_arn" { value = var.enable_bluegreen ? aws_lb_target_group.green[0].arn : null }
 output "target_group_green_name" { value = var.enable_bluegreen ? aws_lb_target_group.green[0].name : null }
-output "prod_listener_arn" { value = local.https ? aws_lb_listener.https[0].arn : aws_lb_listener.http.arn }
+output "prod_listener_arn" { value = local.https ? aws_lb_listener.https[0].arn : aws_lb_listener.http[0].arn }
 output "test_listener_arn" { value = var.enable_bluegreen ? aws_lb_listener.test[0].arn : null }

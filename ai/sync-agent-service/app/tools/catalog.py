@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Awaitable, Callable
 
 from app.tools import dotnet, local
+from app.tools import adaptive_tools as _adaptive
 from app.tools import insight_stats as _insight
 from app.tools.context import ToolRunContext, safe_tool_call
 from app.tools import websearch as _ws
@@ -613,6 +614,27 @@ def _registry() -> dict[str, ToolDef]:
             }),
             frozenset({"insight"}),
         ),
+        "log_weight": ToolDef(
+            "log_weight",
+            "User BÁO CÂN NẶNG MỚI (vd 'sáng nay mình 92kg') → ghi lịch sử cân + "
+            "Adaptive Engine tự tính lại calo/macro theo dữ liệu THẬT (Premium). "
+            "Thay đổi nhỏ auto-apply; vừa/lớn tạo card xác nhận. KHÔNG tự bịa cân nặng.",
+            _obj({
+                "weight_kg": {"type": "number", "description": "Cân nặng kg user vừa báo"},
+                "body_fat_percentage": {"type": "number"},
+                "note": {"type": "string"},
+            }, ["weight_kg"]),
+            frozenset({"coach", "nutrition", "workout", "insight"}), "write",
+        ),
+        "get_adaptive_plan": ToolDef(
+            "get_adaptive_plan",
+            "Chạy Adaptive Engine KHÔNG cần cân mới — user hỏi 'mục tiêu calo của tôi còn "
+            "hợp lý không', 'điều chỉnh tuần này' (Premium). Trả AdjustmentPlan cũ→mới.",
+            _obj({
+                "trigger": {"type": "string", "description": "Weekly|Plateau|ProfileChange|Recovery"},
+            }),
+            frozenset({"coach", "nutrition", "insight"}),
+        ),
     }
 
 
@@ -623,11 +645,13 @@ AGENT_TOOLS: dict[str, list[str]] = {
         "get_gamification_status", "suggest_next_achievement", "log_mood_checkin",
         "get_community_highlights", "remember_user_fact", "recall_user_memory",
         "send_notification", "handoff", "escalate_to_human", "web_search",
+        "log_weight", "get_adaptive_plan",
     ],
     "nutrition": [
         "get_daily_summary", "get_nutrition_targets", "search_food", "get_food_by_barcode",
         "log_meal", "log_water", "suggest_meal_plan", "estimate_meal_from_photo",
         "evaluate_food_fit", "get_food_detail",
+        "log_weight", "get_adaptive_plan",
         "remember_user_fact", "recall_user_memory", "handoff",
     ],
     "workout": [
@@ -637,6 +661,7 @@ AGENT_TOOLS: dict[str, list[str]] = {
         "get_today_workout", "request_replan", "adjust_intensity", "search_exercises",
         "get_exercise_detail", "get_exercise_media", "substitute_exercise",
         "log_workout_execution", "log_set", "get_recovery_status",
+        "log_weight",
         "remember_user_fact", "recall_user_memory", "handoff",
     ],
     "commerce": [
@@ -654,6 +679,7 @@ AGENT_TOOLS: dict[str, list[str]] = {
         "detect_plateau", "generate_weekly_report", "compute_and_update_ai_scores",
         "get_nutrition_stats", "evaluate_nutrition_adequacy", "get_workout_stats",
         "get_body_progress", "predict_outcome", "build_insight_dashboard",
+        "log_weight", "get_adaptive_plan",
         "get_gamification_status", "get_recovery_status", "send_notification", "handoff",
     ],
 }
@@ -1549,6 +1575,10 @@ def build_impls(ctx: ToolRunContext, names: list[str]) -> dict[str, ToolFn]:
             _insight.predict_outcome(ctx, period=period),
         "build_insight_dashboard": lambda period="8w", focus="all", **_:
             _insight.build_insight_dashboard(ctx, period=period, focus=focus),
+        "log_weight": lambda weight_kg=0, body_fat_percentage=None, note="", **_:
+            _adaptive.log_weight(ctx, weight_kg, body_fat_percentage, note),
+        "get_adaptive_plan": lambda trigger="Weekly", **_:
+            _adaptive.get_adaptive_plan(ctx, trigger),
         "web_search": lambda query="", max_results=5, **_: _ws.web_search(query, max_results=int(max_results)),
     }
 

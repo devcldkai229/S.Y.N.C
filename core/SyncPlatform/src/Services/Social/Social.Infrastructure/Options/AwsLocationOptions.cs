@@ -31,6 +31,19 @@ public sealed class AwsLocationOptions
     /// <summary>v2 Esri style when MapName is empty: Standard, Hybrid, Satellite, Monochrome.</summary>
     public string MapStyle { get; set; } = "Hybrid";
 
+    /// <summary>
+    /// Per-request HTTP timeout for Amazon Location SDK calls (seconds).
+    /// Keep modest so a slow Grab/Esri call fails over instead of hanging the API.
+    /// </summary>
+    public int RequestTimeoutSeconds { get; set; } = 12;
+
+    /// <summary>
+    /// Soft timeout per travel-mode attempt when cascading Motorbike fallbacks
+    /// (Motorcycle → Bicycle → Car). Shorter than <see cref="RequestTimeoutSeconds"/>
+    /// so a hung Grab Motorcycle call does not block the whole request.
+    /// </summary>
+    public int RouteAttemptTimeoutSeconds { get; set; } = 8;
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(RouteCalculatorName);
 
     public bool IsPlacesConfigured => !string.IsNullOrWhiteSpace(PlaceIndexName);

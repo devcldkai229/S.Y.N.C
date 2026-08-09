@@ -1,6 +1,9 @@
 # Kill processes on service ports, build, then launch APIs (Development).
 #
-# Usage (all services):
+# For full stack in Docker (infra + all services + web): see infra/docker/README.md
+#   cd infra/docker && .\scripts\up-full.ps1 -Build
+#
+# Usage (all services on host):
 #   .\scripts\run-all.ps1
 #   .\scripts\run-all.ps1 -SkipBuild
 #

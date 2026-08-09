@@ -7,10 +7,12 @@ import HowItWorks from "@/components/landing/HowItWorks";
 import TestimonialsSection from "@/components/landing/TestimonialsSection";
 import CTASection from "@/components/landing/CTASection";
 import DisplayTextSection from "@/components/landing/DisplayTextSection";
+import Footer from "@/components/landing/Footer";
+import CursorTrailBackground from "@/components/ui/CursorTrailBackground";
 
 export default function Home() {
   return (
-    <>
+    <div className="relative min-h-screen bg-[#FAFCFA]">
       <Navbar />
       <main>
         <HeroSection />
@@ -22,6 +24,9 @@ export default function Home() {
         <CTASection />
       </main>
       <DisplayTextSection />
-    </>
+      <Footer />
+      {/* Overlay above all sections; pointer-events:none — clicks pass through */}
+      <CursorTrailBackground mode="fixed" variant="light" />
+    </div>
   );
 }

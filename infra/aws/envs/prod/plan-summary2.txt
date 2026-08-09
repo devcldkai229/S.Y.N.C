@@ -1,0 +1,107 @@
+﻿format_version 1.2
+terraform_version 1.13.5
+complete True
+errored False
+actions {('create',): 196, ('read',): 4}
+creates 196
+
+=== PLANNED MODULES ===
+module.stack.aws_route53_record.api_a[0]: A api.synctis.in
+module.stack.aws_route53_record.api_aaaa[0]: AAAA api.synctis.in
+module.stack.aws_route53_record.cdn_a[0]: A cdn.synctis.in
+module.stack.aws_route53_record.cdn_aaaa[0]: AAAA cdn.synctis.in
+module.stack.aws_route53_record.web_a[0]: A synctis.in
+module.stack.aws_route53_record.web_aaaa[0]: AAAA synctis.in
+module.stack.aws_route53_record.www_a[0]: A www.synctis.in
+module.stack.aws_route53_record.www_aaaa[0]: AAAA www.synctis.in
+module.stack.module.mongo.aws_instance.this: type=t4g.micro tags={'Name': 'sync-prod-mongo', 'dlm-snapshot': 'sync-prod-mongo'}
+module.stack.module.rds.aws_db_instance.this: sync-prod-postgres db.t4g.micro multi_az=False engine=postgres
+module.stack.module.web_static.aws_cloudfront_distribution.web: aliases=None
+module.stack.module.web_static.aws_s3_bucket.web: bucket=sync-web-prod
+module.stack.module.secrets.aws_secretsmanager_secret.managed["db/mongo-password"]: name=/sync/prod/db/mongo-password
+module.stack.module.secrets.aws_secretsmanager_secret.managed["db/postgres-password"]: name=/sync/prod/db/postgres-password
+module.stack.module.secrets.aws_secretsmanager_secret.shell["ai/langfuse-secret-key"]: name=/sync/prod/ai/langfuse-secret-key
+module.stack.module.secrets.aws_secretsmanager_secret.shell["delivery/ahamove-api-key"]: name=/sync/prod/delivery/ahamove-api-key
+module.stack.module.secrets.aws_secretsmanager_secret.shell["llm/openai-api-key"]: name=/sync/prod/llm/openai-api-key
+module.stack.module.secrets.aws_secretsmanager_secret.shell["llm/tavily-api-key"]: name=/sync/prod/llm/tavily-api-key
+module.stack.module.secrets.aws_secretsmanager_secret.shell["mail/brevo-password"]: name=/sync/prod/mail/brevo-password
+module.stack.module.secrets.aws_secretsmanager_secret.shell["pay/payos-api-key"]: name=/sync/prod/pay/payos-api-key
+module.stack.module.secrets.aws_secretsmanager_secret.shell["pay/payos-checksum-key"]: name=/sync/prod/pay/payos-checksum-key
+module.stack.module.secrets.aws_secretsmanager_secret.shell["pay/payos-client-id"]: name=/sync/prod/pay/payos-client-id
+module.stack.module.secrets.aws_secretsmanager_secret.shell["shared/internal-api-key"]: name=/sync/prod/shared/internal-api-key
+module.stack.module.secrets.aws_secretsmanager_secret.shell["shared/jwt-secret"]: name=/sync/prod/shared/jwt-secret
+module.stack.module.secrets.aws_ssm_parameter.shell["ai/langfuse-public-key"]: name=/sync/prod/ai/langfuse-public-key
+module.stack.module.secrets.aws_ssm_parameter.shell["auth/google-client-ids"]: name=/sync/prod/auth/google-client-ids
+module.stack.module.secrets.aws_ssm_parameter.shell["delivery/ahamove-mobile"]: name=/sync/prod/delivery/ahamove-mobile
+module.stack.module.secrets.aws_ssm_parameter.shell["mail/brevo-username"]: name=/sync/prod/mail/brevo-username
+module.stack.module.secrets.aws_ssm_parameter.shell["web/aws-map-api-key"]: name=/sync/prod/web/aws-map-api-key
+module.stack.module.secrets.aws_ssm_parameter.this["db/mongo-host"]: name=/sync/prod/db/mongo-host
+module.stack.module.secrets.aws_ssm_parameter.this["db/mongo-user"]: name=/sync/prod/db/mongo-user
+module.stack.module.secrets.aws_ssm_parameter.this["db/pg-host"]: name=/sync/prod/db/pg-host
+module.stack.module.secrets.aws_ssm_parameter.this["db/pg-port"]: name=/sync/prod/db/pg-port
+module.stack.module.secrets.aws_ssm_parameter.this["db/pg-user"]: name=/sync/prod/db/pg-user
+module.stack.module.sqs.aws_sqs_queue.dlq: name=sync-prod-ai-interventions-dlq
+module.stack.module.sqs.aws_sqs_queue.this: name=sync-prod-ai-interventions
+module.stack.module.network.aws_nat_gateway.this[0]: NAT
+module.stack.module.network.aws_vpc.this: cidr=10.30.0.0/16
+module.stack.module.network.aws_vpc_endpoint.dynamodb: service=com.amazonaws.ap-southeast-1.dynamodb type=Gateway
+module.stack.module.network.aws_vpc_endpoint.interface["ecr.api"]: service=com.amazonaws.ap-southeast-1.ecr.api type=Interface
+module.stack.module.network.aws_vpc_endpoint.interface["ecr.dkr"]: service=com.amazonaws.ap-southeast-1.ecr.dkr type=Interface
+module.stack.module.network.aws_vpc_endpoint.s3: service=com.amazonaws.ap-southeast-1.s3 type=Gateway
+module.stack.module.ecs_cluster.aws_autoscaling_group.this["ondemand"]: min=1 des=2 max=4
+module.stack.module.ecs_cluster.aws_autoscaling_group.this["spot"]: min=1 des=1 max=4
+module.stack.module.ecs_cluster.aws_ecs_cluster.this: name=sync-prod
+module.stack.module.s3_cdn.aws_cloudfront_distribution.public_assets[0]: aliases=None
+module.stack.module.alb.aws_lb.this: name=sync-prod-alb internal=None
+module.stack.module.alb.aws_lb_listener.http[0]: port=80 protocol=HTTP
+module.stack.module.alb.aws_lb_target_group.blue: name=sync-prod-gw-blue port=8080 type=instance hc=/health
+module.stack.module.redis.aws_elasticache_replication_group.this: sync-prod-redis cache.t4g.micro
+module.stack.module.dns[0].aws_acm_certificate.cloudfront: domain=synctis.in sans=['cdn.synctis.in', 'synctis.in', 'www.synctis.in']
+module.stack.module.dns[0].aws_route53_record.acm_validation["cdn.synctis.in"]: None None
+module.stack.module.dns[0].aws_route53_record.acm_validation["synctis.in"]: None None
+module.stack.module.dns[0].aws_route53_record.acm_validation["www.synctis.in"]: None None
+module.stack.module.ecs_service["roadmap"].aws_ecs_service.this: name=sync-prod-roadmap desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'roadmap', 'port': 8080}], 'discovery_name': 'roadmap', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["roadmap"].aws_ecs_task_definition.this: family=sync-prod-roadmap image in defs unknown until apply? 
+module.stack.module.ecs_service["marketplace"].aws_ecs_service.this: name=sync-prod-marketplace desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'marketplace', 'port': 8080}], 'discovery_name': 'marketplace', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["marketplace"].aws_ecs_task_definition.this: family=sync-prod-marketplace image in defs unknown until apply? 
+module.stack.module.ecs_service["payment"].aws_ecs_service.this: name=sync-prod-payment desired=2 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'payment', 'port': 8080}], 'discovery_name': 'payment', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["payment"].aws_ecs_task_definition.this: family=sync-prod-payment image in defs unknown until apply? 
+module.stack.module.ecs_service["notification"].aws_ecs_service.this: name=sync-prod-notification desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'notification', 'port': 8080}], 'discovery_name': 'notification', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["notification"].aws_ecs_task_definition.this: family=sync-prod-notification image in defs unknown until apply? 
+module.stack.module.ecs_service["ai-worker"].aws_ecs_service.this: name=sync-prod-ai-worker desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': []}]
+module.stack.module.ecs_service["ai-worker"].aws_ecs_task_definition.this: family=sync-prod-ai-worker image in defs unknown until apply? 
+module.stack.module.ecs_service["ai"].aws_ecs_service.this: name=sync-prod-ai desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'ai', 'port': 8088}], 'discovery_name': 'ai', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["ai"].aws_ecs_task_definition.this: family=sync-prod-ai image in defs unknown until apply? 
+module.stack.module.ecs_service["order"].aws_ecs_service.this: name=sync-prod-order desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'order', 'port': 8080}], 'discovery_name': 'order', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["order"].aws_ecs_task_definition.this: family=sync-prod-order image in defs unknown until apply? 
+module.stack.module.ecs_service["social"].aws_ecs_service.this: name=sync-prod-social desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'social', 'port': 8080}], 'discovery_name': 'social', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["social"].aws_ecs_task_definition.this: family=sync-prod-social image in defs unknown until apply? 
+module.stack.module.ecs_service["gateway"].aws_ecs_service.this: name=sync-prod-gateway desired=2 lb=None sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'gateway', 'port': 8080}], 'discovery_name': 'gateway', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["gateway"].aws_ecs_task_definition.this: family=sync-prod-gateway image in defs unknown until apply? 
+module.stack.module.ecs_service["rcm"].aws_ecs_service.this: name=sync-prod-rcm desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'rcm', 'port': 8000}], 'discovery_name': 'rcm', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["rcm"].aws_ecs_task_definition.this: family=sync-prod-rcm image in defs unknown until apply? 
+module.stack.module.ecs_service["nutrition"].aws_ecs_service.this: name=sync-prod-nutrition desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'nutrition', 'port': 8080}], 'discovery_name': 'nutrition', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["nutrition"].aws_ecs_task_definition.this: family=sync-prod-nutrition image in defs unknown until apply? 
+module.stack.module.ecs_service["exercise"].aws_ecs_service.this: name=sync-prod-exercise desired=1 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'exercise', 'port': 8080}], 'discovery_name': 'exercise', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["exercise"].aws_ecs_task_definition.this: family=sync-prod-exercise image in defs unknown until apply? 
+module.stack.module.ecs_service["iam"].aws_ecs_service.this: name=sync-prod-iam desired=2 lb=[] sc_ns=[{'enabled': True, 'log_configuration': [], 'service': [{'client_alias': [{'dns_name': 'iam', 'port': 8080}], 'discovery_name': 'iam', 'ingress_port_override': None, 'port_name': 'app', 'timeout': [], 'tls': []}]}]
+module.stack.module.ecs_service["iam"].aws_ecs_task_definition.this: family=sync-prod-iam image in defs unknown until apply? 
+
+=== OUTPUTS ===
+  ai_sqs_queue_url = None
+  alb_dns_name = None
+  api_url = http://api.synctis.in
+  cdn_domain = None
+  cdn_url = https://cdn.synctis.in
+  cluster_name = sync-prod
+  dns_name_servers = ['ns-210.awsdns-26.com', 'ns-533.awsdns-02.net', 'ns-1594.awsdns-07.co.uk', 'ns-1406.awsdns-47.org']
+  migrate_security_group = None
+  migrate_subnets = None
+  mongo_private_ip = None
+  rds_endpoint = None
+  redis_endpoint = None
+  secret_names = ['/sync/prod/shared/jwt-secret', '/sync/prod/shared/internal-api-key', '/sync/prod/llm/openai-api-key', '/sync/prod/llm/tavily-api-key', '/sync/prod/pay/payos-client-id', '/sync/prod/pay/payos-api-key', '/sync/prod/pay/payos-checksum-key', '/sync/prod/delivery/ahamove-api-key', '/sync/prod/mail/brevo-password', '/sync/prod/ai/langfuse-secret-key']
+  ssm_param_names = ['/sync/prod/auth/google-client-ids', '/sync/prod/ai/langfuse-public-key', '/sync/prod/delivery/ahamove-mobile', '/sync/prod/mail/brevo-username', '/sync/prod/web/aws-map-api-key']
+  web_bucket = sync-web-prod
+  web_distribution_id = None
+  web_url = https://synctis.in

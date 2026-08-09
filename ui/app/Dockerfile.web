@@ -1,0 +1,20 @@
+# Flutter Web -> nginx (local docker-compose profile: ui)
+FROM ghcr.io/cirruslabs/flutter:stable AS build
+WORKDIR /app
+
+# Dependency layer (cache until pubspec changes)
+COPY pubspec.yaml pubspec.lock ./
+RUN flutter pub get
+
+COPY . .
+ARG BASE_URL=http://localhost:5057/api
+RUN flutter build web --release --dart-define=BASE_URL=${BASE_URL}
+
+FROM nginx:alpine AS runtime
+RUN rm -f /etc/nginx/conf.d/default.conf
+COPY nginx.web.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/build/web /usr/share/nginx/html
+EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -qO- http://127.0.0.1/ >/dev/null 2>&1 || exit 1
+CMD ["nginx", "-g", "daemon off;"]
