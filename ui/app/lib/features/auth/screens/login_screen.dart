@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sync_app/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +14,11 @@ import 'package:sync_app/features/auth/utils/auth_navigation.dart';
 import 'package:sync_app/features/auth/widgets/auth_glass_ui.dart';
 import 'package:sync_app/features/auth/widgets/login_video_background.dart';
 import 'package:sync_app/shared/widgets/language_switcher.dart';
+import 'package:sync_app/shared/widgets/google_mark.dart';
+// Web-only: GIS icon button. Stub on Android/iOS/desktop (dart.library.io).
+import 'package:sync_app/features/auth/screens/google_web_render_button.dart'
+    if (dart.library.io) 'package:sync_app/features/auth/screens/_stub_web_only.dart'
+    as google_sign_in_web_only;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -29,17 +37,69 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isGoogleLoading = false;
   bool _obscurePassword = true;
 
+  // Web-only: GIS requires renderButton(); we listen to authenticationEvents stream.
+  StreamSubscription<GoogleSignInAuthenticationEvent>? _webGoogleSub;
+
   @override
   void initState() {
     super.initState();
     _isAuthEnabled = getIt.isRegistered<AuthRepository>();
     if (_isAuthEnabled) {
       _authRepository = getIt<AuthRepository>();
+      // If user lands on login with a persisted session, restore home.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _tryRestoreSession());
     }
+    // On Web, subscribe to the GIS sign-in stream so renderButton() can trigger login.
+    if (kIsWeb && _isAuthEnabled) {
+      _initWebGoogleStream();
+    }
+  }
+
+  Future<void> _tryRestoreSession() async {
+    if (!_isAuthEnabled || !mounted) return;
+    try {
+      if (await _authRepository.isLoggedIn()) {
+        await navigateAfterAuth(context);
+      }
+    } catch (_) {}
+  }
+
+  void _initWebGoogleStream() {
+    // Initialize GoogleSignIn (idempotent — safe to call multiple times).
+    // Must complete before renderButton() works and before the stream fires.
+    _authRepository.ensureGoogleSignInInitialized().then((_) {
+      if (!mounted) return;
+      // GoogleSignIn.instance.authenticationEvents is the correct v7 stream.
+      // It emits GoogleSignInAuthenticationEventSignIn when renderButton() is clicked.
+      _webGoogleSub = GoogleSignIn.instance.authenticationEvents.listen(
+        (GoogleSignInAuthenticationEvent event) async {
+          if (!mounted) return;
+          if (event is GoogleSignInAuthenticationEventSignIn) {
+            setState(() => _isGoogleLoading = true);
+            try {
+              await _authRepository.signInWithGoogleAccount(event.user);
+              if (!mounted) return;
+              await navigateAfterAuth(context);
+            } catch (error) {
+              if (mounted) _showError(_mapError(error, context.l10n));
+            } finally {
+              if (mounted) setState(() => _isGoogleLoading = false);
+            }
+          }
+        },
+        onError: (Object e) {
+          if (mounted) _showError('Google Sign-In error: $e');
+        },
+      );
+    }).catchError((Object e) {
+      // Initialization failure — show error, button will not work.
+      if (mounted) _showError('Google Sign-In không khởi động được: $e');
+    });
   }
 
   @override
   void dispose() {
+    _webGoogleSub?.cancel();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -171,15 +231,22 @@ class _LoginScreenState extends State<LoginScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _SocialCircleButton(
-                              icon: Icons.g_mobiledata_rounded,
-                              isLoading: _isGoogleLoading,
-                              onPressed: _onGooglePressed,
-                            ),
+                            if (kIsWeb)
+                              // GIS on Web requires the official button widget.
+                              // Wrap it in a styled container to fit the design.
+                              _GoogleWebButtonWrapper(
+                                isLoading: _isGoogleLoading,
+                              )
+                            else
+                              _SocialCircleButton(
+                                isLoading: _isGoogleLoading,
+                                onPressed: _onGooglePressed,
+                                child: const GoogleMark(size: 22),
+                              ),
                             const SizedBox(width: 20),
                             _SocialCircleButton(
-                              icon: Icons.apple_rounded,
                               onPressed: _onApplePressed,
+                              child: const Icon(Icons.apple_rounded, size: 26),
                             ),
                           ],
                         ),
@@ -238,7 +305,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoginLoading = true);
     try {
-      await _authRepository.login(email: email, password: password);
+      await _authRepository.login(
+        email: email,
+        password: password,
+        rememberMe: _rememberMe,
+      );
       if (!mounted) return;
       await navigateAfterAuth(context);
     } catch (error) {
@@ -325,12 +396,12 @@ class _SubtleDivider extends StatelessWidget {
 
 class _SocialCircleButton extends StatelessWidget {
   const _SocialCircleButton({
-    required this.icon,
+    required this.child,
     required this.onPressed,
     this.isLoading = false,
   });
 
-  final IconData icon;
+  final Widget child;
   final VoidCallback onPressed;
   final bool isLoading;
 
@@ -354,7 +425,67 @@ class _SocialCircleButton extends StatelessWidget {
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
-            : Icon(icon, size: icon == Icons.apple_rounded ? 26 : 30),
+            : child,
+      ),
+    );
+  }
+}
+
+/// Web-only widget that renders [GoogleSignIn.instance.renderButton()].
+/// GIS (google_sign_in_web v1.x) does not support programmatic sign-in;
+/// the official button is the only way to trigger the sign-in flow.
+/// The [onCurrentUserChanged] stream in [_LoginScreenState._initWebGoogleStream]
+/// handles the result asynchronously.
+class _GoogleWebButtonWrapper extends StatelessWidget {
+  const _GoogleWebButtonWrapper({this.isLoading = false});
+
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 52,
+      height: 52,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Styled backdrop that matches the other social buttons.
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.06),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+            ),
+          ),
+          // Official GIS icon button (not standard text) so it fits the 52px circle.
+          // Default renderButton() is a full-width "Sign in with Google" pill; clipping
+          // that caused truncated Vietnamese text ("nhập bằ…") on a white disc.
+          google_sign_in_web_only.renderGoogleIconButton(),
+          // Loading overlay.
+          if (isLoading)
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withValues(alpha: 0.45),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

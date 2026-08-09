@@ -1,20 +1,28 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1. Do NOT commit secrets.",
-
+  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1.",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam-dev",
+    "Audience": "sync-lifestyle-clients-dev",
+    "SecretKey": "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
+  },
+  "ConnectionStrings": {
+    "OrderDatabase": "Host=localhost;Port=5434;Database=sync_order;Username=postgres;Password=12345;Include Error Detail=true"
+  },
   "Order": {
-    "SimulateDeliveryProgress": false,
-    "PublicBaseUrl": "https://your-ngrok-subdomain.ngrok-free.dev",
-    "LocationPollIntervalSeconds": 12
+    "SimulateDeliveryProgress": true,
+    "SandboxSimulationIntervalSeconds": 4
   },
   "Ahamove": {
-    "Enabled": true,
-    "UseSandboxSimulation": false,
-    "ApiKey": "<sandbox api key from Ahamove partner portal>",
-    "Mobile": "84xxxxxxxxx",
-    "BaseUrl": "https://partner-apistg.ahamove.com/v3",
-    "ServiceId": "SGN-BIKE",
-    "PaymentMethod": "CASH",
-    "WebhookApiKey": "<secret you choose — same value in Ahamove webhook config>"
+    "UseSandboxSimulation": true
   }
 }

@@ -1,0 +1,484 @@
+[
+  {
+    "name": "check_wallet",
+    "agents": [
+      "commerce"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 253,
+    "message": ""
+  },
+  {
+    "name": "get_active_roadmap",
+    "agents": [
+      "workout"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 186,
+    "message": ""
+  },
+  {
+    "name": "get_today_workout",
+    "agents": [
+      "insight",
+      "workout"
+    ],
+    "type": "read",
+    "status": "FAIL",
+    "latency_ms": 190,
+    "message": "todayWorkoutName: expected demo today session title, got 'Audit Session'",
+    "contract_errors": [
+      "todayWorkoutName: expected demo today session title, got 'Audit Session'"
+    ]
+  },
+  {
+    "name": "list_vouchers",
+    "agents": [
+      "commerce"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 186,
+    "message": ""
+  },
+  {
+    "name": "search_exercises",
+    "agents": [
+      "workout"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 194,
+    "message": ""
+  },
+  {
+    "name": "search_food",
+    "agents": [
+      "nutrition"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 188,
+    "message": ""
+  },
+  {
+    "name": "search_partners",
+    "agents": [
+      "commerce"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 190,
+    "message": ""
+  },
+  {
+    "name": "compute_and_update_ai_scores",
+    "agents": [
+      "insight"
+    ],
+    "type": "write",
+    "status": "PASS",
+    "latency_ms": 12869,
+    "message": ""
+  },
+  {
+    "name": "detect_burnout",
+    "agents": [
+      "insight"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 3642,
+    "message": ""
+  },
+  {
+    "name": "detect_plateau",
+    "agents": [
+      "insight"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 4874,
+    "message": ""
+  },
+  {
+    "name": "escalate_to_human",
+    "agents": [
+      "coach"
+    ],
+    "type": "safety",
+    "status": "PASS",
+    "latency_ms": 2460,
+    "message": ""
+  },
+  {
+    "name": "estimate_meal_from_photo",
+    "agents": [
+      "nutrition"
+    ],
+    "type": "read",
+    "status": "SKIPPED",
+    "latency_ms": 0,
+    "message": "vision_disabled"
+  },
+  {
+    "name": "generate_weekly_report",
+    "agents": [
+      "insight"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 2675,
+    "message": ""
+  },
+  {
+    "name": "get_community_highlights",
+    "agents": [
+      "coach"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 2578,
+    "message": ""
+  },
+  {
+    "name": "get_daily_summary",
+    "agents": [
+      "insight",
+      "nutrition"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 222,
+    "message": ""
+  },
+  {
+    "name": "get_gamification_status",
+    "agents": [
+      "coach",
+      "insight"
+    ],
+    "type": "read",
+    "status": "FAIL",
+    "latency_ms": 216,
+    "message": "currentXP: expected 1840, got 1990; syncCoins: expected 340, got 480.0",
+    "contract_errors": [
+      "currentXP: expected 1840, got 1990",
+      "syncCoins: expected 340, got 480.0"
+    ]
+  },
+  {
+    "name": "get_nutrition_targets",
+    "agents": [
+      "nutrition"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 229,
+    "message": ""
+  },
+  {
+    "name": "get_progress_trends",
+    "agents": [
+      "insight"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 716,
+    "message": ""
+  },
+  {
+    "name": "get_recovery_status",
+    "agents": [
+      "insight",
+      "workout"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 235,
+    "message": ""
+  },
+  {
+    "name": "handoff",
+    "agents": [
+      "coach",
+      "commerce",
+      "insight",
+      "nutrition",
+      "workout"
+    ],
+    "type": "control",
+    "status": "PASS",
+    "latency_ms": 0,
+    "message": ""
+  },
+  {
+    "name": "log_meal",
+    "agents": [
+      "nutrition"
+    ],
+    "type": "write",
+    "status": "PASS",
+    "latency_ms": 223,
+    "message": ""
+  },
+  {
+    "name": "log_mood_checkin",
+    "agents": [
+      "coach"
+    ],
+    "type": "write",
+    "status": "PASS",
+    "latency_ms": 224,
+    "message": ""
+  },
+  {
+    "name": "log_water",
+    "agents": [
+      "nutrition"
+    ],
+    "type": "write",
+    "status": "PASS",
+    "latency_ms": 241,
+    "message": ""
+  },
+  {
+    "name": "recall_user_memory",
+    "agents": [
+      "coach",
+      "commerce",
+      "nutrition",
+      "workout"
+    ],
+    "type": "read",
+    "status": "NOT_IMPLEMENTED",
+    "latency_ms": 5988,
+    "message": "database \"sync_ai\" does not exist"
+  },
+  {
+    "name": "recommend_affiliate_products",
+    "agents": [
+      "commerce"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 324,
+    "message": ""
+  },
+  {
+    "name": "recommend_partner_meals",
+    "agents": [
+      "commerce"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 302,
+    "message": ""
+  },
+  {
+    "name": "remember_user_fact",
+    "agents": [
+      "coach",
+      "commerce",
+      "nutrition",
+      "workout"
+    ],
+    "type": "write",
+    "status": "NOT_IMPLEMENTED",
+    "latency_ms": 378,
+    "message": "database \"sync_ai\" does not exist"
+  },
+  {
+    "name": "reorder",
+    "agents": [
+      "commerce"
+    ],
+    "type": "financial",
+    "status": "DRYRUN",
+    "latency_ms": 0,
+    "message": "use --include-financial to run"
+  },
+  {
+    "name": "request_replan",
+    "agents": [
+      "workout"
+    ],
+    "type": "write",
+    "status": "PASS",
+    "latency_ms": 217,
+    "message": ""
+  },
+  {
+    "name": "send_notification",
+    "agents": [
+      "coach",
+      "insight"
+    ],
+    "type": "write",
+    "status": "PASS",
+    "latency_ms": 231,
+    "message": ""
+  },
+  {
+    "name": "suggest_meal_plan",
+    "agents": [
+      "nutrition"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 462,
+    "message": ""
+  },
+  {
+    "name": "suggest_next_achievement",
+    "agents": [
+      "coach"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 258,
+    "message": ""
+  },
+  {
+    "name": "topup_wallet",
+    "agents": [
+      "commerce"
+    ],
+    "type": "financial",
+    "status": "DRYRUN",
+    "latency_ms": 0,
+    "message": "use --include-financial to run"
+  },
+  {
+    "name": "adjust_intensity",
+    "agents": [
+      "workout"
+    ],
+    "type": "write",
+    "status": "SKIPPED",
+    "latency_ms": 0,
+    "message": "missing session_id from get_today_workout"
+  },
+  {
+    "name": "apply_voucher",
+    "agents": [
+      "commerce"
+    ],
+    "type": "financial",
+    "status": "DRYRUN",
+    "latency_ms": 0,
+    "message": "use --include-financial to run"
+  },
+  {
+    "name": "get_exercise_detail",
+    "agents": [
+      "workout"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 258,
+    "message": ""
+  },
+  {
+    "name": "get_exercise_media",
+    "agents": [
+      "workout"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 329,
+    "message": ""
+  },
+  {
+    "name": "get_food_by_barcode",
+    "agents": [
+      "nutrition"
+    ],
+    "type": "read",
+    "status": "SKIPPED",
+    "latency_ms": 0,
+    "message": "no barcode in seed or search_food result"
+  },
+  {
+    "name": "get_menu",
+    "agents": [
+      "commerce"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 269,
+    "message": ""
+  },
+  {
+    "name": "get_roadmap_sessions",
+    "agents": [
+      "workout"
+    ],
+    "type": "read",
+    "status": "PASS",
+    "latency_ms": 243,
+    "message": ""
+  },
+  {
+    "name": "substitute_exercise",
+    "agents": [
+      "workout"
+    ],
+    "type": "write",
+    "status": "SKIPPED",
+    "latency_ms": 0,
+    "message": "missing session_id"
+  },
+  {
+    "name": "track_order",
+    "agents": [
+      "commerce"
+    ],
+    "type": "read",
+    "status": "SKIPPED",
+    "latency_ms": 0,
+    "message": "no order fixture in seed"
+  },
+  {
+    "name": "update_roadmap",
+    "agents": [
+      "workout"
+    ],
+    "type": "write",
+    "status": "PASS",
+    "latency_ms": 236,
+    "message": ""
+  },
+  {
+    "name": "log_set",
+    "agents": [
+      "workout"
+    ],
+    "type": "write",
+    "status": "SKIPPED",
+    "latency_ms": 0,
+    "message": "missing execution_id from log_workout_execution"
+  },
+  {
+    "name": "log_workout_execution",
+    "agents": [
+      "workout"
+    ],
+    "type": "write",
+    "status": "SKIPPED",
+    "latency_ms": 0,
+    "message": "missing session_id"
+  },
+  {
+    "name": "schedule_roadmap_session",
+    "agents": [
+      "workout"
+    ],
+    "type": "write",
+    "status": "PASS",
+    "latency_ms": 293,
+    "message": ""
+  }
+]

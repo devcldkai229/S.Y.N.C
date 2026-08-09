@@ -107,7 +107,7 @@ public class ChallengeRouteQuery
     public double UserLat { get; set; }
     public double UserLng { get; set; }
 
-    /// <summary>When set, only one AWS CalculateRoute call is made for this mode.</summary>
+    /// <summary>When omitted, Motorbike (xe máy) is used — one AWS call.</summary>
     public ChallengeRouteTravelMode? TravelMode { get; set; }
 }
 

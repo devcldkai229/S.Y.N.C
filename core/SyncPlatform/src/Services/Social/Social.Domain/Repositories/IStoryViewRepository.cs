@@ -9,4 +9,10 @@ public interface IStoryViewRepository
         Guid storyId,
         Guid viewerId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Story IDs among <paramref name="storyIds"/> that <paramref name="viewerId"/> has already viewed.</summary>
+    Task<HashSet<Guid>> GetViewedStoryIdsAsync(
+        Guid viewerId,
+        IReadOnlyList<Guid> storyIds,
+        CancellationToken cancellationToken = default);
 }

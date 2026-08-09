@@ -94,6 +94,24 @@ public class BlogController : ControllerBase
             "Published blogs retrieved successfully."));
     }
 
+    /// <summary>Search published blogs by title, tags, or content.</summary>
+    [HttpGet("search")]
+    [AllowAnonymous]
+    public async Task<ActionResult<PagedApiResponse<IReadOnlyList<BlogDto>>>> Search(
+        [FromQuery] BlogSearchQuery query,
+        CancellationToken cancellationToken)
+    {
+        var (items, pagination) = await _blogs.SearchPublishedAsync(
+            query,
+            _currentUser.UserId,
+            cancellationToken);
+
+        return Ok(PagedApiResponse<IReadOnlyList<BlogDto>>.SuccessPagedResponse(
+            items,
+            pagination,
+            "Blog search results retrieved successfully."));
+    }
+
     /// <summary>Author's blogs (all statuses, author-only).</summary>
     [HttpGet("author/{authorId:guid}")]
     [Authorize]

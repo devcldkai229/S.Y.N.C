@@ -31,6 +31,14 @@ public class InternalSmartPushController : ControllerBase
         return Ok(ApiResponse<IReadOnlyList<DueSmartPushUserDto>>.SuccessResponse(result, "Due users retrieved successfully."));
     }
 
+    [HttpGet("enabled-users")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<SmartPushEnabledUserDto>>>> GetEnabledUsers(
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.GetEnabledUsersAsync(cancellationToken);
+        return Ok(ApiResponse<IReadOnlyList<SmartPushEnabledUserDto>>.SuccessResponse(result, "Enabled smart push users retrieved successfully."));
+    }
+
     [HttpGet("context/{userId:guid}")]
     public async Task<ActionResult<ApiResponse<IamSmartPushContextDto>>> GetSmartPushContext(
         Guid userId,
@@ -43,5 +51,13 @@ public class InternalSmartPushController : ControllerBase
         }
 
         return Ok(ApiResponse<IamSmartPushContextDto>.SuccessResponse(result, "User smart push context retrieved successfully."));
+    }
+
+    [HttpGet("premium-user-ids")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<Guid>>>> GetPremiumUserIds(
+        CancellationToken cancellationToken)
+    {
+        var result = await _service.GetPremiumOrUltraUserIdsAsync(cancellationToken);
+        return Ok(ApiResponse<IReadOnlyList<Guid>>.SuccessResponse(result, "Premium user ids retrieved."));
     }
 }

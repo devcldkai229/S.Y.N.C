@@ -1,4 +1,5 @@
 class AppRoutes {
+  static const splash = '/';
   static const login = '/login';
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
@@ -7,6 +8,7 @@ class AppRoutes {
   static const workouts = '/workouts';
   static const social = '/social';
   static const profile = '/profile';
+  static const deleteAccount = '/profile/delete-account';
   static const notifications = '/notifications';
   static const cynChat = '/cyn';
 
@@ -14,6 +16,9 @@ class AppRoutes {
   static const shop = '/shop';
   static const subscription = '/subscription';
   static const challengesMap = '/challenges';
+  static const blogs = '/blogs';
+
+  static String blogDetail(String id) => '/blogs/$id';
 
   static String challengeDetail(String id) => '/challenges/$id';
 
@@ -21,6 +26,12 @@ class AppRoutes {
   static const createCustomWorkout = '/workouts/custom/create';
 
   static String socialUserProfile(String userId) => '/social/user/$userId';
+
+  static String socialUserFollowers(String userId) =>
+      '/social/user/$userId/followers';
+
+  static String socialUserFollowing(String userId) =>
+      '/social/user/$userId/following';
 
   static const socialSearch = '/social/search';
 

@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/core/utils/injection.dart';
-import 'package:sync_app/features/nutrition/cubit/nutrition_diary_cubit.dart';
+import 'package:sync_app/features/nutrition/data/nutrition_date_helpers.dart';
 import 'package:sync_app/features/nutrition/data/nutrition_remote_data_source.dart';
 import 'package:sync_app/features/nutrition/state/nutrition_refresh_notifier.dart';
 import 'package:sync_app/features/nutrition/models/nutrition_models.dart';
 import 'package:sync_app/features/nutrition/theme/nutrition_theme.dart';
 
 class FoodDetailSheet extends StatefulWidget {
-  const FoodDetailSheet({super.key, required this.food, required this.mealType});
+  const FoodDetailSheet({
+    super.key,
+    required this.food,
+    required this.mealType,
+    this.diaryDate,
+  });
 
   final FoodItem food;
   final MealTypeUi mealType;
+  final DateTime? diaryDate;
 
   @override
   State<FoodDetailSheet> createState() => _FoodDetailSheetState();
@@ -40,20 +45,21 @@ class _FoodDetailSheetState extends State<FoodDetailSheet> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await _api.createMealLog({
-        'mealType': _meal.apiValue,
-        'items': [
-          {
-            'foodItemId': widget.food.id,
-            'quantityGram': _grams,
-          },
-        ],
-      });
-      getIt<NutritionRefreshNotifier>().notifyDateChanged(DateTime.now());
+      final diaryDate = widget.diaryDate ?? NutritionDateHelpers.dateOnly(DateTime.now());
+      await _api.createMealLog(
+        {
+          'mealType': _meal.apiValue,
+          'items': [
+            {
+              'foodItemId': widget.food.id,
+              'quantityGram': _grams,
+            },
+          ],
+        },
+        diaryDate: diaryDate,
+      );
+      getIt<NutritionRefreshNotifier>().notifyDateChanged(diaryDate);
       if (mounted) {
-        try {
-          await context.read<NutritionDiaryCubit>().refreshAfterMealLogged();
-        } catch (_) {}
         HapticFeedback.mediumImpact();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đã thêm vào nhật ký'), behavior: SnackBarBehavior.floating),

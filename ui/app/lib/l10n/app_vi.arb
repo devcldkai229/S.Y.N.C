@@ -67,6 +67,10 @@
   "motivationStyleLabel": "Cách động viên",
   "consentDataSharing": "Tôi đồng ý chia sẻ dữ liệu sức khỏe để cá nhân hóa trải nghiệm",
   "consentMarketing": "Tôi đồng ý nhận thông báo khuyến mãi và mẹo sức khỏe",
+  "smartPushEnabledLabel": "Nhắc thông minh từ AI Coach",
+  "smartPushEnabledHint": "Nhận 1–2 lần/ngày nhắc tập luyện & dinh dưỡng theo lịch hệ thống",
+  "allowAiNotificationLabel": "Cho phép nội dung do AI viết",
+  "allowAiNotificationHint": "Tắt sẽ dùng mẫu tin cố định thay vì câu chữ do AI sinh",
   "onboardingValidationRequired": "Vui lòng điền đầy đủ thông tin bắt buộc.",
   "onboardingValidationAllergies": "Chọn ít nhất một dị ứng và đồng ý các điều khoản bắt buộc.",
   "fitnessGoalLoseFat": "Giảm mỡ",
@@ -148,10 +152,139 @@
   "fitnessEditorTitle": "Hồ sơ thể chất",
   "loadProfileFailed": "Không tải được hồ sơ.",
   "authErrorServer": "Lỗi server (500). Kiểm tra backend/IAM database đã migrate chưa.",
-  "authErrorEmailNotVerified": "Email chưa được xác minh. Mở link trong email hoặc dùng màn Verify email (token từ log IAM khi SMTP tắt).",
+  "authErrorEmailNotVerified": "Email chưa được xác minh. Mở link trong email hoặc dùng màn Verify email (token từ log IAM khi Brevo tắt).",
   "authErrorInvalidCredentials": "Email hoặc mật khẩu không đúng.",
   "authErrorEmailExists": "Email này đã được đăng ký. Hãy đăng nhập hoặc dùng email khác.",
   "authErrorInvalidToken": "Token xác minh không hợp lệ hoặc đã hết hạn.",
   "authErrorConnection": "Không kết nối được API ({url}). Hãy chạy backend Gateway :5057.",
-  "authErrorGeneric": "Yêu cầu xác thực thất bại."
+  "authErrorGeneric": "Yêu cầu xác thực thất bại.",
+  "aiRoadmapLoadFailed": "Không thể tải lộ trình. Thử lại nhé.",
+  "aiRoadmapRetry": "Thử lại",
+  "aiRoadmapGoalChip": "Mục tiêu: {goal}",
+  "@aiRoadmapGoalChip": {
+    "placeholders": {
+      "goal": { "type": "String" }
+    }
+  },
+  "aiRoadmapWeekOf": "Tuần {current}/{total}",
+  "@aiRoadmapWeekOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "aiRoadmapWhyTitle": "Vì sao",
+  "aiRoadmapWeightCurrent": "{kg} kg hiện tại",
+  "@aiRoadmapWeightCurrent": {
+    "placeholders": {
+      "kg": { "type": "String" }
+    }
+  },
+  "aiRoadmapWeightTarget": "mục tiêu {kg} kg",
+  "@aiRoadmapWeightTarget": {
+    "placeholders": {
+      "kg": { "type": "String" }
+    }
+  },
+  "aiRoadmapWeightDash": "—",
+  "aiRoadmapReadinessTitle": "Mức sẵn sàng hôm nay",
+  "aiRoadmapReadinessReady": "Sẵn sàng",
+  "aiRoadmapReadinessModerate": "Vừa",
+  "aiRoadmapReadinessRest": "Nên nghỉ",
+  "aiRoadmapFatigueToReady": "Mệt → Khoẻ",
+  "aiRoadmapFatigueChip": "Mức mệt mỏi",
+  "aiRoadmapSorenessChip": "Đau cơ",
+  "aiRoadmapNextSession": "Buổi tiếp theo",
+  "aiRoadmapStart": "Bắt đầu",
+  "aiRoadmapAskAi": "Hỏi AI",
+  "aiRoadmapSessionWhy": "Vì sao",
+  "aiRoadmapWeekSchedule": "Lịch tập tuần này",
+  "aiRoadmapStatusDone": "Đã xong",
+  "aiRoadmapStatusUpcoming": "Sắp tới",
+  "aiRoadmapStatusNext": "Tiếp theo",
+  "aiRoadmapIntensityLight": "Nhẹ",
+  "aiRoadmapIntensityModerate": "Vừa",
+  "aiRoadmapIntensityHigh": "Cao",
+  "aiRoadmapMetaDuration": "{min} phút",
+  "@aiRoadmapMetaDuration": {
+    "placeholders": {
+      "min": { "type": "int" }
+    }
+  },
+  "aiRoadmapMetaExercises": "{count} bài",
+  "@aiRoadmapMetaExercises": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "aiRoadmapAskAiPrompt": "Vì sao hôm nay tôi tập {session}, có thể đổi nhẹ hơn không?",
+  "@aiRoadmapAskAiPrompt": {
+    "placeholders": {
+      "session": { "type": "String" }
+    }
+  },
+  "aiRoadmapEmptyTitle": "Cyn — Trợ lí theo dõi quá trình của bạn",
+  "aiRoadmapEmptyBody": "Mình sẽ tạo lộ trình tập phù hợp với thể trạng và mục tiêu riêng của bạn.",
+  "aiRoadmapEmptyCta": "Bắt đầu",
+  "aiRoadmapEmptyAutoMessage": "Tôi muốn tạo lộ trình theo dõi bởi Cyn!",
+  "aiRoadmapGoalFatLoss": "giảm mỡ",
+  "aiRoadmapGoalMuscleGain": "tăng cơ",
+  "aiRoadmapGoalGeneralHealth": "sức khoẻ tổng quát",
+  "profileEdit": "Chỉnh sửa",
+  "profileGroupPersonalize": "Cá nhân hoá",
+  "profileGroupActivity": "Hoạt động",
+  "profileGroupAccount": "Tài khoản",
+  "profileFollowersBtn": "Người theo dõi · {count}",
+  "@profileFollowersBtn": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "profileFollowingBtn": "Đang theo dõi · {count}",
+  "@profileFollowingBtn": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "profileStatLevel": "Level",
+  "profileStatStreak": "Streak",
+  "profileStatCoins": "Coins",
+  "profileStatXp": "XP",
+  "profileChangeCover": "Đổi ảnh nền",
+  "profileMacrosDaily": "Macro hàng ngày",
+  "profileVouchersTitle": "Voucher của tôi",
+  "profileVouchersEmpty": "Chưa có voucher. Đổi SyncCoins trong Shop để nhận ưu đãi!",
+  "profileLogout": "Đăng xuất",
+  "profileLogoutConfirmTitle": "Đăng xuất",
+  "profileLogoutConfirmBody": "Bạn có chắc muốn đăng xuất khỏi tài khoản?",
+  "profileAvatarUpdated": "Đã cập nhật ảnh đại diện",
+  "profileCoverUpdated": "Đã cập nhật ảnh nền",
+  "profileUploadFailed": "Không thể tải ảnh lên",
+  "profileCompleteCta": "Hoàn thiện hồ sơ →",
+  "profileNoVouchersShort": "Chưa có voucher",
+  "profileVoucherCount": "{count} voucher",
+  "@profileVoucherCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "socialStoryEnded": "Đã hết story",
+  "socialCreateStory": "Tạo story",
+  "socialPostStory": "Đăng",
+  "socialPickMediaHint": "Ảnh hoặc video · tự xóa sau 24 giờ",
+  "socialPickMediaEmpty": "Chọn ảnh hoặc video",
+  "socialStoryCaptionHint": "Thêm chú thích (tuỳ chọn)",
+  "socialStoriesCreated": "Đã đăng {count} story (tồn tại 24 giờ)",
+  "@socialStoriesCreated": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "socialStoryPhoto": "Ảnh",
+  "socialStoryVideo": "Video",
+  "socialStoryCamera": "Camera",
+  "cynLocationPermissionReason": "Cho phép truy cập vị trí để tìm quán gần bạn",
+  "cynLocationGrantedFollowUp": "Mình đã chia sẻ vị trí. Tiếp tục tìm quán gần mình giúp nhé.",
+  "cynLocationDenied": "Bạn chưa cho phép vị trí. Bật quyền trong Cài đặt để tìm quán gần đây.",
+  "cynLocationUnavailable": "Không lấy được vị trí lúc này. Thử lại sau nhé."
 }

@@ -16,15 +16,18 @@ public class UserFollowService : IUserFollowService
     private readonly IUserFollowRepository _follows;
     private readonly IUserSocialSettingsRepository _socialSettings;
     private readonly ISocialNotificationClient _notifications;
+    private readonly IIamPublicProfileClient _iamProfiles;
 
     public UserFollowService(
         IUserFollowRepository follows,
         IUserSocialSettingsRepository socialSettings,
-        ISocialNotificationClient notifications)
+        ISocialNotificationClient notifications,
+        IIamPublicProfileClient iamProfiles)
     {
         _follows = follows;
         _socialSettings = socialSettings;
         _notifications = notifications;
+        _iamProfiles = iamProfiles;
     }
 
     public async Task<UserFollowDto> FollowAsync(
@@ -152,30 +155,55 @@ public class UserFollowService : IUserFollowService
         return saved.ToDto();
     }
 
-    public async Task<(IReadOnlyList<UserFollowDto> Items, PaginationMetadata Pagination)> GetFollowersAsync(
+    public async Task<(IReadOnlyList<FollowListItemDto> Items, PaginationMetadata Pagination)> GetFollowersAsync(
         Guid userId,
         FollowListQuery query,
         CancellationToken cancellationToken = default)
     {
         var (pageNumber, pageSize) = NormalizePaging(query);
         var (items, total) = await _follows.GetFollowersAsync(userId, pageNumber, pageSize, cancellationToken);
+        var enriched = await EnrichAsync(
+            items.Select(x => (x.FollowerId, x.FollowedAt)).ToList(),
+            cancellationToken);
 
-        return (
-            items.Select(x => x.ToDto()).ToList(),
-            BuildPagination(pageNumber, pageSize, total));
+        return (enriched, BuildPagination(pageNumber, pageSize, total));
     }
 
-    public async Task<(IReadOnlyList<UserFollowDto> Items, PaginationMetadata Pagination)> GetFollowingAsync(
+    public async Task<(IReadOnlyList<FollowListItemDto> Items, PaginationMetadata Pagination)> GetFollowingAsync(
         Guid userId,
         FollowListQuery query,
         CancellationToken cancellationToken = default)
     {
         var (pageNumber, pageSize) = NormalizePaging(query);
         var (items, total) = await _follows.GetFollowingAsync(userId, pageNumber, pageSize, cancellationToken);
+        var enriched = await EnrichAsync(
+            items.Select(x => (x.FolloweeId, x.FollowedAt)).ToList(),
+            cancellationToken);
 
-        return (
-            items.Select(x => x.ToDto()).ToList(),
-            BuildPagination(pageNumber, pageSize, total));
+        return (enriched, BuildPagination(pageNumber, pageSize, total));
+    }
+
+    private async Task<IReadOnlyList<FollowListItemDto>> EnrichAsync(
+        IReadOnlyList<(Guid UserId, DateTimeOffset FollowedAt)> rows,
+        CancellationToken cancellationToken)
+    {
+        if (rows.Count == 0)
+            return [];
+
+        var profiles = await Task.WhenAll(
+            rows.Select(async row =>
+            {
+                var profile = await _iamProfiles.GetAsync(row.UserId, cancellationToken);
+                return new FollowListItemDto
+                {
+                    UserId = row.UserId,
+                    FullName = profile?.FullName ?? "Người dùng",
+                    AvatarUrl = profile?.AvatarUrl,
+                    FollowedAt = row.FollowedAt,
+                };
+            }));
+
+        return profiles;
     }
 
     public async Task<FollowStatusDto> GetFollowStatusAsync(

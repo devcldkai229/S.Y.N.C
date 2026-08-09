@@ -11,7 +11,9 @@ $ports = @(
     5120, # Social
     5122, # Nutrition
     5119, # Marketplace
-    5123  # Order
+    5123, # Order
+    8088, # SYNC AI Agent chatbot (uvicorn)
+    5300  # sync-rcm-service workout RCM (uvicorn)
 )
 
 $stoppedPids = [System.Collections.Generic.HashSet[int]]::new()
@@ -66,6 +68,20 @@ Get-CimInstance Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction Silentl
     Where-Object { $_.CommandLine -match '\.(Gateway|Iam|Payment|Roadmap|Exercise|Notification|Social|Nutrition|Marketplace|Order)\.API\.csproj' } |
     ForEach-Object {
         Stop-ProcessSafe -ProcessId $_.ProcessId -Reason "dotnet host"
+    }
+
+# uvicorn (SYNC AI Agent chatbot)
+Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match 'uvicorn.*app\.api\.main:app' } |
+    ForEach-Object {
+        Stop-ProcessSafe -ProcessId $_.ProcessId -Reason "uvicorn AI"
+    }
+
+# uvicorn (sync-rcm-service workout RCM)
+Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" -ErrorAction SilentlyContinue |
+    Where-Object { $_.CommandLine -match 'uvicorn.*app\.main:app' } |
+    ForEach-Object {
+        Stop-ProcessSafe -ProcessId $_.ProcessId -Reason "uvicorn sync-rcm-service"
     }
 
 Start-Sleep -Seconds 1

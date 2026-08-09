@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Roadmap.Domain\Roadmap.Domain.csproj" />
-    <ProjectReference Include="..\..\..\..\libs\Contract\Contract.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,0 +1,61 @@
+{
+  "ReverseProxy": {
+    "Clusters": {
+      "ai-cluster": {
+        "Destinations": {
+          "ai/primary": { "Address": "http://ai:8088" }
+        }
+      },
+      "rcm-cluster": {
+        "Destinations": {
+          "rcm/primary": { "Address": "http://rcm:8000" }
+        }
+      },
+      "iam-cluster": {
+        "Destinations": {
+          "iam/primary": { "Address": "http://iam:8080" }
+        }
+      },
+      "roadmap-cluster": {
+        "Destinations": {
+          "roadmap/primary": { "Address": "http://roadmap:8080" }
+        }
+      },
+      "exercise-cluster": {
+        "Destinations": {
+          "exercise/primary": { "Address": "http://exercise:8080" }
+        }
+      },
+      "notification-cluster": {
+        "Destinations": {
+          "notification/primary": { "Address": "http://notification:8080" }
+        }
+      },
+      "social-cluster": {
+        "Destinations": {
+          "social/primary": { "Address": "http://social:8080" }
+        }
+      },
+      "payment-cluster": {
+        "Destinations": {
+          "payment/primary": { "Address": "http://payment:8080" }
+        }
+      },
+      "nutrition-cluster": {
+        "Destinations": {
+          "nutrition/primary": { "Address": "http://nutrition:8080" }
+        }
+      },
+      "marketplace-cluster": {
+        "Destinations": {
+          "marketplace/primary": { "Address": "http://marketplace:8080" }
+        }
+      },
+      "order-cluster": {
+        "Destinations": {
+          "order/primary": { "Address": "http://order:8080" }
+        }
+      }
+    }
+  }
+}

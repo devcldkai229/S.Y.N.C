@@ -492,20 +492,42 @@ core/SyncPlatform/**/appsettings.Development.json
 ui/app/android/build/
 ui/app/android/*.hprof
 
-# ── Sync Platform configuration (see core/SyncPlatform/CONFIGURATION.md) ─────
+# ── Sync Platform configuration ───────────────────────────────────────────────
 # Chỉ commit file *.example — KHÔNG commit appsettings đã điền secret trên máy local.
 core/SyncPlatform/src/**/appsettings.json
 core/SyncPlatform/src/**/appsettings.Development.json
-core/SyncPlatform/configs/appsettings.Shared.json
-core/SyncPlatform/configs/appsettings.Shared.Development.json
 core/SyncPlatform/**/appsettings.*.local.json
 core/SyncPlatform/**/appsettings.Production.json
 core/SyncPlatform/**/appsettings.Staging.json
 !core/SyncPlatform/**/*.example
+# Exception có chủ đích: config Production của Gateway CHỈ chứa routing YARP
+# (Service Connect DNS), KHÔNG secret — bắt buộc nằm trong image để deploy ECS.
+!core/SyncPlatform/src/Gateway/appsettings.Production.json
 **/secrets.json
+**/LOCAL_DEV_CONFIG.PRIVATE.md
 **/.env
 **/.env.*
 !**/.env.example
 
-# ── AI ecosystem (Python agent / voice gateway — local dev only) ─────────────
-ai-ecosystem/
+# ── AI service (đã un-ignore để CI/CD build image sync/ai từ repo) ───────────
+# Chỉ ignore artefact local; source commit bình thường.
+ai/sync-agent-service/.venv/
+ai/sync-agent-service/**/__pycache__/
+ai/sync-agent-service/.pytest_cache/
+ai/sync-agent-service/.ruff_cache/
+/docs/*
+!/docs/deploy/
+/infra/*
+!/infra/docker/
+!/infra/aws/
+# Terraform local artefacts
+infra/aws/**/.terraform/
+infra/aws/**/terraform.tfstate*
+infra/aws/**/tfplan
+# terraform.tfvars có thể chứa giá trị môi trường cụ thể → không commit;
+# chỉ commit *.tfvars.example làm mẫu.
+infra/aws/**/terraform.tfvars
+!infra/aws/**/terraform.tfvars.example
+# .terraform.lock.hcl PHẢI được commit (ghim version provider → build tái lập
+# được giữa máy dev và CI). Đừng ignore file này.
+docs/*

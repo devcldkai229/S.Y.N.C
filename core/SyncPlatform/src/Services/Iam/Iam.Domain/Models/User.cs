@@ -31,6 +31,12 @@ public class User : BaseAuditableEntity
 
     public SubscriptionTier SubscriptionTier { get; set; }
 
+    /// <summary>Số lượt AI chat đã dùng trong tháng hiện tại (theo <see cref="AiUsagePeriodKey"/>).</summary>
+    public int AiUsageCount { get; set; }
+
+    /// <summary>Khóa kỳ dùng AI, định dạng YYYY-MM (UTC).</summary>
+    public string? AiUsagePeriodKey { get; set; }
+
     public bool EmailVerified { get; set; }
 
     public string? EmailVerificationToken { get; set; }
@@ -50,6 +56,12 @@ public class User : BaseAuditableEntity
     public DateTimeOffset? LastLoginAt { get; set; }
 
     public DateTimeOffset? LastActiveAt { get; set; }
+
+    /// <summary>
+    /// When set, the grace-period hard-delete job may scrub remaining data after this UTC time.
+    /// Cleared once the grace job has processed the account.
+    /// </summary>
+    public DateTimeOffset? ScheduledHardDeleteAt { get; set; }
 
     public virtual BiometricProfile? BiometricProfile { get; set; }
 

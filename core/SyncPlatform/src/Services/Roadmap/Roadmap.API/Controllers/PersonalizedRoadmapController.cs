@@ -14,12 +14,37 @@ namespace Roadmap.API.Controllers;
 public class PersonalizedRoadmapController : ControllerBase
 {
     private readonly IPersonalizedRoadmapService _service;
+    private readonly IRoadmapOverviewService _overview;
     private readonly ICurrentUserContext _currentUser;
 
-    public PersonalizedRoadmapController(IPersonalizedRoadmapService service, ICurrentUserContext currentUser)
+    public PersonalizedRoadmapController(
+        IPersonalizedRoadmapService service,
+        IRoadmapOverviewService overview,
+        ICurrentUserContext currentUser)
     {
         _service = service;
+        _overview = overview;
         _currentUser = currentUser;
+    }
+
+    /// <summary>Mobile-friendly aggregated overview for the current user's active roadmap.</summary>
+    [HttpGet("me/overview")]
+    [ProducesResponseType(typeof(ApiResponse<RoadmapOverviewDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<RoadmapOverviewDto>>> GetMyOverview(
+        [FromQuery] string? experienceLevel = null,
+        CancellationToken cancellationToken = default)
+    {
+        var result = await _overview.GetMyOverviewAsync(
+            _currentUser.RequireUserId(),
+            experienceLevel,
+            cancellationToken);
+
+        if (result is null)
+            return NotFound(ApiResponse<object>.FailureResponse("No active personalized roadmap found."));
+
+        return Ok(ApiResponse<RoadmapOverviewDto>.SuccessResponse(result, "Roadmap overview retrieved successfully."));
     }
 
     [HttpPost]

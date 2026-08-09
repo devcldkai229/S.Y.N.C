@@ -1,21 +1,17 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-
   "ConnectionStrings": {
     "ExerciseDatabase": "mongodb://localhost:27018"
   },
-
   "MongoDB": {
     "ExerciseDatabaseName": "sync_exercise"
   },
-
   "AWS": {
     "Profile": "default",
     "Region": "ap-southeast-1"
   },
-
   "Storage": {
-    "Bucket": "sync-public-assets",
+    "Bucket": "sync-pub-assets",
     "KeyPrefix": "exercises_catalog/",
     "PublicRead": true,
     "UseMediaProxy": true,
@@ -35,12 +31,10 @@
       "video/webm"
     ]
   },
-
   "FreeExerciseDb": {
     "JsonUrl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
     "ImageBaseUrl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"
   },
-
   "Translate": {
     "Provider": "passthrough"
   },
@@ -49,5 +43,20 @@
     "Model": "qwen2.5:latest",
     "Temperature": 0.2,
     "Concurrency": 2
-  }
+  },
+  "AllowedHosts": "*",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1."
 }

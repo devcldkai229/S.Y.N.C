@@ -99,8 +99,12 @@ export default function GoogleSignInButton({ onSuccess, onError, text = "continu
 
   return (
     <div className="w-full relative" style={{ minHeight: 44 }}>
-      {/* Skeleton shown while GIS renders the button */}
-      {!ready && (
+      {!clientId && (
+        <div className="flex items-center justify-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+          Thiếu NEXT_PUBLIC_GOOGLE_CLIENT_ID — Google Sign-In chưa cấu hình.
+        </div>
+      )}
+      {clientId && !ready && (
         <div className="absolute inset-0 flex items-center justify-center gap-3 bg-white border border-gray-200 rounded-full text-sm text-gray-400 pointer-events-none">
           <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden>
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -112,7 +116,7 @@ export default function GoogleSignInButton({ onSuccess, onError, text = "continu
         </div>
       )}
       {/* GIS renders its button into this div */}
-      <div ref={containerRef} className="w-full" />
+      {clientId ? <div ref={containerRef} className="w-full" /> : null}
     </div>
   );
 }

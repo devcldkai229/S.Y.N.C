@@ -8,9 +8,8 @@ namespace Payment.Domain.Enums
     {
         Wallet = 0,
         Momo = 1,
-
         COD = 2,
-
         VietQR = 3,
+        GooglePlay = 4,
     }
 }

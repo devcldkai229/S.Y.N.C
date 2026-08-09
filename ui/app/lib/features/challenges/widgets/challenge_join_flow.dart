@@ -3,13 +3,20 @@ import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/features/challenges/models/challenge_models.dart';
 import 'package:sync_app/features/challenges/state/challenge_join_state.dart';
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 
 abstract final class ChallengeJoinFlow {
   static Future<void> confirmJoin(
     BuildContext context, {
-    required MockChallenge challenge,
+    required CommunityChallenge challenge,
     required ChallengeJoinState joinState,
   }) async {
+    if (FeatureTrialFlags.challengesJoinDisabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(FeatureTrialBanner.challengesMessage)),
+      );
+      return;
+    }
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: AppColors.cardBackground,
@@ -89,9 +96,15 @@ abstract final class ChallengeJoinFlow {
 
   static Future<void> confirmLeave(
     BuildContext context, {
-    required MockChallenge challenge,
+    required CommunityChallenge challenge,
     required ChallengeJoinState joinState,
   }) async {
+    if (FeatureTrialFlags.challengesJoinDisabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(FeatureTrialBanner.challengesMessage)),
+      );
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(

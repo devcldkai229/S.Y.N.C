@@ -66,7 +66,7 @@ abstract final class HomeDisplayHelpers {
     final lower = tier.toLowerCase();
     if (lower == 'free') return 'Free';
     if (lower == 'premium') return 'Premium';
-    if (lower == 'pro') return 'Pro';
+    if (lower == 'ultra') return 'Ultra';
     return tier;
   }
 
@@ -82,7 +82,6 @@ abstract final class HomeDisplayHelpers {
 
   static String weightLabel(double? kg) {
     if (kg == null) return '—';
-    final rounded = kg.roundToDouble() == kg ? kg.toInt() : kg;
-    return '${rounded}kg';
+    return '${kg.round()}kg';
   }
 }

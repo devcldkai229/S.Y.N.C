@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// POST /api/v1/auth/register — Create account + send verification email (SMTP when enabled).
+    /// POST /api/v1/auth/register — Create account + send verification email (Brevo when enabled).
     /// </summary>
     [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<RegisterResponse>), StatusCodes.Status201Created)]

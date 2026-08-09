@@ -22,6 +22,10 @@ public class ExerciseSetLogDto
     public Guid Id { get; set; }
     public Guid ExecutionId { get; set; }
     public Guid ExerciseId { get; set; }
+
+    /// <summary>Resolved from the session's ExecutionBlocks for AI/reporting reads; not persisted.</summary>
+    public string? ExerciseName { get; set; }
+
     public int SetNumber { get; set; }
     public int TargetReps { get; set; }
     public int ActualReps { get; set; }

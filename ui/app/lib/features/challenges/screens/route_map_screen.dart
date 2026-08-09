@@ -19,7 +19,7 @@ import 'package:sync_app/features/challenges/widgets/challenge_map_marker.dart';
 import 'package:sync_app/features/challenges/widgets/route_callout_marker.dart';
 import 'package:sync_app/features/order/utils/map_pin_bitmap_factory.dart';
 import 'package:sync_app/features/order/widgets/tracking_map_pin.dart';
-
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 class RouteMapScreen extends StatefulWidget {
   const RouteMapScreen({
     super.key,
@@ -384,16 +384,20 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
                     setState(() => _showInfoCard = false);
                     context.push(AppRoutes.challengeDetail(challenge.id));
                   },
-                  onJoin: () => ChallengeJoinFlow.confirmJoin(
-                    context,
-                    challenge: challenge,
-                    joinState: _joinState,
-                  ),
-                  onLeave: () => ChallengeJoinFlow.confirmLeave(
-                    context,
-                    challenge: challenge,
-                    joinState: _joinState,
-                  ),
+                  onJoin: FeatureTrialFlags.challengesJoinDisabled
+                      ? null
+                      : () => ChallengeJoinFlow.confirmJoin(
+                            context,
+                            challenge: challenge,
+                            joinState: _joinState,
+                          ),
+                  onLeave: FeatureTrialFlags.challengesJoinDisabled
+                      ? null
+                      : () => ChallengeJoinFlow.confirmLeave(
+                            context,
+                            challenge: challenge,
+                            joinState: _joinState,
+                          ),
                 ),
               ),
             ),

@@ -193,6 +193,26 @@ public static class SocialMapper
             PublishedAt = entity.PublishedAt,
             LikeCount = entity.LikeCount,
             ShareCount = entity.ShareCount,
+            CommentCount = entity.CommentCount,
             IsLikedByMe = isLikedByMe,
+        };
+
+    public static BlogCommentDto ToDto(this BlogComment entity, IMediaUrlResolver? media = null) =>
+        new()
+        {
+            Id = entity.Id,
+            CreatedAt = entity.CreatedAt,
+            BlogId = entity.BlogId,
+            UserId = entity.UserId,
+            Content = entity.Content,
+            AuthorSnapshot = entity.AuthorSnapshot is null
+                ? null
+                : media is null
+                    ? new AuthorSnapshotDto
+                    {
+                        FullName = entity.AuthorSnapshot.FullName,
+                        AvatarUrl = entity.AuthorSnapshot.AvatarUrl,
+                    }
+                    : SocialMediaPresentation.ToAuthorDto(entity.AuthorSnapshot, media),
         };
 }

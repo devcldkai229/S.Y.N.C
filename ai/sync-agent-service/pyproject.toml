@@ -1,0 +1,58 @@
+[project]
+name = "sync-agent-service"
+version = "0.1.0"
+description = "SYNC multi-agent AI layer (LangGraph + FastAPI)"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "langgraph>=0.2.50",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
+    "langgraph-checkpoint-redis>=0.0.1",
+    "httpx>=0.27",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "redis>=5.0",
+    "asyncpg>=0.29",
+    "pgvector>=0.3",
+    "openai>=1.40",
+    "sse-starlette>=2.1",
+    "tenacity>=8.5",
+    "langfuse>=2.40",
+    "pyjwt>=2.9",
+    "prometheus-client>=0.20",
+    "boto3>=1.34",
+]
+
+[project.optional-dependencies]
+local = [
+    "langchain-ollama>=0.2",
+]
+voice = [
+    "websockets>=12.0",
+    "numpy>=1.26",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: requires local .NET microservices (set RUN_INTEGRATION=1)",
+]

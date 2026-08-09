@@ -8,6 +8,12 @@ abstract final class HomeAssets {
   static const bannerThuocGym = 'assets/home/banners/banner_thuocgym.png';
   static const bannerFallback = 'assets/home/banners/banner_fallback.jpg';
 
+  /// Promo banner — Cyn AI introduction (TodayHeroCarousel).
+  static const bannerCynAiIntro = 'assets/home/banners/banner_ai_introduction_cyn.png';
+
+  /// Promo banner — personalized roadmap / progress (TodayHeroCarousel).
+  static const bannerProgressPerform = 'assets/home/banners/progrees_perfome.png';
+
   static const banner1Mp4 = 'assets/home/banners/banner_1.mp4';
   static const banner2Jpg = 'assets/home/banners/banner_2.jpg';
 

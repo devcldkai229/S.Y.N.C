@@ -226,6 +226,34 @@ public class BlogService : IBlogService
         return (dtos, BuildPagination(pageNumber, pageSize, total));
     }
 
+    public async Task<(IReadOnlyList<BlogDto> Items, PaginationMetadata Pagination)> SearchPublishedAsync(
+        BlogSearchQuery query,
+        Guid? viewerId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(query.Q))
+            throw new BadRequestException("Search query 'q' is required.");
+
+        var pageNumber = Math.Max(1, query.PageNumber);
+        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+
+        var (items, total) = await _blogs.SearchPublishedAsync(
+            query.Q,
+            pageNumber,
+            pageSize,
+            cancellationToken);
+
+        var likedIds = viewerId.HasValue
+            ? await _interactions.GetLikedBlogIdsAsync(viewerId.Value, items.Select(x => x.Id), cancellationToken)
+            : [];
+
+        var dtos = items
+            .Select(b => b.ToDto(likedIds.Contains(b.Id), _media))
+            .ToList();
+
+        return (dtos, BuildPagination(pageNumber, pageSize, total));
+    }
+
     public async Task<(IReadOnlyList<BlogDto> Items, PaginationMetadata Pagination)> GetByAuthorAsync(
         Guid authorId,
         Guid viewerId,

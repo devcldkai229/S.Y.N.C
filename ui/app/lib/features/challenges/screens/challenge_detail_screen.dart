@@ -14,6 +14,7 @@ import 'package:sync_app/features/challenges/widgets/aws_location_map.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_join_flow.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_map_marker.dart';
 import 'package:sync_app/features/challenges/widgets/challenge_rewards_section.dart';
+import 'package:sync_app/shared/widgets/feature_trial_banner.dart';
 
 class ChallengeDetailScreen extends StatefulWidget {
   const ChallengeDetailScreen({super.key, required this.challengeId});
@@ -110,6 +111,10 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _HeroBackground(challenge: challenge),
+                      if (FeatureTrialFlags.challengesJoinDisabled)
+                        const FeatureTrialBanner(
+                          message: FeatureTrialBanner.challengesMessage,
+                        ),
                       if (challenge.hasLocation) _MapPreview(challenge: challenge),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
@@ -157,16 +162,21 @@ class _ChallengeDetailScreenState extends State<ChallengeDetailScreen> {
               _ActionBar(
                 joined: joined,
                 loading: loading,
-                onJoin: () => ChallengeJoinFlow.confirmJoin(
-                  context,
-                  challenge: challenge,
-                  joinState: _joinState,
-                ),
-                onLeave: () => ChallengeJoinFlow.confirmLeave(
-                  context,
-                  challenge: challenge,
-                  joinState: _joinState,
-                ),
+                joinEnabled: !FeatureTrialFlags.challengesJoinDisabled,
+                onJoin: FeatureTrialFlags.challengesJoinDisabled
+                    ? null
+                    : () => ChallengeJoinFlow.confirmJoin(
+                          context,
+                          challenge: challenge,
+                          joinState: _joinState,
+                        ),
+                onLeave: FeatureTrialFlags.challengesJoinDisabled
+                    ? null
+                    : () => ChallengeJoinFlow.confirmLeave(
+                          context,
+                          challenge: challenge,
+                          joinState: _joinState,
+                        ),
               ),
             ],
           );
@@ -421,14 +431,16 @@ class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.joined,
     required this.loading,
-    required this.onJoin,
-    required this.onLeave,
+    required this.joinEnabled,
+    this.onJoin,
+    this.onLeave,
   });
 
   final bool joined;
   final bool loading;
-  final VoidCallback onJoin;
-  final VoidCallback onLeave;
+  final bool joinEnabled;
+  final VoidCallback? onJoin;
+  final VoidCallback? onLeave;
 
   @override
   Widget build(BuildContext context) {
@@ -490,13 +502,16 @@ class _ActionBar extends StatelessWidget {
                   ],
                 )
               : FilledButton(
-                  onPressed: onJoin,
+                  onPressed: joinEnabled ? onJoin : null,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.primaryGreen,
                     minimumSize: const Size.fromHeight(48),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Tham gia thử thách', style: TextStyle(fontWeight: FontWeight.w700)),
+                  child: Text(
+                    joinEnabled ? 'Tham gia thử thách' : 'Tham gia tạm khóa (thử nghiệm)',
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
     );
   }

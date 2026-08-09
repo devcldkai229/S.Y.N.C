@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/notifications/notification_deep_link.dart';
+import 'package:sync_app/core/notifications/notification_detail_sheet.dart';
 import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
 import 'package:sync_app/core/notifications/notification_realtime_service.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
@@ -9,6 +10,7 @@ import 'package:sync_app/core/utils/injection.dart';
 import 'package:sync_app/data/models/notification_models.dart';
 import 'package:sync_app/features/nutrition/services/nutrition_realtime_service.dart';
 import 'package:sync_app/features/order/state/active_order_count_notifier.dart';
+import 'package:sync_app/features/workouts/services/roadmap_realtime_service.dart';
 import 'package:sync_app/shared/widgets/sync_snack_bar.dart';
 
 /// Starts SignalR and shows lightweight in-app toasts for social notifications.
@@ -29,6 +31,7 @@ class _NotificationRealtimeListenerState extends State<NotificationRealtimeListe
     super.initState();
     getIt<NotificationRealtimeService>().start();
     getIt<NutritionRealtimeService>().start();
+    getIt<RoadmapRealtimeService>().start();
     _sub = getIt<NotificationInboxNotifier>().incoming.listen(_showToast);
   }
 
@@ -52,7 +55,10 @@ class _NotificationRealtimeListenerState extends State<NotificationRealtimeListe
       action: SnackBarAction(
         label: 'Xem',
         textColor: AppColors.brightGreen,
-        onPressed: () => NotificationDeepLink.open(context, notification),
+        onPressed: () {
+          final opened = NotificationDeepLink.open(context, notification);
+          if (!opened) showNotificationDetailSheet(context, notification);
+        },
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/notifications/notification_deep_link.dart';
+import 'package:sync_app/core/notifications/notification_detail_sheet.dart';
 import 'package:sync_app/core/notifications/notification_inbox_notifier.dart';
 import 'package:sync_app/core/notifications/notification_ui.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
@@ -66,40 +67,54 @@ class _NotificationInboxPanelBody extends StatelessWidget {
       color: Colors.transparent,
       child: Stack(
         children: [
+          // Cover toàn màn — tap ngoài panel mới pop được (barrierDismissible
+          // không nhận hit vì child dialog đã phủ hết route).
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).pop(),
+              child: const SizedBox.expand(),
+            ),
+          ),
           Positioned(
             top: top,
             right: right,
             width: width,
-            child: Container(
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              decoration: BoxDecoration(
-                color: AppColors.cardBackground,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.borderLight),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.12),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _PanelHeader(
-                    onViewAll: () {
-                      Navigator.of(context).pop();
-                      context.push(AppRoutes.notifications);
-                    },
-                  ),
-                  const Divider(height: 1),
-                  Flexible(
-                    child: BlocBuilder<NotificationsCubit, NotificationsState>(
-                      builder: (context, state) => _PanelList(state: state),
+            child: GestureDetector(
+              // Chặn tap trong panel không bubble ra lớp ngoài.
+              onTap: () {},
+              child: Container(
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBackground,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.borderLight),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _PanelHeader(
+                      onClose: () => Navigator.of(context).pop(),
+                      onViewAll: () {
+                        Navigator.of(context).pop();
+                        context.push(AppRoutes.notifications);
+                      },
+                    ),
+                    const Divider(height: 1),
+                    Flexible(
+                      child: BlocBuilder<NotificationsCubit, NotificationsState>(
+                        builder: (context, state) => _PanelList(state: state),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -110,14 +125,15 @@ class _NotificationInboxPanelBody extends StatelessWidget {
 }
 
 class _PanelHeader extends StatelessWidget {
-  const _PanelHeader({required this.onViewAll});
+  const _PanelHeader({required this.onViewAll, required this.onClose});
 
   final VoidCallback onViewAll;
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),
       child: Row(
         children: [
           const Expanded(
@@ -144,6 +160,11 @@ class _PanelHeader extends StatelessWidget {
             tooltip: 'Xem tất cả',
             onPressed: onViewAll,
             icon: const Icon(Icons.open_in_new_rounded, size: 20),
+          ),
+          IconButton(
+            tooltip: 'Đóng',
+            onPressed: onClose,
+            icon: const Icon(Icons.close_rounded, size: 22),
           ),
         ],
       ),
@@ -247,8 +268,10 @@ class _PanelNotificationTile extends StatelessWidget {
             getIt<NotificationInboxNotifier>().decrementUnread();
           }
           if (!context.mounted) return;
+          final rootContext = Navigator.of(context, rootNavigator: true).context;
           Navigator.of(context).pop();
-          NotificationDeepLink.open(context, notification);
+          final opened = NotificationDeepLink.open(context, notification);
+          if (!opened) await showNotificationDetailSheet(rootContext, notification);
         },
         child: NotificationCard(
           accentBar: !notification.isRead,

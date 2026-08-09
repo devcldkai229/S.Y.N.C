@@ -1,10 +1,11 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
+import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/data/models/home_dashboard_models.dart';
 import 'package:sync_app/features/home/data/home_assets.dart';
-import 'package:sync_app/features/home/data/home_display_helpers.dart';
 import 'package:sync_app/features/home/widgets/home_bento/home_bento_styles.dart';
 import 'package:video_player/video_player.dart';
 
@@ -23,53 +24,71 @@ class _TodayHeroCarouselState extends State<TodayHeroCarousel> {
   @override
   Widget build(BuildContext context) {
     final d = widget.data;
-    final duration = HomeDisplayHelpers.durationLabel(
-      d.todaySessionMeta,
-      d.todaySessionDurationMinutes,
-    );
-    final intensity = HomeDisplayHelpers.intensityLabel(d.sessionIntensityBars);
-    final exerciseLabel = d.todaySessionExerciseCount > 0
-        ? '${d.todaySessionExerciseCount} bài'
-        : 'AI gợi ý';
+    final hasCustom = d.featuredCustomWorkoutId != null &&
+        d.featuredCustomWorkoutId!.isNotEmpty;
 
     final slides = [
+      // Banner 1 — Lộ trình cá nhân hóa (full promo art)
       _HeroSlide(
         kind: _HeroSlideKind.workout,
-        eyebrow: 'Hôm nay',
-        title: d.todaySessionTitle ?? 'Buổi tập hôm nay',
-        chips: [duration, exerciseLabel, intensity],
-        assetPath: HomeAssets.todayBg,
+        eyebrow: 'Lộ trình AI',
+        title: d.hasActiveRoadmap
+            ? [
+                if (d.phaseLabel != null) d.phaseLabel!,
+                if (d.weekLabel != null) d.weekLabel!,
+                if (d.goalLabel != null) d.goalLabel!,
+              ].where((e) => e.isNotEmpty).join(' · ').ifEmpty('Lộ trình AI của bạn')
+            : 'Tạo lộ trình AI ngay!',
+        chips: d.hasActiveRoadmap
+            ? [
+                if (d.phaseLabel != null) d.phaseLabel!,
+                if (d.weekLabel != null) d.weekLabel!,
+              ]
+            : const ['AI Coach', 'Cá nhân hóa'],
+        assetPath: HomeAssets.bannerProgressPerform,
         fallbackAsset: HomeAssets.todayBgFallback,
-        ctaLabel: 'Bắt đầu',
-        onCta: () {
-          final id = d.todaySessionId;
-          if (id != null && id.isNotEmpty) {
-            context.push(AppRoutes.customSessionDetail(id));
-          } else {
-            context.go(AppRoutes.workouts);
-          }
-        },
+        ctaLabel: d.hasActiveRoadmap ? 'Xem lộ trình AI' : 'Bắt đầu ngay',
+        onCta: () => context.go(AppRoutes.workouts),
+        imageOnly: true,
       ),
+      // Banner 2 — Sync Food → Marketplace
       _HeroSlide(
         kind: _HeroSlideKind.promo,
         eyebrow: 'SYNC Foods',
-        title: 'Giao healthy trong 30 phút',
-        chips: const ['Ưu đãi', 'Gần bạn'],
+        title: 'Muốn healthy? Gọi Sync Food ngay!',
+        chips: const ['Đặt ngay', 'Giao nhanh'],
         assetPath: HomeAssets.marketplacePromo1,
         fallbackAsset: HomeAssets.bannerFallbackAlt,
         ctaLabel: 'Đặt ngay',
         onCta: () => context.go(AppRoutes.marketplaceHome),
       ),
-      _HeroSlide(
-        kind: _HeroSlideKind.tip,
-        eyebrow: 'Mẹo hôm nay',
-        title: d.recoveryHint ?? 'Giữ nhịp đều — mỗi buổi đều đếm!',
-        chips: const ['SYNC Coach'],
-        assetPath: HomeAssets.banner2Jpg,
-        fallbackAsset: HomeAssets.banner2JpgFallback,
-        ctaLabel: 'Xem lộ trình',
-        onCta: () => context.go(AppRoutes.workouts),
-      ),
+      // Banner 3 — UserCustomWorkout hoặc CYN AI intro
+      if (hasCustom)
+        _HeroSlide(
+          kind: _HeroSlideKind.workout,
+          eyebrow: 'Lộ trình của bạn',
+          title: d.featuredCustomWorkoutName ?? 'Custom Workout',
+          chips: const ['User Custom', 'Tập ngay'],
+          assetPath: HomeAssets.todayBgFallback,
+          fallbackAsset: HomeAssets.todayBgFallback,
+          networkImageUrl: d.featuredCustomWorkoutCoverUrl,
+          ctaLabel: 'Xem workout',
+          onCta: () => context.push(
+            AppRoutes.customWorkoutDetail(d.featuredCustomWorkoutId!),
+          ),
+        )
+      else
+        _HeroSlide(
+          kind: _HeroSlideKind.tip,
+          eyebrow: 'CYN AI',
+          title: 'Sợ lộ trình không hiệu quả? Gọi CYN AI ngay!',
+          chips: const ['Chatbot', 'Tư vấn AI'],
+          assetPath: HomeAssets.bannerCynAiIntro,
+          fallbackAsset: HomeAssets.banner2JpgFallback,
+          ctaLabel: 'Chat với CYN',
+          onCta: () => context.push(AppRoutes.cynChat),
+          imageOnly: true,
+        ),
     ];
 
     const height = 220.0;
@@ -113,6 +132,10 @@ class _TodayHeroCarouselState extends State<TodayHeroCarousel> {
   }
 }
 
+extension on String {
+  String ifEmpty(String fallback) => isEmpty ? fallback : this;
+}
+
 enum _HeroSlideKind { workout, promo, tip }
 
 class _HeroSlide {
@@ -125,6 +148,8 @@ class _HeroSlide {
     required this.fallbackAsset,
     required this.ctaLabel,
     required this.onCta,
+    this.networkImageUrl,
+    this.imageOnly = false,
   });
 
   final _HeroSlideKind kind;
@@ -133,30 +158,44 @@ class _HeroSlide {
   final List<String> chips;
   final String assetPath;
   final String fallbackAsset;
+  final String? networkImageUrl;
   final String ctaLabel;
   final VoidCallback onCta;
+
+  /// When true, the asset is a complete promo design — show full-bleed image only.
+  final bool imageOnly;
 }
 
-class _TodayHeroCard extends StatefulWidget {
+class _TodayHeroCard extends StatelessWidget {
   const _TodayHeroCard({required this.slide});
 
   final _HeroSlide slide;
 
   @override
-  State<_TodayHeroCard> createState() => _TodayHeroCardState();
-}
-
-class _TodayHeroCardState extends State<_TodayHeroCard> {
-  @override
   Widget build(BuildContext context) {
+    if (slide.imageOnly) {
+      return GestureDetector(
+        onTap: slide.onCta,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: _HeroBackground(
+            primary: slide.assetPath,
+            fallback: slide.fallbackAsset,
+            networkImageUrl: slide.networkImageUrl,
+          ),
+        ),
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: Stack(
         fit: StackFit.expand,
         children: [
           _HeroBackground(
-            primary: widget.slide.assetPath,
-            fallback: widget.slide.fallbackAsset,
+            primary: slide.assetPath,
+            fallback: slide.fallbackAsset,
+            networkImageUrl: slide.networkImageUrl,
           ),
           DecoratedBox(
             decoration: BoxDecoration(
@@ -182,7 +221,7 @@ class _TodayHeroCardState extends State<_TodayHeroCard> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    widget.slide.eyebrow,
+                    slide.eyebrow,
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -192,7 +231,7 @@ class _TodayHeroCardState extends State<_TodayHeroCard> {
                 ),
                 const Spacer(),
                 Text(
-                  widget.slide.title,
+                  slide.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -206,7 +245,7 @@ class _TodayHeroCardState extends State<_TodayHeroCard> {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: widget.slide.chips
+                  children: slide.chips
                       .map(
                         (c) => Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -231,7 +270,7 @@ class _TodayHeroCardState extends State<_TodayHeroCard> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: widget.slide.onCta,
+                    onPressed: slide.onCta,
                     style: FilledButton.styleFrom(
                       backgroundColor: HomeBentoColors.primaryGreen,
                       foregroundColor: Colors.white,
@@ -241,7 +280,7 @@ class _TodayHeroCardState extends State<_TodayHeroCard> {
                       ),
                     ),
                     child: Text(
-                      widget.slide.ctaLabel,
+                      slide.ctaLabel,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                     ),
                   ),
@@ -256,10 +295,15 @@ class _TodayHeroCardState extends State<_TodayHeroCard> {
 }
 
 class _HeroBackground extends StatefulWidget {
-  const _HeroBackground({required this.primary, required this.fallback});
+  const _HeroBackground({
+    required this.primary,
+    required this.fallback,
+    this.networkImageUrl,
+  });
 
   final String primary;
   final String fallback;
+  final String? networkImageUrl;
 
   @override
   State<_HeroBackground> createState() => _HeroBackgroundState();
@@ -272,10 +316,16 @@ class _HeroBackgroundState extends State<_HeroBackground> {
 
   bool get _isVideo => widget.primary.toLowerCase().endsWith('.mp4');
 
+  String? get _resolvedNetworkUrl {
+    final raw = widget.networkImageUrl;
+    if (raw == null || raw.isEmpty) return null;
+    return MediaUrlResolver.resolve(raw) ?? raw;
+  }
+
   @override
   void initState() {
     super.initState();
-    if (_isVideo) _initVideo();
+    if (_resolvedNetworkUrl == null && _isVideo) _initVideo();
   }
 
   Future<void> _initVideo() async {
@@ -300,6 +350,19 @@ class _HeroBackgroundState extends State<_HeroBackground> {
 
   @override
   Widget build(BuildContext context) {
+    final networkUrl = _resolvedNetworkUrl;
+    if (networkUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: networkUrl,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) => Image.asset(
+          widget.fallback,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _gradientFallback(),
+        ),
+      );
+    }
+
     if (_isVideo && !_useFallback && _controller != null && _videoReady) {
       return FittedBox(
         fit: BoxFit.cover,
@@ -318,14 +381,18 @@ class _HeroBackgroundState extends State<_HeroBackground> {
       errorBuilder: (_, __, ___) => Image.asset(
         widget.fallback,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [HomeBentoColors.forestGreen, HomeBentoColors.primaryGreen],
-            ),
-          ),
+        errorBuilder: (_, __, ___) => _gradientFallback(),
+      ),
+    );
+  }
+
+  Widget _gradientFallback() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [HomeBentoColors.forestGreen, HomeBentoColors.primaryGreen],
         ),
       ),
     );

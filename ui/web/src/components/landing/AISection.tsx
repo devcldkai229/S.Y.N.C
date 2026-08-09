@@ -9,11 +9,16 @@ const benefits = [
   "Kết hợp dinh dưỡng và tập luyện cho kết quả tối ưu",
 ];
 
-const exercises = ["Squat 4×12", "Bench Press 4×10", "Romanian Deadlift 3×12", "Pull-ups 3×max"];
+const exercises = [
+  "Squat 4×12",
+  "Đẩy ngực 4×10",
+  "Deadlift Romania 3×12",
+  "Hít xà 3×tối đa",
+];
 
 export default function AISection() {
   return (
-    <section className="py-24 px-4 bg-gray-50">
+    <section className="relative z-[2] py-28 px-4 bg-gray-50/90">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left */}
@@ -22,12 +27,12 @@ export default function AISection() {
               <Sparkles className="w-3.5 h-3.5" />
               Được hỗ trợ bởi AI
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight leading-tight">
+            <h2 className="font-heading text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight leading-tight">
               Trợ lý fitness AI
               <br />
               cá nhân của bạn
             </h2>
-            <p className="text-gray-400 text-lg mb-8 leading-relaxed">
+            <p className="text-gray-500 text-lg mb-8 leading-relaxed">
               Không giống các app fitness thông thường, AI của SYNC hiểu cơ thể, mục tiêu và giới hạn riêng của bạn. Nó không chỉ đưa ra kế hoạch — mà còn huấn luyện bạn từng bước một.
             </p>
             <ul className="space-y-3.5">
@@ -46,7 +51,7 @@ export default function AISection() {
               <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-xl shadow-gray-100">
                 <div className="mb-5">
                   <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Kế hoạch cá nhân hóa của bạn</p>
-                  <h3 className="font-bold text-gray-900 text-xl">Chương trình Lean Muscle 4 tuần</h3>
+                  <h3 className="font-heading font-bold text-gray-900 text-xl">Chương trình cơ săn 4 tuần</h3>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3 mb-6">
@@ -87,7 +92,7 @@ export default function AISection() {
 
               {/* Floating card */}
               <div className="absolute -bottom-5 -left-5 bg-white rounded-2xl border border-gray-100 shadow-xl px-4 py-3">
-                <p className="text-xs text-gray-400 mb-0.5">AI Insight</p>
+                <p className="text-xs text-gray-400 mb-0.5">Gợi ý từ AI</p>
                 <p className="text-sm font-semibold text-gray-800">💪 Bạn mạnh hơn 23% so với tháng trước!</p>
               </div>
             </div>

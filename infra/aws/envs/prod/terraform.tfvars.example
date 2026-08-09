@@ -1,0 +1,13 @@
+# Copy → terraform.tfvars (gitignored) rồi điền giá trị thật.
+# state_bucket PHẢI khớp backend.tf (bucket account id thật).
+state_bucket = "sync-tfstate-822981067630"
+alert_email  = ""
+
+# Khuyến nghị lần apply đầu: bật DNS=false → hạ tầng up → sau mới bật domain + NS.
+# Nếu enable_dns=true + create_hosted_zone=true trước khi delegate NS → ACM validate treo.
+domain_name        = ""
+enable_dns         = false
+create_hosted_zone = false
+
+# Optional: dán ACM ap-southeast-1 ARN để bật ALB :443 + redirect 80→443
+certificate_arn = ""

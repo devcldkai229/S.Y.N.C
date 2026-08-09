@@ -1,13 +1,60 @@
 {
+  "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1.",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Debug",
+      "Microsoft.AspNetCore": "Information"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam-dev",
+    "Audience": "sync-lifestyle-clients-dev",
+    "SecretKey": "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
+  },
+  "ConnectionStrings": {
+    "ExerciseDatabase": "mongodb://localhost:27018"
+  },
+  "MongoDB": {
+    "ExerciseDatabaseName": "sync_exercise"
+  },
   "AWS": {
     "Profile": "default",
     "Region": "ap-southeast-1"
   },
   "Storage": {
-    "Bucket": "sync-public-assets",
+    "Bucket": "sync-pub-assets",
     "KeyPrefix": "exercises_catalog/",
-    "PublicRead": true,
-    "UseMediaProxy": true,
-    "MediaProxyBaseUrl": "http://localhost:5057/api/v1/exercise/exercises/media/"
+    "PublicRead": false,
+    "PresignedUrlExpiryMinutes": 60,
+    "MaxFileSizeMb": 50,
+    "MaxThumbnailSizeMb": 5,
+    "AllowedImageContentTypes": [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/webp"
+    ],
+    "AllowedVideoContentTypes": [
+      "video/mp4",
+      "video/mpeg",
+      "video/quicktime",
+      "video/webm"
+    ]
+  },
+  "FreeExerciseDb": {
+    "JsonUrl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json",
+    "ImageBaseUrl": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/"
+  },
+  "Translate": {
+    "Provider": "passthrough"
+  },
+  "Enrichment": {
+    "OllamaBaseUrl": "http://localhost:11434",
+    "Model": "qwen2.5:latest",
+    "Temperature": 0.2,
+    "Concurrency": 2
   }
 }

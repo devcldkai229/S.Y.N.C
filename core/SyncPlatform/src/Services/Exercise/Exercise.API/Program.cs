@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Exercise.API.Exceptions;
 using Exercise.Application.Common;
 using Exercise.Application.Extensions;
@@ -6,13 +6,15 @@ using Exercise.Infrastructure.Extensions;
 using Exercise.Infrastructure.Persistence;
 using Exercise.Infrastructure.Persistence.Seed;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddSharedConfiguration(builder.Environment);
+// Cloud (ECS): ghép ConnectionStrings từ SSM + Secrets Manager. Local: no-op.
+builder.Configuration.AddComposedMongoConnection("ExerciseDatabase");
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

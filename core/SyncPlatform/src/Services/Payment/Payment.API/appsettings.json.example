@@ -1,27 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.Development.json (gitignored). Local dev overrides for Payment.",
   "InternalApiKey": "dev_internal_api_key_sync_platform",
-
   "Logging": {
     "LogLevel": {
-      "Microsoft.EntityFrameworkCore.Database.Command": "Information"
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
     }
   },
   "ConnectionStrings": {
     "PaymentDatabase": "Host=localhost;Port=5434;Database=sync_payment;Username=postgres;Password=12345;Include Error Detail=true"
-  },
-  "OrderService": {
-    "BaseUrl": "http://localhost:5123"
-  },
-  "Momo": {
-    "Enabled": false,
-    "PartnerCode": "",
-    "AccessKey": "",
-    "SecretKey": "",
-    "Endpoint": "https://test-payment.momo.vn/v2/gateway/api/create",
-    "IpnUrl": "http://localhost:5057/webhooks/momo",
-    "RedirectUrl": "syncapp://payment/momo-return"
   },
   "PayOS": {
     "ClientId": "3d2983d2-3b36-41b2-8a8a-c56b29450f26",
@@ -31,5 +18,22 @@
     "CancelUrl": "http://localhost:3000/payment/cancel",
     "MonthlyDurationDays": 30,
     "YearlyDurationDays": 365
-  }
+  },
+  "GooglePlay": {
+    "PackageName": "com.sync.sync_app",
+    "ServiceAccountJson": "",
+    "RtdnSharedSecret": "",
+    "DevSimulateVerify": false,
+    "MonthlyDurationDays": 30
+  },
+  "AllowedHosts": "*",
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1. Production: DevSimulateVerify must stay false; set ServiceAccountJson.",
+  "_prodNote": "Never enable DevSimulateVerify in deployed environments."
 }

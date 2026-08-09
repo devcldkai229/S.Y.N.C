@@ -39,7 +39,7 @@ class _CreateFoodScreenState extends State<CreateFoodScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đã lưu món mới'), behavior: SnackBarBehavior.floating),
         );
-        context.pop();
+        context.pop(true);
       }
     } catch (e) {
       if (mounted) {

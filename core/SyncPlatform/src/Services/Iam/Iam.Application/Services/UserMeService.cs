@@ -8,26 +8,37 @@ using Libs.Auth.Context;
 using Libs.Storage.Services;
 using Iam.Domain.Enums;
 using Iam.Domain.Models;
+using Iam.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace Iam.Application.Services;
 
 public sealed class UserMeService
 {
     private readonly IUserMeRepository _repository;
+    private readonly IUserDeviceRepository _devices;
     private readonly ICurrentUserContext _currentUser;
     private readonly IAchievementService _achievementService;
     private readonly IMediaUrlResolver _media;
+    private readonly IAccountDeletionCascadeClient _deletionCascade;
+    private readonly ILogger<UserMeService> _logger;
 
     public UserMeService(
         IUserMeRepository repository,
+        IUserDeviceRepository devices,
         ICurrentUserContext currentUser,
         IAchievementService achievementService,
-        IMediaUrlResolver media)
+        IMediaUrlResolver media,
+        IAccountDeletionCascadeClient deletionCascade,
+        ILogger<UserMeService> logger)
     {
         _repository = repository;
+        _devices = devices;
         _currentUser = currentUser;
         _achievementService = achievementService;
         _media = media;
+        _deletionCascade = deletionCascade;
+        _logger = logger;
     }
 
     public async Task<ProfileSettingsResponse> GetProfileSettingsAsync(CancellationToken cancellationToken = default)
@@ -161,6 +172,59 @@ public sealed class UserMeService
         return UserMeMapper.ToProfileSettingsResponse(user, _media);
     }
 
+    /// <summary>
+    /// Soft-delete account: anonymize PII, mark Deleted, schedule hard-delete, revoke tokens,
+    /// then best-effort cascade to Payment / Social.
+    /// </summary>
+    public async Task DeleteAccountAsync(CancellationToken cancellationToken = default)
+    {
+        var user = await GetUserForUpdateAsync(cancellationToken);
+        var stamp = user.Id.ToString("N");
+        var now = DateTimeOffset.UtcNow;
+
+        user.Status = UserStatus.Deleted;
+        user.DeletedAt = now;
+        user.SubscriptionTier = SubscriptionTier.Free;
+        user.ScheduledHardDeleteAt = now.AddDays(30);
+        user.Email = $"deleted+{stamp}@deleted.sync.local";
+        user.FullName = "Deleted User";
+        user.PhoneNumber = null;
+        user.AvatarUrl = null;
+        user.BackgroundImageUrl = null;
+        user.PasswordHash = string.Empty;
+        user.EmailVerified = false;
+        user.PhoneVerified = false;
+        user.EmailVerificationToken = null;
+        user.PasswordResetToken = null;
+        user.PasswordResetTokenExpiresAt = null;
+        user.UpdatedAt = now;
+
+        var devices = await _devices.ListByUserAsync(user.Id, cancellationToken);
+        foreach (var device in devices)
+        {
+            device.IsRevoked = true;
+            device.RefreshTokenHash = null;
+            device.RefreshTokenExpiryTime = null;
+            device.UpdatedAt = now;
+            _devices.Update(device);
+        }
+
+        await _devices.SaveChangesAsync(cancellationToken);
+        await _repository.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _deletionCascade.NotifyDeletedAsync(user.Id, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogWarning(
+                ex,
+                "Account deletion cascade failed for UserId={UserId}; soft-delete already committed.",
+                user.Id);
+        }
+    }
+
     private async Task<User> GetUserForUpdateAsync(CancellationToken cancellationToken)
     {
         var userId = _currentUser.RequireUserId();
@@ -192,6 +256,8 @@ public sealed class UserMeService
             AutoOrderEnabled = false,
             DataSharingConsent = false,
             MarketingConsent = false,
+            SmartPushEnabled = true,
+            AllowAiGeneratedNotification = true,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -222,10 +288,20 @@ public sealed class UserMeService
             profile.MuscleMassKg = request.MuscleMassKg;
 
         if (isCreate || request.FitnessGoal is not null)
-            profile.FitnessGoal = Enum.Parse<FitnessGoal>(request.FitnessGoal!, ignoreCase: true);
+        {
+            var newGoal = Enum.Parse<FitnessGoal>(request.FitnessGoal!, ignoreCase: true);
+            if (profile.FitnessGoal != newGoal)
+                profile.TargetsManagedByEngine = false; // ProfileChange → formula tính lại nền
+            profile.FitnessGoal = newGoal;
+        }
 
         if (isCreate || request.ActivityLevel is not null)
-            profile.ActivityLevel = Enum.Parse<ActivityLevel>(request.ActivityLevel!, ignoreCase: true);
+        {
+            var newActivity = Enum.Parse<ActivityLevel>(request.ActivityLevel!, ignoreCase: true);
+            if (profile.ActivityLevel != newActivity)
+                profile.TargetsManagedByEngine = false;
+            profile.ActivityLevel = newActivity;
+        }
 
         if (isCreate || request.FitnessExperienceLevel is not null)
             profile.FitnessExperienceLevel = Enum.Parse<FitnessExperienceLevel>(request.FitnessExperienceLevel!, ignoreCase: true);
@@ -293,6 +369,12 @@ public sealed class UserMeService
 
         if (request.MarketingConsent is not null)
             preference.MarketingConsent = request.MarketingConsent.Value;
+
+        if (request.SmartPushEnabled is not null)
+            preference.SmartPushEnabled = request.SmartPushEnabled.Value;
+
+        if (request.AllowAiGeneratedNotification is not null)
+            preference.AllowAiGeneratedNotification = request.AllowAiGeneratedNotification.Value;
     }
 
     private static void ValidateAutoOrderState(UserPreference preference)

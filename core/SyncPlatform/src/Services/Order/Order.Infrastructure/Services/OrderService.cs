@@ -1,4 +1,4 @@
-using Contract.Events;
+using Libs.Shared.Events;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -223,6 +223,14 @@ public class OrderService : IOrderService
                 paymentStatus = PaymentStatus.Unpaid;
                 break;
             }
+            case CheckoutPaymentMethod.Deferred:
+            {
+                // AI two-step flow: place unpaid, then pay via wallet/VietQR tools.
+                orderStatus = OrderStatus.Pending;
+                paymentStatus = PaymentStatus.Unpaid;
+                requiresExternalPayment = true;
+                break;
+            }
             default:
                 throw new BadRequestException("Phương thức thanh toán không hợp lệ.");
         }
@@ -396,6 +404,110 @@ public class OrderService : IOrderService
         {
             _logger.LogWarning(ex, "Delivery kickoff failed for order {OrderId}", order.Id);
         }
+    }
+
+    public async Task<QuoteOrderResultDto> QuoteOrderAsync(
+        QuoteOrderRequestDto request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.Items.Count == 0)
+        {
+            return new QuoteOrderResultDto
+            {
+                IsValid = false,
+                ErrorMessage = "Giỏ hàng trống.",
+            };
+        }
+
+        var validation = await _marketplaceClient.ValidateOrderItemsAsync(new ValidateOrderItemsRequest
+        {
+            PartnerId = request.PartnerId,
+            FoodMenuItemIds = request.Items.Select(i => i.FoodMenuItemId).ToList(),
+        }, cancellationToken);
+
+        if (!validation.IsValid)
+        {
+            return new QuoteOrderResultDto
+            {
+                IsValid = false,
+                ErrorMessage = validation.ErrorMessage ?? "Order items validation failed.",
+            };
+        }
+
+        var validatedById = validation.Items.ToDictionary(x => x.FoodMenuItemId);
+        decimal subtotal = 0;
+        var lines = new List<QuoteOrderLineDto>();
+        foreach (var line in request.Items)
+        {
+            if (line.Quantity <= 0)
+            {
+                return new QuoteOrderResultDto
+                {
+                    IsValid = false,
+                    ErrorMessage = "Quantity must be greater than zero.",
+                };
+            }
+
+            if (!validatedById.TryGetValue(line.FoodMenuItemId, out var menu))
+            {
+                return new QuoteOrderResultDto
+                {
+                    IsValid = false,
+                    ErrorMessage = $"Food menu item {line.FoodMenuItemId} is invalid.",
+                };
+            }
+
+            var lineSubtotal = menu.Price * line.Quantity;
+            subtotal += lineSubtotal;
+            lines.Add(new QuoteOrderLineDto
+            {
+                FoodMenuItemId = menu.FoodMenuItemId,
+                NameVi = menu.NameVi,
+                UnitPrice = menu.Price,
+                Quantity = line.Quantity,
+                LineSubtotal = lineSubtotal,
+            });
+        }
+
+        var deliveryFee = _settings.DefaultDeliveryFee;
+        var preDiscountTotal = subtotal + deliveryFee;
+        decimal discount = 0;
+
+        if (!string.IsNullOrWhiteSpace(request.VoucherCode))
+        {
+            var voucher = await _paymentClient.ValidateVoucherAsync(new ValidateVoucherRequest
+            {
+                UserId = request.UserId,
+                Code = request.VoucherCode,
+                OrderAmount = preDiscountTotal,
+                PartnerId = request.PartnerId,
+            }, cancellationToken);
+
+            if (!voucher.Valid)
+            {
+                return new QuoteOrderResultDto
+                {
+                    IsValid = false,
+                    ErrorMessage = voucher.Message ?? "Voucher không hợp lệ.",
+                    Subtotal = subtotal,
+                    DeliveryFee = deliveryFee,
+                    Lines = lines,
+                };
+            }
+
+            discount = voucher.DiscountAmount;
+        }
+
+        return new QuoteOrderResultDto
+        {
+            IsValid = true,
+            Subtotal = subtotal,
+            DeliveryFee = deliveryFee,
+            Discount = discount,
+            Total = preDiscountTotal - discount,
+            Currency = "VND",
+            Lines = lines,
+        };
     }
 
     public async Task<OrderDetailDto> GetOrderDetailForUserAsync(

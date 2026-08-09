@@ -24,6 +24,11 @@ public interface IBlogService
         Guid? viewerId,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<BlogDto> Items, PaginationMetadata Pagination)> SearchPublishedAsync(
+        BlogSearchQuery query,
+        Guid? viewerId,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<BlogDto> Items, PaginationMetadata Pagination)> GetByAuthorAsync(
         Guid authorId,
         Guid viewerId,

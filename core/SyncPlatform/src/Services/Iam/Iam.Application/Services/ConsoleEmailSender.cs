@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 namespace Iam.Application.Services;
 
 /// <summary>
-/// Fallback when <c>Email:Smtp:Enabled</c> is false — logs the full verify URL only.
+/// Fallback when <c>Email:Brevo:Enabled</c> is false — logs the full verify URL only.
 /// </summary>
 public class ConsoleEmailSender : IEmailSender
 {
@@ -21,10 +21,9 @@ public class ConsoleEmailSender : IEmailSender
 
     public Task SendVerificationEmailAsync(string toEmail, string verificationToken, CancellationToken cancellationToken = default)
     {
-        var baseUrl = _settings.VerificationBaseUrl.TrimEnd('/');
-        var link = $"{baseUrl}/api/v1/auth/verify-email?token={Uri.EscapeDataString(verificationToken)}";
+        var link = EmailMessageFactory.BuildVerifyUrl(_settings, verificationToken);
         _logger.LogWarning(
-            "[EMAIL DISABLED] SMTP off — verification code for {Email}: {Code} | link: {Link}",
+            "[EMAIL DISABLED] No provider enabled — verification code for {Email}: {Code} | link: {Link}",
             toEmail, verificationToken, link);
         return Task.CompletedTask;
     }
@@ -32,7 +31,7 @@ public class ConsoleEmailSender : IEmailSender
     public Task SendPasswordResetEmailAsync(string toEmail, string resetCode, CancellationToken cancellationToken = default)
     {
         _logger.LogWarning(
-            "[EMAIL DISABLED] SMTP off — password reset code for {Email}: {Code}",
+            "[EMAIL DISABLED] No provider enabled — password reset code for {Email}: {Code}",
             toEmail, resetCode);
         return Task.CompletedTask;
     }

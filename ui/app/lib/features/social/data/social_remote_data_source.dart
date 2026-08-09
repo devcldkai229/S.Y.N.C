@@ -11,12 +11,17 @@ class SocialRemoteDataSource {
 
   final Dio _dio;
 
-  Future<CursorFeedPage<SocialPost>> fetchFeed({String? cursor, int limit = 20}) async {
+  Future<CursorFeedPage<SocialPost>> fetchFeed({
+    String? cursor,
+    int limit = 20,
+    String type = 'following',
+  }) async {
     final response = await _dio.get<Map<String, dynamic>>(
       '${ApiPaths.socialPosts}/feed',
       queryParameters: <String, dynamic>{
         if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
         'limit': limit,
+        'type': type,
       },
     );
 
@@ -34,7 +39,13 @@ class SocialRemoteDataSource {
         : <SocialPost>[];
 
     final nextCursor = json['nextCursor']?.toString();
-    return CursorFeedPage<SocialPost>(items: items, nextCursor: nextCursor);
+    final hasMore = json['hasMore'] == true ||
+        (nextCursor != null && nextCursor.isNotEmpty);
+    return CursorFeedPage<SocialPost>(
+      items: items,
+      nextCursor: nextCursor,
+      hasMore: hasMore,
+    );
   }
 
   Future<CursorFeedPage<SocialPost>> fetchUserWall({
@@ -66,7 +77,13 @@ class SocialRemoteDataSource {
         : <SocialPost>[];
 
     final nextCursor = json['nextCursor']?.toString();
-    return CursorFeedPage<SocialPost>(items: items, nextCursor: nextCursor);
+    final hasMore = json['hasMore'] == true ||
+        (nextCursor != null && nextCursor.isNotEmpty);
+    return CursorFeedPage<SocialPost>(
+      items: items,
+      nextCursor: nextCursor,
+      hasMore: hasMore,
+    );
   }
 
   Future<void> deletePost(String postId) async {
@@ -107,6 +124,19 @@ class SocialRemoteDataSource {
     final json = response.data ?? const {};
     if (json['success'] != true) {
       throw Exception((json['message'] ?? 'Failed to fetch my stories').toString());
+    }
+    final raw = json['data'];
+    if (raw is! List) return const [];
+    return raw.whereType<Map<String, dynamic>>().map(SocialStory.fromJson).toList();
+  }
+
+  Future<List<SocialStory>> fetchStoriesByUser(String userId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.socialStoriesByUser(userId),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Failed to fetch user stories').toString());
     }
     final raw = json['data'];
     if (raw is! List) return const [];
@@ -360,6 +390,67 @@ class SocialRemoteDataSource {
     if (json['success'] != true) {
       throw Exception((json['message'] ?? 'Unfollow failed').toString());
     }
+  }
+
+  Future<void> blockUser(String userId) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.socialUserBlock(userId),
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Block failed').toString());
+    }
+  }
+
+  Future<void> reportContent({
+    required String targetId,
+    required String reason,
+    String targetType = 'Post',
+    String? details,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiPaths.socialReports,
+      data: {
+        'targetId': targetId,
+        'targetType': targetType,
+        'reason': reason,
+        if (details != null && details.isNotEmpty) 'details': details,
+      },
+    );
+    final json = response.data ?? const {};
+    if (json['success'] != true) {
+      throw Exception((json['message'] ?? 'Report failed').toString());
+    }
+  }
+
+  Future<PagedSearchPage<FollowListItem>> fetchFollowers({
+    required String userId,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.socialUserFollowers(userId),
+      queryParameters: <String, dynamic>{
+        'pageNumber': pageNumber,
+        'pageSize': pageSize,
+      },
+    );
+    return _parsePagedSearch(response.data, FollowListItem.fromJson);
+  }
+
+  Future<PagedSearchPage<FollowListItem>> fetchFollowing({
+    required String userId,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiPaths.socialUserFollowing(userId),
+      queryParameters: <String, dynamic>{
+        'pageNumber': pageNumber,
+        'pageSize': pageSize,
+      },
+    );
+    return _parsePagedSearch(response.data, FollowListItem.fromJson);
   }
 
   Future<PagedSearchPage<SocialPost>> searchPosts({

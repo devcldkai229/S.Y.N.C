@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Iam.API.Exceptions;
 using Iam.API.Middleware;
 using Iam.API.Services;
@@ -10,12 +10,15 @@ using Iam.Infrastructure.Extensions;
 using Iam.Infrastructure.Persistence;
 using Iam.Infrastructure.Persistence.Seed;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddSharedConfiguration(builder.Environment);
+// Cloud (ECS): ghép ConnectionStrings từ SSM (host/port/user) + Secrets Manager
+// (password). Local: bỏ qua vì đã có ConnectionStrings trong appsettings.
+builder.Configuration.AddComposedPostgresConnection("IamDatabase");
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>

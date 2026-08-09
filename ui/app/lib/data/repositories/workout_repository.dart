@@ -1,4 +1,5 @@
 import 'package:image_picker/image_picker.dart';
+import 'package:sync_app/features/workouts/models/roadmap_overview_models.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 import 'package:sync_app/features/workouts/services/workout_api_service.dart';
 
@@ -6,6 +7,9 @@ class WorkoutRepository {
   WorkoutRepository(this._api);
 
   final WorkoutApiService _api;
+
+  Future<RoadmapOverview?> loadRoadmapOverview({String? experienceLevel}) =>
+      _api.getRoadmapOverview(experienceLevel: experienceLevel);
 
   /// Loads the active AI personalized roadmap, its sessions, and latest recovery.
   Future<({PersonalizedRoadmap? roadmap, List<RoadmapSession> sessions, RecoveryProfile? recovery})>

@@ -21,6 +21,7 @@ public class AuthService : IAuthService
     private readonly IJwtTokenService _tokenService;
     private readonly IGoogleTokenValidator _googleValidator;
     private readonly IEmailSender _emailSender;
+
     private readonly JwtAuthSettings _jwtSettings;
     private readonly ILogger<AuthService> _logger;
 
@@ -405,6 +406,7 @@ public class AuthService : IAuthService
             user.EmailVerificationToken = null;
             if (user.Status == UserStatus.PendingVerification)
                 user.Status = UserStatus.Active;
+
         }
 
         var authResponse = await IssueTokensAsync(user, request.DeviceId, request.Platform, cancellationToken);
@@ -560,4 +562,5 @@ public class AuthService : IAuthService
         // 6-digit OTP for password reset (looked up per-account, so no uniqueness needed).
         return RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
     }
+
 }

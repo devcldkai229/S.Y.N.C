@@ -9,12 +9,15 @@ abstract final class ApiPaths {
   static const authResendVerification = '/v1/auth/resend-verification';
   static const authGoogle = '/v1/auth/google';
   static const authRefresh = '/v1/auth/refresh';
+  static const authLogout = '/v1/auth/logout';
   static const authVerifyEmail = '/v1/auth/verify-email';
   static const authForgotPassword = '/v1/auth/forgot-password';
   static const authResetPassword = '/v1/auth/reset-password';
 
   // IAM (gateway prefix: /v1/iam → service /v1)
   static const meProfileSettings = '/v1/iam/me/profile-settings';
+  /// Soft-delete account. Prefer `/v1/iam/me` (gateway rewrite) or `/v1/me`.
+  static const meDelete = '/v1/iam/me';
   /// Prefer direct IAM route (`iam-me-route`); `/v1/iam/me/inventory` also works via gateway.
   static const meInventory = '/v1/me/inventory';
   static const meBasicProfile = '/v1/iam/me/basic-profile';
@@ -42,6 +45,7 @@ abstract final class ApiPaths {
 
   // Roadmap
   static const roadmaps = '/v1/roadmap/roadmaps';
+  static const roadmapOverview = '/v1/roadmap/roadmaps/me/overview';
   static const sessions = '/v1/roadmap/sessions';
   static const recoveryProfiles = '/v1/roadmap/recovery-profiles';
   static const customWorkouts = '/v1/roadmap/workouts';
@@ -63,6 +67,7 @@ abstract final class ApiPaths {
   static const myActiveSubscription = '/v1/payment/payments/user-subscriptions/me/active';
   static const cancelMySubscription = '/v1/payment/payments/user-subscriptions/me/cancel';
   static const payosCreateLink = '/v1/payment/payments/payos/create-link';
+  static const googlePlayVerify = '/v1/payment/payments/google-play/verify';
   static String transactionByOrderCode(int orderCode) =>
       '/v1/payment/payments/transactions/by-order-code/$orderCode';
   static const paymentWalletMe = '/v1/payment/payments/wallet/me';
@@ -79,6 +84,7 @@ abstract final class ApiPaths {
   static const socialStories = '/v1/social/stories';
   static const socialStoriesFeed = '/v1/social/stories/feed';
   static const socialStoriesMe = '/v1/social/stories/me';
+  static String socialStoriesByUser(String userId) => '/v1/social/stories/user/$userId';
   static String socialCommentReplies(String commentId) =>
       '/v1/comments/$commentId/replies';
 
@@ -98,8 +104,21 @@ abstract final class ApiPaths {
   static String socialUserFollowStatus(String userId) =>
       '/v1/social/users/$userId/follow-status';
   static String socialUserFollow(String userId) => '/v1/social/users/$userId/follow';
+  static String socialUserBlock(String userId) => '/v1/social/users/$userId/block';
+  static const socialReports = '/v1/social/reports';
+  static String socialUserFollowers(String userId) =>
+      '/v1/social/users/$userId/followers';
+  static String socialUserFollowing(String userId) =>
+      '/v1/social/users/$userId/following';
   static const socialUsersSearch = '/v1/social/users/search';
   static const socialPostsSearch = '/v1/posts/search';
+
+  // Social — blogs
+  static const socialBlogs = '/v1/social/blogs';
+  static const socialBlogsSearch = '/v1/social/blogs/search';
+  static String socialBlogById(String id) => '/v1/social/blogs/$id';
+  static String socialBlogLike(String id) => '/v1/social/blogs/$id/like';
+  static String socialBlogComments(String id) => '/v1/social/blogs/$id/comments';
 
   // Nutrition (gateway → /api/v1/nutrition/*)
   static const nutritionFoods = '/v1/nutrition/foods';
@@ -135,10 +154,19 @@ abstract final class ApiPaths {
   static String checkoutCartItem(String foodMenuItemId) =>
       '/v1/order/checkout/cart/items/$foodMenuItemId';
 
+  // sync-rcm-service (gateway: /api/v1/ai/workout|admin → :5300)
+  static const aiGenerateSessionExercises =
+      '/v1/ai/workout/generate-session-exercises';
+  static const aiSwapExercise = '/v1/ai/workout/swap-exercise';
+
   // Order
   static const orderOrders = '/v1/order/orders';
   static const orderActiveCount = '/v1/order/orders/active-count';
   static String orderById(String id) => '/v1/order/orders/$id';
   static String orderTracking(String id) => '/v1/order/orders/$id/tracking';
   static String orderCancel(String id) => '/v1/order/orders/$id/cancel';
+
+  // AI (Gateway → sync-agent-service :8088)
+  static const aiChat = '/v1/ai/chat';
+  static const aiChatConfirm = '/v1/ai/chat/confirm';
 }

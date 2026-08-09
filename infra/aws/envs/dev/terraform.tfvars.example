@@ -1,0 +1,9 @@
+# Copy → terraform.tfvars (gitignored) rồi điền giá trị thật.
+state_bucket = "sync-tfstate-REPLACE_ACCOUNT_ID"
+alert_email  = "" # email nhận CloudWatch alarm (xác nhận qua mail SNS)
+
+# DNS / web (dev mặc định tắt — chạy không cần domain)
+# domain_name        = "dev.example.com"
+# enable_dns         = false
+# create_hosted_zone = false
+# certificate_arn    = "" # optional ACM ap-southeast-1 cho ALB HTTPS

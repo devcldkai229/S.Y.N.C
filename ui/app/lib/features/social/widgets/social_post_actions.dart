@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/features/social/models/social_models.dart';
 import 'package:sync_app/features/social/utils/social_share_link.dart';
 
@@ -292,6 +294,8 @@ class _ReportSheetState extends State<_ReportSheet> {
 
   int? _selected;
   bool _submitted = false;
+  bool _submitting = false;
+  String? _error;
 
   @override
   Widget build(BuildContext context) {
@@ -371,17 +375,21 @@ class _ReportSheetState extends State<_ReportSheet> {
                 ),
               ),
           const SizedBox(height: 20),
+          if (_error != null) ...[
+            Text(_error!, style: TextStyle(color: Colors.red.shade600, fontSize: 13)),
+            const SizedBox(height: 8),
+          ],
           FilledButton(
-            onPressed: _selected != null ? _submit : null,
+            onPressed: (_selected != null && !_submitting) ? _submit : null,
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red.shade400,
               disabledBackgroundColor: AppColors.border,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
-            child: const Text(
-              'Submit report',
-              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+            child: Text(
+              _submitting ? 'Sending…' : 'Submit report',
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
             ),
           ),
         ],
@@ -437,5 +445,25 @@ class _ReportSheetState extends State<_ReportSheet> {
     );
   }
 
-  void _submit() => setState(() => _submitted = true);
+  void _submit() async {
+    if (_selected == null || _submitting) return;
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      await getIt<SocialRepository>().reportPost(
+        postId: widget.post.id,
+        reason: _reasons[_selected!],
+      );
+      if (mounted) setState(() => _submitted = true);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _error = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
 }

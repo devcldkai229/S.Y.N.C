@@ -19,6 +19,7 @@ public class BlogDto
     public DateTimeOffset? PublishedAt { get; set; }
     public int LikeCount { get; set; }
     public int ShareCount { get; set; }
+    public int CommentCount { get; set; }
     public bool IsLikedByMe { get; set; }
 }
 
@@ -48,9 +49,38 @@ public class BlogListQuery
     public string? Tag { get; set; }
 }
 
+public class BlogSearchQuery
+{
+    public string Q { get; set; } = string.Empty;
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 20;
+}
+
 public class BlogEngagementResultDto
 {
     public Guid BlogId { get; set; }
     public int LikeCount { get; set; }
     public int ShareCount { get; set; }
+}
+
+public class BlogCommentDto
+{
+    public Guid Id { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public Guid BlogId { get; set; }
+    public Guid UserId { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public AuthorSnapshotDto? AuthorSnapshot { get; set; }
+}
+
+public class CreateBlogCommentDto
+{
+    public string Content { get; set; } = string.Empty;
+    public AuthorSnapshotDto? AuthorSnapshot { get; set; }
+}
+
+public class BlogCommentListQuery
+{
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 20;
 }

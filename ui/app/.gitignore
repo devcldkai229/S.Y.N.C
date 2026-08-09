@@ -25,10 +25,15 @@ migrate_working_dir/
 
 # Local AWS map keys (never commit)
 dart_defines.aws.json
+dart_defines.prod.json
 
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Runner/GeneratedPluginRegistrant.*
 .dart_tool/
 .flutter-plugins-dependencies
 .pub-cache/

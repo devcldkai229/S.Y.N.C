@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/features/auth/screens/login_screen.dart';
+import 'package:sync_app/features/auth/screens/auth_bootstrap_screen.dart';
 import 'package:sync_app/features/auth/screens/forgot_password_screen.dart';
 import 'package:sync_app/features/auth/screens/register_step1_screen.dart';
 import 'package:sync_app/features/home/screens/home_screen.dart';
 import 'package:sync_app/features/achievements/screens/achievements_screen.dart';
+import 'package:sync_app/features/blogs/screens/blog_detail_screen.dart';
+import 'package:sync_app/features/blogs/screens/blog_list_screen.dart';
 import 'package:sync_app/features/shop/screens/shop_screen.dart';
 import 'package:sync_app/features/subscription/screens/subscription_screen.dart';
 import 'package:sync_app/features/notifications/screens/notifications_screen.dart';
 import 'package:sync_app/features/onboarding/screens/onboarding_screen.dart';
+import 'package:sync_app/features/profile/screens/delete_account_screen.dart';
 import 'package:sync_app/features/profile/screens/profile_screen.dart';
 import 'package:sync_app/features/social/screens/social_other_user_profile_screen.dart';
+import 'package:sync_app/features/social/screens/social_follow_list_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sync_app/features/social/cubit/social_cubit.dart';
 import 'package:sync_app/features/social/screens/social_screen.dart';
@@ -56,8 +61,12 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 abstract final class AppRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: rootNavigatorKey,
-    initialLocation: AppRoutes.login,
+    initialLocation: AppRoutes.splash,
     routes: [
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (context, state) => const AuthBootstrapScreen(),
+      ),
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
@@ -120,6 +129,30 @@ abstract final class AppRouter {
                       final userId = state.pathParameters['userId']!;
                       return SocialOtherUserProfileScreen(userId: userId);
                     },
+                    routes: [
+                      GoRoute(
+                        path: 'followers',
+                        parentNavigatorKey: rootNavigatorKey,
+                        builder: (context, state) {
+                          final userId = state.pathParameters['userId']!;
+                          return SocialFollowListScreen(
+                            userId: userId,
+                            mode: SocialFollowListMode.followers,
+                          );
+                        },
+                      ),
+                      GoRoute(
+                        path: 'following',
+                        parentNavigatorKey: rootNavigatorKey,
+                        builder: (context, state) {
+                          final userId = state.pathParameters['userId']!;
+                          return SocialFollowListScreen(
+                            userId: userId,
+                            mode: SocialFollowListMode.following,
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -136,6 +169,11 @@ abstract final class AppRouter {
         ],
       ),
       GoRoute(
+        path: AppRoutes.deleteAccount,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const DeleteAccountScreen(),
+      ),
+      GoRoute(
         path: AppRoutes.notifications,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const NotificationsScreen(),
@@ -143,12 +181,30 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.cynChat,
         parentNavigatorKey: rootNavigatorKey,
-        builder: (context, state) => const CynChatScreen(),
+        builder: (context, state) {
+          final initialMessage = state.extra is String ? state.extra as String : null;
+          return CynChatScreen(initialMessage: initialMessage);
+        },
       ),
       GoRoute(
         path: AppRoutes.achievements,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) => const AchievementsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.blogs,
+        parentNavigatorKey: rootNavigatorKey,
+        builder: (context, state) => const BlogListScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            parentNavigatorKey: rootNavigatorKey,
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return BlogDetailScreen(blogId: id);
+            },
+          ),
+        ],
       ),
       GoRoute(
         path: AppRoutes.shop,
@@ -241,6 +297,13 @@ abstract final class AppRouter {
         path: AppRoutes.nutritionFoodSearch,
         parentNavigatorKey: rootNavigatorKey,
         builder: (context, state) {
+          if (state.extra is NutritionFoodSearchArgs) {
+            final args = state.extra! as NutritionFoodSearchArgs;
+            return FoodSearchScreen(
+              mealType: args.mealType,
+              diaryDate: args.diaryDate,
+            );
+          }
           final meal = state.extra is MealTypeUi ? state.extra! as MealTypeUi : MealTypeUi.snack;
           return FoodSearchScreen(mealType: meal);
         },

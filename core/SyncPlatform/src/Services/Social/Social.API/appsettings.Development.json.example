@@ -1,8 +1,25 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
+  "_readme": "Copy to appsettings.Development.json (gitignored) via setup-appsettings.ps1.",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Information",
+      "Microsoft.AspNetCore.Hosting.Diagnostics": "Warning",
+      "Microsoft.Extensions.Http": "Warning"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam-dev",
+    "Audience": "sync-lifestyle-clients-dev",
+    "SecretKey": "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{",
+    "AccessTokenExpiryMinutes": 60,
+    "RefreshTokenExpiryDays": 30
+  },
   "ConnectionStrings": {
     "SocialDatabase": "mongodb://localhost:27018"
   },
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
   "MongoDB": {
     "SocialDatabaseName": "sync_social"
   },
@@ -12,17 +29,36 @@
       "SeedDemoData": true
     },
     "Maintenance": {
-      "AllowShareCodeBackfillApi": true,
+      "AllowShareCodeBackfillApi": false,
       "BackfillShareCodesOnStartup": false
     }
+  },
+  "IamService": {
+    "BaseUrl": "http://localhost:5288",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
+  },
+  "NotificationService": {
+    "BaseUrl": "http://localhost:5106",
+    "InternalApiKey": "dev_internal_api_key_sync_platform"
   },
   "AWS": {
     "Profile": "default",
     "Region": "ap-southeast-1"
   },
   "Storage": {
-    "Bucket": "sync-public-assets",
+    "Bucket": "sync-private-assets",
     "PublicBaseUrl": "http://localhost:5057/api/v1/media",
     "MaxFileSizeMb": 50
+  },
+  "AwsLocation": {
+    "Region": "ap-southeast-1",
+    "RouteCalculatorName": "sync-route-calculator",
+    "DataProvider": "Grab",
+    "Profile": "default",
+    "PlaceIndexName": "sync-place-index",
+    "MapName": "sync-map",
+    "MapStyle": "Hybrid",
+    "RequestTimeoutSeconds": 12,
+    "RouteAttemptTimeoutSeconds": 8
   }
 }

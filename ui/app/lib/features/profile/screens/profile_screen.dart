@@ -3,17 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:sync_app/core/config/app_config.dart';
 import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/core/locale/l10n_extensions.dart';
 import 'package:sync_app/core/locale/locale_cubit.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/media_url_resolver.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/data/repositories/social_repository.dart';
 import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/profile/cubit/profile_cubit.dart';
 import 'package:sync_app/features/profile/models/profile_models.dart';
 import 'package:sync_app/features/profile/widgets/profile_edit_sheets.dart';
-import 'package:sync_app/shared/widgets/language_switcher.dart';
+import 'package:sync_app/features/social/models/follow_models.dart';
 import 'package:sync_app/shared/widgets/sync_app_bar.dart';
 import 'package:sync_app/shared/widgets/sync_avatar.dart';
 
@@ -29,8 +32,33 @@ class ProfileScreen extends StatelessWidget {
   }
 }
 
-class _ProfileScreenBody extends StatelessWidget {
+class _ProfileScreenBody extends StatefulWidget {
   const _ProfileScreenBody();
+
+  @override
+  State<_ProfileScreenBody> createState() => _ProfileScreenBodyState();
+}
+
+class _ProfileScreenBodyState extends State<_ProfileScreenBody> {
+  final _socialRepo = getIt<SocialRepository>();
+
+  FollowCounts _followCounts = FollowCounts.empty;
+  String? _followLoadedForUserId;
+
+  Future<void> _loadFollowCounts(String userId) async {
+    if (userId.isEmpty) return;
+    try {
+      final counts = await _socialRepo.loadFollowCounts(userId);
+      if (!mounted) return;
+      setState(() {
+        _followLoadedForUserId = userId;
+        _followCounts = counts;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _followLoadedForUserId = userId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,12 +104,22 @@ class _ProfileScreenBody extends StatelessWidget {
         }
 
         final s = state.settings!;
+        final userId = s.userId;
+        if (userId.isNotEmpty && userId != _followLoadedForUserId) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && userId != _followLoadedForUserId) {
+              _loadFollowCounts(userId);
+            }
+          });
+        }
+
         final l10n = context.l10n;
         final g = state.inventory?.gamification;
         final level = g?.currentLevel ?? state.publicProfile?.currentLevel ?? 1;
         final xp = g?.currentXp ?? state.publicProfile?.currentXp ?? 0;
         final streak = g?.currentStreak ?? 0;
         final coins = g?.syncCoins.toInt() ?? 0;
+        final voucherCount = state.inventory?.totalVouchers ?? 0;
 
         return Scaffold(
           backgroundColor: AppColors.background,
@@ -90,190 +128,243 @@ class _ProfileScreenBody extends StatelessWidget {
             top: false,
             bottom: false,
             child: Column(
-            children: [
-              if (!s.fitness.isConfigured || !s.preferences.isConfigured)
-                _SetupBanner(
-                  onSetup: () => context.push(AppRoutes.onboarding),
-                ),
-              Expanded(
-                child: RefreshIndicator(
-                  color: AppColors.primaryGreen,
-                  onRefresh: () => context.read<ProfileCubit>().load(),
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
-                    children: [
-                      _AvatarHeader(
-                        name: s.basic.fullName,
-                        email: s.basic.email,
-                        avatarUrl: s.basic.avatarUrl,
-                        backgroundImageUrl: s.basic.backgroundImageUrl,
-                        level: level,
-                        xp: xp,
-                        streak: streak,
-                        coins: coins,
-                        verified: s.basic.emailVerified,
-                        onEditAccount: () => _editAccount(context, s.basic),
-                        onPickAvatar: () => _pickAndUploadAvatar(context),
-                        onPickBackground: () => _pickAndUploadBackground(context),
-                      ),
-                      const SizedBox(height: 12),
-                      if (s.profileCompletenessPercent < 100) ...[
-                        _CompletenessCard(
-                          percent: s.profileCompletenessPercent,
-                          hints: s.missingProfileHints,
-                          onSetup: () => context.push(AppRoutes.onboarding),
+              children: [
+                if (!s.fitness.isConfigured || !s.preferences.isConfigured)
+                  _SetupBanner(
+                    onSetup: () => context.push(AppRoutes.onboarding),
+                  ),
+                Expanded(
+                  child: RefreshIndicator(
+                    color: AppColors.primaryGreen,
+                    onRefresh: () async {
+                      await context.read<ProfileCubit>().load();
+                      await _loadFollowCounts(userId);
+                    },
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                      children: [
+                        _AvatarHeader(
+                          name: s.basic.fullName,
+                          email: s.basic.email,
+                          avatarUrl: s.basic.avatarUrl,
+                          backgroundImageUrl: s.basic.backgroundImageUrl,
+                          tier: s.basic.subscriptionTier,
+                          verified: s.basic.emailVerified,
+                          onEdit: () => _editAccount(context, s.basic),
+                          onPickAvatar: () => _pickAndUploadAvatar(context),
+                          onPickBackground: () => _pickAndUploadBackground(context),
+                        ),
+                        const SizedBox(height: 16),
+                        _StatStrip(
+                          level: level,
+                          streak: streak,
+                          coins: coins,
+                          xp: xp,
                         ),
                         const SizedBox(height: 12),
-                      ],
-                      _SectionCard(
-                        title: l10n.sectionAccount,
-                        icon: Icons.person_outline,
-                        initiallyExpanded: true,
-                        onEdit: () => _editAccount(context, s.basic),
-                        children: [
-                          _Row(l10n.fullNameLabel, s.basic.fullName),
-                          _Row(l10n.emailLabel, s.basic.email),
-                          _Row(l10n.timezone, s.basic.timeZone),
-                          _Row(l10n.packageTier, s.basic.subscriptionTier),
-                          _Row(
-                            l10n.emailVerified,
-                            s.basic.emailVerified ? l10n.yes : l10n.no,
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 8, bottom: 4),
-                            child: LanguageSwitcher(compact: true),
-                          ),
-                        ],
-                      ),
-                      _SectionCard(
-                        title: l10n.sectionFitness,
-                        icon: Icons.monitor_heart_outlined,
-                        onEdit: s.fitness.isConfigured
-                            ? () => _editFitness(context, s.fitness)
-                            : () => context.push(AppRoutes.onboarding),
-                        trailing: TextButton(
-                          onPressed: state.isSaving
-                              ? null
-                              : () => _logWeight(context, s.fitness.currentWeightKg),
-                          child: Text(l10n.weightQuickAction),
-                        ),
-                        children: _fitnessRows(context, s.fitness, state.biometric),
-                      ),
-                      if (s.fitness.dailyProteinTargetGram != null)
-                        _SectionCard(
-                          title: l10n.sectionMacros,
-                          icon: Icons.pie_chart_outline,
+                        Row(
                           children: [
-                            _Row(l10n.bmrKcal, '${s.fitness.bmr ?? state.biometric?.bmr ?? l10n.notSet} kcal'),
-                            _Row(l10n.tdeeKcal, '${s.fitness.baseTdee ?? state.biometric?.baseTdee ?? l10n.notSet} kcal'),
-                            _Row(l10n.proteinG, '${s.fitness.dailyProteinTargetGram} g'),
-                            _Row(l10n.carbG, '${s.fitness.dailyCarbTargetGram} g'),
-                            _Row(l10n.fatG, '${s.fitness.dailyFatTargetGram} g'),
-                          ],
-                        ),
-                      _SectionCard(
-                        title: l10n.sectionNutritionAi,
-                        icon: Icons.restaurant_outlined,
-                        onEdit: () => _editPreferences(context, s.preferences),
-                        children: [
-                          _ChipList(
-                            label: l10n.allergies,
-                            items: s.preferences.allergies.map((e) => e.allergenName).toList(),
-                          ),
-                          _ChipList(label: l10n.favorites, items: s.preferences.favoriteFoods),
-                          _ChipList(label: l10n.disliked, items: s.preferences.dislikedFoods),
-                          _Row(
-                            l10n.aiCoachStyleLabel,
-                            L10nEnums.agentPersona(l10n, s.preferences.agentPersona),
-                          ),
-                          _Row(
-                            l10n.motivationStyleLabel,
-                            L10nEnums.motivationStyle(l10n, s.preferences.motivationStyle),
-                          ),
-                          _Row(
-                            l10n.dataSharing,
-                            s.preferences.dataSharingConsent ? l10n.agreed : l10n.notAgreed,
-                          ),
-                          _Row(
-                            l10n.marketing,
-                            s.preferences.marketingConsent ? l10n.agreed : l10n.notAgreed,
-                          ),
-                        ],
-                      ),
-                      _SectionCard(
-                        title: l10n.sectionGamification,
-                        icon: Icons.emoji_events_outlined,
-                        children: [
-                          _Row(l10n.level, '$level'),
-                          _Row('XP', '$xp'),
-                          _Row(
-                            'Streak',
-                            '${l10n.streakDays(streak)} (${l10n.longestStreak(g?.longestStreak ?? 0)})',
-                          ),
-                          _Row(l10n.syncCoins, '${g?.syncCoins.toStringAsFixed(0) ?? 0}'),
-                          _Row(l10n.achievementPoints, '${g?.achievementPoints ?? 0}'),
-                          _Row(
-                            l10n.achievementsUnlocked,
-                            '${state.inventory?.totalAchievementsUnlocked ?? 0}',
-                          ),
-                          _Row(l10n.vouchers, '${state.inventory?.totalVouchers ?? 0}'),
-                          if (state.inventory?.achievements.isNotEmpty == true) ...[
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.recentAchievements,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                            ),
-                            ...state.inventory!.achievements.take(3).map(
-                                  (a) => Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: Text(
-                                      l10n.achievementXp(a.name, a.xpReward),
-                                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                                    ),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => context.push(
+                                  AppRoutes.socialUserFollowers(userId),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primaryGreen,
+                                  side: const BorderSide(color: AppColors.border),
+                                  minimumSize: const Size(0, 44),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
+                                child: Text(
+                                  l10n.profileFollowersBtn(_followCounts.followerCount),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () => context.push(
+                                  AppRoutes.socialUserFollowing(userId),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primaryGreen,
+                                  side: const BorderSide(color: AppColors.border),
+                                  minimumSize: const Size(0, 44),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  l10n.profileFollowingBtn(_followCounts.followingCount),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
+                        ),
+                        if (s.profileCompletenessPercent < 100) ...[
+                          const SizedBox(height: 16),
+                          _CompletenessCard(
+                            percent: s.profileCompletenessPercent,
+                            hints: s.missingProfileHints,
+                            onSetup: () => context.push(AppRoutes.onboarding),
+                          ),
                         ],
-                      ),
-                      if (state.publicProfile != null)
-                        _SectionCard(
-                          title: l10n.sectionPublicProfile,
-                          icon: Icons.public_outlined,
+                        const SizedBox(height: 20),
+                        _SettingsGroup(
+                          title: l10n.profileGroupPersonalize,
                           children: [
-                            _Row(l10n.displayName, state.publicProfile!.fullName),
-                            _Row(l10n.level, '${state.publicProfile!.currentLevel}'),
-                            _Row('XP', '${state.publicProfile!.currentXp}'),
-                            _Row('Streak', l10n.streakDays(state.publicProfile!.currentStreak)),
+                            _SettingsRow(
+                              icon: Icons.monitor_heart_outlined,
+                              title: l10n.sectionFitness,
+                              subtitle: s.fitness.isConfigured
+                                  ? L10nEnums.fitnessGoal(l10n, s.fitness.fitnessGoal)
+                                  : l10n.fitnessNotConfigured,
+                              onTap: () {
+                                if (s.fitness.isConfigured) {
+                                  _editFitness(context, s.fitness);
+                                } else {
+                                  context.push(AppRoutes.onboarding);
+                                }
+                              },
+                            ),
+                            if (s.fitness.dailyProteinTargetGram != null)
+                              _SettingsRow(
+                                icon: Icons.pie_chart_outline,
+                                title: l10n.profileMacrosDaily,
+                                subtitle:
+                                    'P ${s.fitness.dailyProteinTargetGram} · C ${s.fitness.dailyCarbTargetGram} · F ${s.fitness.dailyFatTargetGram}',
+                                onTap: () => _showMacrosSheet(context, s.fitness, state.biometric),
+                              ),
+                            _SettingsRow(
+                              icon: Icons.restaurant_outlined,
+                              title: l10n.sectionNutritionAi,
+                              subtitle: L10nEnums.agentPersona(
+                                l10n,
+                                s.preferences.agentPersona,
+                              ),
+                              onTap: () => _editPreferences(context, s.preferences),
+                            ),
                           ],
                         ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => context.push(AppRoutes.onboarding),
-                        icon: const Icon(Icons.tune),
-                        label: Text(l10n.fullSetupProfile),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primaryGreen,
-                          side: const BorderSide(color: AppColors.primaryGreen),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        const SizedBox(height: 16),
+                        _SettingsGroup(
+                          title: l10n.profileGroupActivity,
+                          children: [
+                            _SettingsRow(
+                              icon: Icons.emoji_events_outlined,
+                              title: l10n.sectionGamification,
+                              subtitle: '${l10n.level} $level · ${l10n.streakDays(streak)}',
+                              onTap: () => _showGamificationSheet(context, state),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.local_offer_outlined,
+                              title: l10n.profileVouchersTitle,
+                              subtitle: voucherCount == 0
+                                  ? l10n.profileNoVouchersShort
+                                  : l10n.profileVoucherCount(voucherCount),
+                              onTap: () => _showVouchersSheet(
+                                context,
+                                state.inventory?.vouchers ?? const [],
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => _logout(context),
-                        icon: const Icon(Icons.logout_rounded),
-                        label: const Text('Log out'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red.shade400,
-                          side: BorderSide(color: Colors.red.shade400),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        const SizedBox(height: 16),
+                        _SettingsGroup(
+                          title: l10n.profileGroupAccount,
+                          children: [
+                            if (state.publicProfile != null)
+                              _SettingsRow(
+                                icon: Icons.public_outlined,
+                                title: l10n.sectionPublicProfile,
+                                subtitle: state.publicProfile!.fullName,
+                                onTap: () => _showPublicProfileSheet(
+                                  context,
+                                  state.publicProfile!,
+                                ),
+                              ),
+                            _SettingsRow(
+                              icon: Icons.tune_outlined,
+                              title: l10n.fullSetupProfile,
+                              onTap: () => context.push(AppRoutes.onboarding),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.privacy_tip_outlined,
+                              title: 'Chính sách bảo mật',
+                              onTap: () => _openUrl(AppConfig.privacyPolicyUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.description_outlined,
+                              title: 'Điều khoản sử dụng',
+                              onTap: () => _openUrl(AppConfig.termsOfServiceUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.local_hospital_outlined,
+                              title: 'Miễn trừ y tế',
+                              onTap: () => _openUrl(AppConfig.healthDisclaimerUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.receipt_long_outlined,
+                              title: 'Hoàn tiền & huỷ gói',
+                              onTap: () => _openUrl(AppConfig.refundPolicyUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.people_outline,
+                              title: 'Tiêu chuẩn cộng đồng',
+                              onTap: () => _openUrl(AppConfig.communityStandardsUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.mail_outline,
+                              title: 'Liên hệ & pháp nhân',
+                              onTap: () => _openUrl(AppConfig.contactUrl),
+                            ),
+                            _SettingsRow(
+                              icon: Icons.delete_forever_outlined,
+                              title: 'Xoá tài khoản',
+                              subtitle: 'Ẩn danh dữ liệu & thu hồi phiên',
+                              onTap: () => context.push(AppRoutes.deleteAccount),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: OutlinedButton.icon(
+                            onPressed: () => _logout(context),
+                            icon: const Icon(Icons.logout_rounded, size: 20),
+                            label: Text(l10n.profileLogout),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red.shade400,
+                              side: BorderSide(color: Colors.red.shade300),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
             ),
           ),
         );
@@ -281,43 +372,167 @@ class _ProfileScreenBody extends StatelessWidget {
     );
   }
 
-  List<Widget> _fitnessRows(
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _showDetailSheet({
+    required BuildContext context,
+    required String title,
+    required List<Widget> children,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 12,
+              bottom: MediaQuery.viewInsetsOf(ctx).bottom + 20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.sizeOf(ctx).height * 0.65,
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: children,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showMacrosSheet(
     BuildContext context,
-    FitnessProfile f,
+    FitnessProfile fitness,
     BiometricProfileDetail? bio,
   ) {
     final l10n = context.l10n;
-    final dash = l10n.notSet;
-    if (!f.isConfigured) {
-      return [
-        Text(
-          l10n.fitnessNotConfigured,
-          style: const TextStyle(color: AppColors.textSecondary),
+    return _showDetailSheet(
+      context: context,
+      title: l10n.profileMacrosDaily,
+      children: [
+        _DetailRow(l10n.bmrKcal, '${fitness.bmr ?? bio?.bmr ?? l10n.notSet} kcal'),
+        _DetailRow(l10n.tdeeKcal, '${fitness.baseTdee ?? bio?.baseTdee ?? l10n.notSet} kcal'),
+        _DetailRow(l10n.proteinG, '${fitness.dailyProteinTargetGram} g'),
+        _DetailRow(l10n.carbG, '${fitness.dailyCarbTargetGram} g'),
+        _DetailRow(l10n.fatG, '${fitness.dailyFatTargetGram} g'),
+      ],
+    );
+  }
+
+  Future<void> _showGamificationSheet(BuildContext context, ProfileState state) {
+    final l10n = context.l10n;
+    final g = state.inventory?.gamification;
+    final level = g?.currentLevel ?? state.publicProfile?.currentLevel ?? 1;
+    final xp = g?.currentXp ?? state.publicProfile?.currentXp ?? 0;
+    final streak = g?.currentStreak ?? 0;
+
+    return _showDetailSheet(
+      context: context,
+      title: l10n.sectionGamification,
+      children: [
+        _DetailRow(l10n.level, '$level'),
+        _DetailRow(l10n.profileStatXp, '$xp'),
+        _DetailRow(
+          l10n.profileStatStreak,
+          '${l10n.streakDays(streak)} (${l10n.longestStreak(g?.longestStreak ?? 0)})',
         ),
-      ];
-    }
-    return [
-      _Row(l10n.genderLabel, L10nEnums.gender(l10n, f.gender)),
-      _Row(l10n.dateOfBirthLabel, f.dateOfBirth ?? dash),
-      _Row(
-        l10n.heightCmLabel,
-        f.heightCm != null ? '${f.heightCm!.toStringAsFixed(0)} cm' : dash,
-      ),
-      _Row(
-        l10n.currentWeightKgLabel,
-        f.currentWeightKg != null ? '${f.currentWeightKg} kg' : dash,
-      ),
-      _Row(
-        l10n.targetWeightKgLabel,
-        f.targetWeightKg != null ? '${f.targetWeightKg} kg' : dash,
-      ),
-      _Row(l10n.goalLabel, L10nEnums.fitnessGoal(l10n, f.fitnessGoal)),
-      _Row(l10n.activityLabel, L10nEnums.activityLevel(l10n, f.activityLevel)),
-      _Row(l10n.experienceLabel, L10nEnums.experience(l10n, f.fitnessExperienceLevel)),
-      _Row(l10n.trainingLocationLabel, L10nEnums.workoutLocation(l10n, f.workoutLocationPreference)),
-      if (f.injuries.isNotEmpty) _ChipList(label: l10n.injuriesLabel, items: f.injuries),
-      if (f.medications.isNotEmpty) _ChipList(label: l10n.medicationsLabel, items: f.medications),
-    ];
+        _DetailRow(l10n.syncCoins, '${g?.syncCoins.toStringAsFixed(0) ?? 0}'),
+        _DetailRow(l10n.achievementPoints, '${g?.achievementPoints ?? 0}'),
+        _DetailRow(
+          l10n.achievementsUnlocked,
+          '${state.inventory?.totalAchievementsUnlocked ?? 0}',
+        ),
+        _DetailRow(l10n.vouchers, '${state.inventory?.totalVouchers ?? 0}'),
+        if (state.inventory?.achievements.isNotEmpty == true) ...[
+          const SizedBox(height: 12),
+          Text(
+            l10n.recentAchievements,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          ),
+          ...state.inventory!.achievements.take(3).map(
+                (a) => Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    l10n.achievementXp(a.name, a.xpReward),
+                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                ),
+              ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _showVouchersSheet(BuildContext context, List<VoucherItem> vouchers) {
+    final l10n = context.l10n;
+    return _showDetailSheet(
+      context: context,
+      title: l10n.profileVouchersTitle,
+      children: vouchers.isEmpty
+          ? [
+              Text(
+                l10n.profileVouchersEmpty,
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+            ]
+          : vouchers.map((v) => _VoucherTile(voucher: v)).toList(),
+    );
+  }
+
+  Future<void> _showPublicProfileSheet(BuildContext context, PublicProfile profile) {
+    final l10n = context.l10n;
+    return _showDetailSheet(
+      context: context,
+      title: l10n.sectionPublicProfile,
+      children: [
+        _DetailRow(l10n.displayName, profile.fullName),
+        _DetailRow(l10n.level, '${profile.currentLevel}'),
+        _DetailRow(l10n.profileStatXp, '${profile.currentXp}'),
+        _DetailRow(l10n.profileStatStreak, l10n.streakDays(profile.currentStreak)),
+      ],
+    );
   }
 
   Future<void> _editAccount(BuildContext context, BasicProfile basic) async {
@@ -338,7 +553,9 @@ class _ProfileScreenBody extends StatelessWidget {
     final ok = await context.read<ProfileCubit>().uploadAndSaveAvatar(picked);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Đã cập nhật ảnh đại diện' : 'Không thể tải ảnh lên')),
+      SnackBar(
+        content: Text(ok ? context.l10n.profileAvatarUpdated : context.l10n.profileUploadFailed),
+      ),
     );
   }
 
@@ -348,7 +565,9 @@ class _ProfileScreenBody extends StatelessWidget {
     final ok = await context.read<ProfileCubit>().uploadAndSaveBackground(picked);
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(ok ? 'Đã cập nhật ảnh nền' : 'Không thể tải ảnh lên')),
+      SnackBar(
+        content: Text(ok ? context.l10n.profileCoverUpdated : context.l10n.profileUploadFailed),
+      ),
     );
   }
 
@@ -364,29 +583,27 @@ class _ProfileScreenBody extends StatelessWidget {
     await context.read<ProfileCubit>().savePreferences(updated);
   }
 
-  Future<void> _logWeight(BuildContext context, double? current) async {
-    final kg = await showLogWeightSheet(context, current: current);
-    if (kg == null || !context.mounted) return;
-    await context.read<ProfileCubit>().logWeight(kg);
-  }
-
   Future<void> _logout(BuildContext context) async {
+    final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Log out', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text('Are you sure you want to log out of your account?'),
+        title: Text(
+          l10n.profileLogoutConfirmTitle,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        content: Text(l10n.profileLogoutConfirmBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            child: Text(l10n.actionCancel, style: const TextStyle(color: AppColors.textMuted)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'Log out',
+              l10n.profileLogout,
               style: TextStyle(color: Colors.red.shade400, fontWeight: FontWeight.w700),
             ),
           ),
@@ -446,12 +663,9 @@ class _AvatarHeader extends StatelessWidget {
     required this.email,
     this.avatarUrl,
     this.backgroundImageUrl,
-    required this.level,
-    required this.xp,
-    required this.streak,
-    required this.coins,
+    required this.tier,
     required this.verified,
-    required this.onEditAccount,
+    required this.onEdit,
     required this.onPickAvatar,
     required this.onPickBackground,
   });
@@ -460,160 +674,165 @@ class _AvatarHeader extends StatelessWidget {
   final String email;
   final String? avatarUrl;
   final String? backgroundImageUrl;
-  final int level;
-  final int xp;
-  final int streak;
-  final int coins;
+  final String tier;
   final bool verified;
-  final VoidCallback onEditAccount;
+  final VoidCallback onEdit;
   final VoidCallback onPickAvatar;
   final VoidCallback onPickBackground;
 
-  static const _avatarRadius = 60.0;
-  static const _bannerHeight = 220.0;
-  static const _bannerRadius = 14.0;
+  static const _avatarRadius = 40.0;
+  static const _coverHeight = 120.0;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final hasBackground = backgroundImageUrl != null && backgroundImageUrl!.isNotEmpty;
+    final tierLabel = tier.trim().isEmpty ? null : tier.trim();
 
     return Column(
       children: [
         Stack(
           clipBehavior: Clip.none,
           children: [
-            GestureDetector(
-              onTap: onPickBackground,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(_bannerRadius),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: _bannerHeight,
-                  child: hasBackground
-                      ? CachedNetworkImage(
-                          imageUrl: MediaUrlResolver.resolve(backgroundImageUrl)!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: _bannerHeight,
-                        )
-                      : DecoratedBox(
-                          decoration: const BoxDecoration(color: AppColors.lightGreen),
-                          child: Center(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.wallpaper_rounded, color: AppColors.primaryGreen),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Đổi ảnh nền',
-                                  style: TextStyle(
-                                    color: AppColors.primaryGreen.withValues(alpha: 0.9),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+            Semantics(
+              button: true,
+              label: l10n.profileChangeCover,
+              child: GestureDetector(
+                onTap: onPickBackground,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: _coverHeight,
+                    child: hasBackground
+                        ? CachedNetworkImage(
+                            imageUrl: MediaUrlResolver.resolve(backgroundImageUrl)!,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: _coverHeight,
+                            errorWidget: (_, __, ___) =>
+                                const ColoredBox(color: AppColors.lightGreen),
+                          )
+                        : const ColoredBox(color: AppColors.lightGreen),
+                  ),
                 ),
               ),
             ),
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: -_avatarRadius,
-              child: Center(
-                child: GestureDetector(
-                  onTap: onPickAvatar,
-                  child: Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.cardBackground,
-                          border: Border.all(color: AppColors.cardBackground, width: 4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: SyncAvatar(name: name, imageUrl: avatarUrl, radius: _avatarRadius),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: const BoxDecoration(color: AppColors.primaryGreen, shape: BoxShape.circle),
-                        child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
-                      ),
-                    ],
+              top: 8,
+              right: 8,
+              child: Material(
+                color: Colors.black.withValues(alpha: 0.35),
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onPickBackground,
+                  child: const SizedBox(
+                    width: 44,
+                    height: 44,
+                    child: Icon(Icons.photo_camera_outlined, size: 20, color: Colors.white),
                   ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 16,
+              bottom: -_avatarRadius,
+              child: GestureDetector(
+                onTap: onPickAvatar,
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.cardBackground,
+                      ),
+                      child: SyncAvatar(name: name, imageUrl: avatarUrl, radius: _avatarRadius),
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryGreen,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded, size: 14, color: Colors.white),
+                    ),
+                  ],
                 ),
               ),
             ),
           ],
         ),
-        SizedBox(height: _avatarRadius + 8),
-        Column(
+        SizedBox(height: _avatarRadius + 12),
+        Row(
           children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                name,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (verified) ...[
+                        const SizedBox(width: 6),
+                        const Icon(Icons.verified_rounded, size: 18, color: AppColors.primaryGreen),
+                      ],
+                      if (tierLabel != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.lightGreen,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            tierLabel,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryGreen,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    email,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                ],
               ),
-              if (verified) ...[
-                const SizedBox(width: 6),
-                const Icon(Icons.verified_rounded, size: 18, color: AppColors.primaryGreen),
-              ],
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(email, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: onPickAvatar,
-            icon: const Icon(Icons.camera_alt_outlined, size: 16),
-            label: const Text('Đổi ảnh đại diện'),
-          ),
-          TextButton.icon(
-            onPressed: onEditAccount,
-            icon: const Icon(Icons.edit_outlined, size: 16),
-            label: const Text('Chỉnh sửa tài khoản'),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _StatChip(
-                icon: Icons.military_tech_rounded,
-                label: 'Lv.$level',
-                color: AppColors.primaryGreen,
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton(
+              onPressed: onEdit,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryGreen,
+                side: const BorderSide(color: AppColors.primaryGreen),
+                minimumSize: const Size(0, 44),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              const SizedBox(width: 8),
-              _StatChip(
-                emoji: '🔥',
-                label: '${streak}d',
-                color: Colors.orange,
-              ),
-              const SizedBox(width: 8),
-              _StatChip(
-                emoji: '💰',
-                label: '$coins',
-                color: Colors.amber.shade700,
-              ),
-              const SizedBox(width: 8),
-              _StatChip(
-                icon: Icons.star_rounded,
-                label: '$xp XP',
-                color: Colors.purple.shade400,
-              ),
-            ],
-          ),
+              child: Text(l10n.profileEdit),
+            ),
           ],
         ),
       ],
@@ -621,45 +840,211 @@ class _AvatarHeader extends StatelessWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
-  const _StatChip({
-    required this.label,
-    required this.color,
-    this.icon,
-    this.emoji,
+class _StatStrip extends StatelessWidget {
+  const _StatStrip({
+    required this.level,
+    required this.streak,
+    required this.coins,
+    required this.xp,
   });
 
-  final String label;
-  final Color color;
-  final IconData? icon;
-  final String? emoji;
+  final int level;
+  final int streak;
+  final int coins;
+  final int xp;
+
+  /// Visual-only progress within a soft 1000 XP band (no domain level table).
+  double get _xpProgress => (xp % 1000) / 1000.0;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.fromLTRB(8, 12, 8, 12),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+      child: Column(
         children: [
-          if (emoji != null)
-            Text(emoji!, style: const TextStyle(fontSize: 13))
-          else if (icon != null)
-            Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: color,
+          Row(
+            children: [
+              _StatCell(label: l10n.profileStatLevel, value: '$level'),
+              _StatCell(label: l10n.profileStatStreak, value: '$streak'),
+              _StatCell(label: l10n.profileStatCoins, value: '$coins'),
+              _StatCell(label: l10n.profileStatXp, value: '$xp'),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: _xpProgress.clamp(0.0, 1.0),
+              minHeight: 4,
+              backgroundColor: AppColors.border,
+              color: AppColors.primaryGreen,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StatCell extends StatelessWidget {
+  const _StatCell({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsGroup extends StatelessWidget {
+  const _SettingsGroup({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                children[i],
+                if (i < children.length - 1)
+                  const Divider(height: 1, indent: 56, color: AppColors.border),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SettingsRow extends StatelessWidget {
+  const _SettingsRow({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: const BoxDecoration(
+                    color: AppColors.lightGreen,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 18, color: AppColors.primaryGreen),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      if (subtitle != null && subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textMuted, size: 20),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -678,8 +1063,9 @@ class _CompletenessCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
@@ -695,15 +1081,15 @@ class _CompletenessCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      context.l10n.profileCompleteness,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      l10n.profileCompleteness,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                     ),
                     const SizedBox(height: 6),
                     LinearProgressIndicator(
                       value: (percent / 100).clamp(0.0, 1.0),
                       backgroundColor: AppColors.border,
                       color: AppColors.primaryGreen,
-                      minHeight: 6,
+                      minHeight: 5,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ],
@@ -714,34 +1100,31 @@ class _CompletenessCard extends StatelessWidget {
                 '$percent%',
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
-                  fontSize: 20,
+                  fontSize: 18,
                   color: AppColors.primaryGreen,
                 ),
               ),
             ],
           ),
           if (hints.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            ...hints.take(3).map(
+            const SizedBox(height: 8),
+            ...hints.take(2).map(
                   (h) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.circle, size: 5, color: AppColors.textMuted),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(h, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                        ),
-                      ],
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      h,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ),
                 ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             GestureDetector(
               onTap: onSetup,
-              child: const Text(
-                'Complete your profile →',
-                style: TextStyle(
+              child: Text(
+                l10n.profileCompleteCta,
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primaryGreen,
@@ -755,61 +1138,8 @@ class _CompletenessCard extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.icon,
-    required this.children,
-    this.initiallyExpanded = false,
-    this.onEdit,
-    this.trailing,
-  });
-
-  final String title;
-  final IconData icon;
-  final List<Widget> children;
-  final bool initiallyExpanded;
-  final VoidCallback? onEdit;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          initiallyExpanded: initiallyExpanded,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          leading: Icon(icon, color: AppColors.primaryGreen, size: 22),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ?trailing,
-              if (onEdit != null)
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  onPressed: onEdit,
-                  tooltip: context.l10n.editTooltip,
-                ),
-            ],
-          ),
-          children: children,
-        ),
-      ),
-    );
-  }
-}
-
-class _Row extends StatelessWidget {
-  const _Row(this.label, this.value);
+class _DetailRow extends StatelessWidget {
+  const _DetailRow(this.label, this.value);
 
   final String label;
   final String value;
@@ -817,18 +1147,27 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
+            ),
           ),
           Expanded(
+            flex: 3,
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textPrimary),
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
@@ -837,36 +1176,104 @@ class _Row extends StatelessWidget {
   }
 }
 
-class _ChipList extends StatelessWidget {
-  const _ChipList({required this.label, required this.items});
+class _VoucherTile extends StatelessWidget {
+  const _VoucherTile({required this.voucher});
 
-  final String label;
-  final List<String> items;
+  final VoucherItem voucher;
+
+  Color get _statusColor {
+    final s = voucher.status.toLowerCase();
+    if (voucher.isExpired || s.contains('expired') || s.contains('revoked')) {
+      return Colors.red.shade400;
+    }
+    if (s.contains('used')) return AppColors.textMuted;
+    return AppColors.primaryGreen;
+  }
+
+  String get _statusLabel {
+    final s = voucher.status.toLowerCase();
+    if (voucher.isExpired || s.contains('expired')) return 'Hết hạn';
+    if (s.contains('revoked')) return 'Thu hồi';
+    if (s.contains('used')) return 'Đã dùng';
+    return 'Khả dụng';
+  }
+
+  String get _valueLabel {
+    final type = voucher.promotionType.toLowerCase();
+    if (type.contains('percent') || type.contains('%')) {
+      return '${voucher.value.toStringAsFixed(0)}% giảm giá';
+    }
+    if (type.contains('fixed') || type.contains('amount')) {
+      return '${voucher.value.toStringAsFixed(0)}₫ giảm giá';
+    }
+    return '${voucher.value.toStringAsFixed(0)} · ${voucher.promotionType}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) return _Row(label, context.l10n.notSet);
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, bottom: 4),
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: items
-                .map(
-                  (t) => Chip(
-                    label: Text(t, style: const TextStyle(fontSize: 11)),
-                    visualDensity: VisualDensity.compact,
-                    backgroundColor: AppColors.primaryGreen.withValues(alpha: 0.1),
-                    side: BorderSide.none,
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  voucher.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: AppColors.textPrimary,
                   ),
-                )
-                .toList(),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _statusLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _statusColor,
+                  ),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 6),
+          Text(
+            voucher.voucherCode,
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _valueLabel,
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          if (voucher.validUntil != null && voucher.validUntil!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'HSD: ${voucher.validUntil}',
+              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+            ),
+          ],
         ],
       ),
     );
@@ -887,11 +1294,17 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.cloud_off_outlined, size: 48, color: AppColors.textMuted),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
             const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: Text(context.l10n.actionRetry)),
+            FilledButton(
+              onPressed: onRetry,
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primaryGreen),
+              child: Text(context.l10n.actionRetry),
+            ),
           ],
         ),
       ),

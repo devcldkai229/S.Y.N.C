@@ -67,6 +67,10 @@
   "motivationStyleLabel": "Motivation style",
   "consentDataSharing": "I agree to share health data for personalization",
   "consentMarketing": "I agree to receive promotions and health tips",
+  "smartPushEnabledLabel": "Smart reminders from AI Coach",
+  "smartPushEnabledHint": "Get 1–2 daily workout & nutrition nudges on the system schedule",
+  "allowAiNotificationLabel": "Allow AI-written notification copy",
+  "allowAiNotificationHint": "When off, fixed templates are used instead of AI-generated text",
   "onboardingValidationRequired": "Please fill in all required fields.",
   "onboardingValidationAllergies": "Select at least one allergy and accept required terms.",
   "fitnessGoalLoseFat": "Lose fat",
@@ -172,7 +176,7 @@
   "fitnessEditorTitle": "Fitness profile",
   "loadProfileFailed": "Could not load profile.",
   "authErrorServer": "Server error (500). Check backend/IAM database migrations.",
-  "authErrorEmailNotVerified": "Email not verified. Open the link in your email or use Verify email (token from IAM log when SMTP is off).",
+  "authErrorEmailNotVerified": "Email not verified. Open the link in your email or use Verify email (token from IAM log when Brevo is off).",
   "authErrorInvalidCredentials": "Invalid email or password.",
   "authErrorEmailExists": "This email is already registered. Sign in or use another email.",
   "authErrorInvalidToken": "Invalid or expired verification token.",
@@ -184,5 +188,134 @@
       }
     }
   },
-  "authErrorGeneric": "Authentication request failed."
+  "authErrorGeneric": "Authentication request failed.",
+  "aiRoadmapLoadFailed": "Could not load your roadmap. Please try again.",
+  "aiRoadmapRetry": "Retry",
+  "aiRoadmapGoalChip": "Goal: {goal}",
+  "@aiRoadmapGoalChip": {
+    "placeholders": {
+      "goal": { "type": "String" }
+    }
+  },
+  "aiRoadmapWeekOf": "Week {current}/{total}",
+  "@aiRoadmapWeekOf": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "aiRoadmapWhyTitle": "Why this phase",
+  "aiRoadmapWeightCurrent": "{kg} kg now",
+  "@aiRoadmapWeightCurrent": {
+    "placeholders": {
+      "kg": { "type": "String" }
+    }
+  },
+  "aiRoadmapWeightTarget": "Target {kg} kg",
+  "@aiRoadmapWeightTarget": {
+    "placeholders": {
+      "kg": { "type": "String" }
+    }
+  },
+  "aiRoadmapWeightDash": "—",
+  "aiRoadmapReadinessTitle": "Readiness today",
+  "aiRoadmapReadinessReady": "Ready",
+  "aiRoadmapReadinessModerate": "Moderate",
+  "aiRoadmapReadinessRest": "Rest recommended",
+  "aiRoadmapFatigueToReady": "Fatigued → Ready",
+  "aiRoadmapFatigueChip": "Fatigue",
+  "aiRoadmapSorenessChip": "Soreness",
+  "aiRoadmapNextSession": "Next session",
+  "aiRoadmapStart": "Start",
+  "aiRoadmapAskAi": "Ask AI",
+  "aiRoadmapSessionWhy": "Why this session",
+  "aiRoadmapWeekSchedule": "This week's schedule",
+  "aiRoadmapStatusDone": "Done",
+  "aiRoadmapStatusUpcoming": "Upcoming",
+  "aiRoadmapStatusNext": "Next",
+  "aiRoadmapIntensityLight": "Light",
+  "aiRoadmapIntensityModerate": "Moderate",
+  "aiRoadmapIntensityHigh": "High",
+  "aiRoadmapMetaDuration": "{min} min",
+  "@aiRoadmapMetaDuration": {
+    "placeholders": {
+      "min": { "type": "int" }
+    }
+  },
+  "aiRoadmapMetaExercises": "{count} exercises",
+  "@aiRoadmapMetaExercises": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "aiRoadmapAskAiPrompt": "Why am I doing {session} today? Can we make it a bit easier?",
+  "@aiRoadmapAskAiPrompt": {
+    "placeholders": {
+      "session": { "type": "String" }
+    }
+  },
+  "aiRoadmapEmptyTitle": "Cyn — your training companion",
+  "aiRoadmapEmptyBody": "I'll build a plan that fits your body and goals.",
+  "aiRoadmapEmptyCta": "Get started",
+  "aiRoadmapEmptyAutoMessage": "I want Cyn to create my training roadmap!",
+  "aiRoadmapGoalFatLoss": "Fat loss",
+  "aiRoadmapGoalMuscleGain": "Muscle gain",
+  "aiRoadmapGoalGeneralHealth": "General health",
+  "profileEdit": "Edit",
+  "profileGroupPersonalize": "Personalize",
+  "profileGroupActivity": "Activity",
+  "profileGroupAccount": "Account",
+  "profileFollowersBtn": "Followers · {count}",
+  "@profileFollowersBtn": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "profileFollowingBtn": "Following · {count}",
+  "@profileFollowingBtn": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "profileStatLevel": "Level",
+  "profileStatStreak": "Streak",
+  "profileStatCoins": "Coins",
+  "profileStatXp": "XP",
+  "profileChangeCover": "Change cover photo",
+  "profileMacrosDaily": "Daily macros",
+  "profileVouchersTitle": "My vouchers",
+  "profileVouchersEmpty": "No vouchers yet. Redeem SyncCoins in the Shop!",
+  "profileLogout": "Log out",
+  "profileLogoutConfirmTitle": "Log out",
+  "profileLogoutConfirmBody": "Are you sure you want to log out of your account?",
+  "profileAvatarUpdated": "Avatar updated",
+  "profileCoverUpdated": "Cover photo updated",
+  "profileUploadFailed": "Could not upload image",
+  "profileCompleteCta": "Complete your profile →",
+  "profileNoVouchersShort": "No vouchers",
+  "profileVoucherCount": "{count} vouchers",
+  "@profileVoucherCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "socialStoryEnded": "You're all caught up",
+  "socialCreateStory": "Create story",
+  "socialPostStory": "Share",
+  "socialPickMediaHint": "Photos or videos · disappear after 24 hours",
+  "socialPickMediaEmpty": "Select photos or videos",
+  "socialStoryCaptionHint": "Add a caption (optional)",
+  "socialStoriesCreated": "{count} stories shared (24 hours)",
+  "@socialStoriesCreated": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "socialStoryPhoto": "Photo",
+  "socialStoryVideo": "Video",
+  "socialStoryCamera": "Camera",
+  "cynLocationPermissionReason": "Allow location access to find places near you",
+  "cynLocationGrantedFollowUp": "I've shared my location. Please continue finding places near me.",
+  "cynLocationDenied": "Location permission was denied. Enable it in Settings to search nearby.",
+  "cynLocationUnavailable": "Could not get your location right now. Try again later."
 }

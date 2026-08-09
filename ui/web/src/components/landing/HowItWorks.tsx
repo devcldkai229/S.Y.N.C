@@ -20,11 +20,11 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 px-4 bg-white">
+    <section id="how-it-works" className="relative z-[2] py-28 px-4 bg-white/85">
       <div className="max-w-7xl mx-auto">
         <FadeUp className="text-center mb-16">
           <p className="text-primary font-medium text-sm mb-3 uppercase tracking-wide">Cách hoạt động</p>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">
+          <h2 className="font-heading text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">
             Bắt đầu trong
             <br />3 bước đơn giản
           </h2>

@@ -14,8 +14,10 @@ public class PlaceOrderItemDto
 public enum CheckoutPaymentMethod
 {
     Wallet = 0,
-    VietQR = 3,
     COD = 2,
+    VietQR = 3,
+    /// <summary>AI flow: create unpaid order, pay later via wallet/VietQR tools.</summary>
+    Deferred = 4,
 }
 
 public class PlaceOrderDto
@@ -66,6 +68,58 @@ public class PlaceOrderResultDto
     public long? PayOsOrderCode { get; set; }
 
     public bool RequiresExternalPayment { get; set; }
+}
+
+public class QuoteOrderItemDto
+{
+    public Guid FoodMenuItemId { get; set; }
+
+    public int Quantity { get; set; } = 1;
+
+    public string? Notes { get; set; }
+}
+
+public class QuoteOrderRequestDto
+{
+    public Guid UserId { get; set; }
+
+    public Guid PartnerId { get; set; }
+
+    public List<QuoteOrderItemDto> Items { get; set; } = [];
+
+    public string? VoucherCode { get; set; }
+}
+
+public class QuoteOrderLineDto
+{
+    public Guid FoodMenuItemId { get; set; }
+
+    public string NameVi { get; set; } = string.Empty;
+
+    public decimal UnitPrice { get; set; }
+
+    public int Quantity { get; set; }
+
+    public decimal LineSubtotal { get; set; }
+}
+
+public class QuoteOrderResultDto
+{
+    public bool IsValid { get; set; }
+
+    public string? ErrorMessage { get; set; }
+
+    public decimal Subtotal { get; set; }
+
+    public decimal DeliveryFee { get; set; }
+
+    public decimal Discount { get; set; }
+
+    public decimal Total { get; set; }
+
+    public string Currency { get; set; } = "VND";
+
+    public List<QuoteOrderLineDto> Lines { get; set; } = [];
 }
 
 public class ActiveOrderCountDto

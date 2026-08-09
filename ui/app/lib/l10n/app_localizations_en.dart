@@ -217,6 +217,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'I agree to receive promotions and health tips';
 
   @override
+  String get smartPushEnabledLabel => 'Smart reminders from AI Coach';
+
+  @override
+  String get smartPushEnabledHint =>
+      'Get 1–2 daily workout & nutrition nudges on the system schedule';
+
+  @override
+  String get allowAiNotificationLabel => 'Allow AI-written notification copy';
+
+  @override
+  String get allowAiNotificationHint =>
+      'When off, fixed templates are used instead of AI-generated text';
+
+  @override
   String get onboardingValidationRequired =>
       'Please fill in all required fields.';
 
@@ -472,7 +486,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authErrorEmailNotVerified =>
-      'Email not verified. Open the link in your email or use Verify email (token from IAM log when SMTP is off).';
+      'Email not verified. Open the link in your email or use Verify email (token from IAM log when Brevo is off).';
 
   @override
   String get authErrorInvalidCredentials => 'Invalid email or password.';
@@ -491,4 +505,255 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authErrorGeneric => 'Authentication request failed.';
+
+  @override
+  String get aiRoadmapLoadFailed =>
+      'Could not load your roadmap. Please try again.';
+
+  @override
+  String get aiRoadmapRetry => 'Retry';
+
+  @override
+  String aiRoadmapGoalChip(String goal) {
+    return 'Goal: $goal';
+  }
+
+  @override
+  String aiRoadmapWeekOf(int current, int total) {
+    return 'Week $current/$total';
+  }
+
+  @override
+  String get aiRoadmapWhyTitle => 'Why this phase';
+
+  @override
+  String aiRoadmapWeightCurrent(String kg) {
+    return '$kg kg now';
+  }
+
+  @override
+  String aiRoadmapWeightTarget(String kg) {
+    return 'Target $kg kg';
+  }
+
+  @override
+  String get aiRoadmapWeightDash => '—';
+
+  @override
+  String get aiRoadmapReadinessTitle => 'Readiness today';
+
+  @override
+  String get aiRoadmapReadinessReady => 'Ready';
+
+  @override
+  String get aiRoadmapReadinessModerate => 'Moderate';
+
+  @override
+  String get aiRoadmapReadinessRest => 'Rest recommended';
+
+  @override
+  String get aiRoadmapFatigueToReady => 'Fatigued → Ready';
+
+  @override
+  String get aiRoadmapFatigueChip => 'Fatigue';
+
+  @override
+  String get aiRoadmapSorenessChip => 'Soreness';
+
+  @override
+  String get aiRoadmapNextSession => 'Next session';
+
+  @override
+  String get aiRoadmapStart => 'Start';
+
+  @override
+  String get aiRoadmapAskAi => 'Ask AI';
+
+  @override
+  String get aiRoadmapSessionWhy => 'Why this session';
+
+  @override
+  String get aiRoadmapWeekSchedule => 'This week\'s schedule';
+
+  @override
+  String get aiRoadmapStatusDone => 'Done';
+
+  @override
+  String get aiRoadmapStatusUpcoming => 'Upcoming';
+
+  @override
+  String get aiRoadmapStatusNext => 'Next';
+
+  @override
+  String get aiRoadmapIntensityLight => 'Light';
+
+  @override
+  String get aiRoadmapIntensityModerate => 'Moderate';
+
+  @override
+  String get aiRoadmapIntensityHigh => 'High';
+
+  @override
+  String aiRoadmapMetaDuration(int min) {
+    return '$min min';
+  }
+
+  @override
+  String aiRoadmapMetaExercises(int count) {
+    return '$count exercises';
+  }
+
+  @override
+  String aiRoadmapAskAiPrompt(String session) {
+    return 'Why am I doing $session today? Can we make it a bit easier?';
+  }
+
+  @override
+  String get aiRoadmapEmptyTitle => 'Cyn — your training companion';
+
+  @override
+  String get aiRoadmapEmptyBody =>
+      'I\'ll build a plan that fits your body and goals.';
+
+  @override
+  String get aiRoadmapEmptyCta => 'Get started';
+
+  @override
+  String get aiRoadmapEmptyAutoMessage =>
+      'I want Cyn to create my training roadmap!';
+
+  @override
+  String get aiRoadmapGoalFatLoss => 'Fat loss';
+
+  @override
+  String get aiRoadmapGoalMuscleGain => 'Muscle gain';
+
+  @override
+  String get aiRoadmapGoalGeneralHealth => 'General health';
+
+  @override
+  String get profileEdit => 'Edit';
+
+  @override
+  String get profileGroupPersonalize => 'Personalize';
+
+  @override
+  String get profileGroupActivity => 'Activity';
+
+  @override
+  String get profileGroupAccount => 'Account';
+
+  @override
+  String profileFollowersBtn(int count) {
+    return 'Followers · $count';
+  }
+
+  @override
+  String profileFollowingBtn(int count) {
+    return 'Following · $count';
+  }
+
+  @override
+  String get profileStatLevel => 'Level';
+
+  @override
+  String get profileStatStreak => 'Streak';
+
+  @override
+  String get profileStatCoins => 'Coins';
+
+  @override
+  String get profileStatXp => 'XP';
+
+  @override
+  String get profileChangeCover => 'Change cover photo';
+
+  @override
+  String get profileMacrosDaily => 'Daily macros';
+
+  @override
+  String get profileVouchersTitle => 'My vouchers';
+
+  @override
+  String get profileVouchersEmpty =>
+      'No vouchers yet. Redeem SyncCoins in the Shop!';
+
+  @override
+  String get profileLogout => 'Log out';
+
+  @override
+  String get profileLogoutConfirmTitle => 'Log out';
+
+  @override
+  String get profileLogoutConfirmBody =>
+      'Are you sure you want to log out of your account?';
+
+  @override
+  String get profileAvatarUpdated => 'Avatar updated';
+
+  @override
+  String get profileCoverUpdated => 'Cover photo updated';
+
+  @override
+  String get profileUploadFailed => 'Could not upload image';
+
+  @override
+  String get profileCompleteCta => 'Complete your profile →';
+
+  @override
+  String get profileNoVouchersShort => 'No vouchers';
+
+  @override
+  String profileVoucherCount(int count) {
+    return '$count vouchers';
+  }
+
+  @override
+  String get socialStoryEnded => 'You\'re all caught up';
+
+  @override
+  String get socialCreateStory => 'Create story';
+
+  @override
+  String get socialPostStory => 'Share';
+
+  @override
+  String get socialPickMediaHint =>
+      'Photos or videos · disappear after 24 hours';
+
+  @override
+  String get socialPickMediaEmpty => 'Select photos or videos';
+
+  @override
+  String get socialStoryCaptionHint => 'Add a caption (optional)';
+
+  @override
+  String socialStoriesCreated(int count) {
+    return '$count stories shared (24 hours)';
+  }
+
+  @override
+  String get socialStoryPhoto => 'Photo';
+
+  @override
+  String get socialStoryVideo => 'Video';
+
+  @override
+  String get socialStoryCamera => 'Camera';
+
+  @override
+  String get cynLocationPermissionReason =>
+      'Allow location access to find places near you';
+
+  @override
+  String get cynLocationGrantedFollowUp =>
+      'I\'ve shared my location. Please continue finding places near me.';
+
+  @override
+  String get cynLocationDenied =>
+      'Location permission was denied. Enable it in Settings to search nearby.';
+
+  @override
+  String get cynLocationUnavailable =>
+      'Could not get your location right now. Try again later.';
 }

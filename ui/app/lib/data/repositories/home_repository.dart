@@ -48,12 +48,19 @@ class HomeRepository {
       } catch (_) {}
     }
 
+    UserCustomWorkout? featuredCustom;
+    try {
+      final customs = await _workoutApi.getCustomWorkouts(pageSize: 5);
+      if (customs.isNotEmpty) featuredCustom = customs.first;
+    } catch (_) {}
+
     return HomeDashboardData.fromApi(
       settings: settings,
       inventory: inventory,
       roadmap: active,
       sessions: sessions,
       recovery: recovery,
+      featuredCustomWorkout: featuredCustom,
     );
   }
 }

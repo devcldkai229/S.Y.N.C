@@ -47,6 +47,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<ICheckoutSessionService, CheckoutSessionService>();
         services.AddScoped<ICommissionService, CommissionService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
         services.AddScoped<IDeliveryTrackingService, DeliveryTrackingService>();
         services.AddHostedService<DeliveryLocationPollerService>();
         services.AddHostedService<SandboxDeliverySimulatorService>();

@@ -1,8 +1,10 @@
 using System.Text.Json.Serialization;
 using Libs.Auth.Extensions;
+using Libs.Shared.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Notification.API.Hubs;
 using Notification.API.Services;
 using Notification.Application.Services;
@@ -24,7 +26,9 @@ BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddSharedConfiguration(builder.Environment);
+// Cloud (ECS): ghép ConnectionStrings từ SSM + Secrets Manager. Local: no-op.
+builder.Configuration.AddComposedMongoConnection("NotificationDatabase");
+builder.Configuration.AddComposedPostgresConnection("SmartPushDatabase");
 
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen(options =>
@@ -112,6 +116,23 @@ app.UseSyncJwtAuthentication();
 var mongoDb = app.Services.GetRequiredService<IMongoDatabase>();
 await MongoDbIndexInitializer.InitializeAsync(mongoDb);
 await NotificationSeedData.NotificationMongoSeeder.SeedAsync(mongoDb);
+
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var smartPushDb = scope.ServiceProvider.GetRequiredService<Notification.Infrastructure.Persistence.SmartPushDbContext>();
+        await smartPushDb.Database.MigrateAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("SmartPushDb");
+        logger.LogError(ex,
+            "Failed to migrate SmartPush Postgres DB. Ensure database 'sync_smart_push' exists on the configured host (see ConnectionStrings:SmartPushDatabase).");
+        if (!app.Environment.IsDevelopment())
+            throw;
+    }
+}
 
 app.MapSyncHealthChecks();
 app.MapHub<NotificationHub>(NotificationHub.HubPath);

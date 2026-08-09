@@ -16,11 +16,6 @@ abstract final class AchievementsTheme {
   static const goldGradientStart = Color(0xFFF59E0B);
   static const goldGradientEnd = Color(0xFFD97706);
 
-  static const chipXpBg = Color(0xFFF3F0F8);
-  static const chipXpText = Color(0xFF5B4B8A);
-  static const chipCoinBg = Color(0xFFF8F4EA);
-  static const chipCoinText = Color(0xFF8B6914);
-
   static const statsPanelWidth = 300.0;
   static const panelAnimationMs = 300;
 

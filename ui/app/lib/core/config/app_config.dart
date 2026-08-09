@@ -12,9 +12,14 @@ class AppConfig {
   static const String _devLanHost = '192.168.100.118';
 
   /// Override: `flutter run --dart-define=BASE_URL=http://<your-ip>:5057/api`
+  /// Production AAB: `--dart-define=BASE_URL=https://api.YOUR_DOMAIN/api`
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('BASE_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
+    // Release builds must set BASE_URL; refuse silent HTTP LAN defaults.
+    if (kReleaseMode) {
+      return 'https://api.synctis.in/api';
+    }
     if (kIsWeb) return 'http://localhost:5057/api';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -46,6 +51,7 @@ class AppConfig {
   static String get nutritionHubUrl {
     const fromEnv = String.fromEnvironment('NUTRITION_HUB_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
+    if (kReleaseMode) return 'https://api.synctis.in/hubs/nutrition';
     if (kIsWeb) return 'http://localhost:5122/hubs/nutrition';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -56,13 +62,29 @@ class AppConfig {
     }
   }
 
+  /// Roadmap SignalR hub (Roadmap service :5118). Override:
+  /// `--dart-define=ROADMAP_HUB_URL=http://<host>:5118/hubs/roadmap`
+  static String get roadmapHubUrl {
+    const fromEnv = String.fromEnvironment('ROADMAP_HUB_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv;
+    if (kReleaseMode) return 'https://api.synctis.in/hubs/roadmap';
+    if (kIsWeb) return 'http://localhost:5118/hubs/roadmap';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+      case TargetPlatform.iOS:
+        return 'http://$_devLanHost:5118/hubs/roadmap';
+      default:
+        return 'http://localhost:5118/hubs/roadmap';
+    }
+  }
+
   static String get notificationHubUrl {
     const fromEnv = String.fromEnvironment('NOTIFICATION_HUB_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
+    if (kReleaseMode) return 'https://api.synctis.in/hubs/notifications';
     if (kIsWeb) return 'http://localhost:5106/hubs/notifications';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://$_devLanHost:5106/hubs/notifications';
       case TargetPlatform.iOS:
         return 'http://$_devLanHost:5106/hubs/notifications';
       default:
@@ -70,17 +92,73 @@ class AppConfig {
     }
   }
 
+  /// Sent to CYN AI so Android can refuse VietQR Premium (Play Billing only).
+  static String get clientPlatform {
+    if (kIsWeb) return 'web';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.iOS:
+        return 'ios';
+      default:
+        return 'unknown';
+    }
+  }
+
   static const bool isProduction = bool.fromEnvironment('dart.vm.product');
+
+  /// Public legal site (deployed with `ui/web`). Override:
+  /// `--dart-define=LEGAL_BASE_URL=https://synctis.in`
+  static String get legalBaseUrl {
+    const fromEnv = String.fromEnvironment('LEGAL_BASE_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv.replaceAll(RegExp(r'/$'), '');
+    return 'https://synctis.in';
+  }
+
+  static String get privacyPolicyUrl => '$legalBaseUrl/privacy';
+  static String get termsOfServiceUrl => '$legalBaseUrl/terms';
+  static String get accountDeletionUrl => '$legalBaseUrl/account-deletion';
+  static String get communityStandardsUrl => '$legalBaseUrl/community-standards';
+  static String get healthDisclaimerUrl => '$legalBaseUrl/health-disclaimer';
+  static String get refundPolicyUrl => '$legalBaseUrl/refund-policy';
+  static String get contactUrl => '$legalBaseUrl/contact';
+
+  /// On Android Play builds, digital Premium must not use in-app VietQR.
+  /// Food/order VietQR stays allowed. Full Play Billing lands in a follow-up.
+  static bool get requiresPlayBillingForPremium {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android;
+  }
+
+  /// AI chat API. Mặc định qua Gateway (`/api/v1/ai/chat` → sync-agent-service :8088).
+  /// Bỏ qua Gateway khi debug: `--dart-define=AI_BASE_URL=http://<pc-lan-ip>:8088`
+  static String get aiBaseUrl {
+    const fromEnv = String.fromEnvironment('AI_BASE_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv.replaceAll(RegExp(r'/$'), '');
+    return baseUrl;
+  }
+
+  /// `true` khi gọi thẳng sync-agent-service, không qua Gateway.
+  static bool get aiUsesDirectService =>
+      const String.fromEnvironment('AI_BASE_URL', defaultValue: '').isNotEmpty;
+
+  static String get aiChatPath =>
+      aiUsesDirectService ? '/ai/chat' : '/v1/ai/chat';
+
+  static String get aiChatConfirmPath =>
+      aiUsesDirectService ? '/ai/chat/confirm' : '/v1/ai/chat/confirm';
+
+  static String get aiChatUrl => '$aiBaseUrl$aiChatPath';
 
   /// Web OAuth 2.0 client (Google Cloud Console → **Web application**).
   /// Used as [googleServerClientId] on Android/iOS so Google returns an ID token for IAM.
   static const String defaultGoogleWebClientId =
-      '366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com';
+      '366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com';
 
   /// Android OAuth client (Google Cloud Console → **Android**).
   /// Package: com.sync.sync_app + debug SHA-1 must be registered for this client.
   static const String defaultGoogleAndroidClientId =
-      '366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com';
+      '366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com';
 
   /// Platform OAuth client ID passed to GoogleSignIn.initialize(clientId: ...).
   /// Android only needs [googleServerClientId] (Web client) + SHA-1 registered in Cloud Console.
@@ -94,7 +172,9 @@ class AppConfig {
 
   /// Override: `--dart-define=GOOGLE_SERVER_CLIENT_ID=...`
   /// Android/iOS: use the **Web** client ID here so Google returns an ID token IAM can verify.
+  /// NOTE: `google_sign_in_web` does NOT support `serverClientId` — always return empty on Web.
   static String get googleServerClientId {
+    if (kIsWeb) return ''; // google_sign_in_web asserts serverClientId == null
     const fromEnv = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
     return defaultGoogleWebClientId;

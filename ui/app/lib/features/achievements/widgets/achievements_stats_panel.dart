@@ -17,9 +17,7 @@ class AchievementsStatsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _StatRow(Icons.military_tech_rounded, 'Level', '${stats.level}', const [Color(0xFF6366F1), Color(0xFF818CF8)]),
-      _StatRow(Icons.bolt_rounded, 'XP', '${stats.xp}', const [Color(0xFF8B5CF6), Color(0xFFA78BFA)]),
       _StatRow(Icons.local_fire_department_rounded, 'Streak', '${stats.streakDays}d', const [Color(0xFFF97316), Color(0xFFFB923C)]),
-      _StatRow(Icons.paid_rounded, 'Coins', '${stats.coins}', const [Color(0xFF10B981), Color(0xFF34D399)]),
       _StatRow(Icons.emoji_events_rounded, 'Points', '${stats.points}', const [Color(0xFFF59E0B), Color(0xFFFBBF24)]),
     ];
 

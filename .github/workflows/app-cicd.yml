@@ -1,0 +1,443 @@
+name: app-cicd
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CI/CD master: detect-changes → quality → build Docker/ECR → deploy ECS
+#   + deploy-web (Next static → S3/CloudFront) tách khỏi matrix Docker.
+# Auth: GitHub OIDC → AWS (không lưu access key).
+#
+# DB migration: service .NET tự Database.MigrateAsync() lúc start.
+#
+# Cần cấu hình sẵn (Settings → Secrets/Variables → Actions):
+#   secrets: AWS_OIDC_ROLE_ARN
+#   vars:    AWS_REGION (mặc định ap-southeast-1), ECR_REGISTRY,
+#            ECS_CLUSTER_DEV, ECS_CLUSTER_PROD,
+#            SYNC_PUBLIC_URL_DEV, SYNC_PUBLIC_URL_PROD,
+#            WEB_BUCKET_DEV/PROD, WEB_DISTRIBUTION_ID_DEV/PROD (sau terraform web),
+#            GATEWAY_BLUEGREEN (để trống/false — khớp prod TF enable_bluegreen=false)
+#   environment "production" bật Required reviewers (manual approval).
+#   (SonarCloud/SonarQube đã tắt — không dùng SONAR_TOKEN / SONAR_ENABLED.)
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [main]
+    paths: ["core/**", "ai/**", "ui/web/**", ".github/workflows/app-cicd.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["core/**", "ai/**", "ui/web/**", ".github/workflows/app-cicd.yml"]
+  workflow_dispatch:
+    inputs:
+      force_all_services:
+        description: "Build & deploy ALL Docker services (ignore path filter)"
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write   # OIDC
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: app-cicd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
+  ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
+  DB_SERVICES: ""
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.docker.outputs.services }}
+      web: ${{ steps.filter.outputs.web }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            gateway: 'core/SyncPlatform/src/Gateway/**'
+            iam: 'core/SyncPlatform/src/Services/Iam/**'
+            roadmap: 'core/SyncPlatform/src/Services/Roadmap/**'
+            exercise: 'core/SyncPlatform/src/Services/Exercise/**'
+            nutrition: 'core/SyncPlatform/src/Services/Nutrition/**'
+            marketplace: 'core/SyncPlatform/src/Services/Marketplace/**'
+            order: 'core/SyncPlatform/src/Services/Order/**'
+            payment: 'core/SyncPlatform/src/Services/Payment/**'
+            notification: 'core/SyncPlatform/src/Services/Notification/**'
+            social: 'core/SyncPlatform/src/Services/Social/**'
+            ai: 'ai/sync-agent-service/**'
+            rcm: 'ai/sync-rcm-service/**'
+            web: 'ui/web/**'
+            shared_dotnet:
+              - 'core/SyncPlatform/libs/**'
+              - 'core/SyncPlatform/Dockerfile'
+              - 'core/SyncPlatform/Dockerfile.compose'
+              - 'core/SyncPlatform/Directory.Build.props'
+              - 'core/SyncPlatform/Directory.Packages.props'
+              - 'core/SyncPlatform/global.json'
+              - 'core/SyncPlatform/NuGet.config'
+      - id: docker
+        name: Resolve Docker matrix (shared libs → all .NET services)
+        env:
+          CHANGES: ${{ steps.filter.outputs.changes }}
+          SHARED_DOTNET: ${{ steps.filter.outputs.shared_dotnet }}
+          FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' && inputs.force_all_services }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          all_dotnet = [
+              "gateway", "iam", "roadmap", "exercise", "nutrition",
+              "marketplace", "order", "payment", "notification", "social",
+          ]
+          all_services = all_dotnet + ["ai", "rcm"]
+          force = os.environ.get("FORCE_ALL", "").lower() in ("true", "1")
+          if force:
+              docker = all_services
+          else:
+              changes = json.loads(os.environ.get("CHANGES") or "[]")
+              shared = os.environ.get("SHARED_DOTNET", "false") == "true"
+              docker = [s for s in changes if s not in ("web", "shared_dotnet")]
+              if shared:
+                  docker = sorted(set(docker) | set(all_dotnet))
+          out = os.environ["GITHUB_OUTPUT"]
+          with open(out, "a", encoding="utf-8") as f:
+              f.write(f"services={json.dumps(docker)}\n")
+          print("docker services:", docker)
+          PY
+
+  quality:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with: { dotnet-version: "10.0.x" }
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: .NET tests (non-blocking)
+        run: dotnet test core/SyncPlatform --nologo --verbosity quiet || echo "no/failed tests (placeholder)"
+      - name: Python lint + tests (non-blocking)
+        working-directory: ai/sync-agent-service
+        run: |
+          python -m pip install -q ".[dev]" || true
+          ruff check app || true
+          pytest -q tests || echo "no/failed py tests (placeholder)"
+
+  build-push:
+    needs: [detect]
+    if: ${{ needs.detect.outputs.services != '[]' && needs.detect.outputs.services != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail-fast required config (main push)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        env:
+          OIDC_ROLE: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${OIDC_ROLE}" ]; then
+            echo "::error::Missing secret AWS_OIDC_ROLE_ARN (shared Terraform deploy_role_arn)"
+            exit 1
+          fi
+          if [ -z "${{ env.ECR_REGISTRY }}" ]; then
+            echo "::error::Missing var ECR_REGISTRY (account.dkr.ecr.region.amazonaws.com)"
+            exit 1
+          fi
+          if [ -z "${{ env.AWS_REGION }}" ]; then
+            echo "::error::Missing AWS_REGION"
+            exit 1
+          fi
+
+      - uses: docker/setup-qemu-action@v3
+        with: { platforms: arm64 }
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Resolve build args
+        id: meta
+        run: |
+          case "${{ matrix.service }}" in
+            gateway)     CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Gateway/Gateway.API.csproj ;;
+            iam)         CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Iam/Iam.API/Iam.API.csproj ;;
+            roadmap)     CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Roadmap/Roadmap.API/Roadmap.API.csproj ;;
+            exercise)    CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Exercise/Exercise.API/Exercise.API.csproj ;;
+            nutrition)   CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Nutrition/Nutrition.API/Nutrition.API.csproj ;;
+            marketplace) CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Marketplace/Marketplace.API/Marketplace.API.csproj ;;
+            order)       CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Order/Order.API/Order.API.csproj ;;
+            payment)     CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Payment/Payment.API/Payment.API.csproj ;;
+            notification)CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Notification/Notification.API/Notification.API.csproj ;;
+            social)      CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Social/Social.API/Social.API.csproj ;;
+            ai)          CTX=ai/sync-agent-service; DF=ai/sync-agent-service/Dockerfile; PROJECT="" ;;
+            rcm)         CTX=ai/sync-rcm-service; DF=ai/sync-rcm-service/Dockerfile; PROJECT="" ;;
+            *) echo "Unknown service ${{ matrix.service }}"; exit 1 ;;
+          esac
+          {
+            echo "ctx=$CTX"; echo "df=$DF"; echo "project=$PROJECT";
+            echo "image=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}";
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build image (linux/arm64)
+        run: |
+          ARGS=()
+          [ -n "${{ steps.meta.outputs.project }}" ] && ARGS+=(--build-arg "PROJECT=${{ steps.meta.outputs.project }}")
+          docker buildx build \
+            --platform linux/arm64 \
+            -f "${{ steps.meta.outputs.df }}" \
+            "${ARGS[@]}" \
+            -t "${{ steps.meta.outputs.image }}" \
+            --load \
+            "${{ steps.meta.outputs.ctx }}"
+
+      - name: Trivy scan (warn)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.image }}
+          format: table
+          exit-code: "0"
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+      - name: Configure AWS (OIDC)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: ECR login
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Push image (tag=sha)
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: docker push "${{ steps.meta.outputs.image }}"
+
+  deploy-dev:
+    needs: [detect, build-push]
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.detect.outputs.services != '[]' && needs.detect.outputs.services != '' &&
+      needs.build-push.result == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy service (rolling, force new image)
+        run: |
+          set -euo pipefail
+          CLUSTER="${{ vars.ECS_CLUSTER_DEV }}"
+          if [ -z "$CLUSTER" ]; then
+            echo "::error::Missing var ECS_CLUSTER_DEV"; exit 1
+          fi
+          IMAGE=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}
+          bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-dev-${{ matrix.service }}" "$IMAGE"
+          if [ "${{ matrix.service }}" = "ai" ]; then
+            bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-dev-ai-worker" "$IMAGE"
+          fi
+
+      - name: Smoke test (public health)
+        run: |
+          URL="${{ vars.SYNC_PUBLIC_URL_DEV }}"
+          if [ -n "$URL" ]; then
+            curl -fsS "$URL/health" || curl -fsS "$URL/healthz" || (echo "smoke failed" && exit 1)
+          fi
+
+  deploy-prod:
+    needs: [detect, deploy-dev]
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.ECS_CLUSTER_PROD != '' &&
+      needs.detect.outputs.services != '[]' && needs.detect.outputs.services != '' &&
+      needs.deploy-dev.result == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    strategy:
+      fail-fast: true
+      max-parallel: 3
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy (rolling · gateway blue/green chỉ khi GATEWAY_BLUEGREEN=true)
+        env:
+          ECS_CLUSTER_PROD: ${{ vars.ECS_CLUSTER_PROD }}
+        run: |
+          set -euo pipefail
+          export CLUSTER="${{ vars.ECS_CLUSTER_PROD }}"
+          IMAGE=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}
+          # Blue/green opt-in: chỉ dùng khi hạ tầng đã bật (Terraform enable_bluegreen
+          # + gateway chuyển awsvpc — xem note trong envs/prod/main.tf). Mặc định rolling.
+          if [ "${{ matrix.service }}" = "gateway" ] && [ "${{ vars.GATEWAY_BLUEGREEN }}" = "true" ]; then
+            bash .github/scripts/ecs-bluegreen.sh "sync-prod-gateway" "$IMAGE"
+          else
+            bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-prod-${{ matrix.service }}" "$IMAGE"
+            if [ "${{ matrix.service }}" = "ai" ]; then
+              bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-prod-ai-worker" "$IMAGE"
+            fi
+          fi
+
+      - name: Smoke test
+        run: |
+          URL="${{ vars.SYNC_PUBLIC_URL_PROD }}"
+          if [ -n "$URL" ]; then
+            curl -fsS "$URL/health" || curl -fsS "$URL/healthz" || (echo "smoke failed" && exit 1)
+          else
+            echo "WARN: SYNC_PUBLIC_URL_PROD empty — skip smoke"
+          fi
+
+  # ── Web static (Next export → S3 + CloudFront) — không Docker ─────────────
+  # Required GH vars for legal/map (set before deploy-web): NEXT_PUBLIC_LEGAL_*, MAP_*, GOOGLE_CLIENT_ID
+  deploy-web-dev:
+    needs: [detect]
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.detect.outputs.web == 'true' &&
+      vars.WEB_BUCKET_DEV != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm, cache-dependency-path: ui/web/package-lock.json }
+      - name: Build static export
+        working-directory: ui/web
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.SYNC_PUBLIC_URL_DEV }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          NEXT_PUBLIC_AWS_MAP_API_KEY: ${{ vars.NEXT_PUBLIC_AWS_MAP_API_KEY }}
+          NEXT_PUBLIC_AWS_MAP_REGION: ${{ vars.NEXT_PUBLIC_AWS_MAP_REGION || 'ap-southeast-1' }}
+          NEXT_PUBLIC_AWS_MAP_NAME: ${{ vars.NEXT_PUBLIC_AWS_MAP_NAME || 'sync-map' }}
+          NEXT_PUBLIC_AWS_MAP_STYLE: ${{ vars.NEXT_PUBLIC_AWS_MAP_STYLE || 'Hybrid' }}
+          NEXT_PUBLIC_LEGAL_ENTITY_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_ENTITY_NAME }}
+          NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN: ${{ vars.NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN }}
+          NEXT_PUBLIC_LEGAL_BUSINESS_REG_NO: ${{ vars.NEXT_PUBLIC_LEGAL_BUSINESS_REG_NO }}
+          NEXT_PUBLIC_LEGAL_BUSINESS_REG_DATE: ${{ vars.NEXT_PUBLIC_LEGAL_BUSINESS_REG_DATE }}
+          NEXT_PUBLIC_LEGAL_BUSINESS_REG_AUTHORITY: ${{ vars.NEXT_PUBLIC_LEGAL_BUSINESS_REG_AUTHORITY }}
+          NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS: ${{ vars.NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS }}
+          NEXT_PUBLIC_LEGAL_MAILING_ADDRESS: ${{ vars.NEXT_PUBLIC_LEGAL_MAILING_ADDRESS }}
+          NEXT_PUBLIC_LEGAL_REPRESENTATIVE_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_REPRESENTATIVE_NAME }}
+          NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL }}
+          NEXT_PUBLIC_LEGAL_PRIVACY_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_PRIVACY_EMAIL }}
+          NEXT_PUBLIC_LEGAL_ABUSE_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_ABUSE_EMAIL }}
+          NEXT_PUBLIC_LEGAL_BUSINESS_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_BUSINESS_EMAIL }}
+          NEXT_PUBLIC_LEGAL_SECURITY_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_SECURITY_EMAIL }}
+          NEXT_PUBLIC_LEGAL_DPO_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_DPO_NAME }}
+          NEXT_PUBLIC_LEGAL_SUPPORT_PHONE: ${{ vars.NEXT_PUBLIC_LEGAL_SUPPORT_PHONE }}
+          NEXT_PUBLIC_LEGAL_WEBSITE: ${{ vars.NEXT_PUBLIC_LEGAL_WEBSITE }}
+          NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE: ${{ vars.NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE }}
+          NEXT_PUBLIC_LEGAL_PLAY_PACKAGE_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_PLAY_PACKAGE_NAME }}
+          NEXT_PUBLIC_LEGAL_PLAY_DEVELOPER_ACCOUNT: ${{ vars.NEXT_PUBLIC_LEGAL_PLAY_DEVELOPER_ACCOUNT }}
+          NEXT_PUBLIC_LEGAL_DUNS_NUMBER: ${{ vars.NEXT_PUBLIC_LEGAL_DUNS_NUMBER }}
+        run: |
+          npm ci
+          npm run build
+          test -d out
+          test -f out/404.html
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Sync to S3 + invalidate CloudFront
+        env:
+          WEB_BUCKET: ${{ vars.WEB_BUCKET_DEV }}
+          WEB_DISTRIBUTION_ID: ${{ vars.WEB_DISTRIBUTION_ID_DEV }}
+        run: |
+          set -euo pipefail
+          aws s3 sync ui/web/out/ "s3://${WEB_BUCKET}/" --delete \
+            --cache-control "public,max-age=0,must-revalidate" \
+            --exclude "_next/static/*"
+          aws s3 sync ui/web/out/_next/static/ "s3://${WEB_BUCKET}/_next/static/" \
+            --cache-control "public,max-age=31536000,immutable"
+          if [ -n "${WEB_DISTRIBUTION_ID}" ]; then
+            ID=$(aws cloudfront create-invalidation --distribution-id "$WEB_DISTRIBUTION_ID" --paths "/*" --query 'Invalidation.Id' --output text)
+            aws cloudfront wait invalidation-completed --distribution-id "$WEB_DISTRIBUTION_ID" --id "$ID"
+          fi
+
+  deploy-web-prod:
+    needs: [detect, deploy-web-dev]
+    if: |
+      always() &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.detect.outputs.web == 'true' &&
+      vars.WEB_BUCKET_PROD != '' &&
+      (needs.deploy-web-dev.result == 'success' || needs.deploy-web-dev.result == 'skipped')
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20", cache: npm, cache-dependency-path: ui/web/package-lock.json }
+      - name: Build static export
+        working-directory: ui/web
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.SYNC_PUBLIC_URL_PROD }}
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${{ vars.NEXT_PUBLIC_GOOGLE_CLIENT_ID }}
+          NEXT_PUBLIC_AWS_MAP_API_KEY: ${{ vars.NEXT_PUBLIC_AWS_MAP_API_KEY }}
+          NEXT_PUBLIC_AWS_MAP_REGION: ${{ vars.NEXT_PUBLIC_AWS_MAP_REGION || 'ap-southeast-1' }}
+          NEXT_PUBLIC_AWS_MAP_NAME: ${{ vars.NEXT_PUBLIC_AWS_MAP_NAME || 'sync-map' }}
+          NEXT_PUBLIC_AWS_MAP_STYLE: ${{ vars.NEXT_PUBLIC_AWS_MAP_STYLE || 'Hybrid' }}
+          NEXT_PUBLIC_LEGAL_ENTITY_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_ENTITY_NAME }}
+          NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN: ${{ vars.NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN }}
+          NEXT_PUBLIC_LEGAL_BUSINESS_REG_NO: ${{ vars.NEXT_PUBLIC_LEGAL_BUSINESS_REG_NO }}
+          NEXT_PUBLIC_LEGAL_BUSINESS_REG_DATE: ${{ vars.NEXT_PUBLIC_LEGAL_BUSINESS_REG_DATE }}
+          NEXT_PUBLIC_LEGAL_BUSINESS_REG_AUTHORITY: ${{ vars.NEXT_PUBLIC_LEGAL_BUSINESS_REG_AUTHORITY }}
+          NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS: ${{ vars.NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS }}
+          NEXT_PUBLIC_LEGAL_MAILING_ADDRESS: ${{ vars.NEXT_PUBLIC_LEGAL_MAILING_ADDRESS }}
+          NEXT_PUBLIC_LEGAL_REPRESENTATIVE_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_REPRESENTATIVE_NAME }}
+          NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL }}
+          NEXT_PUBLIC_LEGAL_PRIVACY_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_PRIVACY_EMAIL }}
+          NEXT_PUBLIC_LEGAL_ABUSE_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_ABUSE_EMAIL }}
+          NEXT_PUBLIC_LEGAL_BUSINESS_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_BUSINESS_EMAIL }}
+          NEXT_PUBLIC_LEGAL_SECURITY_EMAIL: ${{ vars.NEXT_PUBLIC_LEGAL_SECURITY_EMAIL }}
+          NEXT_PUBLIC_LEGAL_DPO_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_DPO_NAME }}
+          NEXT_PUBLIC_LEGAL_SUPPORT_PHONE: ${{ vars.NEXT_PUBLIC_LEGAL_SUPPORT_PHONE }}
+          NEXT_PUBLIC_LEGAL_WEBSITE: ${{ vars.NEXT_PUBLIC_LEGAL_WEBSITE }}
+          NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE: ${{ vars.NEXT_PUBLIC_LEGAL_EFFECTIVE_DATE }}
+          NEXT_PUBLIC_LEGAL_PLAY_PACKAGE_NAME: ${{ vars.NEXT_PUBLIC_LEGAL_PLAY_PACKAGE_NAME }}
+          NEXT_PUBLIC_LEGAL_PLAY_DEVELOPER_ACCOUNT: ${{ vars.NEXT_PUBLIC_LEGAL_PLAY_DEVELOPER_ACCOUNT }}
+          NEXT_PUBLIC_LEGAL_DUNS_NUMBER: ${{ vars.NEXT_PUBLIC_LEGAL_DUNS_NUMBER }}
+        run: |
+          npm ci
+          npm run build
+          test -d out
+          test -f out/404.html
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Sync to S3 + invalidate CloudFront
+        env:
+          WEB_BUCKET: ${{ vars.WEB_BUCKET_PROD }}
+          WEB_DISTRIBUTION_ID: ${{ vars.WEB_DISTRIBUTION_ID_PROD }}
+        run: |
+          set -euo pipefail
+          aws s3 sync ui/web/out/ "s3://${WEB_BUCKET}/" --delete \
+            --cache-control "public,max-age=0,must-revalidate" \
+            --exclude "_next/static/*"
+          aws s3 sync ui/web/out/_next/static/ "s3://${WEB_BUCKET}/_next/static/" \
+            --cache-control "public,max-age=31536000,immutable"
+          if [ -n "${WEB_DISTRIBUTION_ID}" ]; then
+            ID=$(aws cloudfront create-invalidation --distribution-id "$WEB_DISTRIBUTION_ID" --paths "/*" --query 'Invalidation.Id' --output text)
+            aws cloudfront wait invalidation-completed --distribution-id "$WEB_DISTRIBUTION_ID" --id "$ID"
+          fi

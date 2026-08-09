@@ -23,6 +23,12 @@ public interface IBlogRepository
         string? tag,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<Blog> Items, int TotalRecords)> SearchPublishedAsync(
+        string query,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
     Task<(IReadOnlyList<Blog> Items, int TotalRecords)> GetByAuthorAsync(
         Guid authorId,
         int pageNumber,
@@ -32,4 +38,6 @@ public interface IBlogRepository
     Task<bool> IncrementLikeCountAsync(Guid blogId, CancellationToken cancellationToken = default);
 
     Task<bool> IncrementShareCountAsync(Guid blogId, CancellationToken cancellationToken = default);
+
+    Task<bool> IncrementCommentCountAsync(Guid blogId, CancellationToken cancellationToken = default);
 }

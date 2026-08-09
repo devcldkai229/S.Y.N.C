@@ -1,0 +1,5 @@
+# Copy → terraform.tfvars (gitignored) rồi điền giá trị thật.
+state_bucket = "sync-tfstate-822981067630"
+# create_oidc_provider = false  # nếu account đã có sẵn GitHub OIDC provider
+#
+# Domain / web (Route53, ACM CloudFront, sync-web-*) nằm ở envs/dev|prod — không ở shared.

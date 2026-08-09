@@ -4,12 +4,14 @@ import 'package:sync_app/core/constants/app_routes.dart';
 import 'package:sync_app/data/models/notification_models.dart';
 
 /// Navigates from notification [deepLink] / payload to in-app routes.
+///
+/// Returns `true` if navigation happened, `false` if there was nothing to
+/// navigate to (caller should fall back to showing the notification detail).
 abstract final class NotificationDeepLink {
-  static void open(BuildContext context, AppNotification notification) {
+  static bool open(BuildContext context, AppNotification notification) {
     final link = (notification.deepLink ?? '').trim();
     if (link.isEmpty) {
-      _openFromPayload(context, notification);
-      return;
+      return _openFromPayload(context, notification);
     }
 
     final normalized = link.startsWith('/') ? link : '/$link';
@@ -18,25 +20,25 @@ abstract final class NotificationDeepLink {
       final userId = normalized.split('/').last;
       if (userId.isNotEmpty) {
         context.push(AppRoutes.socialUserProfile(userId));
-        return;
+        return true;
       }
     }
 
     if (normalized.startsWith('/social/post/')) {
       context.go(AppRoutes.social);
-      return;
+      return true;
     }
 
     if (normalized.startsWith('/social/story/')) {
       context.go(AppRoutes.social);
-      return;
+      return true;
     }
 
     if (normalized.startsWith('/challenges/')) {
       final id = normalized.split('/').last;
       if (id.isNotEmpty) {
         context.push(AppRoutes.challengeDetail(id));
-        return;
+        return true;
       }
     }
 
@@ -44,29 +46,32 @@ abstract final class NotificationDeepLink {
       final id = normalized.split('/').last;
       if (id.isNotEmpty) {
         context.push(AppRoutes.orderDetail(id));
-        return;
+        return true;
       }
     }
 
-    _openFromPayload(context, notification);
+    return _openFromPayload(context, notification);
   }
 
-  static void _openFromPayload(BuildContext context, AppNotification notification) {
+  static bool _openFromPayload(BuildContext context, AppNotification notification) {
     final challengeId = notification.challengeId;
     if (challengeId != null && challengeId.isNotEmpty) {
       context.push(AppRoutes.challengeDetail(challengeId));
-      return;
+      return true;
     }
 
     final actorId = notification.actorId;
     if (actorId != null && actorId.isNotEmpty) {
       context.push(AppRoutes.socialUserProfile(actorId));
-      return;
+      return true;
     }
 
     final postId = notification.postId;
     if (postId != null && postId.isNotEmpty) {
       context.go(AppRoutes.social);
+      return true;
     }
+
+    return false;
   }
 }

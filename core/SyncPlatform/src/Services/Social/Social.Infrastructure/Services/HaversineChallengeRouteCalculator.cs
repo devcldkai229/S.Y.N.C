@@ -28,12 +28,7 @@ public sealed class HaversineChallengeRouteCalculator : IChallengeRouteCalculato
         var result = new ChallengeRouteDto();
         var modes = travelMode.HasValue
             ? new[] { travelMode.Value }
-            : new[]
-            {
-                ChallengeRouteTravelMode.Car,
-                ChallengeRouteTravelMode.Motorbike,
-                ChallengeRouteTravelMode.Walking,
-            };
+            : new[] { ChallengeRouteTravelMode.Motorbike };
 
         foreach (var mode in modes)
         {

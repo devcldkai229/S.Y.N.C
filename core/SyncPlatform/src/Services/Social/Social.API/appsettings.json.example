@@ -1,13 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/appsettings.json",
-  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1.",
-
-  "IamService": {
-    "BaseUrl": "http://localhost:5288"
-  },
   "ConnectionStrings": {
     "SocialDatabase": "mongodb://localhost:27018"
   },
+  "InternalApiKey": "dev_internal_api_key_sync_platform",
   "MongoDB": {
     "SocialDatabaseName": "sync_social"
   },
@@ -26,7 +22,7 @@
     "Region": "ap-southeast-1"
   },
   "Storage": {
-    "Bucket": "sync-public-assets",
+    "Bucket": "sync-private-assets",
     "PublicBaseUrl": "http://localhost:5057/api/v1/media",
     "MaxFileSizeMb": 50
   },
@@ -34,6 +30,26 @@
     "Region": "ap-southeast-1",
     "RouteCalculatorName": "sync-route-calculator",
     "DataProvider": "Grab",
-    "Profile": "default"
-  }
+    "Profile": "default",
+    "PlaceIndexName": "sync-place-index",
+    "MapName": "sync-map",
+    "MapStyle": "Hybrid",
+    "RequestTimeoutSeconds": 12,
+    "RouteAttemptTimeoutSeconds": 8
+  },
+  "AllowedHosts": "*",
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "Jwt": {
+    "Issuer": "sync-lifestyle-iam",
+    "Audience": "sync-lifestyle-clients",
+    "SecretKey": "",
+    "AccessTokenExpiryMinutes": 15,
+    "RefreshTokenExpiryDays": 7
+  },
+  "_readme": "Copy to appsettings.json (gitignored) via setup-appsettings.ps1."
 }

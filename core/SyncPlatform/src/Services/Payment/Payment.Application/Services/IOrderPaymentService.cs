@@ -22,6 +22,11 @@ public interface IOrderPaymentService
         CreateMomoPaymentRequestDto request,
         CancellationToken cancellationToken = default);
 
+    Task<OrderPaymentStatusDto?> GetPaymentStatusAsync(
+        Guid? orderId,
+        long? payOsOrderCode,
+        CancellationToken cancellationToken = default);
+
     Task<MomoIpnResultDto> ProcessMomoIpnAsync(
         MomoIpnPayloadDto payload,
         string rawJson,

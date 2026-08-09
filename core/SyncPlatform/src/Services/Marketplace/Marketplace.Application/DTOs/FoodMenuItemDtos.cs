@@ -9,6 +9,8 @@ public class FoodMenuItemDto
 
     public Guid PartnerId { get; set; }
 
+    public string? PartnerName { get; set; }
+
     public string NameVi { get; set; } = string.Empty;
 
     public string NameEn { get; set; } = string.Empty;
@@ -59,6 +61,10 @@ public class FoodMenuItemSearchRequest
     public double? Longitude { get; set; }
 
     public double? RadiusKm { get; set; }
+
+    public bool? IsAiRecommendedOnly { get; set; }
+
+    public Guid? PartnerId { get; set; }
 
     public int PageNumber { get; set; } = 1;
 

@@ -1,15 +1,15 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:signalr_netcore/signalr_client.dart';
 import 'package:sync_app/core/config/app_config.dart';
-import 'package:sync_app/core/network/auth_interceptor.dart';
+import 'package:sync_app/features/auth/services/auth_service.dart';
+import 'package:sync_app/features/nutrition/data/nutrition_date_helpers.dart';
 import 'package:sync_app/features/nutrition/state/nutrition_refresh_notifier.dart';
 
 /// SignalR connection to Nutrition service for live macro/diary updates.
 class NutritionRealtimeService {
-  NutritionRealtimeService(this._storage, this._refreshNotifier);
+  NutritionRealtimeService(this._auth, this._refreshNotifier);
 
-  final FlutterSecureStorage _storage;
+  final AuthService _auth;
   final NutritionRefreshNotifier _refreshNotifier;
 
   HubConnection? _connection;
@@ -19,7 +19,7 @@ class NutritionRealtimeService {
     if (_connecting) return;
     if (_connection?.state == HubConnectionState.Connected) return;
 
-    final token = await _storage.read(key: AuthInterceptor.accessTokenKey);
+    final token = await _auth.getValidAccessToken();
     if (token == null || token.isEmpty) return;
 
     _connecting = true;
@@ -67,7 +67,7 @@ class NutritionRealtimeService {
       return;
     }
 
-    final parsed = DateTime.tryParse(dateStr);
+    final parsed = NutritionDateHelpers.parseApiDate(dateStr);
     _refreshNotifier.notifyDateChanged(parsed ?? DateTime.now());
   }
 }

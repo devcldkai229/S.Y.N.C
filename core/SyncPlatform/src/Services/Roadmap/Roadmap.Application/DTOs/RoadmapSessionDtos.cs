@@ -120,3 +120,30 @@ public class UpdateRoadmapSessionDto
     public List<CreateExecutionBlockDto> ExecutionBlocks { get; set; } = [];
 }
 
+/// <summary>Adaptive Engine — bulk adjust upcoming session volume/load.</summary>
+public class ApplyTrainingAdjustmentRequestDto
+{
+    /// <summary>deload | progress | hold | substitute</summary>
+    public string Decision { get; set; } = "hold";
+
+    /// <summary>Volume % delta (e.g. -30 deload). Progress may use as load % if set.</summary>
+    public double VolumeDeltaPct { get; set; }
+
+    public double? EtaWeeks { get; set; }
+
+    public string? Phase { get; set; }
+}
+
+public class ApplyTrainingAdjustmentResultDto
+{
+    public Guid UserId { get; set; }
+    public string Decision { get; set; } = "hold";
+    public double VolumeDeltaPct { get; set; }
+    public int SessionsAdjusted { get; set; }
+    public List<Guid> SessionIds { get; set; } = [];
+    public string? Phase { get; set; }
+    public double? EtaWeeks { get; set; }
+    public string Status { get; set; } = "noop";
+    public string Message { get; set; } = string.Empty;
+}
+

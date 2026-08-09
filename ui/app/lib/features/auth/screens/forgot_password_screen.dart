@@ -101,7 +101,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Nếu SMTP tắt, mã sẽ xuất hiện trong log IAM. Mã có hiệu lực 15 phút.',
+                  'Nếu Brevo tắt, mã sẽ xuất hiện trong log IAM. Mã có hiệu lực 15 phút.',
                   style: TextStyle(fontSize: 12, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 20),

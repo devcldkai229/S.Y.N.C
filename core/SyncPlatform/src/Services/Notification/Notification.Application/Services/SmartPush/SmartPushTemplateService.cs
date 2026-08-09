@@ -8,67 +8,95 @@ public class SmartPushTemplateService : ISmartPushTemplateService
 
     private static readonly Dictionary<string, List<Template>> Templates = new(StringComparer.OrdinalIgnoreCase)
     {
-        {
-            "ScheduledWorkoutReminder",
-            new List<Template>
-            {
-                new("Đến giờ vận động rồi", "Hôm nay có {TodayWorkoutName}. Bắt đầu nhẹ 10 phút trước cũng được nhé 💪"),
-                new("Tập nhẹ một chút nhé", "Một buổi tập ngắn hôm nay sẽ giúp bạn tiến gần hơn tới mục tiêu."),
-                new("Sẵn sàng tập chưa?", "Bắt đầu {TodayWorkoutName} ngay nào. Chỉ cần vào guồng trước đã 🔥")
-            }
-        },
-        {
-            "FinishWorkoutReminder",
-            new List<Template>
-            {
-                new("Tiếp nốt chút nhé", "Bạn đã hoàn thành {CompletionRate}% rồi. Quay lại thêm một chút là rất đáng giá 🔥"),
-                new("Gần tới rồi đó", "Buổi tập đã bắt đầu rồi. Hoàn thành thêm vài phút nữa để giữ nhịp nhé."),
-                new("Đừng bỏ giữa chừng nha", "Bạn đã vào guồng rồi. Tập tiếp nhẹ nhàng thêm một chút thôi 💪")
-            }
-        },
-        {
-            "StreakProtectionReminder",
-            new List<Template>
-            {
-                new("Giữ chuỗi nào 🔥", "Bạn đang có chuỗi {CurrentStreak} ngày. Một buổi tập ngắn hôm nay cũng giúp giữ đà rất tốt."),
-                new("Chuỗi đang đẹp đó", "Streak {CurrentStreak} ngày rồi. Hôm nay chỉ cần tập nhẹ là vẫn giữ được nhịp."),
-                new("Đừng để mất đà", "Bạn đã duy trì {CurrentStreak} ngày. Thêm một buổi ngắn hôm nay nhé 💪")
-            }
-        },
-        {
-            "RecoveryGentleReminder",
-            new List<Template>
-            {
-                new("Tập nhẹ thôi nhé 💚", "Hôm nay bạn có vẻ hơi mệt. Chỉ cần 10-15 phút vận động nhẹ cũng đủ để giữ nhịp."),
-                new("Nhẹ nhàng thôi nha", "Không cần tập nặng hôm nay. Một chút vận động nhẹ cũng là một bước tốt cho cơ thể.")
-            }
-        }
+        ["TodayWorkoutReminder"] =
+        [
+            new("Đến giờ vận động rồi", "Buổi '{TodayWorkoutName}' lúc {ScheduledLocalTime} chưa xong. 15–20 phút cũng rất đáng 💪"),
+            new("Sẵn sàng tập chưa?", "{WorkoutSourceHint}'{TodayWorkoutName}' đang chờ bạn hôm nay.")
+        ],
+        ["StreakProtection"] =
+        [
+            new("Giữ chuỗi nào 🔥", "Bạn đang có chuỗi {CurrentStreak} ngày. Một buổi ngắn hôm nay cũng giữ được đà."),
+            new("Đừng để mất đà", "Streak {CurrentStreak} ngày rồi — tập nhẹ cũng được!")
+        ],
+        ["MissedWorkouts"] =
+        [
+            new("Quay lại nhịp tập nhé", "Bạn vừa bỏ {MissedRecentCount} buổi gần đây. Bắt đầu lại bằng buổi ngắn thôi."),
+            new("Mình vẫn ở đây", "Lỡ nhịp không sao — hôm nay tập nhẹ là đủ để lấy lại guồng.")
+        ],
+        ["BurnoutRecovery"] =
+        [
+            new("Tập nhẹ thôi nhé 💚", "Hôm nay nên nghỉ nhẹ / chỉ 10–15 phút vận động nhẹ."),
+            new("Nghe cơ thể một chút", "Burnout hơi cao — ưu tiên phục hồi và ngủ đủ nhé.")
+        ],
+        ["NutritionNudge"] =
+        [
+            new("Nhắc nhẹ dinh dưỡng", "Hôm nay mới log {MealsLoggedToday} bữa, còn ~{RemainingCaloriesPct}% calo mục tiêu."),
+            new("Uống nước và ăn đủ nhé", "Nước ~{WaterPct}% mục tiêu — nhớ bổ sung bữa nhẹ giàu đạm.")
+        ],
+        ["ChurnReengage"] =
+        [
+            new("Nhớ bạn quá!", "Lâu rồi chưa ghé SYNC. Mở app 1 phút chọn buổi nhẹ nhé."),
+            new("Quay lại cùng CYN", "Không cần buổi nặng — chỉ cần bắt đầu lại.")
+        ],
+        ["ProgressCelebrate"] =
+        [
+            new("Giỏi lắm! 🎉", "Hôm nay bạn đã tiến bộ rõ — giữ nhịp này nhé."),
+            new("Một ngày đáng tự hào", "Hoàn thành mục tiêu hôm nay rồi. Tự thưởng xứng đáng!")
+        ],
+        ["GentleCheckIn"] =
+        [
+            new("Dạo này thế nào?", "CYN gửi lời hỏi thăm — hôm nay bạn muốn tập hay nghỉ nhẹ?"),
+            new("Check-in nhẹ", "Không áp lực — chỉ muốn biết bạn ổn chứ?")
+        ],
+        ["WeighInReminder"] =
+        [
+            new("Nhắc cân nặng", "Đã hơn 1 tuần chưa cập nhật cân. Cân nhanh giúp CYN tinh chỉnh mục tiêu nhé."),
+            new("Weigh-in thôi!", "Lịch sử cân trống / quá cũ — mở app log cân để Adaptive Coach theo dõi tiến độ.")
+        ],
+        // Backward-compatible aliases
+        ["ScheduledWorkoutReminder"] =
+        [
+            new("Đến giờ vận động rồi", "Hôm nay có {TodayWorkoutName}. Bắt đầu nhẹ cũng được nhé 💪")
+        ],
+        ["FinishWorkoutReminder"] =
+        [
+            new("Tiếp nốt chút nhé", "Bạn đã hoàn thành {CompletionRate}%. Quay lại thêm một chút 🔥")
+        ],
+        ["StreakProtectionReminder"] =
+        [
+            new("Giữ chuỗi nào 🔥", "Chuỗi {CurrentStreak} ngày — tập nhẹ hôm nay cũng được.")
+        ],
+        ["RecoveryGentleReminder"] =
+        [
+            new("Tập nhẹ thôi nhé 💚", "Hôm nay chỉ cần 10–15 phút vận động nhẹ.")
+        ]
     };
 
     public GeneratedPushMessageDto BuildMessage(SmartPushContextDto context, SmartPushDecision decision, string deepLink)
     {
-        var triggerType = string.IsNullOrWhiteSpace(decision.TriggerType) ? "ScheduledWorkoutReminder" : decision.TriggerType;
-        
+        var triggerType = string.IsNullOrWhiteSpace(decision.TriggerType) ? "TodayWorkoutReminder" : decision.TriggerType;
         if (!Templates.TryGetValue(triggerType, out var list))
+            list = Templates["GentleCheckIn"];
+
+        var chosen = list[Random.Shared.Next(list.Count)];
+        var sourceHint = context.WorkoutSource switch
         {
-            // Fallback to ScheduledWorkoutReminder if triggerType is unknown
-            list = Templates["ScheduledWorkoutReminder"];
-        }
+            "custom" => "Buổi bạn tự lên ",
+            "both" => "Buổi lịch + custom ",
+            _ => "Buổi lộ trình "
+        };
 
-        var idx = Random.Shared.Next(list.Count);
-        var chosen = list[idx];
-
-        var todayWorkoutName = context.TodayWorkoutName ?? "buổi tập";
         var body = chosen.Body
-            .Replace("{TodayWorkoutName}", todayWorkoutName)
+            .Replace("{TodayWorkoutName}", context.TodayWorkoutName ?? "buổi tập")
+            .Replace("{ScheduledLocalTime}", context.ScheduledLocalTime ?? "hôm nay")
+            .Replace("{WorkoutSourceHint}", sourceHint)
             .Replace("{CurrentStreak}", context.CurrentStreak.ToString())
             .Replace("{CompletionRate}", context.CompletionRate.ToString())
-            .Replace("{ActualDurationMinutes}", context.ActualDurationMinutes.ToString());
+            .Replace("{MissedRecentCount}", context.MissedRecentCount.ToString())
+            .Replace("{MealsLoggedToday}", context.MealsLoggedToday.ToString())
+            .Replace("{RemainingCaloriesPct}", context.RemainingCaloriesPct.ToString())
+            .Replace("{WaterPct}", context.WaterPct.ToString());
 
-        return new GeneratedPushMessageDto(
-            Title: chosen.Title,
-            Body: body,
-            DeepLink: deepLink
-        );
+        return new GeneratedPushMessageDto(chosen.Title, body, deepLink);
     }
 }

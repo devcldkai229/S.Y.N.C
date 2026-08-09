@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
+import 'package:sync_app/shared/widgets/google_mark.dart';
 
 enum SocialLoginType { google }
 
@@ -32,14 +33,10 @@ class SocialLoginButton extends StatelessWidget {
                 height: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : Row(
+            : const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(
-                    Icons.g_mobiledata_rounded,
-                    size: 28,
-                    color: AppColors.textPrimary,
-                  ),
+                children: [
+                  GoogleMark(size: 20),
                   SizedBox(width: 8),
                   Text(
                     'Google',

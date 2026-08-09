@@ -29,4 +29,6 @@ public class Blog : BaseMongoEntity
     public int LikeCount { get; set; } = 0;
 
     public int ShareCount { get; set; } = 0;
+
+    public int CommentCount { get; set; } = 0;
 }

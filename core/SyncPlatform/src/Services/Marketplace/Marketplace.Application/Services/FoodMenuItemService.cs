@@ -39,7 +39,11 @@ public class FoodMenuItemService : IFoodMenuItemService
             RadiusKm = request.RadiusKm,
             PageNumber = pageNumber,
             PageSize = pageSize,
+            IsAiRecommended = request.IsAiRecommendedOnly,
         };
+
+        if (request.PartnerId is Guid partnerId)
+            criteria.PartnerIds = [partnerId];
 
         if (!string.IsNullOrWhiteSpace(request.Category)
             && Enum.TryParse<FoodCategory>(request.Category, true, out var category))
@@ -72,7 +76,9 @@ public class FoodMenuItemService : IFoodMenuItemService
         }
 
         var (items, total) = await _repository.SearchPagedAsync(criteria, cancellationToken);
-        return (items.Select(i => i.ToDto()).ToList(), new PaginationMetadata(pageNumber, pageSize, total));
+        var dtos = items.Select(i => i.ToDto()).ToList();
+        await EnrichPartnerNamesAsync(dtos, cancellationToken);
+        return (dtos, new PaginationMetadata(pageNumber, pageSize, total));
     }
 
     public async Task<IReadOnlyList<FoodMenuItemDto>> GetSuggestionsAsync(
@@ -103,7 +109,9 @@ public class FoodMenuItemService : IFoodMenuItemService
         }
 
         var items = await _repository.GetRandomAsync(criteria, count, cancellationToken);
-        return items.Select(i => i.ToDto()).ToList();
+        var dtos = items.Select(i => i.ToDto()).ToList();
+        await EnrichPartnerNamesAsync(dtos, cancellationToken);
+        return dtos;
     }
 
     public async Task<FoodMenuItemDto> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -111,7 +119,9 @@ public class FoodMenuItemService : IFoodMenuItemService
         var entity = await _repository.GetByIdAsync(id, cancellationToken);
         if (entity == null || entity.Availability == AvailabilityStatus.Hidden)
             throw new NotFoundException(nameof(FoodMenuItem), id);
-        return entity.ToDto();
+        var dto = entity.ToDto();
+        await EnrichPartnerNamesAsync([dto], cancellationToken);
+        return dto;
     }
 
     public async Task<IReadOnlyList<FoodMenuItemDto>> GetByPartnerAsync(
@@ -119,7 +129,9 @@ public class FoodMenuItemService : IFoodMenuItemService
         CancellationToken cancellationToken = default)
     {
         var items = await _repository.GetByPartnerIdAsync(partnerId, null, cancellationToken);
-        return items.Select(i => i.ToDto()).ToList();
+        var dtos = items.Select(i => i.ToDto()).ToList();
+        await EnrichPartnerNamesAsync(dtos, cancellationToken);
+        return dtos;
     }
 
     public async Task<FoodMenuItemDto> CreateAsync(
@@ -152,7 +164,9 @@ public class FoodMenuItemService : IFoodMenuItemService
         };
 
         await _repository.CreateAsync(entity, cancellationToken);
-        return entity.ToDto();
+        var created = entity.ToDto();
+        await EnrichPartnerNamesAsync([created], cancellationToken);
+        return created;
     }
 
     public async Task<FoodMenuItemDto> UpdateAsync(
@@ -195,7 +209,9 @@ public class FoodMenuItemService : IFoodMenuItemService
             entity.IsAiRecommended = dto.IsAiRecommended.Value;
 
         await _repository.UpdateAsync(itemId, entity, cancellationToken);
-        return entity.ToDto();
+        var updated = entity.ToDto();
+        await EnrichPartnerNamesAsync([updated], cancellationToken);
+        return updated;
     }
 
     public async Task SoftDeleteAsync(
@@ -208,6 +224,29 @@ public class FoodMenuItemService : IFoodMenuItemService
         var entity = await RequirePartnerMenuItemAsync(partnerId, itemId, cancellationToken);
         entity.Availability = AvailabilityStatus.Hidden;
         await _repository.UpdateAsync(itemId, entity, cancellationToken);
+    }
+
+    private async Task EnrichPartnerNamesAsync(
+        IList<FoodMenuItemDto> items,
+        CancellationToken cancellationToken)
+    {
+        if (items.Count == 0)
+            return;
+
+        var partnerIds = items.Select(i => i.PartnerId).Distinct().ToList();
+        var names = new Dictionary<Guid, string>();
+        foreach (var partnerId in partnerIds)
+        {
+            var partner = await _partnerRepository.GetByIdAsync(partnerId, cancellationToken);
+            if (partner != null && !string.IsNullOrWhiteSpace(partner.Name))
+                names[partnerId] = partner.Name;
+        }
+
+        foreach (var item in items)
+        {
+            if (names.TryGetValue(item.PartnerId, out var name))
+                item.PartnerName = name;
+        }
     }
 
     private async Task<FoodMenuItem> RequirePartnerMenuItemAsync(

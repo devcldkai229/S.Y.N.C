@@ -8,8 +8,12 @@ class SocialRepository {
 
   final SocialRemoteDataSource _remote;
 
-  Future<CursorFeedPage<SocialPost>> loadFeed({String? cursor, int limit = 20}) =>
-      _remote.fetchFeed(cursor: cursor, limit: limit);
+  Future<CursorFeedPage<SocialPost>> loadFeed({
+    String? cursor,
+    int limit = 20,
+    String type = 'following',
+  }) =>
+      _remote.fetchFeed(cursor: cursor, limit: limit, type: type);
 
   Future<CursorFeedPage<SocialPost>> loadUserWall({
     required String userId,
@@ -70,6 +74,9 @@ class SocialRepository {
 
   Future<List<SocialStory>> loadMyStories() => _remote.fetchMyStories();
 
+  Future<List<SocialStory>> loadStoriesByUser(String userId) =>
+      _remote.fetchStoriesByUser(userId);
+
   Future<void> viewStory(String storyId) => _remote.viewStory(storyId);
 
   Future<void> likeStory(String storyId) => _remote.likeStory(storyId);
@@ -94,6 +101,54 @@ class SocialRepository {
   Future<void> followUser(String userId) => _remote.followUser(userId);
 
   Future<void> unfollowUser(String userId) => _remote.unfollowUser(userId);
+
+  Future<void> blockUser(String userId) => _remote.blockUser(userId);
+
+  Future<void> reportPost({
+    required String postId,
+    required String reason,
+    String? details,
+  }) =>
+      _remote.reportContent(
+        targetId: postId,
+        reason: reason,
+        targetType: 'Post',
+        details: details,
+      );
+
+  Future<void> reportAiContent({
+    required String targetId,
+    required String reason,
+    String? details,
+  }) =>
+      _remote.reportContent(
+        targetId: targetId,
+        reason: reason,
+        targetType: 'AiContent',
+        details: details,
+      );
+
+  Future<PagedSearchPage<FollowListItem>> loadFollowers({
+    required String userId,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) =>
+      _remote.fetchFollowers(
+        userId: userId,
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+      );
+
+  Future<PagedSearchPage<FollowListItem>> loadFollowing({
+    required String userId,
+    int pageNumber = 1,
+    int pageSize = 20,
+  }) =>
+      _remote.fetchFollowing(
+        userId: userId,
+        pageNumber: pageNumber,
+        pageSize: pageSize,
+      );
 
   Future<PagedSearchPage<SocialPost>> searchPosts({
     required String query,

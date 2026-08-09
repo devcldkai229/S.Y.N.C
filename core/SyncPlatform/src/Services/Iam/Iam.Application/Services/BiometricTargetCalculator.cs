@@ -45,6 +45,11 @@ public static class BiometricTargetCalculator
 
         profile.BaseTDEE = (int)Math.Round(profile.BMR * multiplier);
 
+        // Adaptive Engine đang quản targets → formula chỉ cập nhật BMR/TDEE nền,
+        // KHÔNG ghi đè calo/macro engine đã hiệu chỉnh theo dữ liệu thực.
+        if (profile.TargetsManagedByEngine)
+            return;
+
         var genderFloor = profile.Gender == Gender.Male ? 1500 : 1200;
         var calorieTarget = profile.FitnessGoal switch
         {

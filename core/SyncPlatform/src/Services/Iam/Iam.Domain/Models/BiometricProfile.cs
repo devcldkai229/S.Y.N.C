@@ -43,6 +43,20 @@ public class BiometricProfile : BaseAuditableEntity
 
     public int? DailyFatTargetGram { get; set; }
 
+    /// <summary>
+    /// Mục tiêu calo goal-adjusted. Null = chưa có (client dùng BaseTDEE như cũ).
+    /// Được Adaptive Engine ghi qua apply-targets.
+    /// </summary>
+    public int? DailyCalorieTarget { get; set; }
+
+    /// <summary>
+    /// true = targets do Adaptive Engine quản (Recalculate không ghi đè macro/calo
+    /// bằng công thức nữa — chỉ cập nhật BMR/BaseTDEE). Reset khi user đổi goal.
+    /// </summary>
+    public bool TargetsManagedByEngine { get; set; }
+
+    public DateTime? TargetsAdjustedAtUtc { get; set; }
+
     public List<string>? Injuries { get; set; }
 
     public List<string>? Medications { get; set; }

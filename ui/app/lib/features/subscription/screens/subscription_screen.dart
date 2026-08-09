@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:sync_app/core/config/app_config.dart';
 import 'package:sync_app/core/theme/app_colors.dart';
 import 'package:sync_app/core/utils/injection.dart';
+import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/features/subscription/models/subscription_models.dart';
+import 'package:sync_app/features/subscription/services/google_play_billing_service.dart';
 import 'package:sync_app/features/subscription/services/subscription_api_service.dart';
 import 'package:sync_app/shared/widgets/app_shell_overlay_scaffold.dart';
 
@@ -16,19 +19,32 @@ class SubscriptionScreen extends StatefulWidget {
 class _SubscriptionScreenState extends State<SubscriptionScreen>
     with WidgetsBindingObserver {
   final _api = getIt<SubscriptionApiService>();
+  final _profileApi = getIt<ProfileApiService>();
+  final _playBilling = getIt<GooglePlayBillingService>();
 
   List<SubscriptionPlan> _plans = [];
   ActiveSubscription? _activeSub;
+  /// IAM profile tier — nguồn sự thật khi Payment chưa có UserSubscription (seed / admin grant).
+  String _subscriptionTier = 'Free';
   bool _loading = true;
   String? _error;
 
   final _couponController = TextEditingController();
   int? _pendingOrderCode;
 
+  /// Premium đang hiệu lực: bản ghi Payment active HOẶC tier IAM Premium/Ultra.
+  bool get _hasPremiumAccess {
+    if (_activeSub != null && _activeSub!.isActive) return true;
+    return isPaidSubscriptionTier(_subscriptionTier);
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (AppConfig.requiresPlayBillingForPremium) {
+      _playBilling.ensureListening();
+    }
     _load();
   }
 
@@ -54,13 +70,24 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
       ActiveSubscription? active;
       try {
         active = await _api.getActiveSubscription();
+        if (active != null && !active.isActive) {
+          active = null;
+        }
       } catch (_) {
         active = null;
+      }
+      var tier = _subscriptionTier;
+      try {
+        final settings = await _profileApi.getProfileSettings();
+        tier = settings.basic.subscriptionTier;
+      } catch (_) {
+        /* keep previous tier */
       }
       if (!mounted) return;
       setState(() {
         _plans = plans.where((p) => !p.isFree).toList();
         _activeSub = active;
+        _subscriptionTier = tier;
         _loading = false;
       });
     } catch (e) {
@@ -70,6 +97,17 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
   }
 
   Future<void> _subscribe(SubscriptionPlan plan) async {
+    if (_hasPremiumAccess) {
+      _showSnack('Bạn đang sử dụng gói Premium còn hạn.', isError: true);
+      return;
+    }
+
+    // Google Play policy (VN): digital Premium in-app must use Play Billing, not VietQR.
+    if (AppConfig.requiresPlayBillingForPremium) {
+      await _subscribeWithPlayBilling(plan);
+      return;
+    }
+
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -102,6 +140,61 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     }
   }
 
+  Future<void> _subscribeWithPlayBilling(SubscriptionPlan plan) async {
+    if (_hasPremiumAccess) {
+      _showSnack('Bạn đang sử dụng gói Premium còn hạn.', isError: true);
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryGreen),
+      ),
+    );
+    try {
+      await _playBilling.purchaseSubscription(
+        productId: plan.playProductId,
+        planId: plan.id,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      try {
+        await _profileApi.getProfileSettings();
+      } catch (_) {}
+      await _load();
+      if (!mounted) return;
+      _showSnack('Đã nâng cấp Premium qua Google Play!');
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
+    }
+  }
+
+  Future<void> _restorePlayPurchases() async {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryGreen),
+      ),
+    );
+    try {
+      await _playBilling.restoreAndVerify();
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await _load();
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _showSnack('Đã khôi phục / đồng bộ mua hàng Google Play.');
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop();
+      _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
+    }
+  }
+
   Future<void> _pollTransaction(int orderCode) async {
     for (var i = 0; i < 12; i++) {
       await Future.delayed(const Duration(seconds: 4));
@@ -109,6 +202,11 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
         final tx = await _api.getTransactionStatus(orderCode);
         if (tx?.status == 'Succeeded') {
           setState(() { _pendingOrderCode = null; });
+          try {
+            await _profileApi.getProfileSettings();
+          } catch (_) {
+            /* best-effort refresh tier in profile cache */
+          }
           await _load();
           if (!mounted) return;
           _showSnack('Đã nâng cấp lên Premium!');
@@ -191,12 +289,15 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       const _Header(),
                       const SizedBox(height: 24),
 
-                      // Hiển thị gói đang dùng nếu có
+                      // Hiển thị gói đang dùng nếu có bản ghi Payment
                       if (_activeSub != null) ...[
                         _ActiveSubCard(
                           sub: _activeSub!,
-                          onCancel: _activeSub!.status == 'Active' ? _cancelSubscription : null,
+                          onCancel: _activeSub!.isActive ? _cancelSubscription : null,
                         ),
+                        const SizedBox(height: 16),
+                      ] else if (_hasPremiumAccess) ...[
+                        _TierOnlyPremiumBanner(tier: _subscriptionTier),
                         const SizedBox(height: 16),
                       ],
 
@@ -208,12 +309,25 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                         const SizedBox(height: 16),
                       ],
 
-                      // Ô nhập mã khuyến mãi
-                      _CouponField(controller: _couponController),
-                      const SizedBox(height: 16),
+                      // Ô nhập mã khuyến mãi (PayOS / web only — không dùng cho Play Billing)
+                      if (!AppConfig.requiresPlayBillingForPremium) ...[
+                        _CouponField(controller: _couponController),
+                        const SizedBox(height: 16),
+                      ],
+
+                      if (AppConfig.requiresPlayBillingForPremium) ...[
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _restorePlayPurchases,
+                            child: const Text('Khôi phục mua hàng Google Play'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
 
                       // Free plan
-                      const _FreePlanCard(),
+                      _FreePlanCard(isCurrentPlan: !_hasPremiumAccess),
                       const SizedBox(height: 14),
 
                       // Paid plans từ backend
@@ -222,13 +336,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                           padding: const EdgeInsets.only(bottom: 14),
                           child: _PaidPlanCard(
                             plan: plan,
-                            isCurrentPlan: _activeSub != null,
-                            onSubscribe: _activeSub != null ? null : () => _subscribe(plan),
+                            isCurrentPlan: _hasPremiumAccess,
+                            onSubscribe:
+                                _hasPremiumAccess ? null : () => _subscribe(plan),
                           ),
                         ),
                       ),
 
-                      if (_plans.isEmpty && _activeSub == null)
+                      if (_plans.isEmpty && !_hasPremiumAccess)
                         const _DefaultPremiumCard(onSubscribe: null),
                     ],
                   ),
@@ -267,7 +382,7 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Mở khóa toàn bộ tính năng của SyncPlatform',
+          'CYN không giới hạn · Adaptive theo cân thật · Insight & SmartPush AI',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
         ),
@@ -308,7 +423,7 @@ class _ActiveSubCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Gói ${sub.subscriptionPlanName} đang hoạt động',
+                  'Gói ${sub.subscriptionPlanName} · Đang sử dụng',
                   style: const TextStyle(
                     fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary,
                   ),
@@ -324,6 +439,42 @@ class _ActiveSubCard extends StatelessWidget {
               onPressed: onCancel,
               child: const Text('Huỷ', style: TextStyle(color: Colors.red, fontSize: 13)),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Khi IAM đã Premium nhưng Payment chưa có UserSubscription (seed / grant).
+class _TierOnlyPremiumBanner extends StatelessWidget {
+  const _TierOnlyPremiumBanner({required this.tier});
+
+  final String tier;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = tier.trim().isEmpty ? 'Premium' : tier.trim();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.lightGreen,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primaryGreen.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.workspace_premium_rounded, color: AppColors.primaryGreen, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Gói $label · Đang sử dụng',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -401,7 +552,9 @@ class _CouponField extends StatelessWidget {
 // ─── Free plan card ───────────────────────────────────────────────────────────
 
 class _FreePlanCard extends StatelessWidget {
-  const _FreePlanCard();
+  const _FreePlanCard({required this.isCurrentPlan});
+
+  final bool isCurrentPlan;
 
   @override
   Widget build(BuildContext context) {
@@ -439,11 +592,30 @@ class _FreePlanCard extends StatelessWidget {
           const Text('mãi mãi', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
           const SizedBox(height: 16),
           ...[
-            'Truy cập bài tập cơ bản',
-            'AI hỗ trợ 5 lần/tháng',
-            'Theo dõi streak & thành tích',
-            'Mạng xã hội cộng đồng',
+            'Lộ trình Foundation & bài tập cơ bản',
+            'CYN AI — 30 lượt hỏi mỗi tháng',
+            'Nhật ký tập / dinh dưỡng & theo dõi cân',
+            'Streak, thành tích & cộng đồng SYNC',
           ].map((f) => _FeatureRow(text: f, included: true, muted: true)),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: null,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: Text(
+                isCurrentPlan ? 'Đang sử dụng' : 'Gói Free',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textMuted,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -484,11 +656,14 @@ class _PaidPlanCard extends StatelessWidget {
   List<String> _defaultPremiumFeatures(SubscriptionPlan plan) {
     return [
       'Tất cả tính năng Free',
-      if (plan.premiumWorkoutAccess) 'Bài tập nâng cao & video HD',
-      if (plan.premiumMarketplaceAccess) 'Marketplace ưu đãi độc quyền',
-      if (plan.priorityAiResponses) 'AI phản hồi ưu tiên',
-      if (plan.aiUsageLimitPerMonth > 0) 'AI hỗ trợ ${plan.aiUsageLimitPerMonth} lần/tháng',
-      'Không giới hạn streak shield',
+      'CYN AI không giới hạn — coach, dinh dưỡng & lộ trình',
+      'Adaptive Coaching theo cân nặng thực tế',
+      'Insight Premium — thống kê, biểu đồ & dự đoán',
+      'SmartPush cá nhân hóa bằng AI',
+      if (plan.premiumWorkoutAccess) 'Giáo án & video HD Premium',
+      if (plan.premiumMarketplaceAccess)
+        'Marketplace ưu đãi · đặt đơn AI tối đa 10 lần/tháng',
+      if (plan.priorityAiResponses) 'AI phản hồi ưu tiên, model mạnh hơn',
     ];
   }
 }
@@ -510,11 +685,13 @@ class _DefaultPremiumCard extends StatelessWidget {
       period: period,
       features: const [
         'Tất cả tính năng Free',
-        'Bài tập nâng cao & video HD',
-        'AI hỗ trợ không giới hạn',
-        'Marketplace ưu đãi độc quyền',
-        'AI phản hồi ưu tiên',
-        'Không giới hạn streak shield',
+        'CYN AI không giới hạn — coach, dinh dưỡng & lộ trình',
+        'Adaptive Coaching theo cân nặng thực tế',
+        'Insight Premium — thống kê, biểu đồ & dự đoán',
+        'SmartPush cá nhân hóa bằng AI',
+        'Giáo án & video HD Premium',
+        'Marketplace ưu đãi · đặt đơn AI tối đa 10 lần/tháng',
+        'AI phản hồi ưu tiên, model mạnh hơn',
       ],
       isCurrentPlan: false,
       onSubscribe: onSubscribe,
@@ -605,7 +782,7 @@ class _PremiumCardShell extends StatelessWidget {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               child: Text(
-                isCurrentPlan ? 'Gói hiện tại' : 'Đăng ký ngay',
+                isCurrentPlan ? 'Đang sử dụng' : 'Đăng ký ngay',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,

@@ -1,4 +1,4 @@
-using Exercise.Domain.Repositories;
+﻿using Exercise.Domain.Repositories;
 
 using Exercise.ImportTool.Enrichment;
 
@@ -53,9 +53,6 @@ static IHost BuildHost(string[] args) =>
             AddConfigJson(config, Path.Combine(baseDir, "appsettings.Import.json"));
 
             AddConfigJson(config, Path.Combine(baseDir, "appsettings.json"));
-
-            AddConfigJson(config, Path.Combine(baseDir, "appsettings.Shared.json"));
-
 
 
             var projectDir = Path.GetFullPath(Path.Combine(baseDir, "..", "..", ".."));

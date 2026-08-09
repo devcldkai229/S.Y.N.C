@@ -17,6 +17,15 @@ public class UserFollowDto
     public DateTimeOffset FollowedAt { get; set; }
 }
 
+/// <summary>Enriched follow-list row (followers or following) with IAM display fields.</summary>
+public class FollowListItemDto
+{
+    public Guid UserId { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string? AvatarUrl { get; set; }
+    public DateTimeOffset FollowedAt { get; set; }
+}
+
 public class FollowCountsDto
 {
     public Guid UserId { get; set; }

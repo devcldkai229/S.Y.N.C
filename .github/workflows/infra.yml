@@ -1,0 +1,336 @@
+name: infra-terraform
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Terraform cho infra/aws (KHÔNG phải infra/terraform/).
+# Thứ tự: shared (ECR+OIDC) → dev → prod.
+#
+# PR  → fmt + validate + plan (comment diff), không apply.
+# main → plan rồi apply (prod qua environment infra-prod = manual approval).
+#
+# GitHub cần cấu hình:
+#   secrets: AWS_OIDC_ROLE_ARN_INFRA
+#   vars:    AWS_ACCOUNT_ID  (hoặc TF_STATE_BUCKET=sync-tfstate-<account>)
+#            AWS_REGION      (optional, mặc định ap-southeast-1)
+#            ALERT_EMAIL     (optional)
+#            ACM_CERTIFICATE_ARN (optional — ALB HTTPS tay, ap-southeast-1)
+#            DOMAIN_NAME     (optional — apex domain cho enable_dns)
+#            ENABLE_DNS      (optional "true"/"false")
+#            CREATE_HOSTED_ZONE (optional "true"/"false")
+#   Environments: infra-dev (optional), infra-prod (Required reviewers)
+# ─────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/aws/**"
+      - ".github/workflows/infra.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/aws/**"
+      - ".github/workflows/infra.yml"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Apply target after plan (main/manual only)"
+        required: true
+        default: "dev"
+        type: choice
+        options: [shared, dev, prod, all]
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: infra-terraform-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TF_VERSION: "1.9.5"
+  AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
+
+jobs:
+  # ── Resolve state bucket + patch backend placeholders ─────────────────────
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      state_bucket: ${{ steps.meta.outputs.state_bucket }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        name: Resolve TF state bucket
+        run: |
+          set -euo pipefail
+          BUCKET="${{ vars.TF_STATE_BUCKET }}"
+          ACCOUNT="${{ vars.AWS_ACCOUNT_ID }}"
+          if [ -z "$BUCKET" ] && [ -n "$ACCOUNT" ]; then
+            BUCKET="sync-tfstate-${ACCOUNT}"
+          fi
+          if [ -z "$BUCKET" ] || [[ "$BUCKET" == *"REPLACE_ACCOUNT_ID"* ]]; then
+            echo "::error::Set repository variable TF_STATE_BUCKET (sync-tfstate-<account>) or AWS_ACCOUNT_ID"
+            exit 1
+          fi
+          echo "state_bucket=${BUCKET}" >> "$GITHUB_OUTPUT"
+          echo "Using state bucket: ${BUCKET}"
+
+  # ── Plan shared / dev / prod ──────────────────────────────────────────────
+  plan:
+    needs: [setup]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [shared, dev, prod]
+    defaults:
+      run:
+        working-directory: infra/aws/envs/${{ matrix.env }}
+    env:
+      TF_VAR_state_bucket: ${{ needs.setup.outputs.state_bucket }}
+      TF_VAR_github_repo: ${{ github.repository }}
+      TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
+      TF_VAR_certificate_arn: ${{ vars.ACM_CERTIFICATE_ARN }}
+      TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
+      TF_VAR_enable_dns: ${{ vars.ENABLE_DNS == 'true' && 'true' || 'false' }}
+      TF_VAR_create_hosted_zone: ${{ vars.CREATE_HOSTED_ZONE == 'true' && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch backend bucket placeholder
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          BUCKET="${{ needs.setup.outputs.state_bucket }}"
+          # backend.tf trong repo còn sync-tfstate-REPLACE_ACCOUNT_ID — CI thay bằng bucket thật.
+          find infra/aws/envs -name backend.tf -print0 \
+            | xargs -0 sed -i "s/sync-tfstate-REPLACE_ACCOUNT_ID/${BUCKET}/g"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_INFRA }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform fmt (repo-wide under infra/aws)
+        working-directory: infra/aws
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform init -input=false
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+      - name: Terraform plan
+        id: plan
+        run: |
+          set +e
+          terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan.txt
+          code=${PIPESTATUS[0]}
+          # 0 = no drift, 2 = changes present — both success for a plan job
+          if [ "$code" -eq 0 ] || [ "$code" -eq 2 ]; then
+            exit 0
+          fi
+          exit "$code"
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan-${{ matrix.env }}
+          path: |
+            infra/aws/envs/${{ matrix.env }}/tfplan
+            infra/aws/envs/${{ matrix.env }}/plan.txt
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Comment plan on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        env:
+          PLAN_ENV: ${{ matrix.env }}
+        with:
+          script: |
+            const fs = require('fs');
+            const path = `infra/aws/envs/${process.env.PLAN_ENV}/plan.txt`;
+            let body = fs.readFileSync(path, 'utf8');
+            const max = 60000;
+            if (body.length > max) {
+              body = body.slice(0, max) + '\n\n… truncated …';
+            }
+            const header = `<!-- tfplan-${process.env.PLAN_ENV} -->`;
+            const markdown = `${header}
+            ### Terraform plan \`${process.env.PLAN_ENV}\`
+            <details><summary>Show plan</summary>
+
+            \`\`\`hcl
+            ${body}
+            \`\`\`
+
+            </details>`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(header));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: markdown,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: markdown,
+              });
+            }
+
+  # ── Apply (chỉ push main hoặc workflow_dispatch) ───────────────────────────
+  apply-shared:
+    needs: [setup, plan]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      (
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'workflow_dispatch' && (inputs.target == 'shared' || inputs.target == 'all' || inputs.target == 'dev' || inputs.target == 'prod'))
+      )
+    runs-on: ubuntu-latest
+    environment: infra-dev
+    defaults:
+      run:
+        working-directory: infra/aws/envs/shared
+    env:
+      TF_VAR_state_bucket: ${{ needs.setup.outputs.state_bucket }}
+      TF_VAR_github_repo: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch backend bucket placeholder
+        working-directory: ${{ github.workspace }}
+        run: |
+          BUCKET="${{ needs.setup.outputs.state_bucket }}"
+          find infra/aws/envs -name backend.tf -print0 \
+            | xargs -0 sed -i "s/sync-tfstate-REPLACE_ACCOUNT_ID/${BUCKET}/g"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_INFRA }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - run: terraform init -input=false
+      # Re-plan tại apply (artifact có thể stale sau approval / concurrent change)
+      # Exit 2 = có thay đổi — vẫn apply được từ tfplan
+      - run: |
+          set +e
+          terraform plan -input=false -no-color -out=tfplan
+          code=$?
+          if [ "$code" -eq 0 ] || [ "$code" -eq 2 ]; then exit 0; fi
+          exit "$code"
+      - run: terraform apply -input=false -auto-approve tfplan
+
+  apply-dev:
+    needs: [setup, apply-shared]
+    if: |
+      always() &&
+      needs.apply-shared.result == 'success' &&
+      (
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'workflow_dispatch' && (inputs.target == 'dev' || inputs.target == 'all' || inputs.target == 'prod'))
+      )
+    runs-on: ubuntu-latest
+    environment: infra-dev
+    defaults:
+      run:
+        working-directory: infra/aws/envs/dev
+    env:
+      TF_VAR_state_bucket: ${{ needs.setup.outputs.state_bucket }}
+      TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
+      TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
+      TF_VAR_enable_dns: ${{ vars.ENABLE_DNS == 'true' && 'true' || 'false' }}
+      TF_VAR_create_hosted_zone: ${{ vars.CREATE_HOSTED_ZONE == 'true' && 'true' || 'false' }}
+      TF_VAR_certificate_arn: ${{ vars.ACM_CERTIFICATE_ARN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch backend bucket placeholder
+        working-directory: ${{ github.workspace }}
+        run: |
+          BUCKET="${{ needs.setup.outputs.state_bucket }}"
+          find infra/aws/envs -name backend.tf -print0 \
+            | xargs -0 sed -i "s/sync-tfstate-REPLACE_ACCOUNT_ID/${BUCKET}/g"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_INFRA }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - run: terraform init -input=false
+      - name: Terraform plan
+        run: |
+          set +e
+          terraform plan -input=false -no-color -out=tfplan
+          code=$?
+          if [ "$code" -eq 0 ] || [ "$code" -eq 2 ]; then exit 0; fi
+          exit "$code"
+      - run: terraform apply -input=false -auto-approve tfplan
+
+  apply-prod:
+    needs: [setup, apply-dev]
+    if: |
+      always() &&
+      needs.apply-dev.result == 'success' &&
+      (
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (github.event_name == 'workflow_dispatch' && (inputs.target == 'prod' || inputs.target == 'all'))
+      )
+    runs-on: ubuntu-latest
+    environment: infra-prod
+    defaults:
+      run:
+        working-directory: infra/aws/envs/prod
+    env:
+      TF_VAR_state_bucket: ${{ needs.setup.outputs.state_bucket }}
+      TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
+      TF_VAR_certificate_arn: ${{ vars.ACM_CERTIFICATE_ARN }}
+      TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
+      TF_VAR_enable_dns: ${{ vars.ENABLE_DNS == 'true' && 'true' || 'false' }}
+      TF_VAR_create_hosted_zone: ${{ vars.CREATE_HOSTED_ZONE == 'true' && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch backend bucket placeholder
+        working-directory: ${{ github.workspace }}
+        run: |
+          BUCKET="${{ needs.setup.outputs.state_bucket }}"
+          find infra/aws/envs -name backend.tf -print0 \
+            | xargs -0 sed -i "s/sync-tfstate-REPLACE_ACCOUNT_ID/${BUCKET}/g"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN_INFRA }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - run: terraform init -input=false
+      - name: Terraform plan
+        run: |
+          set +e
+          terraform plan -input=false -no-color -out=tfplan
+          code=$?
+          if [ "$code" -eq 0 ] || [ "$code" -eq 2 ]; then exit 0; fi
+          exit "$code"
+      - run: terraform apply -input=false -auto-approve tfplan

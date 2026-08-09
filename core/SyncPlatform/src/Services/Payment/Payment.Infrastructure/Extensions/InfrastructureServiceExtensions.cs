@@ -51,12 +51,15 @@ public static class InfrastructureServiceExtensions
 
         // ── Application services with infrastructure-bound implementations ──
         services.AddScoped<IPayosPaymentService, PayosPaymentService>();
+        services.AddScoped<IGooglePlayBillingService, GooglePlayBillingService>();
+        services.AddSingleton<IGooglePlayAndroidPublisherClient, GooglePlayAndroidPublisherClient>();
         services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
         services.AddScoped<IUserSubscriptionService, UserSubscriptionService>();
         services.AddScoped<IPromotionCampaignService, PromotionCampaignService>();
         services.AddScoped<IInternalWalletService, InternalWalletService>();
         services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IOrderPaymentService, OrderPaymentService>();
+        services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
         services.AddHttpClient("Momo");
 
@@ -72,6 +75,7 @@ public static class InfrastructureServiceExtensions
 
         // ── Background jobs ──────────────────────────────────────────────────
         services.AddHostedService<SubscriptionExpiryJob>();
+        services.AddHostedService<SubscriptionTierReconcileJob>();
 
         // ── IAM internal client (tier sync after activation/expiry) ─────────
         services.AddHttpClient<IIamSubscriptionClient, IamSubscriptionClient>((sp, client) =>

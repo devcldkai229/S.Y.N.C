@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Payment.Application.Clients;
 using Payment.Application.DTOs;
 using Payment.Application.Exceptions;
 using Payment.Application.Mappers;
@@ -12,10 +14,17 @@ namespace Payment.Infrastructure.Services;
 public class UserSubscriptionService : IUserSubscriptionService
 {
     private readonly PaymentDbContext _db;
+    private readonly IIamSubscriptionClient? _iamClient;
+    private readonly ILogger<UserSubscriptionService> _logger;
 
-    public UserSubscriptionService(PaymentDbContext db)
+    public UserSubscriptionService(
+        PaymentDbContext db,
+        ILogger<UserSubscriptionService> logger,
+        IIamSubscriptionClient? iamClient = null)
     {
         _db = db;
+        _logger = logger;
+        _iamClient = iamClient;
     }
 
     public async Task<IEnumerable<UserSubscriptionDto>> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
@@ -180,6 +189,47 @@ public class UserSubscriptionService : IUserSubscriptionService
         await _db.SaveChangesAsync(cancellationToken);
 
         return entity.ToDto(plan?.Name ?? "Unknown Plan");
+    }
+
+    public async Task ExpireAllActiveForUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var live = await _db.UserSubscriptions
+            .Where(s =>
+                s.UserId == userId &&
+                (s.Status == SubscriptionStatus.Active
+                 || s.Status == SubscriptionStatus.Cancelled
+                 || s.Status == SubscriptionStatus.PastDue
+                 || s.Status == SubscriptionStatus.Paused
+                 || s.Status == SubscriptionStatus.Trial))
+            .ToListAsync(cancellationToken);
+
+        foreach (var sub in live)
+        {
+            sub.Status = SubscriptionStatus.Expired;
+            sub.AutoRenew = false;
+            sub.ExpiredAt = now;
+            sub.UpdatedAt = now;
+        }
+
+        if (live.Count > 0)
+            await _db.SaveChangesAsync(cancellationToken);
+
+        if (_iamClient is not null)
+        {
+            try
+            {
+                await _iamClient.SetTierAsync(userId, "Free", cancellationToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "ExpireAllActiveForUserAsync: failed to sync Free tier to IAM for UserId={UserId}.",
+                    userId);
+            }
+        }
     }
 
     public async Task DeleteAsync(Guid id, bool softDelete = true, CancellationToken cancellationToken = default)
