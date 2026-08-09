@@ -16,7 +16,7 @@ class AiGeneratedSession {
   final String rationale;
 }
 
-/// Calls the AIAgent microservice (via the gateway) to generate / swap exercises.
+/// Calls the sync-rcm-service microservice (via the gateway) to generate / swap exercises.
 class AiWorkoutApiService {
   AiWorkoutApiService(this._dio);
 

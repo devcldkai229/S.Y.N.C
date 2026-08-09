@@ -1,7 +1,9 @@
-# S3 thay MinIO: pub-assets (serve qua CloudFront + OAC) + private-assets
-# (chỉ presigned URL). Tên bucket global-unique — code .NET mặc định
-# "sync-pub-assets"/"sync-private-assets"; nếu bị trùng, đổi var + override
-# config ObjectStorage Bucket qua env service.
+# S3 thay MinIO: dùng bucket CÓ SẴN (data source) — TF không sở hữu /
+# không destroy bucket. CloudFront + OAC + bucket policy do TF quản.
+# Dev/prod chung bucket → tách bằng Storage__KeyPrefix = "<env>/" trên ECS.
+#
+# Tên mặc định khớp app (.NET StorageBuckets / Flutter MediaUrlResolver):
+#   sync-pub-assets / sync-private-assets
 
 terraform {
   required_providers {
@@ -22,50 +24,17 @@ variable "enable_cloudfront" {
   default = true
 }
 
-resource "aws_s3_bucket" "public_assets" {
+data "aws_s3_bucket" "public_assets" {
   bucket = var.public_bucket_name
 }
 
-resource "aws_s3_bucket" "private_assets" {
+data "aws_s3_bucket" "private_assets" {
   bucket = var.private_bucket_name
 }
 
-resource "aws_s3_bucket_public_access_block" "public_assets" {
-  bucket                  = aws_s3_bucket.public_assets.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-resource "aws_s3_bucket_public_access_block" "private_assets" {
-  bucket                  = aws_s3_bucket.private_assets.id
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = true
-  restrict_public_buckets = true
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "public_assets" {
-  bucket = aws_s3_bucket.public_assets.id
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "private_assets" {
-  bucket = aws_s3_bucket.private_assets.id
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-  }
-}
-
+# CORS cho pub-assets (idempotent; không tạo/xoá bucket)
 resource "aws_s3_bucket_cors_configuration" "public_assets" {
-  bucket = aws_s3_bucket.public_assets.id
+  bucket = data.aws_s3_bucket.public_assets.id
   cors_rule {
     allowed_methods = ["GET", "HEAD"]
     allowed_origins = ["*"]
@@ -91,7 +60,7 @@ resource "aws_cloudfront_distribution" "public_assets" {
   price_class         = "PriceClass_200" # gồm Singapore/Asia
 
   origin {
-    domain_name              = aws_s3_bucket.public_assets.bucket_regional_domain_name
+    domain_name              = data.aws_s3_bucket.public_assets.bucket_regional_domain_name
     origin_id                = "s3-public-assets"
     origin_access_control_id = aws_cloudfront_origin_access_control.this[0].id
   }
@@ -122,7 +91,7 @@ data "aws_iam_policy_document" "public_assets_cf" {
   statement {
     sid       = "AllowCloudFrontOAC"
     actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.public_assets.arn}/*"]
+    resources = ["${data.aws_s3_bucket.public_assets.arn}/*"]
     principals {
       type        = "Service"
       identifiers = ["cloudfront.amazonaws.com"]
@@ -137,12 +106,12 @@ data "aws_iam_policy_document" "public_assets_cf" {
 
 resource "aws_s3_bucket_policy" "public_assets" {
   count  = var.enable_cloudfront ? 1 : 0
-  bucket = aws_s3_bucket.public_assets.id
+  bucket = data.aws_s3_bucket.public_assets.id
   policy = data.aws_iam_policy_document.public_assets_cf[0].json
 }
 
-output "public_bucket" { value = aws_s3_bucket.public_assets.bucket }
-output "private_bucket" { value = aws_s3_bucket.private_assets.bucket }
-output "public_bucket_arn" { value = aws_s3_bucket.public_assets.arn }
-output "private_bucket_arn" { value = aws_s3_bucket.private_assets.arn }
+output "public_bucket" { value = data.aws_s3_bucket.public_assets.bucket }
+output "private_bucket" { value = data.aws_s3_bucket.private_assets.bucket }
+output "public_bucket_arn" { value = data.aws_s3_bucket.public_assets.arn }
+output "private_bucket_arn" { value = data.aws_s3_bucket.private_assets.arn }
 output "cdn_domain" { value = var.enable_cloudfront ? aws_cloudfront_distribution.public_assets[0].domain_name : null }

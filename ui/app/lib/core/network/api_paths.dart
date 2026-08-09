@@ -16,6 +16,8 @@ abstract final class ApiPaths {
 
   // IAM (gateway prefix: /v1/iam → service /v1)
   static const meProfileSettings = '/v1/iam/me/profile-settings';
+  /// Soft-delete account. Prefer `/v1/iam/me` (gateway rewrite) or `/v1/me`.
+  static const meDelete = '/v1/iam/me';
   /// Prefer direct IAM route (`iam-me-route`); `/v1/iam/me/inventory` also works via gateway.
   static const meInventory = '/v1/me/inventory';
   static const meBasicProfile = '/v1/iam/me/basic-profile';
@@ -65,6 +67,7 @@ abstract final class ApiPaths {
   static const myActiveSubscription = '/v1/payment/payments/user-subscriptions/me/active';
   static const cancelMySubscription = '/v1/payment/payments/user-subscriptions/me/cancel';
   static const payosCreateLink = '/v1/payment/payments/payos/create-link';
+  static const googlePlayVerify = '/v1/payment/payments/google-play/verify';
   static String transactionByOrderCode(int orderCode) =>
       '/v1/payment/payments/transactions/by-order-code/$orderCode';
   static const paymentWalletMe = '/v1/payment/payments/wallet/me';
@@ -101,6 +104,8 @@ abstract final class ApiPaths {
   static String socialUserFollowStatus(String userId) =>
       '/v1/social/users/$userId/follow-status';
   static String socialUserFollow(String userId) => '/v1/social/users/$userId/follow';
+  static String socialUserBlock(String userId) => '/v1/social/users/$userId/block';
+  static const socialReports = '/v1/social/reports';
   static String socialUserFollowers(String userId) =>
       '/v1/social/users/$userId/followers';
   static String socialUserFollowing(String userId) =>
@@ -149,7 +154,7 @@ abstract final class ApiPaths {
   static String checkoutCartItem(String foodMenuItemId) =>
       '/v1/order/checkout/cart/items/$foodMenuItemId';
 
-  // AIAgent (gateway: /api/v1/ai/* → AIAgent service :5300)
+  // sync-rcm-service (gateway: /api/v1/ai/workout|admin → :5300)
   static const aiGenerateSessionExercises =
       '/v1/ai/workout/generate-session-exercises';
   static const aiSwapExercise = '/v1/ai/workout/swap-exercise';

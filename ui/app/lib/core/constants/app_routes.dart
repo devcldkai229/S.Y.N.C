@@ -7,6 +7,7 @@ class AppRoutes {
   static const workouts = '/workouts';
   static const social = '/social';
   static const profile = '/profile';
+  static const deleteAccount = '/profile/delete-account';
   static const notifications = '/notifications';
   static const cynChat = '/cyn';
 

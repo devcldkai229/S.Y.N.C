@@ -1,5 +1,5 @@
 """Orchestration for the two app-facing operations: generate session exercises
-and swap a single exercise. Tiered: SQL filter → embedding rank → DeepSeek LLM,
+and swap a single exercise. Tiered: SQL filter → embedding rank → OpenAI LLM,
 with a deterministic fallback when the LLM is unavailable.
 """
 from sqlalchemy import select
@@ -62,7 +62,7 @@ async def generate_session_exercises(
     if goal:
         ctx.fitness_goal = goal  # honour the goal chosen in the create flow
 
-    user_vec = encode(compose_user_need(ctx, target_muscle))
+    user_vec = await encode(compose_user_need(ctx, target_muscle))
     candidates = await rank_candidates(
         db, ctx, user_vec, limit=max(count * 2, 12), excluded=excluded
     )
@@ -135,7 +135,7 @@ async def swap_exercise(
     focus = ", ".join(current.primary_muscles or []) if current else None
 
     exclude_all = set(excluded) | {current_code}
-    user_vec = encode(compose_user_need(ctx, focus or target_region))
+    user_vec = await encode(compose_user_need(ctx, focus or target_region))
     candidates = await rank_candidates(
         db, ctx, user_vec, limit=8, excluded=exclude_all, body_region=target_region
     )

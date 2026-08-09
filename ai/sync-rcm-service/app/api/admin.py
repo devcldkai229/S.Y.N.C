@@ -19,7 +19,14 @@ async def reindex(
     db: AsyncSession = Depends(get_db),
 ) -> ApiResponse:
     count = await run_indexing(token, db)
-    return ok({"indexedCount": count, "model": settings.embedding_model}, "Reindex hoàn tất")
+    return ok(
+        {
+            "indexedCount": count,
+            "model": settings.openai_embedding_model,
+            "embeddingDim": settings.embedding_dim,
+        },
+        "Reindex hoàn tất",
+    )
 
 
 @router.get("/stats", response_model=ApiResponse)

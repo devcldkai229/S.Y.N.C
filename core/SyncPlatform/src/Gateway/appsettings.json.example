@@ -45,6 +45,13 @@
           "Path": "/api/v1/me/{**catch-all}"
         }
       },
+      "iam-me-root-route": {
+        "ClusterId": "iam-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/me"
+        }
+      },
       "iam-biometrics-route": {
         "ClusterId": "iam-cluster",
         "AuthorizationPolicy": "AuthenticatedUser",
@@ -176,6 +183,20 @@
           }
         ]
       },
+      "payment-google-play-rtdn-route": {
+        "ClusterId": "payment-cluster",
+        "Match": {
+          "Path": "/api/v1/payment/payments/google-play/rtdn"
+        },
+        "Transforms": [
+          {
+            "PathRemovePrefix": "/api/v1/payment"
+          },
+          {
+            "PathPrefix": "/api/v1"
+          }
+        ]
+      },
       "payment-route": {
         "ClusterId": "payment-cluster",
         "AuthorizationPolicy": "AuthenticatedUser",
@@ -254,6 +275,20 @@
           "Path": "/api/v1/media/{**catch-all}"
         }
       },
+      "rcm-workout-route": {
+        "ClusterId": "rcm-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/ai/workout/{**catch-all}"
+        }
+      },
+      "rcm-admin-route": {
+        "ClusterId": "rcm-cluster",
+        "AuthorizationPolicy": "AuthenticatedUser",
+        "Match": {
+          "Path": "/api/v1/ai/admin/{**catch-all}"
+        }
+      },
       "ai-route": {
         "ClusterId": "ai-cluster",
         "AuthorizationPolicy": "AuthenticatedUser",
@@ -288,6 +323,26 @@
         "Destinations": {
           "ai/primary": {
             "Address": "http://localhost:8088"
+          }
+        }
+      },
+      "rcm-cluster": {
+        "LoadBalancingPolicy": "RoundRobin",
+        "HttpRequest": {
+          "ActivityTimeout": "00:02:00"
+        },
+        "HealthCheck": {
+          "Active": {
+            "Enabled": true,
+            "Interval": "00:00:30",
+            "Timeout": "00:00:10",
+            "Policy": "ConsecutiveFailures",
+            "Path": "/health"
+          }
+        },
+        "Destinations": {
+          "rcm/primary": {
+            "Address": "http://localhost:5300"
           }
         }
       },

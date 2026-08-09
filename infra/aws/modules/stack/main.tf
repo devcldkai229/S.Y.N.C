@@ -45,8 +45,9 @@ module "ecs_cluster" {
 
 module "s3_cdn" {
   source              = "../s3-cdn"
-  public_bucket_name  = "sync-pub-assets-${var.env}"
-  private_bucket_name = "sync-private-assets-${var.env}"
+  # Shared existing buckets (data source) — không tạo sync-*-${env}
+  public_bucket_name  = "sync-pub-assets"
+  private_bucket_name = "sync-private-assets"
 }
 
 module "rds" {
@@ -108,7 +109,7 @@ locals {
       "db/pg-payment"     = local.pg_conn["sync_payment"]
       "db/pg-smartpush"   = local.pg_conn["sync_smartpush"]
       "db/pg-ai-dsn"      = "postgresql://${local.pg_user}:${local.pg_pass}@${local.pg_host}:5432/sync_ai"
-      "db/pg-aiagent-dsn" = "postgresql+asyncpg://${local.pg_user}:${local.pg_pass}@${local.pg_host}:5432/sync_ai_agent"
+      "db/pg-rcm-dsn"     = "postgresql+asyncpg://${local.pg_user}:${local.pg_pass}@${local.pg_host}:5432/sync_ai_agent"
       "mq/amqp-url"       = module.mq.amqp_url
     },
     { for db, uri in local.mongo_uri : "db/mongo-${replace(db, "sync_", "")}" => uri },

@@ -341,7 +341,7 @@ class ExerciseCatalogItem {
   }
 }
 
-/// An exercise suggested by the AIAgent service, carrying the catalog item plus
+/// An exercise suggested by sync-rcm-service, carrying the catalog item plus
 /// AI-assigned sets/reps/rest/notes. Reuses [ExerciseCatalogItem.fromJson] since
 /// the AI endpoint returns the same catalog fields.
 class AiSuggestedExercise {

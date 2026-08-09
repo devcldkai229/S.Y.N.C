@@ -1,7 +1,6 @@
-"""Step 4b — call DeepSeek (OpenAI-compatible) and parse the JSON response.
+"""Step 4b — call OpenAI and parse the JSON response.
 
-Mirrors the pattern used by the .NET Notification DeepSeekClient: same base URL,
-model, json_object response format, and ```-fence cleanup.
+Aligned with sync-agent-service: gpt-4o-mini + json_object response format.
 """
 import json
 from typing import Any
@@ -15,7 +14,7 @@ class LlmUnavailable(RuntimeError):
 
 
 def llm_enabled() -> bool:
-    return bool(settings.deepseek_api_key)
+    return bool(settings.openai_api_key)
 
 
 def _clean(content: str) -> str:
@@ -31,14 +30,14 @@ def _clean(content: str) -> str:
 
 async def complete_json(system_prompt: str, user_prompt: str, max_tokens: int = 1200) -> dict[str, Any]:
     if not llm_enabled():
-        raise LlmUnavailable("DeepSeek API key not configured")
+        raise LlmUnavailable("OpenAI API key not configured")
 
     from openai import AsyncOpenAI
 
-    client = AsyncOpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url)
+    client = AsyncOpenAI(api_key=settings.openai_api_key, base_url=settings.openai_base_url)
     try:
         resp = await client.chat.completions.create(
-            model=settings.deepseek_model,
+            model=settings.openai_model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

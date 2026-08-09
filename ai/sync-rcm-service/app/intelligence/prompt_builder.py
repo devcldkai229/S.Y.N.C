@@ -1,4 +1,4 @@
-"""Step 4a — build DeepSeek prompts for assembling / swapping exercises."""
+"""Step 4a — build OpenAI prompts for assembling / swapping exercises."""
 from app.intelligence.context_builder import UserContext
 from app.models.database import ExerciseEmbedding
 

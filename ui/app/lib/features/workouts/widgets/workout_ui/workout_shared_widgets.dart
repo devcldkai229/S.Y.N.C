@@ -377,6 +377,7 @@ class SessionListCard extends StatelessWidget {
   final int exerciseCount;
   final int setCount;
   final VoidCallback onTap;
+  /// Kept for call-site compatibility; session cards use themed icons, not pink placeholders.
   final String? thumbnailExerciseName;
 
   @override
@@ -395,7 +396,7 @@ class SessionListCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              ExerciseThumbnail(exerciseName: thumbnailExerciseName ?? title, size: 52),
+              SessionTypeIcon(label: title, size: 52),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -412,6 +413,72 @@ class SessionListCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Soft brand tile with a fitness icon inferred from the session title.
+class SessionTypeIcon extends StatelessWidget {
+  const SessionTypeIcon({super.key, required this.label, this.size = 52});
+
+  final String label;
+  final double size;
+
+  static IconData iconFor(String label) {
+    final t = label.toLowerCase();
+    if (_has(t, const ['tay', 'arm', 'bicep', 'tricep', 'vai', 'shoulder'])) {
+      return Icons.sports_gymnastics_rounded;
+    }
+    if (_has(t, const ['ngực', 'chest', 'push'])) {
+      return Icons.accessibility_new_rounded;
+    }
+    if (_has(t, const ['lưng', 'back', 'kéo', 'pull'])) {
+      return Icons.rowing_rounded;
+    }
+    if (_has(t, const ['chân', 'leg', 'đùi', 'glute', 'squat'])) {
+      return Icons.directions_run_rounded;
+    }
+    if (_has(t, const ['core', 'abs', 'bụng', 'plank'])) {
+      return Icons.self_improvement_rounded;
+    }
+    if (_has(t, const ['cardio', 'hiit', 'chạy', 'run'])) {
+      return Icons.monitor_heart_outlined;
+    }
+    if (_has(t, const ['full', 'toàn thân', 'full body'])) {
+      return Icons.accessibility_rounded;
+    }
+    // "Buổi 1", "Buổi 2", … — cycle through a small icon set by session number.
+    final numMatch = RegExp(r'(\d+)').firstMatch(t);
+    if (numMatch != null) {
+      const cycle = <IconData>[
+        Icons.fitness_center_rounded,
+        Icons.sports_gymnastics_rounded,
+        Icons.directions_run_rounded,
+        Icons.rowing_rounded,
+        Icons.self_improvement_rounded,
+        Icons.monitor_heart_outlined,
+      ];
+      final n = int.tryParse(numMatch.group(1)!) ?? 1;
+      return cycle[(n - 1).abs() % cycle.length];
+    }
+    return Icons.fitness_center_rounded;
+  }
+
+  static bool _has(String haystack, List<String> needles) =>
+      needles.any(haystack.contains);
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = iconFor(label);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: WorkoutTheme.lime.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: WorkoutTheme.primary.withValues(alpha: 0.18)),
+      ),
+      child: Icon(icon, color: WorkoutTheme.forest, size: size * 0.48),
     );
   }
 }

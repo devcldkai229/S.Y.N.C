@@ -2,7 +2,7 @@
 
 Mirrors the conventions of the .NET services (same JWT secret/issuer/audience
 from configs/appsettings.Shared.Development.json) so JWTs minted by IAM validate
-here too.
+here too. LLM + embeddings align with sync-agent-service (OpenAI).
 """
 from functools import lru_cache
 
@@ -14,13 +14,14 @@ class Settings(BaseSettings):
 
     # --- Database (pgvector) ---
     database_url: str = (
-        "postgresql+asyncpg://ai_user:ai_secure_pass@localhost:5435/sync_ai_agent"
+        "postgresql+asyncpg://postgres:12345@localhost:5434/sync_ai_agent"
     )
 
-    # --- DeepSeek LLM (OpenAI-compatible) ---
-    deepseek_api_key: str = ""
-    deepseek_base_url: str = "https://api.deepseek.com"
-    deepseek_model: str = "deepseek-chat"
+    # --- OpenAI (chat + embeddings; same provider as sync-agent-service) ---
+    openai_api_key: str = ""
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_model: str = "gpt-4o-mini"
+    openai_embedding_model: str = "text-embedding-3-small"
 
     # --- JWT (same values as appsettings.Shared.Development.json) ---
     jwt_secret_key: str = "uANeK_nCAd:N$p2_<&C5?V|#5HDX4vMfIe1)lOf^{_{"
@@ -33,9 +34,8 @@ class Settings(BaseSettings):
     iam_service_url: str = "http://localhost:5288"
     roadmap_service_url: str = "http://localhost:5118"
 
-    # --- Embedding ---
-    embedding_model: str = "paraphrase-multilingual-MiniLM-L12-v2"
-    embedding_dim: int = 384
+    # --- Embedding (OpenAI text-embedding-3-small = 1536 dims) ---
+    embedding_dim: int = 1536
     embedding_top_k: int = 12
 
     # --- Rate limiting ---

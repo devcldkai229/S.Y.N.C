@@ -2,11 +2,8 @@
 fastapi>=0.115.0,<1.0
 uvicorn[standard]>=0.34.0,<1.0
 
-# LLM (DeepSeek via OpenAI-compatible SDK)
+# OpenAI (chat gpt-4o-mini + embeddings text-embedding-3-small)
 openai>=1.60.0,<2.0
-
-# Local embedding
-sentence-transformers>=3.0.0,<4.0
 
 # Database
 sqlalchemy[asyncio]>=2.0.0,<3.0
@@ -23,4 +20,3 @@ httpx>=0.28.0,<1.0
 # Utils
 pydantic>=2.11.0,<3.0
 pydantic-settings>=2.9.0,<3.0
-numpy>=1.26.0,<3.0

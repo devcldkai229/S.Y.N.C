@@ -47,7 +47,7 @@ locals {
   # 12 repo — khớp app-cicd.yml matrix (ai-worker dùng chung image "ai")
   repositories = [
     "gateway", "iam", "roadmap", "exercise", "nutrition", "marketplace",
-    "order", "payment", "notification", "social", "ai", "aiagent",
+    "order", "payment", "notification", "social", "ai", "rcm",
   ]
 }
 

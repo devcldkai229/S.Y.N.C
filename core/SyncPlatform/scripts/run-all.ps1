@@ -8,10 +8,11 @@
 #   .\scripts\run-all.ps1 --iam
 #   .\scripts\run-all.ps1 --gateway --ai
 #   .\scripts\run-all.ps1 -SkipBuild --payment --order
+#   .\scripts\run-all.ps1 --rcm
 #
 # Flags:
 #   --iam --payment --roadmap --exercise --notification --social
-#   --nutrition --marketplace --order --gateway --ai
+#   --nutrition --marketplace --order --gateway --ai --rcm
 #   --help
 
 param(
@@ -24,6 +25,7 @@ $ErrorActionPreference = "Stop"
 $SyncRoot = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent (Split-Path -Parent $SyncRoot)
 $AiServiceDir = Join-Path $RepoRoot "ai\sync-agent-service"
+$RcmServiceDir = Join-Path $RepoRoot "ai\sync-rcm-service"
 
 $services = @(
     @{ Name = "IAM";          Key = "iam";          Dir = "src\Services\Iam\Iam.API";                     Port = 5288; Kind = "dotnet" },
@@ -36,7 +38,8 @@ $services = @(
     @{ Name = "Marketplace";  Key = "marketplace";  Dir = "src\Services\Marketplace\Marketplace.API";     Port = 5119; Kind = "dotnet" },
     @{ Name = "Order";        Key = "order";        Dir = "src\Services\Order\Order.API";                 Port = 5123; Kind = "dotnet" },
     @{ Name = "Gateway";      Key = "gateway";      Dir = "src\Gateway";                                  Port = 5057; Kind = "dotnet" },
-    @{ Name = "AI";           Key = "ai";           Dir = $null;                                          Port = 8088; Kind = "ai" }
+    @{ Name = "AI";           Key = "ai";           Dir = $null;                                          Port = 8088; Kind = "ai" },
+    @{ Name = "RCM";          Key = "rcm";          Dir = $null;                                          Port = 5300; Kind = "rcm" }
 )
 
 function Show-Help {
@@ -50,11 +53,13 @@ run-all.ps1 — start / restart Sync Platform services
   One or more services (restart only those):
     .\scripts\run-all.ps1 --iam
     .\scripts\run-all.ps1 --gateway --ai
+    .\scripts\run-all.ps1 --rcm
     .\scripts\run-all.ps1 -SkipBuild --payment --order
 
   Service flags:
     --iam  --payment  --roadmap  --exercise  --notification
-    --social  --nutrition  --marketplace  --order  --gateway  --ai
+    --social  --nutrition  --marketplace  --order  --gateway
+    --ai  --rcm
 "@
 }
 
@@ -124,6 +129,15 @@ function Stop-SelectedServices {
             Where-Object { $_.CommandLine -match 'uvicorn.*app\.api\.main:app' } |
             ForEach-Object {
                 Write-Host "Stopping PID $($_.ProcessId) (uvicorn AI)" -ForegroundColor Yellow
+                Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+            }
+    }
+
+    if (@($Selected | Where-Object { $_.Kind -eq "rcm" }).Count -gt 0) {
+        Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -match 'uvicorn.*app\.main:app' } |
+            ForEach-Object {
+                Write-Host "Stopping PID $($_.ProcessId) (uvicorn sync-rcm-service)" -ForegroundColor Yellow
                 Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
             }
     }
@@ -216,6 +230,44 @@ if (`$LASTEXITCODE -ne 0) {
     Start-Process -FilePath $LaunchShell -ArgumentList @("-NoExit", "-Command", $aiCommand)
 }
 
+function Start-RcmService {
+    param([string]$LaunchShell)
+
+    if (-not (Test-Path $RcmServiceDir)) {
+        Write-Host "Skip RCM: folder not found at $RcmServiceDir" -ForegroundColor Yellow
+        return
+    }
+
+    $rcmEnv = Join-Path $RcmServiceDir ".env"
+    if (-not (Test-Path $rcmEnv)) {
+        Write-Host "Skip RCM: copy ai/sync-rcm-service/.env.example -> .env first" -ForegroundColor Yellow
+        return
+    }
+
+    $uvicornCmd = Resolve-UvicornCommand
+    if (-not $uvicornCmd) {
+        Write-Host "Skip RCM: uvicorn / py not available." -ForegroundColor Yellow
+        return
+    }
+
+    $rcmCommand = @"
+`$Host.UI.RawUI.WindowTitle = 'Sync - sync-rcm-service (:5300)'
+Set-Location '$RcmServiceDir'
+Write-Host '>>> sync-rcm-service (workout RCM) - http://localhost:5300' -ForegroundColor Green
+Write-Host '    Health:  http://localhost:5300/health' -ForegroundColor DarkGray
+Write-Host '    Workout: POST /api/v1/ai/workout/... (via Gateway when routed)' -ForegroundColor DarkGray
+Write-Host '    Needs:   Postgres sync_ai_agent (:5434), OPENAI_API_KEY, admin reindex once' -ForegroundColor DarkGray
+$uvicornCmd app.main:app --reload --host 0.0.0.0 --port 5300
+if (`$LASTEXITCODE -ne 0) {
+    Write-Host ''
+    Write-Host 'sync-rcm-service failed. Check .env, Postgres sync_ai_agent, OPENAI_API_KEY, init_db/reindex.' -ForegroundColor Red
+}
+"@
+
+    Write-Host "Starting sync-rcm-service (uvicorn :5300)..." -ForegroundColor Cyan
+    Start-Process -FilePath $LaunchShell -ArgumentList @("-NoExit", "-Command", $rcmCommand)
+}
+
 # --- parse --service flags ---
 $flagList = @($ServiceFlags | Where-Object { $_ -and $_.Trim() -ne "" })
 if ($flagList -contains "--help" -or $flagList -contains "-h" -or $flagList -contains "-?") {
@@ -232,6 +284,7 @@ foreach ($flag in $flagList) {
     }
     $key = $Matches[1].ToLowerInvariant()
     if ($key -eq "notif") { $key = "notification" }
+    if ($key -eq "aiagent") { $key = "rcm" } # legacy alias
     $match = $services | Where-Object { $_.Key -eq $key } | Select-Object -First 1
     if (-not $match) {
         $unknown += $flag
@@ -306,6 +359,10 @@ foreach ($svc in $selected) {
         Start-AiService -LaunchShell $launchShell
         continue
     }
+    if ($svc.Kind -eq "rcm") {
+        Start-RcmService -LaunchShell $launchShell
+        continue
+    }
 
     $projectDir = (Resolve-Path (Join-Path $SyncRoot $svc.Dir)).Path
     $command = New-ServiceStartCommand -Name $svc.Name -ProjectDir $projectDir -Port $svc.Port -UseNoBuild:$useNoBuild
@@ -319,6 +376,9 @@ if ($runAll -or $selectedKeys.Contains("gateway")) {
 }
 if ($runAll -or $selectedKeys.Contains("ai")) {
     Write-Host "       AI:      http://localhost:8088/healthz" -ForegroundColor Green
+}
+if ($runAll -or $selectedKeys.Contains("rcm")) {
+    Write-Host "       RCM:     http://localhost:5300/health" -ForegroundColor Green
 }
 if (-not $runAll) {
     Write-Host "       Restarted: $selectedNames" -ForegroundColor Green

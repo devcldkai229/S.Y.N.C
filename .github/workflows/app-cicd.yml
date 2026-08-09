@@ -2,15 +2,17 @@ name: app-cicd
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CI/CD master: detect-changes → quality(Sonar+test) → build → Trivy → ECR
-#   → migration(one-off ECS task) → deploy dev(rolling) → deploy prod(approval)
+#   → deploy dev(rolling) → deploy prod(approval)
 # Auth: GitHub OIDC → AWS (không lưu access key).
+#
+# DB migration: service .NET tự Database.MigrateAsync() lúc start — không chạy
+# ECS task *-migrate (TD không tồn tại + bridge không dùng awsvpcConfiguration).
 #
 # Cần cấu hình sẵn (Settings → Secrets/Variables → Actions):
 #   secrets: AWS_OIDC_ROLE_ARN, SONAR_TOKEN (tùy chọn)
 #   vars:    AWS_REGION, ECR_REGISTRY (vd 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com),
 #            ECS_CLUSTER_DEV, ECS_CLUSTER_PROD,
-#            MIGRATE_SUBNETS (subnet-aaa,subnet-bbb), MIGRATE_SG (sg-xxx),
-#            SYNC_PUBLIC_URL_DEV, SYNC_PUBLIC_URL_PROD
+#            SYNC_PUBLIC_URL_DEV, SYNC_PUBLIC_URL_PROD, SONAR_ENABLED (optional "true")
 #   environment "production" bật Required reviewers (manual approval).
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -34,8 +36,8 @@ concurrency:
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
-  # Service có DB quan hệ (EF migrations). Còn lại dùng Mongo (không migration).
-  DB_SERVICES: "iam order payment notification"
+  # Empty: migrations chạy in-process lúc service start (xem infra/aws/README.md).
+  DB_SERVICES: ""
 
 jobs:
   # 1) Phát hiện service thay đổi → tạo ma trận build
@@ -60,6 +62,7 @@ jobs:
             notification: 'core/SyncPlatform/src/Services/Notification/**'
             social: 'core/SyncPlatform/src/Services/Social/**'
             ai: 'ai/sync-agent-service/**'
+            rcm: 'ai/sync-rcm-service/**'
 
   # 2) Quality gate: SonarCloud + test (non-blocking vì test còn placeholder)
   quality:
@@ -83,10 +86,9 @@ jobs:
           ruff check app || true
           pytest -q tests || echo "no/failed py tests (placeholder)"
       - name: SonarCloud scan
-        if: ${{ env.SONAR_ENABLED == 'true' && secrets.SONAR_TOKEN != '' }}
+        if: ${{ vars.SONAR_ENABLED == 'true' }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_ENABLED: ${{ vars.SONAR_ENABLED }}
         uses: SonarSource/sonarcloud-github-action@master
 
   # 3) Build image (chỉ service đổi) → Trivy → push ECR (chỉ push khi merge main)
@@ -116,6 +118,7 @@ jobs:
             notification)CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Notification/Notification.API/Notification.API.csproj ;;
             social)      CTX=core/SyncPlatform; DF=core/SyncPlatform/Dockerfile; PROJECT=src/Services/Social/Social.API/Social.API.csproj ;;
             ai)          CTX=ai/sync-agent-service; DF=ai/sync-agent-service/Dockerfile; PROJECT="" ;;
+            rcm)         CTX=ai/sync-rcm-service; DF=ai/sync-rcm-service/Dockerfile; PROJECT="" ;;
             *) echo "Unknown service"; exit 1 ;;
           esac
           {
@@ -157,7 +160,7 @@ jobs:
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: docker push "${{ steps.meta.outputs.image }}"
 
-  # 4) Deploy DEV (rolling) — migration trước, rồi update service, smoke
+  # 4) Deploy DEV (rolling)
   deploy-dev:
     needs: [detect, build-push]
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -168,29 +171,11 @@ jobs:
       matrix:
         service: ${{ fromJson(needs.detect.outputs.services) }}
     steps:
+      - uses: actions/checkout@v4
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-
-      - name: Run migration (chỉ service có DB) — expand, idempotent
-        run: |
-          CLUSTER=${{ vars.ECS_CLUSTER_DEV }}
-          SVC=${{ matrix.service }}
-          run_migrate() {
-            local family=$1
-            echo "Running migration task: $family"
-            TASK=$(aws ecs run-task --cluster "$CLUSTER" \
-              --task-definition "$family" --launch-type EC2 \
-              --network-configuration "awsvpcConfiguration={subnets=[${{ vars.MIGRATE_SUBNETS }}],securityGroups=[${{ vars.MIGRATE_SG }}]}" \
-              --query 'tasks[0].taskArn' --output text)
-            aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
-            CODE=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" \
-              --query 'tasks[0].containers[0].exitCode' --output text)
-            echo "Migration exit code: $CODE"; [ "$CODE" = "0" ]
-          }
-          if echo "$DB_SERVICES" | grep -qw "$SVC"; then run_migrate "sync-dev-$SVC-migrate"; fi
-          if [ "$SVC" = "ai" ]; then run_migrate "sync-dev-ai-migrate"; fi
 
       - name: Deploy service (rolling, force new image)
         run: |
@@ -227,24 +212,11 @@ jobs:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Run migration (expand, idempotent)
-        run: |
-          CLUSTER=${{ vars.ECS_CLUSTER_PROD }}
-          SVC=${{ matrix.service }}
-          run_migrate() {
-            TASK=$(aws ecs run-task --cluster "$CLUSTER" --task-definition "$1" --launch-type EC2 \
-              --network-configuration "awsvpcConfiguration={subnets=[${{ vars.MIGRATE_SUBNETS }}],securityGroups=[${{ vars.MIGRATE_SG }}]}" \
-              --query 'tasks[0].taskArn' --output text)
-            aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$TASK"
-            CODE=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$TASK" --query 'tasks[0].containers[0].exitCode' --output text)
-            [ "$CODE" = "0" ]
-          }
-          if echo "$DB_SERVICES" | grep -qw "$SVC"; then run_migrate "sync-prod-$SVC-migrate"; fi
-          if [ "$SVC" = "ai" ]; then run_migrate "sync-prod-ai-migrate"; fi
-
       - name: Deploy (gateway=blue/green CodeDeploy · còn lại=rolling)
+        env:
+          ECS_CLUSTER_PROD: ${{ vars.ECS_CLUSTER_PROD }}
         run: |
-          CLUSTER=${{ vars.ECS_CLUSTER_PROD }}
+          export CLUSTER="${{ vars.ECS_CLUSTER_PROD }}"
           IMAGE=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}
           if [ "${{ matrix.service }}" = "gateway" ]; then
             bash .github/scripts/ecs-bluegreen.sh "sync-prod-gateway" "$IMAGE"

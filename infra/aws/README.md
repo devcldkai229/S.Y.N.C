@@ -55,8 +55,20 @@ aws secretsmanager put-secret-value \
 # 6. Push image lần đầu (tag bootstrap) để service có image chạy:
 #    xem lệnh trong checklist §"Image bootstrap" — hoặc merge main để CI push tag SHA
 #    rồi pipeline tự deploy.
+#
+#    Ví dụ push bootstrap (sau shared ECR apply):
+#    for r in gateway iam ... rcm; do
+#      docker build ... -t $ECR/sync/$r:bootstrap && docker push $ECR/sync/$r:bootstrap
+#    done
 
 # 7. Prod: lặp bước 3-6 với envs/prod (có manual approval qua infra.yml).
+#
+# Nếu đã apply bản S3 CŨ (resource aws_s3_bucket sync-*-${env}): trước apply mới,
+# gỡ state để TF không destroy bucket data-source:
+#   terraform state rm 'module.stack.module.s3_cdn.aws_s3_bucket.public_assets'
+#   terraform state rm 'module.stack.module.s3_cdn.aws_s3_bucket.private_assets'
+#   (và các resource encryption/public_access_block gắn kèm nếu còn trong state)
+# Bucket có sẵn sync-pub-assets / sync-private-assets phải tồn tại trước apply.
 ```
 
 ## Secrets — quy ước
@@ -71,13 +83,25 @@ ECS inject secret qua `secrets[].valueFrom` — không plaintext trong task def/
 
 ## Ghi chú vận hành
 
+- **S3 media:** TF **không tạo** bucket — `data` source trỏ `sync-pub-assets` /
+  `sync-private-assets` có sẵn. CloudFront + OAC + policy do TF quản. Dev/prod
+  dùng chung bucket; object key prefix `Storage__KeyPrefix=<env>/` (vd. `dev/`,
+  `prod/`) inject qua ECS env. `terraform destroy` **không** xoá bucket.
+- **SNS alerts:** module observability giữ SNS → email admin (CloudWatch ALB/RDS/MQ).
+  Không liên quan Brevo (SMTP giao dịch user). Không dùng SES.
+- **Amazon MQ:** prod `ACTIVE_STANDBY_MULTI_AZ`; dev `SINGLE_INSTANCE`.
 - **CI deploy ngoài Terraform:** `ecs-deploy.sh` đăng ký task-def revision mới → TF
   `ignore_changes = [task_definition, desired_count]`; đừng "sửa image" bằng TF.
+  Sau `services-stable`, script kiểm `rolloutState` + image đang chạy == SHA vừa push.
 - **Blue/green Gateway (prod):** CodeDeploy app `sync-prod-gateway` / dg `sync-prod-gateway-dg`
-  khớp `.github/scripts/ecs-bluegreen.sh`; listener bị CodeDeploy hoán đổi TG — TF ignore.
-- **DB migration:** hiện các service .NET tự `Database.MigrateAsync()` lúc khởi động
-  (bước migration trong workflow là no-op có chủ đích). Nâng cấp lên EF bundle one-off
-  task khi cần chạy nhiều instance service có DB.
+  khớp `.github/scripts/ecs-bluegreen.sh` — **export `CLUSTER` / `ECS_CLUSTER_PROD`**
+  trước khi gọi; listener bị CodeDeploy hoán đổi TG — TF ignore.
+- **DB migration:** service .NET tự `Database.MigrateAsync()` lúc khởi động.
+  Workflow **không** chạy ECS task `*-migrate` (không có TD; bridge ≠ awsvpc).
+- **Image bootstrap:** trước `terraform apply` lần đầu tạo ECS service, push tag
+  `bootstrap` vào mọi ECR repo (`sync/<svc>:bootstrap`) hoặc để `desired_count=0`
+  đến khi CI push SHA. ECR `IMMUTABLE` — rollback bằng **SHA cũ / task-def revision**
+  trước đó (không dùng moving tag `:<env>-current`).
 - **Mongo self-host:** backup = DLM snapshot EBS hằng ngày (giữ 7). Restore = tạo volume
   từ snapshot → attach. Quản trị qua SSM Session Manager (không mở SSH).
 - **HTTPS:** có domain → tạo ACM cert (region ap-southeast-1) → điền `certificate_arn`

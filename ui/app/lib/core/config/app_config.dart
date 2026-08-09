@@ -12,9 +12,14 @@ class AppConfig {
   static const String _devLanHost = '192.168.100.118';
 
   /// Override: `flutter run --dart-define=BASE_URL=http://<your-ip>:5057/api`
+  /// Production AAB: `--dart-define=BASE_URL=https://api.YOUR_DOMAIN/api`
   static String get baseUrl {
     const fromEnv = String.fromEnvironment('BASE_URL', defaultValue: '');
     if (fromEnv.isNotEmpty) return fromEnv;
+    // Release builds must set BASE_URL; refuse silent HTTP LAN defaults.
+    if (kReleaseMode) {
+      return 'https://api.sync-lifestyle.app/api';
+    }
     if (kIsWeb) return 'http://localhost:5057/api';
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -86,6 +91,26 @@ class AppConfig {
   }
 
   static const bool isProduction = bool.fromEnvironment('dart.vm.product');
+
+  /// Public legal site (deployed with `ui/web`). Override:
+  /// `--dart-define=LEGAL_BASE_URL=https://sync-lifestyle.app`
+  static String get legalBaseUrl {
+    const fromEnv = String.fromEnvironment('LEGAL_BASE_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv.replaceAll(RegExp(r'/$'), '');
+    return 'https://sync-lifestyle.app';
+  }
+
+  static String get privacyPolicyUrl => '$legalBaseUrl/privacy';
+  static String get termsOfServiceUrl => '$legalBaseUrl/terms';
+  static String get accountDeletionUrl => '$legalBaseUrl/account-deletion';
+  static String get communityStandardsUrl => '$legalBaseUrl/community-standards';
+
+  /// On Android Play builds, digital Premium must not use in-app VietQR.
+  /// Food/order VietQR stays allowed. Full Play Billing lands in a follow-up.
+  static bool get requiresPlayBillingForPremium {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android;
+  }
 
   /// AI chat API. Mặc định qua Gateway (`/api/v1/ai/chat` → sync-agent-service :8088).
   /// Bỏ qua Gateway khi debug: `--dart-define=AI_BASE_URL=http://<pc-lan-ip>:8088`

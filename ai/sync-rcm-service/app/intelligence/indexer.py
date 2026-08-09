@@ -1,8 +1,8 @@
-"""Exercise indexing pipeline — fetch catalog → embed locally → upsert pgvector."""
+"""Exercise indexing pipeline — fetch catalog → OpenAI embed → upsert pgvector."""
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.intelligence.embedding_ranker import load_model
+from app.intelligence.embeddings import embed_batch
 from app.models.database import ExerciseEmbedding
 from app.services.exercise_client import fetch_catalog
 
@@ -25,7 +25,7 @@ async def run_indexing(token: str, db: AsyncSession) -> int:
         return 0
 
     texts = [_compose_text(ex) for ex in exercises]
-    vectors = load_model().encode(texts, normalize_embeddings=True, show_progress_bar=False)
+    vectors = await embed_batch(texts)
 
     for ex, text, vec in zip(exercises, texts, vectors):
         exercise_id = str(ex.get("id", ""))
@@ -39,7 +39,7 @@ async def run_indexing(token: str, db: AsyncSession) -> int:
             name_en=str(ex.get("nameEn", "")),
             name_vi=str(ex.get("nameVi", "")),
             content_text=text,
-            embedding=vec.tolist(),
+            embedding=vec,
             category=str(ex.get("category", "")),
             difficulty=str(ex.get("difficulty", "")),
             body_region=str(ex.get("bodyRegion", "")),

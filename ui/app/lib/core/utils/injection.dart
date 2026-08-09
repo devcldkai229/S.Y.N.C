@@ -25,6 +25,7 @@ import 'package:sync_app/features/auth/services/auth_service.dart';
 import 'package:sync_app/features/profile/services/profile_api_service.dart';
 import 'package:sync_app/features/profile/services/current_user_profile_bus.dart';
 import 'package:sync_app/features/subscription/services/subscription_api_service.dart';
+import 'package:sync_app/features/subscription/services/google_play_billing_service.dart';
 import 'package:sync_app/features/workouts/services/workout_api_service.dart';
 import 'package:sync_app/features/nutrition/data/nutrition_remote_data_source.dart';
 import 'package:sync_app/features/nutrition/services/nutrition_realtime_service.dart';
@@ -80,6 +81,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(() => ProfileApiService(getIt()));
   getIt.registerLazySingleton(CurrentUserProfileBus.new);
   getIt.registerLazySingleton(() => SubscriptionApiService(getIt()));
+  getIt.registerLazySingleton(() => GooglePlayBillingService(getIt()));
   getIt.registerLazySingleton(() => WorkoutApiService(getIt()));
   getIt.registerLazySingleton(() => AiWorkoutApiService(getIt()));
   getIt.registerLazySingleton(() => NotificationRemoteDataSource(getIt()));

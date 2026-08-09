@@ -23,6 +23,9 @@ locals {
     AWS__Region            = var.region
     Jwt__Issuer            = var.jwt_issuer
     Jwt__Audience          = var.jwt_audience
+    # Shared S3 buckets — tách env bằng key prefix (dev/… vs prod/…)
+    Storage__Bucket        = module.s3_cdn.public_bucket
+    Storage__KeyPrefix     = "${var.env}/"
   })
 
   # Gateway YARP: override destination sang Service Connect DNS
@@ -33,7 +36,7 @@ locals {
     },
     {
       "ReverseProxy__Clusters__ai-cluster__Destinations__ai/primary__Address"           = "http://ai:8088"
-      "ReverseProxy__Clusters__aiagent-cluster__Destinations__aiagent/primary__Address" = "http://aiagent:8000"
+      "ReverseProxy__Clusters__rcm-cluster__Destinations__rcm/primary__Address" = "http://rcm:8000"
     },
   )
 
@@ -224,26 +227,26 @@ locals {
       public     = false
       command    = ["python", "-m", "app.events.consumer"]
     }
-    aiagent = {
-      image_repo = "aiagent"
+    rcm = {
+      image_repo = "rcm"
       port       = 8000
-      cpu        = 384
-      memory     = 896 # sentence-transformers model in-process
+      cpu        = 256
+      memory     = 512 # OpenAI API embeddings — no local sentence-transformers
       env = {
-        JWT_ISSUER           = var.jwt_issuer
-        JWT_AUDIENCE         = var.jwt_audience
-        DEEPSEEK_BASE_URL    = "https://api.deepseek.com"
-        DEEPSEEK_MODEL       = "deepseek-chat"
-        HF_HUB_OFFLINE       = "1"
-        TRANSFORMERS_OFFLINE = "1"
-        IAM_SERVICE_URL      = "http://iam:8080"
-        EXERCISE_SERVICE_URL = "http://exercise:8080"
-        ROADMAP_SERVICE_URL  = "http://roadmap:8080"
+        JWT_ISSUER              = var.jwt_issuer
+        JWT_AUDIENCE            = var.jwt_audience
+        OPENAI_BASE_URL         = "https://api.openai.com/v1"
+        OPENAI_MODEL            = "gpt-4o-mini"
+        OPENAI_EMBEDDING_MODEL  = "text-embedding-3-small"
+        EMBEDDING_DIM           = "1536"
+        IAM_SERVICE_URL         = "http://iam:8080"
+        EXERCISE_SERVICE_URL    = "http://exercise:8080"
+        ROADMAP_SERVICE_URL     = "http://roadmap:8080"
       }
       secrets = {
-        DATABASE_URL     = local.sec["db/pg-aiagent-dsn"]
-        DEEPSEEK_API_KEY = local.sec["llm/deepseek-api-key"]
-        JWT_SECRET_KEY   = local.sec["shared/jwt-secret"]
+        DATABASE_URL   = local.sec["db/pg-rcm-dsn"]
+        OPENAI_API_KEY = local.sec["llm/openai-api-key"]
+        JWT_SECRET_KEY = local.sec["shared/jwt-secret"]
       }
       public  = false
       command = null

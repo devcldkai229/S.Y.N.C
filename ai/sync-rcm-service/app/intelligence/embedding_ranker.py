@@ -1,33 +1,19 @@
-"""Step 3 — local embedding model + pgvector cosine ranking.
+"""Step 3 — OpenAI embeddings + pgvector cosine ranking.
 
-The model is loaded once at startup (see app.main lifespan). Ranking applies the
-SQL constraints from exercise_filter and orders by cosine distance, excluding any
-codes the caller already used/rejected (so generate/swap never repeat).
+Ranking applies the SQL constraints from exercise_filter and orders by cosine
+distance, excluding any codes the caller already used/rejected.
 """
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
 from app.intelligence.context_builder import UserContext
+from app.intelligence.embeddings import embed_text
 from app.intelligence.exercise_filter import allowed_difficulties, injured_regions
 from app.models.database import ExerciseEmbedding
 
-_model = None
 
-
-def load_model():
-    """Load the SentenceTransformer once. Called from the FastAPI lifespan."""
-    global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer
-
-        _model = SentenceTransformer(settings.embedding_model)
-    return _model
-
-
-def encode(text: str) -> list[float]:
-    vec = load_model().encode([text], normalize_embeddings=True)[0]
-    return vec.tolist()
+async def encode(text: str) -> list[float]:
+    return await embed_text(text)
 
 
 def compose_user_need(ctx: UserContext, target_muscle: str | None = None) -> str:

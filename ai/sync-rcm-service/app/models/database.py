@@ -1,4 +1,4 @@
-"""SQLAlchemy async engine + ORM models for the AIAgent service.
+"""SQLAlchemy async engine + ORM models for sync-rcm-service.
 
 Tables:
 - exercise_embeddings : pre-embedded exercise catalog (pgvector)
