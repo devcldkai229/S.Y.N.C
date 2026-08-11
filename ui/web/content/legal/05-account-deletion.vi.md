@@ -1,7 +1,7 @@
 # XOÁ TÀI KHOẢN & DỮ LIỆU — SYNC
 
 **Phiên bản:** 1.0 · **Ngày hiệu lực:** {{EFFECTIVE_DATE}}
-**Đơn vị cung cấp:** {{LEGAL_ENTITY_NAME}} — {{REGISTERED_ADDRESS}}
+**Đơn vị cung cấp:** {{LEGAL_ENTITY_NAME}}
 **URL công khai (khai báo cho Google Play):** `{{WEBSITE}}/account-deletion`
 
 > Trang này công khai, **không cần cài ứng dụng và không cần đăng nhập để đọc**, theo yêu cầu của Google Play.
@@ -147,49 +147,4 @@ Thời hạn xử lý: **30 ngày** kể từ khi xác minh danh tính.
 ## 8. Liên hệ
 
 **{{LEGAL_ENTITY_NAME}}**
-{{REGISTERED_ADDRESS}}
 Yêu cầu về dữ liệu: **{{PRIVACY_EMAIL}}** · Hỗ trợ chung: **{{SUPPORT_EMAIL}}**
-
----
----
-
-# 🔧 PHỤ LỤC KỸ THUẬT — KHÔNG PUBLISH
-
-> Phần này dành cho đội phát triển. **Xoá toàn bộ phần này trước khi đưa nội dung lên web.**
-
-## A. Trạng thái triển khai hiện tại (đã kiểm chứng trong mã nguồn)
-
-| Cam kết trong tài liệu | Mã nguồn | Trạng thái |
-|---|---|---|
-| Ẩn danh PII ngay lập tức | `UserMeService.DeleteAccountAsync` — set email ẩn danh, `FullName="Deleted User"`, xoá phone/avatar/background/passwordHash/token | ✅ Đúng |
-| Thu hồi phiên | Duyệt `UserDevice`, `IsRevoked=true`, xoá `RefreshTokenHash` + expiry | ✅ Đúng |
-| Hạ gói về Free + hết hạn đăng ký | `SubscriptionTier=Free` + cascade `POST /api/internal/payment/users/{id}/expire-subscriptions` | ✅ Đúng |
-| Ẩn danh nội dung Social | `AccountAnonymizationService` — Posts, Comments, Blogs, Stories, BlogComments → `AuthorSnapshot = "Người dùng đã xoá"` | ✅ Đúng |
-| Grace period 30 ngày | `ScheduledHardDeleteAt = now.AddDays(30)` | ✅ Đúng |
-| **Xoá vĩnh viễn sau 30 ngày (§3.3)** | `AccountHardDeleteHostedService.ProcessDueAsync` **chỉ scrub lại tên/email rồi set `ScheduledHardDeleteAt = null`** — **KHÔNG xoá bất kỳ bản ghi nào** | ❌ **CHƯA TRIỂN KHAI** |
-
-## B. ⛔ Chặn phát hành — phải làm trước khi publish trang này
-
-Tài liệu này cam kết xoá vĩnh viễn dữ liệu sức khoẻ sau 30 ngày. **Hiện mã nguồn không làm việc đó.** Publish khi chưa sửa = tuyên bố sai sự thật với người dùng và với Google Play (mục *Data deletion*), rủi ro bị gỡ ứng dụng.
-
-Cần bổ sung vào `AccountHardDeleteHostedService` (hoặc một job xoá riêng, gọi cascade sang các service):
-
-1. **IAM (Postgres):** xoá `BiometricProfile`, `BiometricHistory`, `AIContextProfile`, `UserPreference`, `UserDevice`, `UserAsset`, `UserAchievement`, `GamificationProfile`, `UserLevelSnapshot`, `TargetAdjustmentLog`, `UserVoucher`; cuối cùng xoá `User` hoặc giữ lại bản ghi trơ chỉ còn `Id` nếu có ràng buộc khoá ngoại từ dữ liệu tài chính.
-2. **Roadmap (Mongo):** `PersonalizedRoadmap`, `ScheduledWorkout`, `RoadmapSession`, `WorkoutExecutionLog`, `ExerciseSetLog`, `RecoveryProfile`, `UserCustomWorkout` theo `UserId`.
-3. **Nutrition (Mongo):** `MealLog`, `DailyNutritionSummary` theo `UserId`.
-4. **Social (Mongo):** `Story`, `StoryView`, `StoryInteraction`, `Interaction`, `UserFollow`, `ChallengeParticipant`, `UserSocialSettings`; Post/Comment/Blog giữ ẩn danh (đúng như §3.1 đã công bố).
-5. **Notification:** `NotificationMessage`, `SmartPushSchedule`, `SmartPushLog` theo `UserId`.
-6. **AI service (Postgres `sync_ai`):** `DELETE FROM ai_user_memory WHERE user_id = ...`; `ai_turn_audit` → ẩn danh `user_id` hoặc xoá.
-7. **S3:** xoá prefix ảnh riêng tư của user trong `sync-private-assets`.
-8. **Payment:** **KHÔNG** xoá `Transaction`/`WalletLedger` (§4 — nghĩa vụ kế toán 10 năm); chỉ tách khỏi hồ sơ định danh.
-9. Ghi **nhật ký kiểm toán** mỗi lần xoá vĩnh viễn (userId đã băm, thời điểm, các bảng đã xử lý) để chứng minh tuân thủ khi Google hoặc cơ quan quản lý yêu cầu.
-10. Thiết kế **idempotent + retry**: cascade qua nhiều service phải chịu được lỗi mạng, không được bỏ sót âm thầm như `NotifyDeletedAsync` hiện tại (đang `best-effort`, nuốt lỗi chỉ log warning).
-
-## C. Việc khác cần làm
-
-- [ ] Trang `{{WEBSITE}}/account-deletion` phải liệt kê **đúng** bảng §3.3 và §4 (hiện `ui/web/src/app/account-deletion/page.tsx` chỉ ~48 dòng, chưa đủ chi tiết cho Play).
-- [ ] Bổ sung endpoint **xuất dữ liệu** (data portability) — Privacy Policy §9 đang cam kết.
-- [ ] Bổ sung endpoint **xoá một phần** cho các mục tại §6, hoặc chuyển sang quy trình thủ công có SLA rõ ràng.
-- [ ] Thêm job dọn `ai_turn_audit` (180 ngày), `ContentReport` (24 tháng), log server (90 ngày) — Privacy Policy §7 đang cam kết.
-- [ ] Trong app: màn xoá tài khoản phải hiển thị cảnh báo §2 (đặc biệt: **huỷ gói Google Play riêng** và **số dư ví không khôi phục được**).
-- [ ] `DELETE /api/v1/me` hiện **không yêu cầu xác nhận lại** (không nhập mật khẩu, không nhập chuỗi xác nhận). Chỉ cần access token hợp lệ là xoá được tài khoản. Cần thêm **bước xác nhận hai lớp** ở tầng UI (gõ "XOA" hoặc nhập lại mật khẩu) — Play yêu cầu hành động xoá phải là chủ ý rõ ràng, và điều này chặn được kịch bản token bị đánh cắp dùng để xoá tài khoản nạn nhân.

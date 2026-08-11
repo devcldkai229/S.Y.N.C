@@ -133,7 +133,7 @@ This limitation **does not apply** to damage caused by our wilful misconduct or 
 ## 9. Contact
 
 Questions about this document: {{SUPPORT_EMAIL}}
-{{LEGAL_ENTITY_NAME_EN}} — {{REGISTERED_ADDRESS}}
+{{LEGAL_ENTITY_NAME_EN}}
 
 ---
 

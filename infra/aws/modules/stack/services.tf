@@ -105,8 +105,8 @@ locals {
     gateway = {
       image_repo = "gateway"
       port       = 8080
-      cpu        = 256
-      memory     = 512
+      cpu        = 96
+      memory     = 448
       env        = merge(local.dotnet_common_env, local.gateway_dest_env)
       secrets    = local.dotnet_shared_secrets
       public     = true
@@ -115,7 +115,7 @@ locals {
     iam = {
       image_repo = "iam"
       port       = 8080
-      cpu        = 256
+      cpu        = 96
       memory     = 640
       env = merge(local.dotnet_common_env, {
         Db__Postgres__Name         = "sync_iam"
@@ -135,8 +135,8 @@ locals {
     roadmap = {
       image_repo = "roadmap"
       port       = 8080
-      cpu        = 256
-      memory     = 512
+      cpu        = 96
+      memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_roadmap" })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
       public     = false
@@ -145,8 +145,8 @@ locals {
     exercise = {
       image_repo = "exercise"
       port       = 8080
-      cpu        = 256
-      memory     = 512
+      cpu        = 96
+      memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_exercise" })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
       public     = false
@@ -155,8 +155,8 @@ locals {
     nutrition = {
       image_repo = "nutrition"
       port       = 8080
-      cpu        = 256
-      memory     = 512
+      cpu        = 96
+      memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_nutrition" })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
       public     = false
@@ -165,8 +165,8 @@ locals {
     marketplace = {
       image_repo = "marketplace"
       port       = 8080
-      cpu        = 256
-      memory     = 512
+      cpu        = 96
+      memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_marketplace" })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
       public     = false
@@ -175,11 +175,14 @@ locals {
     order = {
       image_repo = "order"
       port       = 8080
-      cpu        = 256
-      memory     = 512
+      cpu        = 96
+      memory     = 384
       env = merge(local.dotnet_common_env, {
-        Db__Postgres__Name       = "sync_order"
-        ConnectionStrings__Redis = "${module.redis.endpoint}:6379"
+        Db__Postgres__Name           = "sync_order"
+        ConnectionStrings__Redis     = "${module.redis.endpoint}:6379"
+        # AWS Location Place Index — reverse geocode + address search (Sync Foods)
+        AwsLocation__Region          = var.region
+        AwsLocation__PlaceIndexName  = var.aws_location_place_index_name
       })
       secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
         Ahamove__ApiKey = local.sec["delivery/ahamove-api-key"]
@@ -191,8 +194,8 @@ locals {
     payment = {
       image_repo = "payment"
       port       = 8080
-      cpu        = 256
-      memory     = 512
+      cpu        = 96
+      memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Postgres__Name = "sync_payment" })
       secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
         PayOS__ClientId    = local.sec["pay/payos-client-id"]
@@ -205,8 +208,8 @@ locals {
     notification = {
       image_repo = "notification"
       port       = 8080
-      cpu        = 256
-      memory     = 512
+      cpu        = 96
+      memory     = 384
       env = merge(local.dotnet_common_env, {
         Db__Postgres__Name = "sync_smartpush"
         Db__Mongo__Name    = "sync_notification"
@@ -220,9 +223,16 @@ locals {
     social = {
       image_repo = "social"
       port       = 8080
-      cpu        = 256
-      memory     = 512
-      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_social" })
+      cpu        = 96
+      memory     = 384
+      env = merge(local.dotnet_common_env, {
+        Db__Mongo__Name                  = "sync_social"
+        # AWS Location route calculator — community challenge "Đường đi"
+        AwsLocation__Region              = var.region
+        AwsLocation__RouteCalculatorName = var.aws_location_route_calculator_name
+        AwsLocation__DataProvider        = var.aws_location_data_provider
+        AwsLocation__PlaceIndexName      = var.aws_location_place_index_name
+      })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
       public     = false
       command    = null
@@ -230,8 +240,8 @@ locals {
     ai = {
       image_repo = "ai"
       port       = 8088
-      cpu        = 384
-      memory     = 768
+      cpu        = 192
+      memory     = 640
       env        = local.ai_env
       secrets    = local.ai_secrets
       public     = false
@@ -240,8 +250,8 @@ locals {
     ai-worker = {
       image_repo = "ai"
       port       = null # không listen — SQS consumer
-      cpu        = 256
-      memory     = 512
+      cpu        = 128
+      memory     = 384
       env        = local.ai_env
       secrets    = local.ai_secrets
       public     = false
@@ -250,8 +260,8 @@ locals {
     rcm = {
       image_repo = "rcm"
       port       = 8000
-      cpu        = 256
-      memory     = 512 # OpenAI API embeddings — no local sentence-transformers
+      cpu        = 128
+      memory     = 448 # OpenAI API embeddings — no local sentence-transformers
       env = {
         JWT_ISSUER             = var.jwt_issuer
         JWT_AUDIENCE           = var.jwt_audience
@@ -315,4 +325,10 @@ module "ecs_service" {
   # Gateway prod: CodeDeploy blue/green; còn lại rolling
   deployment_controller = each.key == "gateway" && var.enable_bluegreen ? "CODE_DEPLOY" : "ECS"
   target_group_arn      = each.value.public ? module.alb.target_group_blue_arn : null
+
+  # Place Index / Route Calculator must exist before order/social tasks use them.
+  depends_on = [
+    aws_location_place_index.main,
+    aws_location_route_calculator.main,
+  ]
 }

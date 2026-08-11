@@ -56,7 +56,8 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
 
         if (!_options.IsConfigured)
         {
-            _logger.LogDebug("AwsLocation is not configured; using Haversine fallback.");
+            _logger.LogWarning(
+                "AwsLocation is not configured (RouteCalculatorName empty); using Haversine crow-fly fallback.");
             return await new HaversineChallengeRouteCalculator().CalculateRouteAsync(
                 userLat, userLng, destinationLat, destinationLng, effectiveMode, cancellationToken);
         }
@@ -77,7 +78,7 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
         var route = await CalculateOneModeAsync(
             userLat, userLng, destinationLat, destinationLng, effectiveMode, cancellationToken);
 
-        var result = new ChallengeRouteDto();
+        var result = new ChallengeRouteDto { IsApproximate = route.IsApproximate };
         AssignMode(result, effectiveMode, route);
 
         _cache.Set(cacheKey, result, new MemoryCacheEntryOptions
@@ -119,7 +120,7 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
         {
             _logger.LogWarning(
                 ex,
-                "AWS Location {Mode} failed; using Haversine fallback.",
+                "AWS Location {Mode} failed; using Haversine crow-fly fallback (IsApproximate=true).",
                 mode);
             return HaversineFallback(mode, userLat, userLng, destinationLat, destinationLng);
         }
@@ -287,6 +288,7 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
             EstimatedMinutes = minutes,
             EstimatedArrivalAt = arrivalAt,
             Polyline = polyline,
+            IsApproximate = false,
         };
     }
 
@@ -317,6 +319,7 @@ public sealed class AwsLocationChallengeRouteCalculator : IChallengeRouteCalcula
             EstimatedArrivalAt = route.EstimatedArrivalAt,
             Polyline = points,
             OffRoadGapMeters = Math.Round(offRoadGapMeters, 1),
+            IsApproximate = route.IsApproximate,
         };
     }
 

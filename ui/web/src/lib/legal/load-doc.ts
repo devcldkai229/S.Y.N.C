@@ -13,11 +13,6 @@ export const LEGAL_DOCS = {
     titleVi: "Tuyên bố miễn trừ y tế",
     titleEn: "Health Disclaimer",
   },
-  refund: {
-    file: "04-refund-cancellation",
-    titleVi: "Chính sách hoàn tiền & huỷ",
-    titleEn: "Refund & Cancellation Policy",
-  },
   deletion: {
     file: "05-account-deletion",
     titleVi: "Xoá tài khoản & dữ liệu",

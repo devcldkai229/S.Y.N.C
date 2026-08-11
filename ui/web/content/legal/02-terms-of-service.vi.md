@@ -2,9 +2,9 @@
 
 **Phiên bản:** 1.0
 **Ngày hiệu lực:** {{EFFECTIVE_DATE}}
-**Bên cung cấp dịch vụ:** {{LEGAL_ENTITY_NAME}} — MSDN {{BUSINESS_REG_NO}} — {{REGISTERED_ADDRESS}}
+**Bên cung cấp dịch vụ:** {{LEGAL_ENTITY_NAME}}
 
-> **Đọc kỹ trước khi sử dụng.** Bằng việc tạo tài khoản hoặc sử dụng ứng dụng SYNC, bạn xác nhận đã đọc, hiểu và đồng ý bị ràng buộc bởi Điều khoản này cùng [Chính sách quyền riêng tư](/privacy), [Tuyên bố miễn trừ y tế](/health-disclaimer), [Tiêu chuẩn cộng đồng](/community-standards) và [Chính sách hoàn tiền](/refund-policy) — gọi chung là "Điều khoản".
+> **Đọc kỹ trước khi sử dụng.** Bằng việc tạo tài khoản hoặc sử dụng ứng dụng SYNC, bạn xác nhận đã đọc, hiểu và đồng ý bị ràng buộc bởi Điều khoản này cùng [Chính sách quyền riêng tư](/privacy), [Tuyên bố miễn trừ y tế](/health-disclaimer) và [Tiêu chuẩn cộng đồng](/community-standards) — gọi chung là "Điều khoản".
 > Nếu bạn không đồng ý, vui lòng không sử dụng dịch vụ.
 
 ---
@@ -29,7 +29,7 @@
 
 2.2. Người từ 16 đến dưới 18 tuổi chỉ được sử dụng khi có **sự đồng ý của cha mẹ hoặc người giám hộ hợp pháp**, đặc biệt với các tính năng phát sinh chi phí. Bằng việc sử dụng, bạn cam đoan đã có sự đồng ý đó.
 
-2.3. Chúng tôi có quyền yêu cầu xác minh độ tuổi và **khoá tài khoản không đáp ứng điều kiện**, kèm hoàn trả phần phí chưa sử dụng theo [Chính sách hoàn tiền](/refund-policy).
+2.3. Chúng tôi có quyền yêu cầu xác minh độ tuổi và **khoá tài khoản không đáp ứng điều kiện**, kèm hoàn trả phần phí chưa sử dụng theo mục 8 (Gói trả phí) của Điều khoản này.
 
 2.4. Bạn không được sử dụng Dịch vụ nếu đang bị chúng tôi cấm, hoặc nếu pháp luật nơi bạn cư trú cấm.
 
@@ -120,7 +120,7 @@ Trừ trường hợp vi phạm nghiêm trọng hoặc buộc phải hành độ
 
 8.4. **Tự động gia hạn.** Gói tự động gia hạn vào cuối mỗi kỳ trừ khi bạn huỷ trước. Giá và chu kỳ hiển thị rõ trước khi bạn xác nhận thanh toán.
 
-8.5. **Huỷ & hoàn tiền:** xem [Chính sách hoàn tiền & huỷ](/refund-policy) — là một phần không tách rời của Điều khoản này.
+8.5. **Huỷ & hoàn tiền:** bạn huỷ gói theo kênh đã mua (Google Play hoặc web). Gói đã thanh toán giữ quyền lợi đến hết kỳ đã trả, trừ lỗi kỹ thuật từ phía chúng tôi (khi đó chúng tôi hỗ trợ khôi phục quyền lợi hoặc gia hạn tương ứng).
 
 8.6. **Thay đổi giá.** Chúng tôi thông báo **ít nhất 30 ngày** trước khi giá mới áp dụng cho kỳ gia hạn tiếp theo. Bạn có quyền huỷ trước ngày áp dụng.
 
@@ -136,7 +136,7 @@ Trừ trường hợp vi phạm nghiêm trọng hoặc buộc phải hành độ
 
 9.3. **Dị ứng & thành phần.** Thông tin dinh dưỡng và thành phần hiển thị trong Dịch vụ do Đối tác hoặc cơ sở dữ liệu tham chiếu cung cấp và **có thể sai lệch**. **Nếu bạn có dị ứng thực phẩm, bạn phải tự xác nhận trực tiếp với quán trước khi ăn.** Dị ứng nặng có thể đe doạ tính mạng. SYNC không bảo đảm tuyệt đối về thành phần món ăn.
 
-9.4. **Đặt & huỷ đơn.** Đơn hàng chỉ được xác lập khi Đối tác xác nhận. Quyền huỷ và hoàn tiền theo [Chính sách hoàn tiền](/refund-policy) §3.
+9.4. **Đặt & huỷ đơn.** Đơn hàng chỉ được xác lập khi Đối tác xác nhận. Quyền huỷ đơn phụ thuộc đối tác; khi đơn chưa được làm hoặc do lỗi hệ thống, bạn liên hệ {{SUPPORT_EMAIL}} để được hỗ trợ.
 
 9.5. **Giao hàng.** Thời gian giao là ước tính, không phải cam kết. Bạn có trách nhiệm cung cấp địa chỉ, số điện thoại chính xác và có mặt để nhận hàng.
 
@@ -232,6 +232,5 @@ Vi phạm có thể dẫn tới gỡ nội dung, hạn chế tính năng, khoá 
 ## 16. Liên hệ
 
 **{{LEGAL_ENTITY_NAME}}**
-{{REGISTERED_ADDRESS}}
 Hỗ trợ: {{SUPPORT_EMAIL}} · Quyền riêng tư: {{PRIVACY_EMAIL}} · Báo cáo vi phạm: {{ABUSE_EMAIL}}
 Website: {{WEBSITE}}

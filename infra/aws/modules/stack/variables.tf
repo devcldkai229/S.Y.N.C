@@ -118,3 +118,35 @@ variable "image_tag" {
   type        = string
   default     = "bootstrap"
 }
+
+# AWS Location Service (challenge routing + Sync Foods reverse geocode)
+variable "aws_location_place_index_name" {
+  description = "AWS Location Place Index resource name"
+  type        = string
+  default     = "sync-place-index"
+}
+variable "aws_location_route_calculator_name" {
+  description = "AWS Location Route Calculator resource name"
+  type        = string
+  default     = "sync-route-calculator"
+}
+variable "aws_location_data_provider" {
+  description = "Route calculator data source label for Social (Grab|Esri|Here) — match calculator"
+  type        = string
+  default     = "Grab"
+}
+variable "create_aws_location_resources" {
+  description = "Create Place Index + Route Calculator in this stack (false if managed outside TF)"
+  type        = bool
+  default     = true
+}
+variable "aws_location_place_data_source" {
+  description = "Place Index provider: Grab | Here | Esri"
+  type        = string
+  default     = "Grab"
+}
+variable "aws_location_route_data_source" {
+  description = "Route Calculator provider: Grab | Here | Esri (Grab for Motorbike in SE Asia)"
+  type        = string
+  default     = "Grab"
+}

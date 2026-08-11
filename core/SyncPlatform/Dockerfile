@@ -19,11 +19,17 @@ RUN set -eux; ASSEMBLY="$(basename "$PROJECT" .csproj)"; \
     cp "/app/$ASSEMBLY.runtimeconfig.json" /app/app.runtimeconfig.json; \
     cp "/app/$ASSEMBLY.deps.json" /app/app.deps.json
 
+# Full noble image has /usr/share/zoneinfo (IANA). Chiseled final stage does not;
+# copy zoneinfo so TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh") works.
+FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble AS tzdata
+
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble-chiseled AS runtime
 ENV ASPNETCORE_URLS=http://+:8080 \
     DOTNET_gcServer=1 \
-    DOTNET_EnableDiagnostics=0
+    DOTNET_EnableDiagnostics=0 \
+    TZ=Asia/Ho_Chi_Minh
 WORKDIR /app
+COPY --from=tzdata /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=build /app .
 USER $APP_UID
 EXPOSE 8080

@@ -7,17 +7,31 @@ class ChallengeRoute {
     required this.car,
     required this.motorbike,
     required this.walking,
+    this.isApproximate = false,
   });
 
   final TravelModeRouteInfo car;
   final TravelModeRouteInfo motorbike;
   final TravelModeRouteInfo walking;
 
+  /// True when Social used Haversine crow-fly (AWS Location unavailable).
+  final bool isApproximate;
+
   factory ChallengeRoute.fromJson(Map<String, dynamic> json) {
+    final car = TravelModeRouteInfo.fromJson(json['car'] as Map<String, dynamic>? ?? const {});
+    final motorbike =
+        TravelModeRouteInfo.fromJson(json['motorbike'] as Map<String, dynamic>? ?? const {});
+    final walking =
+        TravelModeRouteInfo.fromJson(json['walking'] as Map<String, dynamic>? ?? const {});
+    final topLevelApprox = json['isApproximate'] == true;
     return ChallengeRoute(
-      car: TravelModeRouteInfo.fromJson(json['car'] as Map<String, dynamic>? ?? const {}),
-      motorbike: TravelModeRouteInfo.fromJson(json['motorbike'] as Map<String, dynamic>? ?? const {}),
-      walking: TravelModeRouteInfo.fromJson(json['walking'] as Map<String, dynamic>? ?? const {}),
+      car: car,
+      motorbike: motorbike,
+      walking: walking,
+      isApproximate: topLevelApprox ||
+          car.isApproximate ||
+          motorbike.isApproximate ||
+          walking.isApproximate,
     );
   }
 
@@ -35,6 +49,7 @@ class TravelModeRouteInfo {
     required this.polyline,
     this.estimatedArrivalAt,
     this.offRoadGapMeters = 0,
+    this.isApproximate = false,
   });
 
   final double distanceKm;
@@ -44,6 +59,8 @@ class TravelModeRouteInfo {
 
   /// Meters from road-snapped route end to the challenge GPS pin.
   final double offRoadGapMeters;
+
+  final bool isApproximate;
 
   factory TravelModeRouteInfo.fromJson(Map<String, dynamic> json) {
     final rawPolyline = json['polyline'];
@@ -72,6 +89,7 @@ class TravelModeRouteInfo {
       polyline: points,
       estimatedArrivalAt: arrivalAt,
       offRoadGapMeters: (json['offRoadGapMeters'] as num?)?.toDouble() ?? 0,
+      isApproximate: json['isApproximate'] == true,
     );
   }
 

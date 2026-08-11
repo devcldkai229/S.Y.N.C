@@ -100,10 +100,29 @@ module "stack" {
   region              = var.region
   ecr_repository_urls = data.terraform_remote_state.shared.outputs.ecr_repository_urls
 
-  # Capacity: spot must fit ~10 non-critical tasks (cpu/mem). t4g.medium ≈ 2 vCPU/4 GiB → need 2 nodes.
-  instance_type = "t4g.medium"
-  ondemand      = { min = 1, max = 4, desired = 2 }
-  spot          = { min = 2, max = 4, desired = 2 }
+  # Capacity: 1 node mỗi nhóm (~20 người dùng). t4g.medium ≈ 2 vCPU / 4 GiB, ECS dùng được ~3.800 MB.
+  #   on-demand: gateway 448 + iam 640 + payment 384 + ai 640 + rcm 448 = 2.560 MB (67%)
+  #   spot     : 7 service .NET × 384 + ai-worker 384      = 3.072 MB (81%)
+  # max = 2 là van an toàn để rolling deploy có chỗ khởi động task mới; desired vẫn đứng ở 1.
+  instance_type = "t4g.small"
+  ondemand      = { min = 1, max = 2, desired = 1 }
+  spot          = { min = 1, max = 2, desired = 1 }
+
+  # ai + rcm ghim vào on-demand: AI chat là tính năng lõi, không để spot bị thu hồi làm chết.
+  critical_services = ["gateway", "iam", "payment", "ai", "rcm"]
+
+  # AWS Location: resources created OUTSIDE Terraform (console / prior ops).
+  # Names must match live Place Index + Route Calculator in ap-southeast-1:
+  #   sync-place-index, sync-route-calculator, data provider Grab.
+  # create_aws_location_resources=false → TF only injects AwsLocation__* env on
+  # order/social task defs + IAM geo:* on task role (iam-tasks). Do NOT flip to
+  # true or apply will try to re-create and fail on name collision.
+  create_aws_location_resources        = false
+  aws_location_place_index_name        = "sync-place-index"
+  aws_location_route_calculator_name   = "sync-route-calculator"
+  aws_location_place_data_source       = "Grab"
+  aws_location_route_data_source       = "Grab"
+  aws_location_data_provider           = "Grab"
 
   # Cắt chi phí: db.t4g.micro + Single-AZ (giữ deletion_protection).
   # ⚠️ 1 GB RAM cho nhiều DB + pgvector, không auto-failover — theo dõi CPU/RAM.
@@ -137,7 +156,7 @@ module "stack" {
   jwt_issuer   = "sync-lifestyle-iam"
   jwt_audience = "sync-lifestyle-clients"
 
-  desired_count_critical       = 2
+  desired_count_critical       = 1
   log_retention_days           = 30
   secrets_recovery_window_days = 7
   alert_email                  = var.alert_email

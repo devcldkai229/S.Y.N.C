@@ -10,10 +10,14 @@ name: app-cicd
 # Cần cấu hình sẵn (Settings → Secrets/Variables → Actions):
 #   secrets: AWS_OIDC_ROLE_ARN
 #   vars:    AWS_REGION (mặc định ap-southeast-1), ECR_REGISTRY,
-#            ECS_CLUSTER_DEV, ECS_CLUSTER_PROD,
+#            ECS_CLUSTER_PROD (bắt buộc để deploy ECS prod),
+#            ECS_CLUSTER_DEV (optional — bỏ trống = skip deploy-dev, prod vẫn chạy),
 #            SYNC_PUBLIC_URL_DEV, SYNC_PUBLIC_URL_PROD,
 #            WEB_BUCKET_DEV/PROD, WEB_DISTRIBUTION_ID_DEV/PROD (sau terraform web),
 #            GATEWAY_BLUEGREEN (để trống/false — khớp prod TF enable_bluegreen=false)
+#
+# Parked prod (ASG max/desired=0 + service desiredCount=0): push only updates TD after CI
+# fix; tasks still need capacity. Unpark ASG (min/desired/max ≥1) before relying on smoke.
 #   environment "production" bật Required reviewers (manual approval).
 #   (SonarCloud/SonarQube đã tắt — không dùng SONAR_TOKEN / SONAR_ENABLED.)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -220,10 +224,13 @@ jobs:
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: docker push "${{ steps.meta.outputs.image }}"
 
+  # Dev ECS is optional. Prod-only setups MUST NOT hard-fail here — that previously
+  # blocked deploy-prod entirely (Missing ECS_CLUSTER_DEV → all matrix red → prod skipped).
   deploy-dev:
     needs: [detect, build-push]
     if: |
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      vars.ECS_CLUSTER_DEV != '' &&
       needs.detect.outputs.services != '[]' && needs.detect.outputs.services != '' &&
       needs.build-push.result == 'success'
     runs-on: ubuntu-latest
@@ -243,9 +250,6 @@ jobs:
         run: |
           set -euo pipefail
           CLUSTER="${{ vars.ECS_CLUSTER_DEV }}"
-          if [ -z "$CLUSTER" ]; then
-            echo "::error::Missing var ECS_CLUSTER_DEV"; exit 1
-          fi
           IMAGE=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}
           bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-dev-${{ matrix.service }}" "$IMAGE"
           if [ "${{ matrix.service }}" = "ai" ]; then
@@ -259,13 +263,17 @@ jobs:
             curl -fsS "$URL/health" || curl -fsS "$URL/healthz" || (echo "smoke failed" && exit 1)
           fi
 
+  # Prod deploy is independent of dev. When deploy-dev is skipped (no ECS_CLUSTER_DEV),
+  # always() + skipped still allow prod. When deploy-dev fails, do not promote.
   deploy-prod:
-    needs: [detect, deploy-dev]
+    needs: [detect, build-push, deploy-dev]
     if: |
+      always() &&
       github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       vars.ECS_CLUSTER_PROD != '' &&
       needs.detect.outputs.services != '[]' && needs.detect.outputs.services != '' &&
-      needs.deploy-dev.result == 'success'
+      needs.build-push.result == 'success' &&
+      (needs.deploy-dev.result == 'success' || needs.deploy-dev.result == 'skipped')
     runs-on: ubuntu-latest
     environment: production
     strategy:
@@ -283,6 +291,8 @@ jobs:
       - name: Deploy (rolling · gateway blue/green chỉ khi GATEWAY_BLUEGREEN=true)
         env:
           ECS_CLUSTER_PROD: ${{ vars.ECS_CLUSTER_PROD }}
+          # With parked fleet (desired=0), restore 1 task so new image actually starts.
+          ECS_MIN_DESIRED: "1"
         run: |
           set -euo pipefail
           export CLUSTER="${{ vars.ECS_CLUSTER_PROD }}"

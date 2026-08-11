@@ -45,6 +45,7 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
   LatLng? _userPoint;
   LatLng? _calloutPoint;
   String? _calloutImageId;
+  bool _routeIsApproximate = false;
 
   CommunityChallenge? _challenge;
   bool _loadingChallenge = true;
@@ -83,6 +84,7 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
       _routeInfo = null;
       _calloutPoint = null;
       _calloutImageId = null;
+      _routeIsApproximate = false;
     });
 
     try {
@@ -120,6 +122,7 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
         _walkingConnector = connector;
         _calloutPoint = polylineMidpoint(points);
         _calloutImageId = calloutId;
+        _routeIsApproximate = route.isApproximate || modeRoute.isApproximate;
         _loadingRoute = false;
       });
 
@@ -336,6 +339,34 @@ class _RouteMapScreenState extends State<RouteMapScreen> {
             ),
           if (!_loadingRoute &&
               _routeError == null &&
+              _routeIsApproximate)
+            Positioned(
+              top: 16,
+              left: 16,
+              right: 16,
+              child: Material(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline_rounded, size: 18, color: Colors.amber.shade900),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Đường đi gần đúng (chưa theo làn đường). Thử lại sau khi định tuyến sẵn sàng.',
+                          style: TextStyle(fontSize: 13, color: Colors.amber.shade900),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          if (!_loadingRoute &&
+              _routeError == null &&
+              !_routeIsApproximate &&
               _walkingConnector.isNotEmpty)
             Positioned(
               top: 16,

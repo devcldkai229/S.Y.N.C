@@ -136,7 +136,6 @@ Khi phát hiện nội dung có dấu hiệu người dùng đang gặp khủng 
 ## 5. Minh bạch
 
 Chúng tôi công bố báo cáo minh bạch **6 tháng/lần** tại `{{WEBSITE}}/transparency`, gồm: số lượng báo cáo theo loại, tỷ lệ xử lý đúng SLA, số nội dung bị gỡ, số tài khoản bị hạn chế/khoá, số khiếu nại và tỷ lệ được lật lại quyết định.
-🔧 *Chỉ giữ cam kết này khi đội ngũ thực sự có khả năng phát hành báo cáo — nếu không, hãy xoá §5 trước khi publish.*
 
 ---
 
@@ -171,29 +170,4 @@ Bạn vẫn giữ quyền khiếu nại tới cơ quan nhà nước có thẩm q
 | Khiếu nại quyết định kiểm duyệt | **{{SUPPORT_EMAIL}}** |
 | Khiếu nại bản quyền | **{{ABUSE_EMAIL}}** |
 
-**{{LEGAL_ENTITY_NAME}}** — {{REGISTERED_ADDRESS}}
-
----
----
-
-# 🔧 PHỤ LỤC KỸ THUẬT — KHÔNG PUBLISH
-
-> Xoá phần này trước khi đưa lên web.
-
-## A. Hiện trạng mã nguồn
-
-| Cam kết | Mã nguồn | Trạng thái |
-|---|---|---|
-| Báo cáo nội dung | `ContentReport` (Social.Domain) — có `ReporterId`, `TargetId`, `TargetType`, `Reason`, `Details`, `Status` | ✅ Có model |
-| Trạng thái xử lý | `Status` mặc định `"Pending"` — **kiểu string tự do, chưa có enum** | ⚠️ Nên đổi thành enum `Pending/Reviewing/Resolved/Rejected` để báo cáo SLA được |
-| Màn admin duyệt báo cáo | `ui/web/src/app/admin/content-reports/page.tsx` | ✅ Có trang |
-| Chặn người dùng 2 chiều | có cờ chặn ở tầng model | ⚠️ Cần xác minh đã nối đủ UI + lọc feed/story/comment |
-
-## B. Cần bổ sung trước khi publish §4
-
-- [ ] Thêm trường **mức độ ưu tiên (P0–P3)** vào `ContentReport` để phân loại và đo SLA — hiện chưa có, không thể chứng minh tuân thủ bảng §4.1.
-- [ ] Thêm mốc thời gian: `ReviewedAt`, `ResolvedAt`, `ReviewerId`, `Action`, `AppealStatus`.
-- [ ] Cơ chế **ẩn tạm thời tự động** cho P0/P1 khi tiếp nhận báo cáo (§4.2 bước 2).
-- [ ] Bảng chế tài §4.3 cần có **bộ đếm vi phạm theo user** + trạng thái hạn chế đăng bài có thời hạn (hiện `UserStatus` chỉ có `Suspended`, không có "hạn chế đăng bài N ngày").
-- [ ] Nếu chưa đủ nhân sự trực để đảm bảo SLA **P0 ≤ 1 giờ, kể cả ngày lễ**, phải **nới thời hạn trong tài liệu cho đúng thực tế** — cam kết SLA không thực hiện được sẽ thành bằng chứng bất lợi khi có sự cố.
-- [ ] §5 (báo cáo minh bạch 6 tháng/lần): giữ hay xoá tuỳ khả năng thực hiện.
+**{{LEGAL_ENTITY_NAME}}**

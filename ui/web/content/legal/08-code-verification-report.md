@@ -111,7 +111,7 @@ Nếu người dùng nạp được mà không rút được, **phải nói rõ 
 | `ui/web/src/app/account-deletion/page.tsx` | 48 |
 | `ui/web/src/app/community-standards/page.tsx` | 39 |
 
-Cần thay bằng nội dung đầy đủ trong Legal Pack, và **tạo thêm** `/health-disclaimer`, `/refund-policy`, `/contact`, cùng bản EN (`/en/...`).
+Cần thay bằng nội dung đầy đủ trong Legal Pack, và **tạo thêm** `/health-disclaimer`, `/terms`, `/contact`, cùng bản EN (`/en/...`).
 
 ### 2.10. 🟡 TRUNG BÌNH — Email gửi từ Gmail cá nhân
 

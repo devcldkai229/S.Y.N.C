@@ -16,6 +16,8 @@ x-aws-vol: &aws-vol
 x-dotnet-env: &dotnet-env
   ASPNETCORE_URLS: http://+:8080
   ASPNETCORE_ENVIRONMENT: Docker
+  TZ: Asia/Ho_Chi_Minh
+  HOME: /home/app
   Jwt__Issuer: ${JWT_ISSUER:-sync-lifestyle-iam-dev}
   Jwt__Audience: ${JWT_AUDIENCE:-sync-lifestyle-clients-dev}
   Jwt__SecretKey: ${JWT_SIGNING_KEY:?Set JWT_SIGNING_KEY in .env (copy .env.example)}
@@ -26,6 +28,8 @@ x-dotnet-env: &dotnet-env
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
   AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
   AWS_PROFILE: ${AWS_PROFILE:-default}
+  AWS_SHARED_CREDENTIALS_FILE: /home/app/.aws/credentials
+  AWS_CONFIG_FILE: /home/app/.aws/config
   Storage__Bucket: ${STORAGE_BUCKET:-sync-private-assets}
   Storage__KeyPrefix: ${STORAGE_KEY_PREFIX:-docker/}
   Storage__PublicBaseUrl: ${PUBLIC_MEDIA_BASE_URL:-http://localhost:5057/api/v1/media}
@@ -280,6 +284,15 @@ services:
       ConnectionStrings__SocialDatabase: mongodb://sync-mongodb:27017
       IamService__BaseUrl: http://iam:8080
       NotificationService__BaseUrl: http://notification:8080
+      # Challenge route — same resource names as prod (needs AWS creds)
+      AwsLocation__Region: ${AWS_REGION:-ap-southeast-1}
+      AwsLocation__RouteCalculatorName: ${AWS_LOCATION_ROUTE_CALCULATOR:-sync-route-calculator}
+      AwsLocation__DataProvider: ${AWS_LOCATION_DATA_PROVIDER:-Grab}
+      AwsLocation__PlaceIndexName: ${AWS_LOCATION_PLACE_INDEX:-sync-place-index}
+      AwsLocation__Profile: ${AWS_PROFILE:-default}
+      AwsLocation__AccessKeyId: ${AWS_ACCESS_KEY_ID:-}
+      AwsLocation__SecretAccessKey: ${AWS_SECRET_ACCESS_KEY:-}
+      AwsLocation__MapName: ${AWS_MAP_NAME:-sync-map}
     volumes: *aws-vol
     networks: [sync-network]
     restart: unless-stopped
@@ -349,6 +362,12 @@ services:
       Ahamove__ApiKey: ${AHAMOVE_API_KEY:-}
       Ahamove__Mobile: ${AHAMOVE_MOBILE:-}
       Ahamove__UseSandboxSimulation: ${AHAMOVE_USE_SANDBOX:-true}
+      # Sync Foods reverse geocode (AWS Location Place Index + mounted credentials)
+      AwsLocation__Region: ${AWS_REGION:-ap-southeast-1}
+      AwsLocation__PlaceIndexName: ${AWS_LOCATION_PLACE_INDEX:-sync-place-index}
+      AwsLocation__Profile: ${AWS_PROFILE:-default}
+      AwsLocation__AccessKeyId: ${AWS_ACCESS_KEY_ID:-}
+      AwsLocation__SecretAccessKey: ${AWS_SECRET_ACCESS_KEY:-}
     volumes: *aws-vol
     networks: [sync-network]
     restart: unless-stopped
@@ -491,9 +510,10 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5057}
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        # Leave entity/address empty so ui/web placeholders.ts UTF-8 defaults apply at build time.
         NEXT_PUBLIC_LEGAL_WEBSITE: ${NEXT_PUBLIC_LEGAL_WEBSITE:-https://synctis.in}
-        NEXT_PUBLIC_LEGAL_ENTITY_NAME: ${NEXT_PUBLIC_LEGAL_ENTITY_NAME:-SYNC}
-        NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN: ${NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN:-SYNC}
+        NEXT_PUBLIC_LEGAL_ENTITY_NAME: ${NEXT_PUBLIC_LEGAL_ENTITY_NAME:-}
+        NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN: ${NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN:-}
         NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL: ${NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL:-}
         NEXT_PUBLIC_LEGAL_SUPPORT_PHONE: ${NEXT_PUBLIC_LEGAL_SUPPORT_PHONE:-}
         NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS: ${NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS:-}
@@ -513,6 +533,10 @@ services:
       dockerfile: Dockerfile.web
       args:
         BASE_URL: ${FLUTTER_BASE_URL:-http://localhost:5057/api}
+        AWS_MAP_API_KEY: ${AWS_MAP_API_KEY:-}
+        AWS_MAP_REGION: ${AWS_MAP_REGION:-ap-southeast-1}
+        AWS_MAP_NAME: ${AWS_MAP_NAME:-sync-map}
+        AWS_MAP_STYLE: ${AWS_MAP_STYLE:-Hybrid}
     container_name: sync-mobile-web
     ports:
       - "${MOBILE_WEB_HOST_PORT:-3002}:80"

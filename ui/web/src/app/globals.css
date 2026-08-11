@@ -184,3 +184,223 @@ html {
     @apply font-sans;
   }
 }
+
+/* ── Legal center ─────────────────────────────────────────────────────────── */
+.legal-site {
+  background:
+    linear-gradient(180deg, #f7faf8 0%, #ffffff 42%, #fafafa 100%);
+}
+
+.legal-site-mesh {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(26 131 68 / 0.07) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+@keyframes legal-glow-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(18px, -12px) scale(1.05);
+  }
+}
+
+.legal-site-glow {
+  animation: legal-glow-drift 16s ease-in-out infinite;
+}
+
+.legal-site-glow-alt {
+  animation: legal-glow-drift 20s ease-in-out infinite reverse;
+}
+
+/* Document body — not a chat dump */
+.legal-doc {
+  color: #292524;
+  font-size: 1rem;
+  line-height: 1.75;
+}
+
+.legal-doc > :first-child {
+  margin-top: 0;
+}
+
+.legal-doc h2 {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1c1917;
+  margin: 2.25rem 0 0.85rem;
+  padding-top: 0.5rem;
+  scroll-margin-top: 7rem;
+  border-top: 1px solid #f5f5f4;
+}
+
+.legal-doc h2:first-child {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.legal-doc h3 {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: #292524;
+  margin: 1.6rem 0 0.65rem;
+  scroll-margin-top: 7rem;
+}
+
+.legal-doc h4 {
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: #44403c;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.legal-doc p {
+  margin: 0.75rem 0;
+  color: #44403c;
+}
+
+.legal-doc strong {
+  color: #1c1917;
+  font-weight: 650;
+}
+
+.legal-doc a {
+  color: #1a8344;
+  font-weight: 550;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgb(26 131 68 / 0.35);
+}
+
+.legal-doc a:hover {
+  color: #146634;
+  text-decoration-color: #146634;
+}
+
+.legal-doc ul,
+.legal-doc ol {
+  margin: 0.75rem 0 0.75rem 1.15rem;
+  padding: 0;
+}
+
+.legal-doc li {
+  margin: 0.35rem 0;
+  padding-left: 0.25rem;
+  color: #44403c;
+}
+
+.legal-doc ul {
+  list-style: disc;
+}
+
+.legal-doc ol {
+  list-style: decimal;
+}
+
+.legal-doc li::marker {
+  color: #1a8344;
+}
+
+.legal-doc hr {
+  border: 0;
+  border-top: 1px solid #e7e5e4;
+  margin: 1.75rem 0;
+}
+
+.legal-doc blockquote {
+  margin: 1.25rem 0;
+  padding: 0.9rem 1.1rem;
+  border-left: 3px solid #1a8344;
+  border-radius: 0 0.85rem 0.85rem 0;
+  background: linear-gradient(90deg, #f0faf4 0%, #fafafa 100%);
+  color: #3f3f46;
+  font-size: 0.95rem;
+}
+
+.legal-doc blockquote p {
+  margin: 0.35rem 0;
+  color: inherit;
+}
+
+.legal-doc code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  border-radius: 0.35rem;
+  padding: 0.1rem 0.35rem;
+  color: #292524;
+}
+
+.legal-doc pre {
+  margin: 1rem 0;
+  overflow-x: auto;
+  border-radius: 0.85rem;
+  border: 1px solid #e7e5e4;
+  background: #1c1917;
+  color: #fafaf9;
+  padding: 1rem 1.15rem;
+  font-size: 0.85rem;
+}
+
+.legal-doc pre code {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+}
+
+.legal-doc table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.15rem 0 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border: 1px solid #e7e5e4;
+  border-radius: 0.85rem;
+  overflow: hidden;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.legal-doc thead {
+  background: #f0faf4;
+}
+
+.legal-doc th {
+  text-align: left;
+  font-weight: 650;
+  color: #14532d;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid #d9f2e4;
+  white-space: nowrap;
+}
+
+.legal-doc td {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid #f5f5f4;
+  color: #44403c;
+  vertical-align: top;
+}
+
+.legal-doc tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.legal-doc tbody tr:nth-child(even) {
+  background: #fafaf9;
+}
+
+.legal-doc img {
+  max-width: 100%;
+  border-radius: 0.75rem;
+}

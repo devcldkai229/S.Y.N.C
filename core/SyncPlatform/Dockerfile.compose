@@ -27,13 +27,14 @@ RUN set -eux; ASSEMBLY="$(basename "$PROJECT" .csproj)"; \
 
 FROM mcr.microsoft.com/dotnet/aspnet:${DOTNET_VERSION}-noble AS runtime
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl tzdata \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /home/app/.aws \
     && chown -R app:app /home/app
 ENV ASPNETCORE_URLS=http://+:8080 \
     HOME=/home/app \
-    DOTNET_gcServer=1
+    DOTNET_gcServer=1 \
+    TZ=Asia/Ho_Chi_Minh
 WORKDIR /app
 COPY --from=build /app .
 USER app

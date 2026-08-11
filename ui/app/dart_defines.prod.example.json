@@ -1,10 +1,12 @@
 {
-  "_readme": "Production dart-defines for release builds. Copy secrets into dart_defines.prod.json (gitignored) or pass via CI.",
+  "_readme": "Production dart-defines. Copy to dart_defines.prod.json (gitignored). GOOGLE_CLIENT_ID must be the WEB OAuth client (never Android) — used by Flutter web/GIS and as serverClientId audience on mobile.",
   "BASE_URL": "https://api.synctis.in/api",
   "NOTIFICATION_HUB_URL": "https://api.synctis.in/hubs/notifications",
   "NUTRITION_HUB_URL": "https://api.synctis.in/hubs/nutrition",
   "ROADMAP_HUB_URL": "https://api.synctis.in/hubs/roadmap",
   "LEGAL_BASE_URL": "https://synctis.in",
+  "GOOGLE_CLIENT_ID": "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",
+  "GOOGLE_SERVER_CLIENT_ID": "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",
   "AWS_MAP_API_KEY": "",
   "AWS_MAP_REGION": "ap-southeast-1",
   "AWS_MAP_NAME": "sync-map",

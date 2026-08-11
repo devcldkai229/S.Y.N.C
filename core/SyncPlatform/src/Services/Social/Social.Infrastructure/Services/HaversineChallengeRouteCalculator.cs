@@ -25,7 +25,7 @@ public sealed class HaversineChallengeRouteCalculator : IChallengeRouteCalculato
         var distanceKm = GeoDistanceHelper.HaversineKm(userLat, userLng, destinationLat, destinationLng);
         var polyline = BuildPolyline(userLat, userLng, destinationLat, destinationLng);
 
-        var result = new ChallengeRouteDto();
+        var result = new ChallengeRouteDto { IsApproximate = true };
         var modes = travelMode.HasValue
             ? new[] { travelMode.Value }
             : new[] { ChallengeRouteTravelMode.Motorbike };
@@ -59,7 +59,8 @@ public sealed class HaversineChallengeRouteCalculator : IChallengeRouteCalculato
     internal static TravelModeRouteDto BuildRoute(
         double distanceKm,
         double speedKmh,
-        IReadOnlyList<GeoLocationDto> polyline)
+        IReadOnlyList<GeoLocationDto> polyline,
+        bool isApproximate = true)
     {
         var minutes = GeoDistanceHelper.EstimateMinutes(distanceKm, speedKmh);
         return new TravelModeRouteDto
@@ -68,6 +69,7 @@ public sealed class HaversineChallengeRouteCalculator : IChallengeRouteCalculato
             EstimatedMinutes = minutes,
             EstimatedArrivalAt = DateTimeOffset.UtcNow.AddMinutes(minutes),
             Polyline = polyline,
+            IsApproximate = isApproximate,
         };
     }
 

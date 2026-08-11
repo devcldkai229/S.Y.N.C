@@ -136,7 +136,6 @@ Where content suggests a user is in psychological crisis, we **do not simply del
 ## 5. Transparency
 
 We publish a transparency report **every 6 months** at `{{WEBSITE}}/transparency`, covering: report volumes by category, SLA compliance rate, content removed, accounts restricted or banned, appeals received, and the rate at which decisions were overturned.
-🔧 *Keep this commitment only if the team can genuinely produce the report — otherwise delete §5 before publishing.*
 
 ---
 
@@ -171,8 +170,4 @@ You retain the right to complain to the competent state authority or bring proce
 | Appeal a moderation decision | **{{SUPPORT_EMAIL}}** |
 | Copyright complaints | **{{ABUSE_EMAIL}}** |
 
-**{{LEGAL_ENTITY_NAME_EN}}** — {{REGISTERED_ADDRESS}}
-
----
-
-> ⚠️ **Note for the team:** the implementation-gap appendix is kept only in the Vietnamese file (`06-community-standards.vi.md`, section 🔧). Read it before publishing — the SLA table in §4.1 is not yet measurable in code.
+**{{LEGAL_ENTITY_NAME_EN}}**

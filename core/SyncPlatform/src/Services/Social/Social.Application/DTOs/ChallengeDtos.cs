@@ -130,6 +130,11 @@ public class TravelModeRouteDto : TravelModeEstimateDto
     /// Non-zero when the venue is off-road (park interior, building footprint, etc.).
     /// </summary>
     public double OffRoadGapMeters { get; set; }
+
+    /// <summary>
+    /// True when geometry is Haversine crow-fly (AWS Location missing or CalculateRoute failed).
+    /// </summary>
+    public bool IsApproximate { get; set; }
 }
 
 public class ChallengeRouteDto
@@ -141,4 +146,7 @@ public class ChallengeRouteDto
     public TravelModeRouteDto Motorbike { get; set; } = new();
 
     public TravelModeRouteDto Walking { get; set; } = new();
+
+    /// <summary>True if any mode on this payload used crow-fly fallback geometry.</summary>
+    public bool IsApproximate { get; set; }
 }

@@ -2,9 +2,9 @@
 
 **Version:** 1.0
 **Effective date:** {{EFFECTIVE_DATE}}
-**Provider:** {{LEGAL_ENTITY_NAME_EN}} — Business reg. no. {{BUSINESS_REG_NO}} — {{REGISTERED_ADDRESS}}
+**Provider:** {{LEGAL_ENTITY_NAME_EN}}
 
-> **Read carefully before use.** By creating an account or using the SYNC app you confirm that you have read, understood, and agree to be bound by these Terms together with the [Privacy Policy](/privacy), [Health Disclaimer](/health-disclaimer), [Community Standards](/community-standards), and [Refund Policy](/refund-policy) — collectively, the "Terms".
+> **Read carefully before use.** By creating an account or using the SYNC app you confirm that you have read, understood, and agree to be bound by these Terms together with the [Privacy Policy](/privacy), [Health Disclaimer](/health-disclaimer), and [Community Standards](/community-standards) — collectively, the "Terms".
 > If you do not agree, do not use the service.
 
 ---
@@ -29,7 +29,7 @@
 
 2.2. Users aged 16 to under 18 may use it only with the **consent of a parent or legal guardian**, particularly for paid features. By using the Service, you confirm such consent has been obtained.
 
-2.3. We may verify age and **suspend accounts that do not meet these conditions**, refunding any unused fees per the [Refund Policy](/refund-policy).
+2.3. We may verify age and **suspend accounts that do not meet these conditions**, refunding any unused fees under section 8 (Paid plans) of these Terms.
 
 2.4. You may not use the Service if we have banned you, or if the law where you reside prohibits it.
 
@@ -120,7 +120,7 @@ Except for serious violations or where immediate action is required, we will **s
 
 8.4. **Auto-renewal.** Plans renew automatically at the end of each period unless cancelled beforehand. Price and billing cycle are clearly displayed before you confirm payment.
 
-8.5. **Cancellation & refunds:** see the [Refund & Cancellation Policy](/refund-policy), an integral part of these Terms.
+8.5. **Cancellation & refunds:** cancel via the purchase channel (Google Play or web). Paid entitlements remain until the end of the paid period, unless a SYNC technical fault applies (we restore access or extend time accordingly).
 
 8.6. **Price changes.** We give **at least 30 days' notice** before a new price applies to your next renewal. You may cancel before the effective date.
 
@@ -136,7 +136,7 @@ Except for serious violations or where immediate action is required, we will **s
 
 9.3. **Allergies & ingredients.** Nutritional and ingredient information shown in the Service is supplied by Partners or reference databases and **may be inaccurate**. **If you have a food allergy you must confirm directly with the merchant before eating.** Severe allergies can be life-threatening. SYNC gives no absolute guarantee about ingredients.
 
-9.4. **Placing & cancelling orders.** An order is formed only when the Partner confirms it. Cancellation and refund rights follow the [Refund Policy](/refund-policy) §3.
+9.4. **Placing & cancelling orders.** An order is formed only when the Partner confirms it. Order cancellation depends on the partner; if the order was not prepared or failed due to a system error, contact {{SUPPORT_EMAIL}}.
 
 9.5. **Delivery.** Delivery times are estimates, not commitments. You must provide an accurate address and phone number and be available to receive the order.
 
@@ -232,6 +232,5 @@ Violations may result in content removal, feature restrictions, permanent accoun
 ## 16. Contact
 
 **{{LEGAL_ENTITY_NAME_EN}}**
-{{REGISTERED_ADDRESS}}
 Support: {{SUPPORT_EMAIL}} · Privacy: {{PRIVACY_EMAIL}} · Abuse reports: {{ABUSE_EMAIL}}
 Website: {{WEBSITE}}

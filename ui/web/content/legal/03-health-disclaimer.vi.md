@@ -133,7 +133,7 @@ Giới hạn này **không áp dụng** cho thiệt hại do lỗi cố ý hoặ
 ## 9. Liên hệ
 
 Câu hỏi về tài liệu này: {{SUPPORT_EMAIL}}
-{{LEGAL_ENTITY_NAME}} — {{REGISTERED_ADDRESS}}
+{{LEGAL_ENTITY_NAME}}
 
 ---
 

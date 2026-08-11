@@ -2,7 +2,7 @@
 
 **Version:** 1.0
 **Effective date:** {{EFFECTIVE_DATE}}
-**Applies to:** the SYNC mobile app (Android — package `{{PLAY_PACKAGE_NAME}}`), the website `{{WEBSITE}}`, and all related services.
+**Applies to:** the SYNC mobile app
 **Governing language:** Vietnamese. This English version is provided for convenience; in case of any discrepancy, the Vietnamese version at `/privacy` prevails.
 
 ---
@@ -13,7 +13,6 @@
 |---|---|
 | Data controller | **{{LEGAL_ENTITY_NAME_EN}}** ({{LEGAL_ENTITY_NAME}}) |
 | Business registration no. | {{BUSINESS_REG_NO}}, issued on {{BUSINESS_REG_DATE}} by {{BUSINESS_REG_AUTHORITY}} |
-| Registered office | {{REGISTERED_ADDRESS}} |
 | Legal representative | {{REPRESENTATIVE_NAME}} |
 | Data protection contact | {{DPO_NAME}} — {{PRIVACY_EMAIL}} |
 | User support | {{SUPPORT_EMAIL}} |
@@ -350,7 +349,6 @@ Version history is published so you can compare.
 | Personal data, privacy, consent withdrawal | **{{PRIVACY_EMAIL}}** |
 | General support, service complaints | **{{SUPPORT_EMAIL}}** |
 | Reporting violating content | **{{ABUSE_EMAIL}}** |
-| Postal address | {{REGISTERED_ADDRESS}} |
 
 ---
 

@@ -37,7 +37,6 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
   final _scrollController = ScrollController();
 
   bool _isMuted = false;
-  bool _isRecording = false;
 
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
@@ -55,6 +54,8 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
     _pulseAnimation = CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut);
 
     _store.ensureSeeded(_greeting);
+    // Voice shell is gated (P2); always start in text chat.
+    _store.endVoiceMode();
     _store.addListener(_onStoreChanged);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -103,11 +104,18 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
     );
   }
 
+  void _showVoiceComingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Voice AI đang phát triển, vui lòng quay lại sau.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   void _toggleMode() {
-    _store.toggleMode();
-    if (_store.isVoiceMode) {
-      _pulseController.repeat(reverse: true);
-    }
+    // Continuous voice (STT/TTS) is not wired yet — do not enter fake listening UI.
+    _showVoiceComingSoon();
   }
 
   Future<void> _onSendText() async {
@@ -117,6 +125,8 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
     FocusScope.of(context).unfocus();
     await _store.send(text);
   }
+
+  void _onMicUnavailable() => _showVoiceComingSoon();
 
   Future<void> _confirmPending(CynChatMessage message, {required bool confirmed}) async {
     try {
@@ -232,11 +242,11 @@ class _CynChatScreenState extends State<CynChatScreen> with TickerProviderStateM
               if (!isVoiceMode)
                 _FrostedInputBar(
                   controller: _textController,
-                  isRecording: _isRecording,
+                  isRecording: false,
                   isBusy: isStreaming,
                   onSend: _onSendText,
-                  onRecordStart: () => setState(() => _isRecording = true),
-                  onRecordEnd: () => setState(() => _isRecording = false),
+                  onRecordStart: _onMicUnavailable,
+                  onRecordEnd: () {},
                 ),
             ],
           ),
@@ -357,7 +367,7 @@ class _CynChatAppBar extends StatelessWidget {
           ),
           IconButton(
             onPressed: onToggleMode,
-            tooltip: isVoiceMode ? 'Chế độ tin nhắn' : 'Chế độ hội thoại liên tục',
+            tooltip: 'Voice AI (đang phát triển)',
             style: IconButton.styleFrom(
               backgroundColor: isDark
                   ? Colors.white.withValues(alpha: 0.08)

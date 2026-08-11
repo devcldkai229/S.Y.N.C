@@ -2,7 +2,7 @@
 
 **Phiên bản:** 1.0
 **Ngày hiệu lực:** {{EFFECTIVE_DATE}}
-**Áp dụng cho:** ứng dụng di động SYNC (Android — package `{{PLAY_PACKAGE_NAME}}`), website `{{WEBSITE}}` và toàn bộ dịch vụ liên quan.
+**Áp dụng cho:** Ứng dụng di động SYNC
 **Ngôn ngữ gốc:** Tiếng Việt. Bản tiếng Anh (`/en/privacy`) chỉ mang tính tham khảo; khi có khác biệt, bản tiếng Việt có hiệu lực.
 
 ---
@@ -13,7 +13,6 @@
 |---|---|
 | Bên Kiểm soát dữ liệu | **{{LEGAL_ENTITY_NAME}}** |
 | Mã số doanh nghiệp | {{BUSINESS_REG_NO}}, cấp ngày {{BUSINESS_REG_DATE}} bởi {{BUSINESS_REG_AUTHORITY}} |
-| Trụ sở | {{REGISTERED_ADDRESS}} |
 | Người đại diện theo pháp luật | {{REPRESENTATIVE_NAME}} |
 | Đầu mối bảo vệ dữ liệu cá nhân | {{DPO_NAME}} — {{PRIVACY_EMAIL}} |
 | Hỗ trợ người dùng | {{SUPPORT_EMAIL}}{{#SUPPORT_PHONE}} · {{SUPPORT_PHONE}}{{/SUPPORT_PHONE}} |
@@ -350,7 +349,6 @@ Lịch sử phiên bản được lưu công khai để bạn đối chiếu.
 | Dữ liệu cá nhân, quyền riêng tư, rút đồng ý | **{{PRIVACY_EMAIL}}** |
 | Hỗ trợ chung, khiếu nại dịch vụ | **{{SUPPORT_EMAIL}}** |
 | Báo cáo nội dung vi phạm | **{{ABUSE_EMAIL}}** |
-| Địa chỉ nhận thư | {{REGISTERED_ADDRESS}} |
 
 ---
 

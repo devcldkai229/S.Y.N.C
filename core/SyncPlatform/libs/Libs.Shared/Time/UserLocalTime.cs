@@ -5,6 +5,15 @@ public static class UserLocalTime
 {
     public const string DefaultTimeZoneId = "Asia/Ho_Chi_Minh";
 
+    /// <summary>Windows legacy ID for Vietnam (UTC+7, no DST).</summary>
+    public const string WindowsVietnamTimeZoneId = "SE Asia Standard Time";
+
+    /// <summary>
+    /// Guaranteed offset for Vietnam product default when IANA zoneinfo is missing
+    /// (e.g. .NET noble-chiseled images without /usr/share/zoneinfo).
+    /// </summary>
+    public static readonly TimeSpan VietnamFixedOffset = TimeSpan.FromHours(7);
+
     public static TimeZoneInfo ResolveTimeZone(string? timeZoneId)
     {
         var tzId = string.IsNullOrWhiteSpace(timeZoneId) ? DefaultTimeZoneId : timeZoneId.Trim();
@@ -17,11 +26,16 @@ public static class UserLocalTime
             // Windows hosts often only know the legacy ID for Vietnam (UTC+7).
             try
             {
-                return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+                return TimeZoneInfo.FindSystemTimeZoneById(WindowsVietnamTimeZoneId);
             }
             catch (Exception)
             {
-                return TimeZoneInfo.FindSystemTimeZoneById(DefaultTimeZoneId);
+                // Chiseled Linux images lack zoneinfo; do not re-Find Asia/Ho_Chi_Minh.
+                return TimeZoneInfo.CreateCustomTimeZone(
+                    "UTC+07",
+                    VietnamFixedOffset,
+                    "UTC+07",
+                    "UTC+07");
             }
         }
     }

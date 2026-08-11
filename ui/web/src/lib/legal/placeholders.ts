@@ -10,19 +10,19 @@ function env(key: string, fallback: string): string {
 }
 
 /**
- * Defaults: personal Play developer Nguyễn Quốc Khải (Mỏ Cày Bắc, Bến Tre).
- * Override any field via NEXT_PUBLIC_LEGAL_* for CI / other environments.
+ * Public legal identity. Do NOT put home street addresses here — use support email/phone.
+ * Vietnamese names stay in this UTF-8 source file (avoid corrupted shell .env overrides).
  */
 export function getLegalPlaceholders(): LegalPlaceholderMap {
   const website = env("NEXT_PUBLIC_LEGAL_WEBSITE", "https://synctis.in").replace(/\/$/, "");
   const support = env("NEXT_PUBLIC_LEGAL_SUPPORT_EMAIL", "ngykhai229@gmail.com");
-  const address = env(
-    "NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS",
-    "347, Ấp Tân Lợi, Tân Phú Tây, Mỏ Cày Bắc, Bến Tre, Việt Nam",
-  );
+  // Empty by default: never publish residential street address on public legal pages.
+  const address = env("NEXT_PUBLIC_LEGAL_REGISTERED_ADDRESS", "");
+  const entityVi = env("NEXT_PUBLIC_LEGAL_ENTITY_NAME", "Nguyễn Quốc Khải");
+  const entityEn = env("NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN", "Nguyen Quoc Khai");
   return {
-    LEGAL_ENTITY_NAME: env("NEXT_PUBLIC_LEGAL_ENTITY_NAME", "Nguyễn Quốc Khải"),
-    LEGAL_ENTITY_NAME_EN: env("NEXT_PUBLIC_LEGAL_ENTITY_NAME_EN", "devopsidian"),
+    LEGAL_ENTITY_NAME: entityVi,
+    LEGAL_ENTITY_NAME_EN: entityEn,
     BUSINESS_REG_NO: env("NEXT_PUBLIC_LEGAL_BUSINESS_REG_NO", "Không áp dụng (cá nhân)"),
     BUSINESS_REG_DATE: env("NEXT_PUBLIC_LEGAL_BUSINESS_REG_DATE", "Không áp dụng (cá nhân)"),
     BUSINESS_REG_AUTHORITY: env(
@@ -31,7 +31,7 @@ export function getLegalPlaceholders(): LegalPlaceholderMap {
     ),
     REGISTERED_ADDRESS: address,
     MAILING_ADDRESS: env("NEXT_PUBLIC_LEGAL_MAILING_ADDRESS", address),
-    REPRESENTATIVE_NAME: env("NEXT_PUBLIC_LEGAL_REPRESENTATIVE_NAME", "Nguyễn Quốc Khải"),
+    REPRESENTATIVE_NAME: env("NEXT_PUBLIC_LEGAL_REPRESENTATIVE_NAME", entityVi),
     SUPPORT_EMAIL: support,
     PRIVACY_EMAIL: env("NEXT_PUBLIC_LEGAL_PRIVACY_EMAIL", support),
     ABUSE_EMAIL: env("NEXT_PUBLIC_LEGAL_ABUSE_EMAIL", support),
@@ -54,11 +54,11 @@ export function getLegalPlaceholders(): LegalPlaceholderMap {
 /**
  * Apply `{{KEY}}` and simple Mustache sections `{{#KEY}}...{{/KEY}}`
  * (section included only when value is non-empty).
+ * Also strips standalone empty-placeholder residues (blank address lines, empty table cells).
  */
 export function applyLegalPlaceholders(markdown: string, map = getLegalPlaceholders()): string {
   let out = markdown;
 
-  // Conditional sections first
   out = out.replace(/\{\{#([A-Z0-9_]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_m, key: string, body: string) => {
     const val = map[key] ?? "";
     return val ? body.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), val) : "";
@@ -68,6 +68,15 @@ export function applyLegalPlaceholders(markdown: string, map = getLegalPlacehold
     if (key in map) return map[key] ?? "";
     return `{{${key}}}`;
   });
+
+  // Drop markdown table rows whose value cell is empty after substitution.
+  out = out.replace(/^\|[^|\n]+\|\s*\|\s*$/gm, "");
+  // "Label |   " style remnants with only whitespace value
+  out = out.replace(/^\|([^|\n]+)\|\s*\|\s*$/gm, "");
+  // Em-dash / empty address trailing segments: "Name — " at end of line
+  out = out.replace(/\s+[—–-]\s*$/gm, "");
+  // Consecutive blank lines
+  out = out.replace(/\n{3,}/g, "\n\n");
 
   return out;
 }

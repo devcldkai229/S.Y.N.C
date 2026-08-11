@@ -14,7 +14,6 @@ const links: Record<string, { label: string; href: string }[]> = {
     { label: "Chính sách bảo mật", href: "/privacy" },
     { label: "Điều khoản dịch vụ", href: "/terms" },
     { label: "Miễn trừ y tế", href: "/health-disclaimer" },
-    { label: "Hoàn tiền & huỷ", href: "/refund-policy" },
     { label: "Xoá tài khoản", href: "/account-deletion" },
     { label: "Tiêu chuẩn cộng đồng", href: "/community-standards" },
     { label: "English policies", href: "/en/privacy" },

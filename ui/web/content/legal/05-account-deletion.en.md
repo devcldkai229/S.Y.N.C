@@ -1,7 +1,7 @@
 # ACCOUNT & DATA DELETION — SYNC
 
 **Version:** 1.0 · **Effective date:** {{EFFECTIVE_DATE}}
-**Provider:** {{LEGAL_ENTITY_NAME_EN}} — {{REGISTERED_ADDRESS}}
+**Provider:** {{LEGAL_ENTITY_NAME_EN}}
 **Public URL (declared to Google Play):** `{{WEBSITE}}/account-deletion`
 
 > This page is public and **readable without installing the app and without signing in**, as required by Google Play.
@@ -147,9 +147,4 @@ Processing time: **30 days** from identity verification.
 ## 8. Contact
 
 **{{LEGAL_ENTITY_NAME_EN}}**
-{{REGISTERED_ADDRESS}}
 Data requests: **{{PRIVACY_EMAIL}}** · General support: **{{SUPPORT_EMAIL}}**
-
----
-
-> ⚠️ **Note for the team:** the implementation-gap appendix is kept only in the Vietnamese file (`05-account-deletion.vi.md`, section 🔧). Read it before publishing either language version — §3.3 is not yet fully implemented in code.
