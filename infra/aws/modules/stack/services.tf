@@ -106,19 +106,19 @@ locals {
       image_repo = "gateway"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 448
-      env        = merge(local.dotnet_common_env, local.gateway_dest_env)
-      secrets    = local.dotnet_shared_secrets
-      public     = true
-      command    = null
+      cpu     = 128
+      memory  = 448
+      env     = merge(local.dotnet_common_env, local.gateway_dest_env)
+      secrets = local.dotnet_shared_secrets
+      public  = true
+      command = null
     }
     iam = {
       image_repo = "iam"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 640
+      cpu    = 128
+      memory = 640
       env = merge(local.dotnet_common_env, {
         Db__Postgres__Name         = "sync_iam"
         Email__VerificationBaseUrl = local.api_base_url
@@ -138,58 +138,58 @@ locals {
       image_repo = "roadmap"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 384
-      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_roadmap" })
-      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
-      public     = false
-      command    = null
+      cpu     = 128
+      memory  = 384
+      env     = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_roadmap" })
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public  = false
+      command = null
     }
     exercise = {
       image_repo = "exercise"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 384
-      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_exercise" })
-      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
-      public     = false
-      command    = null
+      cpu     = 128
+      memory  = 384
+      env     = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_exercise" })
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public  = false
+      command = null
     }
     nutrition = {
       image_repo = "nutrition"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 384
-      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_nutrition" })
-      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
-      public     = false
-      command    = null
+      cpu     = 128
+      memory  = 384
+      env     = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_nutrition" })
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public  = false
+      command = null
     }
     marketplace = {
       image_repo = "marketplace"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 384
-      env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_marketplace" })
-      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
-      public     = false
-      command    = null
+      cpu     = 128
+      memory  = 384
+      env     = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_marketplace" })
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public  = false
+      command = null
     }
     order = {
       image_repo = "order"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 384
+      cpu    = 128
+      memory = 384
       env = merge(local.dotnet_common_env, {
-        Db__Postgres__Name           = "sync_order"
-        ConnectionStrings__Redis     = "${module.redis.endpoint}:6379"
+        Db__Postgres__Name       = "sync_order"
+        ConnectionStrings__Redis = "${module.redis.endpoint}:6379"
         # AWS Location Place Index — reverse geocode + address search (Sync Foods)
-        AwsLocation__Region          = var.region
-        AwsLocation__PlaceIndexName  = var.aws_location_place_index_name
+        AwsLocation__Region         = var.region
+        AwsLocation__PlaceIndexName = var.aws_location_place_index_name
       })
       secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
         Ahamove__ApiKey = local.sec["delivery/ahamove-api-key"]
@@ -202,9 +202,9 @@ locals {
       image_repo = "payment"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 384
-      env        = merge(local.dotnet_common_env, { Db__Postgres__Name = "sync_payment" })
+      cpu    = 128
+      memory = 384
+      env    = merge(local.dotnet_common_env, { Db__Postgres__Name = "sync_payment" })
       secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
         PayOS__ClientId    = local.sec["pay/payos-client-id"]
         PayOS__ApiKey      = local.sec["pay/payos-api-key"]
@@ -217,8 +217,8 @@ locals {
       image_repo = "notification"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 384
+      cpu    = 128
+      memory = 384
       env = merge(local.dotnet_common_env, {
         Db__Postgres__Name = "sync_smartpush"
         Db__Mongo__Name    = "sync_notification"
@@ -233,19 +233,19 @@ locals {
       image_repo = "social"
       port       = 8080
       # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
-      cpu        = 128
-      memory     = 384
+      cpu    = 128
+      memory = 384
       env = merge(local.dotnet_common_env, {
-        Db__Mongo__Name                  = "sync_social"
+        Db__Mongo__Name = "sync_social"
         # AWS Location route calculator — community challenge "Đường đi"
         AwsLocation__Region              = var.region
         AwsLocation__RouteCalculatorName = var.aws_location_route_calculator_name
         AwsLocation__DataProvider        = var.aws_location_data_provider
         AwsLocation__PlaceIndexName      = var.aws_location_place_index_name
       })
-      secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
-      public     = false
-      command    = null
+      secrets = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
+      public  = false
+      command = null
     }
     ai = {
       image_repo = "ai"

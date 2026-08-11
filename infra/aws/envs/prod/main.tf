@@ -120,12 +120,12 @@ module "stack" {
   # create_aws_location_resources=false → TF only injects AwsLocation__* env on
   # order/social task defs + IAM geo:* on task role (iam-tasks). Do NOT flip to
   # true or apply will try to re-create and fail on name collision.
-  create_aws_location_resources        = false
-  aws_location_place_index_name        = "sync-place-index"
-  aws_location_route_calculator_name   = "sync-route-calculator"
-  aws_location_place_data_source       = "Grab"
-  aws_location_route_data_source       = "Grab"
-  aws_location_data_provider           = "Grab"
+  create_aws_location_resources      = false
+  aws_location_place_index_name      = "sync-place-index"
+  aws_location_route_calculator_name = "sync-route-calculator"
+  aws_location_place_data_source     = "Grab"
+  aws_location_route_data_source     = "Grab"
+  aws_location_data_provider         = "Grab"
 
   # Cắt chi phí: db.t4g.micro + Single-AZ (giữ deletion_protection).
   # ⚠️ 1 GB RAM cho nhiều DB + pgvector, không auto-failover — theo dõi CPU/RAM.
