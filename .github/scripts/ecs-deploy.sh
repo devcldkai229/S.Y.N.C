@@ -2,14 +2,19 @@
 # Rolling deploy: đăng ký task-def revision mới với image mới rồi update service.
 # Usage: ecs-deploy.sh <cluster> <service> <image>
 # Env:
-#   ECS_MIN_DESIRED  — if set (e.g. 1) and current desiredCount is below it, scale up
-#                      before waiting so a parked (desired=0) service actually starts.
-#   AWS_REGION       — used when injecting AwsLocation__* for order/social
-# Requires: aws cli. Optional: jq — fallback python3/python nếu không có jq.
+#   ECS_MIN_DESIRED   — scale up only if current desired is ALREADY > 0 and still below this
+#                       (won't un-park desired=0 workers). Use ECS_FORCE_UNPARK=1 to override.
+#   ECS_FORCE_UNPARK  — if 1 and ECS_MIN_DESIRED set, scale 0 → MIN
+#   ECS_TASK_MEMORY   — optional override (e.g. 384) for packing on small t4g instances
+#   ECS_TASK_CPU      — optional override (e.g. 128)
+#   AWS_REGION        — used when injecting AwsLocation__* for order/social
 set -euo pipefail
 
 CLUSTER="$1"; SERVICE="$2"; IMAGE="$3"
 MIN_DESIRED="${ECS_MIN_DESIRED:-}"
+FORCE_UNPARK="${ECS_FORCE_UNPARK:-0}"
+TASK_MEMORY="${ECS_TASK_MEMORY:-}"
+TASK_CPU="${ECS_TASK_CPU:-}"
 LOC_REGION="${AWS_REGION:-ap-southeast-1}"
 LOC_PLACE="${AWS_LOCATION_PLACE_INDEX:-sync-place-index}"
 LOC_ROUTE="${AWS_LOCATION_ROUTE_CALCULATOR:-sync-route-calculator}"
@@ -17,7 +22,6 @@ LOC_PROVIDER="${AWS_LOCATION_DATA_PROVIDER:-Grab}"
 
 echo "→ Rolling deploy $SERVICE on $CLUSTER with $IMAGE"
 
-# Task-def hiện tại của service
 SVC_JSON=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
   --query 'services[0]' --output json)
 if [ -z "$SVC_JSON" ] || [ "$SVC_JSON" = "null" ]; then
@@ -25,7 +29,6 @@ if [ -z "$SVC_JSON" ] || [ "$SVC_JSON" = "null" ]; then
   exit 1
 fi
 
-# shellcheck disable=SC2016
 _extract() {
   local key="$1"
   if command -v jq >/dev/null 2>&1; then
@@ -33,7 +36,7 @@ _extract() {
   else
     local py=python3
     command -v python3 >/dev/null 2>&1 || py=python
-    printf '%s' "$SVC_JSON" | "$py" -c "import json,sys; d=json.load(sys.stdin); print(d.get(sys.argv[1],'') if d.get(sys.argv[1]) is not None else '')" "$key"
+    printf '%s' "$SVC_JSON" | "$py" -c "import json,sys; d=json.load(sys.stdin); v=d.get(sys.argv[1]); print('' if v is None else v)" "$key"
   fi
 }
 
@@ -42,28 +45,29 @@ DESIRED=$(_extract desiredCount)
 DESIRED="${DESIRED:-0}"
 echo "  current desiredCount=$DESIRED taskDefinition=$TD_ARN"
 
-# Lấy JSON task-def, thay image + optionally inject Location env, strip read-only fields
 TD_JSON=$(aws ecs describe-task-definition --task-definition "$TD_ARN" \
   --query 'taskDefinition' --output json)
 
-# Terraform ignores task_definition after create — live TD may lack AwsLocation__*.
-# Inject/ensure for order + social so CI deploy is the carrier for Location config.
 NEED_LOCATION=0
 case "$SERVICE" in
   *-order|*-social) NEED_LOCATION=1 ;;
 esac
 
 patch_td() {
-  if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
-    local py=python3
-    command -v python3 >/dev/null 2>&1 || py=python
-    "$py" -c '
+  local py=python3
+  command -v python3 >/dev/null 2>&1 || py=python
+  "$py" -c '
 import json, sys
 
-img, service, need_loc, region, place, route, provider = sys.argv[1:8]
+img, service, need_loc, region, place, route, provider, mem, cpu = sys.argv[1:10]
 td = json.load(sys.stdin)
 c0 = td["containerDefinitions"][0]
 c0["image"] = img
+
+if mem:
+    td["memory"] = str(mem)
+if cpu:
+    td["cpu"] = str(cpu)
 
 if need_loc == "1":
     env = c0.get("environment") or []
@@ -73,7 +77,6 @@ if need_loc == "1":
         "AwsLocation__PlaceIndexName": place,
     }.items():
         by_name[k] = {"name": k, "value": v}
-    # social also needs route calculator
     if service.endswith("-social") or service.endswith("social"):
         by_name["AwsLocation__RouteCalculatorName"] = {
             "name": "AwsLocation__RouteCalculatorName", "value": route
@@ -90,28 +93,15 @@ for k in (
 ):
     td.pop(k, None)
 json.dump(td, sys.stdout, separators=(",", ":"))
-' "$IMAGE" "$SERVICE" "$NEED_LOCATION" "$LOC_REGION" "$LOC_PLACE" "$LOC_ROUTE" "$LOC_PROVIDER"
-  elif command -v jq >/dev/null 2>&1; then
-    # image only via jq if python missing (Location inject requires python)
-    if [ "$NEED_LOCATION" = "1" ]; then
-      echo "✗ python required to inject AwsLocation env for $SERVICE" >&2
-      exit 1
-    fi
-    jq --arg IMAGE "$IMAGE" '
-      .containerDefinitions[0].image = $IMAGE
-      | del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy)
-    '
-  else
-    echo "✗ cần python (hoặc jq) để sửa task definition" >&2
-    exit 1
-  fi
+' "$IMAGE" "$SERVICE" "$NEED_LOCATION" "$LOC_REGION" "$LOC_PLACE" "$LOC_ROUTE" "$LOC_PROVIDER" \
+  "${TASK_MEMORY}" "${TASK_CPU}"
 }
 
 NEW_TD=$(printf '%s' "$TD_JSON" | patch_td)
 
 NEW_ARN=$(aws ecs register-task-definition --cli-input-json "$NEW_TD" \
   --query 'taskDefinition.taskDefinitionArn' --output text)
-echo "  registered $NEW_ARN"
+echo "  registered $NEW_ARN${TASK_MEMORY:+ (memory=$TASK_MEMORY)}${TASK_CPU:+ (cpu=$TASK_CPU)}"
 
 UPDATE_ARGS=(
   --cluster "$CLUSTER"
@@ -120,19 +110,51 @@ UPDATE_ARGS=(
   --force-new-deployment
 )
 
-if [ -n "$MIN_DESIRED" ] && [ "$DESIRED" -lt "$MIN_DESIRED" ]; then
-  echo "  desiredCount $DESIRED < ECS_MIN_DESIRED=$MIN_DESIRED — scaling up"
-  UPDATE_ARGS+=(--desired-count "$MIN_DESIRED")
+# Unpark rules:
+# - MIN_DESIRED + current desired > 0 → raise if below min (service already on)
+# - MIN_DESIRED + desired 0 → only if FORCE_UNPARK=1 (avoid sucking capacity for workers)
+# - desired 0 + no force → update TD only (image ready when later scaled)
+if [ -n "$MIN_DESIRED" ]; then
+  if [ "$DESIRED" -gt 0 ] && [ "$DESIRED" -lt "$MIN_DESIRED" ]; then
+    echo "  desiredCount $DESIRED < ECS_MIN_DESIRED=$MIN_DESIRED — scaling up"
+    UPDATE_ARGS+=(--desired-count "$MIN_DESIRED")
+  elif [ "$DESIRED" -eq 0 ] && [ "$FORCE_UNPARK" = "1" ]; then
+    echo "  ECS_FORCE_UNPARK=1 — scaling 0 → $MIN_DESIRED"
+    UPDATE_ARGS+=(--desired-count "$MIN_DESIRED")
+  elif [ "$DESIRED" -eq 0 ]; then
+    echo "  desiredCount=0 (parked) — image registered, NOT unparking (set ECS_FORCE_UNPARK=1 to start)"
+  fi
 fi
 
 aws ecs update-service "${UPDATE_ARGS[@]}" >/dev/null
 
+# Parked: no wait needed
+if [ "${DESIRED}" = "0" ] && [ "$FORCE_UNPARK" != "1" ] && { [ -z "$MIN_DESIRED" ] || true; }; then
+  # only skip wait when we did NOT scale up
+  FINAL_D=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
+    --query 'services[0].desiredCount' --output text)
+  if [ "${FINAL_D:-0}" = "0" ]; then
+    echo "✓ $SERVICE task-def updated (parked desired=0) image registered"
+    exit 0
+  fi
+fi
+
 echo "  waiting services-stable ..."
 if ! aws ecs wait services-stable --cluster "$CLUSTER" --services "$SERVICE"; then
-  echo "✗ wait services-stable failed (capacity ASG max=0? crash loop? circuit breaker?)" >&2
+  echo "✗ wait services-stable failed" >&2
   aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
     --query 'services[0].{desired:desiredCount,running:runningCount,pending:pendingCount,events:events[0:5]}' \
     --output json >&2 || true
+
+  # Surface RESOURCE:MEMORY / crash reasons from recent stopped tasks
+  STOPPED=$(aws ecs list-tasks --cluster "$CLUSTER" --service-name "$SERVICE" \
+    --desired-status STOPPED --max-items 3 --query 'taskArns' --output text 2>/dev/null || true)
+  if [ -n "${STOPPED//None/}" ] && [ -n "$STOPPED" ]; then
+    echo "  recent stopped tasks:" >&2
+    aws ecs describe-tasks --cluster "$CLUSTER" --tasks $STOPPED \
+      --query 'tasks[].{stop:stoppedReason,code:stopCode}' --output table >&2 || true
+  fi
+  echo "  Hint: TaskFailedToStart RESOURCE:MEMORY → cluster full (raise ASG max or park workers)." >&2
   exit 1
 fi
 
@@ -140,7 +162,7 @@ ROLL_STATE=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE
   --query 'services[0].deployments[?status==`PRIMARY`]|[0].rolloutState' --output text)
 echo "  primary rolloutState=$ROLL_STATE"
 if [ "$ROLL_STATE" = "FAILED" ]; then
-  echo "✗ Deploy failed: rolloutState=FAILED (có thể đã rollback về task-def cũ)" >&2
+  echo "✗ Deploy failed: rolloutState=FAILED" >&2
   exit 1
 fi
 
@@ -159,9 +181,4 @@ FINAL_DESIRED=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERV
 FINAL_RUNNING=$(aws ecs describe-services --cluster "$CLUSTER" --services "$SERVICE" \
   --query 'services[0].runningCount' --output text)
 echo "  desired=$FINAL_DESIRED running=$FINAL_RUNNING"
-if [ "${FINAL_DESIRED:-0}" = "0" ]; then
-  echo "⚠ Service desiredCount is still 0 — image registered but NO task is running (fleet parked)." >&2
-  echo "  Unpark: raise ASG max/desired for ecs-ondemand + ecs-spot, then set service desired >= 1." >&2
-fi
-
 echo "✓ $SERVICE deployed"

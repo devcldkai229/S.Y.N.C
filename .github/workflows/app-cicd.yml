@@ -271,17 +271,28 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Deploy to ECS prod
         env:
+          # Only raise desired when already >0 (won't unpark workers that are at 0).
           ECS_MIN_DESIRED: "1"
+          # Pack tighter: concurrent full-fleet deploy was failing RESOURCE:MEMORY on t4g.medium.
+          ECS_TASK_MEMORY: "320"
+          ECS_TASK_CPU: "128"
         run: |
           set -euo pipefail
           export CLUSTER="${{ vars.ECS_CLUSTER_PROD }}"
           IMAGE=$ECR_REGISTRY/sync/${{ matrix.service }}:${GITHUB_SHA}
+          case "${{ matrix.service }}" in
+            iam|ai) export ECS_TASK_MEMORY=512 ECS_TASK_CPU=192 ;;
+            gateway|rcm) export ECS_TASK_MEMORY=384 ECS_TASK_CPU=128 ;;
+          esac
           if [ "${{ matrix.service }}" = "gateway" ] && [ "${{ vars.GATEWAY_BLUEGREEN }}" = "true" ]; then
             bash .github/scripts/ecs-bluegreen.sh "sync-prod-gateway" "$IMAGE"
           else
             bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-prod-${{ matrix.service }}" "$IMAGE"
             if [ "${{ matrix.service }}" = "ai" ]; then
-              bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-prod-ai-worker" "$IMAGE"
+              # Worker: update image only; stay at desired=0 unless already running / FORCE_UNPARK
+              # (unparking worker on tight Spot fleets causes RESOURCE:MEMORY for others).
+              ECS_TASK_MEMORY=384 ECS_TASK_CPU=128 \
+                bash .github/scripts/ecs-deploy.sh "$CLUSTER" "sync-prod-ai-worker" "$IMAGE"
             fi
           fi
       - name: Smoke (gateway job only)

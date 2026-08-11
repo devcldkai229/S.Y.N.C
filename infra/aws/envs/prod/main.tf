@@ -107,7 +107,7 @@ module "stack" {
   #   spot     : 7 service .NET × 384 + ai-worker 384      = 3.072 MB (81%)
   #               CPU ~128×8 = 1024 / 2048
   # max = 2 là van an toàn để rolling deploy có chỗ khởi động task mới; desired vẫn đứng ở 1.
-  instance_type = "t4g.small"
+  instance_type = "t4g.medium"
   ondemand      = { min = 1, max = 2, desired = 1 }
   spot          = { min = 1, max = 2, desired = 1 }
 
