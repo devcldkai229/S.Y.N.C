@@ -105,7 +105,8 @@ locals {
     gateway = {
       image_repo = "gateway"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 448
       env        = merge(local.dotnet_common_env, local.gateway_dest_env)
       secrets    = local.dotnet_shared_secrets
@@ -115,7 +116,8 @@ locals {
     iam = {
       image_repo = "iam"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 640
       env = merge(local.dotnet_common_env, {
         Db__Postgres__Name         = "sync_iam"
@@ -135,7 +137,8 @@ locals {
     roadmap = {
       image_repo = "roadmap"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_roadmap" })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
@@ -145,7 +148,8 @@ locals {
     exercise = {
       image_repo = "exercise"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_exercise" })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
@@ -155,7 +159,8 @@ locals {
     nutrition = {
       image_repo = "nutrition"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_nutrition" })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
@@ -165,7 +170,8 @@ locals {
     marketplace = {
       image_repo = "marketplace"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Mongo__Name = "sync_marketplace" })
       secrets    = merge(local.dotnet_shared_secrets, local.dotnet_mongo_conn)
@@ -175,7 +181,8 @@ locals {
     order = {
       image_repo = "order"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 384
       env = merge(local.dotnet_common_env, {
         Db__Postgres__Name           = "sync_order"
@@ -194,7 +201,8 @@ locals {
     payment = {
       image_repo = "payment"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 384
       env        = merge(local.dotnet_common_env, { Db__Postgres__Name = "sync_payment" })
       secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
@@ -208,7 +216,8 @@ locals {
     notification = {
       image_repo = "notification"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 384
       env = merge(local.dotnet_common_env, {
         Db__Postgres__Name = "sync_smartpush"
@@ -223,7 +232,8 @@ locals {
     social = {
       image_repo = "social"
       port       = 8080
-      cpu        = 96
+      # Task-level CPU for EC2 must be ≥ 128 (AWS rejects 96 with Invalid 'cpu' setting).
+      cpu        = 128
       memory     = 384
       env = merge(local.dotnet_common_env, {
         Db__Mongo__Name                  = "sync_social"

@@ -101,8 +101,11 @@ module "stack" {
   ecr_repository_urls = data.terraform_remote_state.shared.outputs.ecr_repository_urls
 
   # Capacity: 1 node mỗi nhóm (~20 người dùng). t4g.medium ≈ 2 vCPU / 4 GiB, ECS dùng được ~3.800 MB.
+  # Task CPU floor = 128 units (EC2 RegisterTaskDefinition rejects lower, e.g. 96).
   #   on-demand: gateway 448 + iam 640 + payment 384 + ai 640 + rcm 448 = 2.560 MB (67%)
+  #               CPU ~128×4 + 192 = 704 / 2048
   #   spot     : 7 service .NET × 384 + ai-worker 384      = 3.072 MB (81%)
+  #               CPU ~128×8 = 1024 / 2048
   # max = 2 là van an toàn để rolling deploy có chỗ khởi động task mới; desired vẫn đứng ở 1.
   instance_type = "t4g.small"
   ondemand      = { min = 1, max = 2, desired = 1 }

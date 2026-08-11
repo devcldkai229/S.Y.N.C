@@ -16,11 +16,11 @@ name: app-cicd
 #            WEB_BUCKET_DEV/PROD, WEB_DISTRIBUTION_ID_DEV/PROD (sau terraform web),
 #            GATEWAY_BLUEGREEN (để trống/false — khớp prod TF enable_bluegreen=false)
 #
-# Parked prod (ASG max/desired=0 + service desiredCount=0): push only updates TD after CI
-# fix; tasks still need capacity. Unpark ASG (min/desired/max ≥1) before relying on smoke.
-#   environment "production" bật Required reviewers (manual approval).
-#   (SonarCloud/SonarQube đã tắt — không dùng SONAR_TOKEN / SONAR_ENABLED.)
-# ─────────────────────────────────────────────────────────────────────────────
+#
+# Manual (GitHub → Actions → app-cicd → Run workflow):
+#   force_all_services=true  → all 12 images + ECS (default)
+#   services_only=ai,rcm     → only AI agent + RCM (+ ai-worker when ai)
+#
 
 on:
   push:
@@ -32,9 +32,13 @@ on:
   workflow_dispatch:
     inputs:
       force_all_services:
-        description: "Build & deploy ALL Docker services (ignore path filter)"
+        description: "Build & deploy ALL Docker services (include ai/rcm; ignore path filter)"
         type: boolean
-        default: false
+        default: true
+      services_only:
+        description: "Optional comma list override (e.g. ai,rcm). Empty = use path filter / force_all"
+        type: string
+        default: ""
 
 permissions:
   id-token: write   # OIDC
@@ -49,16 +53,19 @@ env:
   AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
   ECR_REGISTRY: ${{ vars.ECR_REGISTRY }}
   DB_SERVICES: ""
+  # Push main OR manual run on main → push ECR + deploy ECS (PR only builds).
+  IS_RELEASE: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) }}
 
 jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
       services: ${{ steps.docker.outputs.services }}
-      web: ${{ steps.filter.outputs.web }}
+      web: ${{ steps.docker.outputs.web }}
     steps:
       - uses: actions/checkout@v4
       - id: filter
+        if: ${{ github.event_name != 'workflow_dispatch' }}
         uses: dorny/paths-filter@v3
         with:
           filters: |
@@ -75,6 +82,7 @@ jobs:
             ai: 'ai/sync-agent-service/**'
             rcm: 'ai/sync-rcm-service/**'
             web: 'ui/web/**'
+            cicd: '.github/workflows/app-cicd.yml'
             shared_dotnet:
               - 'core/SyncPlatform/libs/**'
               - 'core/SyncPlatform/Dockerfile'
@@ -84,11 +92,14 @@ jobs:
               - 'core/SyncPlatform/global.json'
               - 'core/SyncPlatform/NuGet.config'
       - id: docker
-        name: Resolve Docker matrix (shared libs → all .NET services)
+        name: Resolve Docker matrix
         env:
-          CHANGES: ${{ steps.filter.outputs.changes }}
-          SHARED_DOTNET: ${{ steps.filter.outputs.shared_dotnet }}
+          CHANGES: ${{ steps.filter.outputs.changes || '[]' }}
+          SHARED_DOTNET: ${{ steps.filter.outputs.shared_dotnet || 'false' }}
+          CICD_WF: ${{ steps.filter.outputs.cicd || 'false' }}
+          WEB_FILTER: ${{ steps.filter.outputs.web || 'false' }}
           FORCE_ALL: ${{ github.event_name == 'workflow_dispatch' && inputs.force_all_services }}
+          SERVICES_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.services_only || '' }}
         run: |
           python3 - <<'PY'
           import json, os
@@ -97,19 +108,30 @@ jobs:
               "marketplace", "order", "payment", "notification", "social",
           ]
           all_services = all_dotnet + ["ai", "rcm"]
+          allowed = set(all_services)
           force = os.environ.get("FORCE_ALL", "").lower() in ("true", "1")
-          if force:
+          cicd = os.environ.get("CICD_WF", "false") == "true"
+          only = (os.environ.get("SERVICES_ONLY") or "").strip()
+          if only:
+              docker = [s.strip() for s in only.split(",") if s.strip() in allowed]
+              if not docker:
+                  raise SystemExit(f"services_only empty/invalid: {only!r}")
+          elif force or cicd:
+              # workflow_dispatch force, OR CICD yaml change → full fleet (escapes bootstrap trap)
               docker = all_services
           else:
               changes = json.loads(os.environ.get("CHANGES") or "[]")
               shared = os.environ.get("SHARED_DOTNET", "false") == "true"
-              docker = [s for s in changes if s not in ("web", "shared_dotnet")]
+              docker = [s for s in changes if s not in ("web", "shared_dotnet", "cicd")]
               if shared:
+                  # Shared .NET rebuilds all APIs; ai/rcm stay separate (Python images).
                   docker = sorted(set(docker) | set(all_dotnet))
+          web = os.environ.get("WEB_FILTER") or "false"
           out = os.environ["GITHUB_OUTPUT"]
           with open(out, "a", encoding="utf-8") as f:
               f.write(f"services={json.dumps(docker)}\n")
-          print("docker services:", docker)
+              f.write(f"web={web}\n")
+          print("docker services:", docker, "web:", web, "force=", force, "cicd=", cicd)
           PY
 
   quality:
@@ -144,8 +166,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fail-fast required config (main push)
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      - name: Fail-fast required config (release)
+        if: ${{ env.IS_RELEASE == 'true' }}
         env:
           OIDC_ROLE: ${{ secrets.AWS_OIDC_ROLE_ARN }}
         run: |
@@ -212,16 +234,16 @@ jobs:
           ignore-unfixed: true
 
       - name: Configure AWS (OIDC)
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ env.IS_RELEASE == 'true' }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - name: ECR login
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ env.IS_RELEASE == 'true' }}
         uses: aws-actions/amazon-ecr-login@v2
       - name: Push image (tag=sha)
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ env.IS_RELEASE == 'true' }}
         run: docker push "${{ steps.meta.outputs.image }}"
 
   # Dev ECS is optional. Prod-only setups MUST NOT hard-fail here — that previously
@@ -229,7 +251,7 @@ jobs:
   deploy-dev:
     needs: [detect, build-push]
     if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      env.IS_RELEASE == 'true' &&
       vars.ECS_CLUSTER_DEV != '' &&
       needs.detect.outputs.services != '[]' && needs.detect.outputs.services != '' &&
       needs.build-push.result == 'success'
@@ -269,7 +291,7 @@ jobs:
     needs: [detect, build-push, deploy-dev]
     if: |
       always() &&
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      env.IS_RELEASE == 'true' &&
       vars.ECS_CLUSTER_PROD != '' &&
       needs.detect.outputs.services != '[]' && needs.detect.outputs.services != '' &&
       needs.build-push.result == 'success' &&
@@ -322,7 +344,7 @@ jobs:
   deploy-web-dev:
     needs: [detect]
     if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      env.IS_RELEASE == 'true' &&
       needs.detect.outputs.web == 'true' &&
       vars.WEB_BUCKET_DEV != ''
     runs-on: ubuntu-latest
@@ -388,7 +410,7 @@ jobs:
     needs: [detect, deploy-web-dev]
     if: |
       always() &&
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      env.IS_RELEASE == 'true' &&
       needs.detect.outputs.web == 'true' &&
       vars.WEB_BUCKET_PROD != '' &&
       (needs.deploy-web-dev.result == 'success' || needs.deploy-web-dev.result == 'skipped')
