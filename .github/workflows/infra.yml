@@ -19,25 +19,21 @@ name: infra-terraform
 #   Environments: infra-dev (optional), infra-prod (Required reviewers)
 # ─────────────────────────────────────────────────────────────────────────────
 
+# infra-terraform — OPTIONAL. User applies Terraform locally by default.
+# Disabled on push/PR so main CICD only runs app-cicd (images + ECS).
+# Run manually: Actions → infra-terraform → Run workflow.
+
 on:
-  push:
-    branches: [main]
-    paths:
-      - "infra/aws/**"
-      - ".github/workflows/infra.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "infra/aws/**"
-      - ".github/workflows/infra.yml"
   workflow_dispatch:
     inputs:
       target:
-        description: "Apply target after plan (main/manual only)"
+        description: "Apply target after plan (manual only)"
         required: true
-        default: "dev"
+        default: "prod"
         type: choice
         options: [shared, dev, prod, all]
+
+# was: push/PR on infra/aws/** — removed so push main never runs this workflow.
 
 permissions:
   id-token: write

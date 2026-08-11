@@ -28,8 +28,9 @@ variable "lock_table" {
   default = "sync-tf-lock"
 }
 variable "create_oidc_provider" {
-  type    = bool
-  default = true
+  description = "false when account already has token.actions.githubusercontent.com (EntityAlreadyExists otherwise)"
+  type        = bool
+  default     = false
 }
 
 provider "aws" {
