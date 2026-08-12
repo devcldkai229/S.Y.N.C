@@ -273,6 +273,7 @@ locals {
     "ai/langfuse-public-key",
     "delivery/ahamove-mobile",
     "mail/brevo-username",
+    "mail/brevo-from-email",
     "web/aws-map-api-key",
   ]
 }

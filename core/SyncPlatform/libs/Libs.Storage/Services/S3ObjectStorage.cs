@@ -54,9 +54,21 @@ public sealed class S3ObjectStorage
         return ResolveUrl(key);
     }
 
-    public string ResolveUrl(string objectKey) =>
-        $"{_options.PublicBaseUrl.TrimEnd('/')}/{_options.Bucket}/{objectKey.TrimStart('/')}";
+    /// <summary>
+    /// Gateway media proxy: {PublicBaseUrl}/{bucket}/{key}.
+    /// CDN / CloudFront: {PublicBaseUrl}/{key} (origin maps path → object key; no bucket segment).
+    /// </summary>
+    public string ResolveUrl(string objectKey)
+    {
+        var baseUrl = _options.PublicBaseUrl.TrimEnd('/');
+        var key = objectKey.TrimStart('/');
+        if (IsGatewayMediaBase(baseUrl))
+            return $"{baseUrl}/{_options.Bucket}/{key}";
+        return $"{baseUrl}/{key}";
+    }
 
+    private static bool IsGatewayMediaBase(string publicBaseUrl) =>
+        publicBaseUrl.EndsWith("/api/v1/media", StringComparison.OrdinalIgnoreCase);
     public async Task<(Stream Stream, string ContentType)?> TryGetObjectAsync(
         string bucket,
         string objectKey,

@@ -17,18 +17,23 @@ public class GoogleAuthSettings
     {
         var ids = new List<string>();
 
-        foreach (var id in ClientIds)
+        void AddSplit(string? raw)
         {
-            if (!string.IsNullOrWhiteSpace(id))
-                ids.Add(id.Trim());
+            if (string.IsNullOrWhiteSpace(raw))
+                return;
+
+            foreach (var part in raw.Split([',', ';', ' ', '\n', '\r', '\t'],
+                         StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (!ids.Contains(part, StringComparer.Ordinal))
+                    ids.Add(part);
+            }
         }
 
-        if (!string.IsNullOrWhiteSpace(ClientId))
-        {
-            var legacy = ClientId.Trim();
-            if (!ids.Contains(legacy, StringComparer.Ordinal))
-                ids.Add(legacy);
-        }
+        foreach (var id in ClientIds)
+            AddSplit(id);
+
+        AddSplit(ClientId);
 
         return ids;
     }

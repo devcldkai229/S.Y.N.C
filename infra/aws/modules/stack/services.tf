@@ -122,12 +122,20 @@ locals {
       env = merge(local.dotnet_common_env, {
         Db__Postgres__Name         = "sync_iam"
         Email__VerificationBaseUrl = local.api_base_url
+        # Brevo SMTP — must be Enabled + Host + FromEmail or DI falls back to ConsoleEmailSender
+        # (OTP only lands in CloudWatch, never in the user's inbox).
+        Email__Brevo__Enabled  = "true"
+        Email__Brevo__Host     = "smtp-relay.brevo.com"
+        Email__Brevo__Port     = "587"
+        Email__Brevo__UseSsl   = "true"
+        Email__Brevo__FromName = "SYNC"
       })
       secrets = merge(local.dotnet_shared_secrets, local.dotnet_pg_conn, {
-        Email__Brevo__UserName = local.param["mail/brevo-username"]
-        Email__Brevo__Password = local.sec["mail/brevo-password"]
-        # Google Sign-In audiences (comma-separated IDs OK via ClientId legacy merge,
-        # or put the primary Web client ID). Also map array index 0 for multi-binding.
+        Email__Brevo__UserName  = local.param["mail/brevo-username"]
+        Email__Brevo__Password  = local.sec["mail/brevo-password"]
+        Email__Brevo__FromEmail = local.param["mail/brevo-from-email"]
+        # Google Sign-In audiences — prefer Web client ID (Flutter serverClientId / idToken aud).
+        # Comma-separated values are split in GoogleAuthSettings.GetAllowedClientIds().
         GoogleAuth__ClientId     = local.param["auth/google-client-ids"]
         GoogleAuth__ClientIds__0 = local.param["auth/google-client-ids"]
       })

@@ -392,11 +392,13 @@ class CynChatSessionStore extends ChangeNotifier {
             (_messages[idx].handoffLabel?.isNotEmpty ?? false);
         _patchById(
           cynMessageId,
-          text: resolved.isEmpty && !hadError && !hasSideEffects
-              ? 'CYN đã xử lý yêu cầu của bạn.'
-              : (resolved.isEmpty ? _messages[idx].text : resolved),
+          text: resolved.isEmpty && !hasSideEffects
+              ? 'Không nhận được phản hồi từ CYN. Thử lại nhé.'
+              : resolved.isEmpty && hasSideEffects
+                  ? 'CYN đã xử lý yêu cầu của bạn.'
+                  : (resolved.isEmpty ? _messages[idx].text : resolved),
           isStreaming: false,
-          error: resolved.isEmpty && hadError,
+          error: (resolved.isEmpty && !hasSideEffects) || hadError,
         );
       }
       _isStreaming = false;

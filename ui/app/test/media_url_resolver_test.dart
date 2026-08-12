@@ -79,4 +79,18 @@ void main() {
     expect(resolved.contains('/api/v1/exercise/exercises/media/exercises_catalog/foo/0.webp'), isTrue);
     expect(resolved.startsWith('http'), isTrue);
   });
+
+  test('CDN URL with mistaken bucket segment strips to key path', () {
+    expect(
+      MediaUrlResolver.resolve(
+        'https://cdn.synctis.in/sync-pub-assets/prod/stories/abc.jpg',
+      ),
+      'https://cdn.synctis.in/prod/stories/abc.jpg',
+    );
+  });
+
+  test('CDN URL without bucket stays unchanged', () {
+    const cdn = 'https://cdn.synctis.in/prod/stories/abc.jpg';
+    expect(MediaUrlResolver.resolve(cdn), cdn);
+  });
 }

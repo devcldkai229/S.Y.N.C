@@ -313,8 +313,6 @@ class _MarketplaceLocationPickerScreenState extends State<MarketplaceLocationPic
 
   @override
   Widget build(BuildContext context) {
-    final usesAwsMap = AwsMapConfig.usesVectorMap;
-
     return Scaffold(
       backgroundColor: MarketplaceTheme.background,
       appBar: AppBar(
@@ -361,14 +359,6 @@ class _MarketplaceLocationPickerScreenState extends State<MarketplaceLocationPic
               ),
             ),
           ),
-          if (!usesAwsMap)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                'Chạy app với AWS map key (scripts/run-chrome.ps1) để dùng bản đồ Grab/AWS.',
-                style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
-              ),
-            ),
           if (_suggestions.isNotEmpty)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),

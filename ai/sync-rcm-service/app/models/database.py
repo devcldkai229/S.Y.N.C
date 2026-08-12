@@ -28,7 +28,7 @@ class ExerciseEmbedding(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     exercise_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
-    exercise_code: Mapped[str] = mapped_column(String(32), nullable=False)
+    exercise_code: Mapped[str] = mapped_column(String(128), nullable=False)
     name_en: Mapped[str] = mapped_column(String(256), nullable=False)
     name_vi: Mapped[str] = mapped_column(String(256), nullable=False, default="")
     content_text: Mapped[str] = mapped_column(Text, nullable=False)

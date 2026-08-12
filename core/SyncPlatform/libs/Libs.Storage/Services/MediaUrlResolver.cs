@@ -118,6 +118,10 @@ public sealed class MediaUrlResolver : IMediaUrlResolver
         if (queryIndex >= 0)
             path = path[..queryIndex];
 
+        // CDN / CloudFront: https://cdn.synctis.in[/sync-pub-assets]/key
+        if (TryParseCdnUrl(trimmed, out bucket, out key))
+            return true;
+
         if (path.Contains(".amazonaws.com/", StringComparison.OrdinalIgnoreCase))
         {
             var uri = new Uri(trimmed.Split('?')[0]);
@@ -165,6 +169,48 @@ public sealed class MediaUrlResolver : IMediaUrlResolver
         }
 
         return false;
+    }
+
+    private static bool TryParseCdnUrl(string value, out string bucket, out string key)
+    {
+        bucket = string.Empty;
+        key = string.Empty;
+
+        if (!Uri.TryCreate(value.Split('?')[0], UriKind.Absolute, out var uri))
+            return false;
+
+        var host = uri.Host;
+        if (!host.Equals("cdn.synctis.in", StringComparison.OrdinalIgnoreCase)
+            && !host.EndsWith(".cloudfront.net", StringComparison.OrdinalIgnoreCase)
+            && !host.Equals("cdn.sync.local", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var objectPath = uri.AbsolutePath.TrimStart('/');
+        if (string.IsNullOrWhiteSpace(objectPath))
+            return false;
+
+        // Legacy mistaken shape: /sync-pub-assets/<key> or /legacy-bucket/<key>
+        var slash = objectPath.IndexOf('/');
+        if (slash > 0)
+        {
+            var first = objectPath[..slash];
+            if (LooksLikeBucketName(first)
+                || string.Equals(first, StorageBuckets.PublicAssets, StringComparison.OrdinalIgnoreCase)
+                || StorageBuckets.LegacyPublicBuckets.Any(b =>
+                    string.Equals(b, first, StringComparison.OrdinalIgnoreCase)))
+            {
+                bucket = StorageBuckets.PublicAssets;
+                key = objectPath[(slash + 1)..];
+                return !string.IsNullOrWhiteSpace(key);
+            }
+        }
+
+        // Correct CDN shape: /prod/... or /profiles/...
+        bucket = StorageBuckets.PublicAssets;
+        key = objectPath;
+        return true;
     }
 
     /// <summary>

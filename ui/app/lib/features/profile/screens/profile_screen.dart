@@ -321,11 +321,6 @@ class _ProfileScreenBodyState extends State<_ProfileScreenBody> {
                               onTap: () => _openUrl(AppConfig.healthDisclaimerUrl),
                             ),
                             _SettingsRow(
-                              icon: Icons.receipt_long_outlined,
-                              title: 'Hoàn tiền & huỷ gói',
-                              onTap: () => _openUrl(AppConfig.refundPolicyUrl),
-                            ),
-                            _SettingsRow(
                               icon: Icons.people_outline,
                               title: 'Tiêu chuẩn cộng đồng',
                               onTap: () => _openUrl(AppConfig.communityStandardsUrl),

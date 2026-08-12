@@ -63,6 +63,16 @@ async def _ensure_embedding_dim(conn) -> None:
     )
 
 
+async def _ensure_exercise_code_width(conn) -> None:
+    """Widen exercise_code — Free Exercise DB codes often exceed varchar(32)."""
+    await conn.execute(
+        text(
+            "ALTER TABLE exercise_embeddings "
+            "ALTER COLUMN exercise_code TYPE VARCHAR(128)"
+        )
+    )
+
+
 async def _run_once() -> None:
     # Fresh engine per attempt (avoid disposed global engine + DNS race).
     from sqlalchemy.ext.asyncio import create_async_engine
@@ -75,6 +85,7 @@ async def _run_once() -> None:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
             await conn.run_sync(Base.metadata.create_all)
             await _ensure_embedding_dim(conn)
+            await _ensure_exercise_code_width(conn)
             await conn.execute(
                 text(
                     "CREATE INDEX IF NOT EXISTS ix_embed_vector ON exercise_embeddings "

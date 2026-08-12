@@ -173,28 +173,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     }
   }
 
-  Future<void> _restorePlayPurchases() async {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(color: AppColors.primaryGreen),
-      ),
-    );
-    try {
-      await _playBilling.restoreAndVerify();
-      await Future<void>.delayed(const Duration(seconds: 2));
-      await _load();
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      _showSnack('Đã khôi phục / đồng bộ mua hàng Google Play.');
-    } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context).pop();
-      _showSnack(e.toString().replaceFirst('Exception: ', ''), isError: true);
-    }
-  }
-
   Future<void> _pollTransaction(int orderCode) async {
     for (var i = 0; i < 12; i++) {
       await Future.delayed(const Duration(seconds: 4));
@@ -313,17 +291,6 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
                       if (!AppConfig.requiresPlayBillingForPremium) ...[
                         _CouponField(controller: _couponController),
                         const SizedBox(height: 16),
-                      ],
-
-                      if (AppConfig.requiresPlayBillingForPremium) ...[
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _restorePlayPurchases,
-                            child: const Text('Khôi phục mua hàng Google Play'),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
                       ],
 
                       // Free plan

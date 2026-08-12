@@ -1,10 +1,12 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:sync_app/features/cyn/models/cyn_chat_models.dart';
 
 /// Parses Server-Sent Events from the SYNC AI chat endpoint.
 Stream<CynAiStreamEvent> parseAiSseBytes(Stream<List<int>> byteStream) async* {
   var buffer = '';
+  var yieldedAny = false;
   try {
     await for (final chunk in byteStream.transform(utf8.decoder)) {
       buffer += chunk;
@@ -19,12 +21,29 @@ Stream<CynAiStreamEvent> parseAiSseBytes(Stream<List<int>> byteStream) async* {
           buffer = buffer.substring(1);
         }
         final event = _parseSseBlock(block);
-        if (event != null) yield event;
+        if (event != null) {
+          yieldedAny = true;
+          yield event;
+        }
       }
     }
-  } catch (_) {
-    // Stream may close with an error (connection reset, etc.)
-    // — process any leftover buffer and finish gracefully.
+  } catch (error, st) {
+    final msg = error.toString().toLowerCase();
+    final isNormalClose = msg.contains('connection closed') ||
+        msg.contains('connection reset') ||
+        msg.contains('software caused connection abort') ||
+        msg.contains('broken pipe') ||
+        msg.contains('stream has already been listened') ||
+        msg.contains('http exception');
+    if (!isNormalClose) {
+      if (kDebugMode) {
+        debugPrint('CYN SSE parse error: $error\n$st');
+      }
+      if (!yieldedAny) {
+        yield CynAiStreamEvent.error('Không nhận được phản hồi từ CYN. Thử lại nhé.');
+      }
+      rethrow;
+    }
   }
   if (buffer.trim().isNotEmpty) {
     final event = _parseSseBlock(buffer);

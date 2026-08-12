@@ -1,69 +1,55 @@
-# APK regression checklist (prod)
+# APK prod regression (after fix-apk-prod-bugs)
 
-Use this after deploying backend fixes and building a new release APK:
+## Before testing: ops prerequisites
+
+### Brevo OTP (required for email verification)
+
+SSM currently has placeholder Brevo credentials. Set real values then force-redeploy IAM:
+
+```bash
+aws ssm put-parameter --name /sync/prod/mail/brevo-username --type String --value "<brevo-smtp-login>" --overwrite --region ap-southeast-1
+aws secretsmanager put-secret-value --secret-id /sync/prod/mail/brevo-password --secret-string "<brevo-smtp-key>" --region ap-southeast-1
+aws ssm put-parameter --name /sync/prod/mail/brevo-from-email --type String --value "<verified-sender-in-brevo>" --overwrite --region ap-southeast-1
+```
+
+Then `terraform apply` (prod) so IAM task gets `Email__Brevo__Enabled/Host/FromEmail/...`, and redeploy **iam** with the new image.
+
+CloudWatch should show `Brevo SMTP email sent to …` (not `[EMAIL DISABLED]`).
+
+### Google Sign-In `aud`
+
+SSM already has Web+Android IDs comma-separated. **IAM code** now splits commas — redeploy **iam** with this build. No SSM change required if value stays:
+
+`366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com,366172488368-4brct5chejltaa6rlk42b0pnn2a53skr.apps.googleusercontent.com`
+
+### Media CDN
+
+Redeploy **iam** + **social** (and any service using Libs.Storage upload) after Storage URL fix. New uploads must be `https://cdn.synctis.in/prod/...` (no `sync-pub-assets` in path).
+
+### RCM AI Generate
+
+With RCM healthy:
+
+```bash
+# Login SystemAdmin, then:
+curl -X POST "https://api.synctis.in/api/v1/ai/admin/reindex" -H "Authorization: Bearer <admin-token>"
+```
+
+### Build APK
 
 ```powershell
 cd ui/app
 flutter build apk --release --dart-define-from-file=dart_defines.prod.json
 ```
 
-APK output: `ui/app/build/app/outputs/flutter-apk/app-release.apk`
+## Test checklist
 
-## 1. Register + OTP email
-
-1. Open app → **Đăng ký** with a new email.
-2. On verify screen, hint should say **6-digit code from email** (no IAM/dev log text).
-3. If Brevo SMTP is configured on prod IAM:
-   - Email arrives with OTP → enter code → registration completes.
-4. If email service is down:
-   - Show friendly message: *"Không thể gửi email xác minh…"* (no Brevo/SMTP/stack trace).
-
-## 2. Login
-
-| Flow | Expected |
-|------|----------|
-| Email + password (verified account) | Login succeeds, home loads |
-| Google Sign-In (if OAuth not configured) | Friendly message + suggestion to use email/password (no SHA-1/OAuth Console instructions) |
-| Wrong password | *"Email hoặc mật khẩu không đúng"* |
-
-## 3. Roadmap / custom workout
-
-1. Open **Workouts** → **AI Roadmap** tab.
-2. No Mongo `E11000` / duplicate key / stack trace on screen.
-3. If roadmap load fails → generic *"Could not load your roadmap"* or sync message.
-4. **Tạo custom workout** → AI generate session:
-   - Success: exercises appear.
-   - RCM not indexed: *"Gợi ý bài tập AI tạm thời chưa sẵn sàng"* (no "admin reindex").
-
-## 4. CYN AI chat
-
-1. Send a simple message.
-2. On network/API error → friendly bubble text (no raw exception).
-3. Empty response without error → *"Không nhận được phản hồi từ CYN"* (not technical details).
-
-## 5. Subscription / Premium
-
-1. Open Premium / subscription screen.
-2. If Play product `sync_premium_monthly` is not published:
-   - *"Gói Premium tạm thời chưa khả dụng trên cửa hàng"* (no Play Console / productId jargon).
-
-## 6. Notifications
-
-1. Open notifications tab while logged in.
-2. On connection failure → *"Không kết nối được dịch vụ thông báo…"* (no `run-all.ps1`).
-
-## 7. Backend smoke (ops)
-
-After deploy Roadmap + IAM services:
-
-```bash
-# Roadmap service should start even when seed data partially exists
-# IAM register should return 400 with friendly message when email send fails
-```
-
-## Sign-off
-
-- [ ] No dev hints (IAM log, run-all.ps1, ports, Play Console IDs) visible in UI
-- [ ] Auth flows usable with email/password on APK
-- [ ] Roadmap tab opens without crash
-- [ ] Custom workout AI errors are user-friendly
+- [ ] Register → OTP email arrives (or friendly error if Brevo still misconfigured)
+- [ ] Google Sign-In → no `untrusted aud` (or friendly fallback to email/password)
+- [ ] Upload avatar / background → image visible
+- [ ] Post story image/video → media visible in feed/viewer
+- [ ] CYN chat "hello" → real reply text (not only "đã xử lý…")
+- [ ] Custom workout AI Generate → exercises or still-friendly empty message after reindex
+- [ ] Profile: no "Hoàn tiền & huỷ gói"
+- [ ] Subscription: no "Khôi phục mua hàng Google Play"
+- [ ] Map deliver-to: no orange `run-chrome.ps1` hint

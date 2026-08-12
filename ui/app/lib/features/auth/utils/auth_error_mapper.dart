@@ -25,6 +25,11 @@ String mapAuthError(Object error, AppLocalizations l10n) {
             message.toLowerCase().contains('verification code')) {
           return l10n.authErrorInvalidToken;
         }
+        if (message.toLowerCase().contains('untrusted') ||
+            message.toLowerCase().contains("'aud'") ||
+            message.toLowerCase().contains('invalid google id token')) {
+          return 'Đăng nhập Google tạm thời không khả dụng. Vui lòng dùng email và mật khẩu.';
+        }
         if (message.contains('Không thể gửi email xác minh') ||
             message.contains('Không gửi được email')) {
           return sanitizeUserFacingMessage(message);

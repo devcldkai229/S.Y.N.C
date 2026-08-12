@@ -18,7 +18,7 @@ abstract final class MediaUrlResolver {
     if (trimmed.startsWith('randomavatar:')) return trimmed;
     if (trimmed.startsWith('assets/')) return trimmed;
 
-    // Public CDN — leave alone.
+    // Public CDN — leave alone (but strip mistaken /sync-pub-assets/ segment).
     final cdnBase = AppConfig.mediaCdnBaseUrl;
     if (cdnBase.isNotEmpty) {
       final cdnHost = Uri.tryParse(cdnBase)?.host;
@@ -26,14 +26,12 @@ abstract final class MediaUrlResolver {
       if (cdnHost != null &&
           uri != null &&
           uri.host.toLowerCase() == cdnHost.toLowerCase()) {
-        final q = trimmed.indexOf('?');
-        return q >= 0 ? trimmed.substring(0, q) : trimmed;
+        return _stripQuery(_stripPublicBucketFromCdnPath(trimmed, cdnBase));
       }
       if (uri != null &&
           (uri.host.toLowerCase() == 'cdn.synctis.in' ||
               uri.host.toLowerCase().endsWith('.cloudfront.net'))) {
-        final q = trimmed.indexOf('?');
-        return q >= 0 ? trimmed.substring(0, q) : trimmed;
+        return _stripQuery(_stripPublicBucketFromCdnPath(trimmed, cdnBase));
       }
     }
 
@@ -143,5 +141,27 @@ abstract final class MediaUrlResolver {
     }
 
     return null;
+  }
+
+  /// CDN origin paths must be object keys only. Older backends emitted
+  /// `https://cdn.../sync-pub-assets/<key>` which 404s on CloudFront OAC.
+  static String _stripPublicBucketFromCdnPath(String url, String cdnBase) {
+    final uri = Uri.tryParse(url.split('?').first);
+    if (uri == null) return url;
+    var path = uri.path.replaceFirst(RegExp(r'^/+'), '');
+    for (final bucket in [publicBucket, ..._legacyBuckets]) {
+      final prefix = '$bucket/';
+      if (path.startsWith(prefix)) {
+        path = path.substring(prefix.length);
+        break;
+      }
+    }
+    final base = cdnBase.replaceAll(RegExp(r'/+$'), '');
+    return path.isEmpty ? base : '$base/$path';
+  }
+
+  static String _stripQuery(String url) {
+    final q = url.indexOf('?');
+    return q >= 0 ? url.substring(0, q) : url;
   }
 }
