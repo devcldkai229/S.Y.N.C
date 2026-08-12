@@ -208,14 +208,8 @@ jobs:
       - name: Push image (tag=sha)
         if: ${{ env.IS_RELEASE == 'true' }}
         run: docker push "${{ steps.meta.outputs.image }}"
-      - name: Also tag :latest
-        if: ${{ env.IS_RELEASE == 'true' }}
-        run: |
-          set -euo pipefail
-          SRC="${{ steps.meta.outputs.image }}"
-          LATEST="$ECR_REGISTRY/sync/${{ matrix.service }}:latest"
-          docker tag "$SRC" "$LATEST"
-          docker push "$LATEST"
+      # Do NOT push :latest — ECR repos use image_tag_mutability=IMMUTABLE
+      # (infra/aws/modules/ecr). Deploy always uses ${GITHUB_SHA}.
 
   # Optional dev cluster — skipped when ECS_CLUSTER_DEV empty
   deploy-dev:
