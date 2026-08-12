@@ -30,7 +30,7 @@ async def generate(
         excluded=set(body.excludeExerciseCodes),
     )
     await log_usage(user.id, "generate_session_exercises", tokens, db)
-    if (not result.exercises:
+    if not result.exercises:
         return fail("Gợi ý bài tập AI tạm thời chưa sẵn sàng. Vui lòng thử lại sau.")
     return ok(result.model_dump(), "Đã tạo bài tập bằng AI")
 

@@ -318,7 +318,7 @@ module "ecs_service" {
   autoscaling = each.value.port == null ? null : {
     min        = contains(var.critical_services, each.key) ? var.desired_count_critical : 1
     max        = 4
-    cpu_target = 60
+    cpu_target = 80
   }
 
   capacity_provider = contains(var.critical_services, each.key) ? module.ecs_cluster.capacity_provider_ondemand : module.ecs_cluster.capacity_provider_spot
