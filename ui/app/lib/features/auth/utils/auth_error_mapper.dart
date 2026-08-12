@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/l10n/app_localizations.dart';
 
 /// Maps IAM auth API errors to localized user-facing messages.
@@ -20,16 +21,23 @@ String mapAuthError(Object error, AppLocalizations l10n) {
         if (message.toLowerCase().contains('already exists')) {
           return l10n.authErrorEmailExists;
         }
-        if (message.toLowerCase().contains('verification token')) {
+        if (message.toLowerCase().contains('verification token') ||
+            message.toLowerCase().contains('verification code')) {
           return l10n.authErrorInvalidToken;
         }
-        return message;
+        if (message.contains('Không thể gửi email xác minh') ||
+            message.contains('Không gửi được email')) {
+          return sanitizeUserFacingMessage(message);
+        }
+        return sanitizeUserFacingMessage(message);
       }
     }
     if (error.type == DioExceptionType.connectionError) {
-      return l10n.authErrorConnection(error.requestOptions.uri.toString());
+      return l10n.authErrorConnection('');
     }
-    return error.message ?? l10n.authErrorGeneric;
+    return sanitizeUserFacingMessage(error.message ?? l10n.authErrorGeneric);
   }
-  return error.toString().replaceFirst('Exception: ', '');
+  return sanitizeUserFacingMessage(
+    error.toString().replaceFirst('Exception: ', ''),
+  );
 }

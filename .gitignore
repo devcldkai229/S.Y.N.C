@@ -499,6 +499,8 @@ core/SyncPlatform/src/**/appsettings.Development.json
 core/SyncPlatform/**/appsettings.*.local.json
 core/SyncPlatform/**/appsettings.Production.json
 core/SyncPlatform/**/appsettings.Staging.json
+# ImportTool connection string / secrets (use appsettings.Import.json.example)
+core/SyncPlatform/**/appsettings.Import.json
 !core/SyncPlatform/**/*.example
 # Exception có chủ đích: config Production của Gateway CHỈ chứa routing YARP
 # (Service Connect DNS), KHÔNG secret — bắt buộc nằm trong image để deploy ECS.

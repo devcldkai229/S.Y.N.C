@@ -14,6 +14,9 @@ namespace Iam.Application.Services;
 /// </summary>
 public sealed class BrevoSmtpEmailSender : IEmailSender
 {
+    private const string EmailUnavailableMessage =
+        "Không thể gửi email xác minh lúc này. Vui lòng thử lại sau.";
+
     private readonly EmailSettings _settings;
     private readonly ILogger<BrevoSmtpEmailSender> _logger;
 
@@ -49,12 +52,14 @@ public sealed class BrevoSmtpEmailSender : IEmailSender
         CancellationToken cancellationToken)
     {
         var brevo = _settings.Brevo;
-        if (string.IsNullOrWhiteSpace(brevo.Host))
-            throw new InvalidOperationException("Email:Brevo:Host is not configured.");
-        if (string.IsNullOrWhiteSpace(brevo.FromEmail))
-            throw new InvalidOperationException("Email:Brevo:FromEmail is not configured.");
-        if (string.IsNullOrWhiteSpace(brevo.UserName) || string.IsNullOrWhiteSpace(brevo.Password))
-            throw new InvalidOperationException("Email:Brevo:UserName/Password is not configured.");
+        if (string.IsNullOrWhiteSpace(brevo.Host)
+            || string.IsNullOrWhiteSpace(brevo.FromEmail)
+            || string.IsNullOrWhiteSpace(brevo.UserName)
+            || string.IsNullOrWhiteSpace(brevo.Password))
+        {
+            _logger.LogWarning("Brevo SMTP is not fully configured; cannot send email to {Email}", toEmail);
+            throw new BadRequestException(EmailUnavailableMessage);
+        }
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(brevo.FromName, brevo.FromEmail.Trim()));
@@ -81,11 +86,10 @@ public sealed class BrevoSmtpEmailSender : IEmailSender
 
             _logger.LogInformation("Brevo SMTP email sent to {Email}", toEmail);
         }
-        catch (Exception ex) when (ex is not InvalidOperationException and not BadRequestException)
+        catch (Exception ex) when (ex is not BadRequestException)
         {
             _logger.LogError(ex, "Brevo SMTP send failed for {Email}", toEmail);
-            throw new BadRequestException(
-                $"Không gửi được email xác minh qua Brevo: {ex.Message}");
+            throw new BadRequestException(EmailUnavailableMessage);
         }
     }
 }

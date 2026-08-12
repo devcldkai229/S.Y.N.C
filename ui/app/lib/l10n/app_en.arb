@@ -37,7 +37,7 @@
   "createAccount": "Create account",
   "hasAccountLogin": "Already have an account? Sign in",
   "verifyEmailTitle": "Verify email",
-  "verifyEmailHint": "Paste the token from your email or IAM dev log",
+  "verifyEmailHint": "Enter the 6-digit verification code sent to your email",
   "verifyEmailButton": "Verify",
   "onboardingSideATitle": "Fitness profile",
   "onboardingSideASubtitle": "Biometrics help calculate calories and your training plan.",
@@ -175,12 +175,12 @@
   "preferencesEditorTitle": "Preferences & AI",
   "fitnessEditorTitle": "Fitness profile",
   "loadProfileFailed": "Could not load profile.",
-  "authErrorServer": "Server error (500). Check backend/IAM database migrations.",
-  "authErrorEmailNotVerified": "Email not verified. Open the link in your email or use Verify email (token from IAM log when Brevo is off).",
+  "authErrorServer": "The server is having trouble. Please try again later.",
+  "authErrorEmailNotVerified": "Email not verified. Check your inbox and enter the verification code.",
   "authErrorInvalidCredentials": "Invalid email or password.",
   "authErrorEmailExists": "This email is already registered. Sign in or use another email.",
   "authErrorInvalidToken": "Invalid or expired verification token.",
-  "authErrorConnection": "Cannot reach API ({url}). Start backend Gateway on :5057.",
+  "authErrorConnection": "Cannot reach the server. Check your connection and try again.",
   "@authErrorConnection": {
     "placeholders": {
       "url": {

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:sync_app/core/network/api_paths.dart';
+import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/features/workouts/models/workout_models.dart';
 
 /// Result of an AI session generation: the suggested exercises plus the coach's
@@ -81,7 +82,8 @@ class AiWorkoutApiService {
 
   Map<String, dynamic> _unwrap(Map<String, dynamic>? json, String fallbackMsg) {
     if (json == null || json['success'] != true) {
-      throw Exception((json?['message'] ?? fallbackMsg).toString());
+      final raw = (json?['message'] ?? fallbackMsg).toString();
+      throw Exception(sanitizeUserFacingMessage(raw));
     }
     final data = json['data'];
     if (data is! Map<String, dynamic>) {

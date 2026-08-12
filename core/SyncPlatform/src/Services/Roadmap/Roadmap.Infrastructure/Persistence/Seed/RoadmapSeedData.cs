@@ -542,14 +542,81 @@ public static class RoadmapSeedData
             var sessions  = BuildSessions(now, codeMap);
             var (execLogs, setLogs) = BuildLogs(now, sessions);
 
-            // 3. Idempotent insert
-            await SeedCollectionAsync(roadmapDb.GetCollection<PersonalizedRoadmap>("PersonalizedRoadmaps"), roadmaps, ct);
-            await SeedCollectionAsync(roadmapDb.GetCollection<RecoveryProfile>("RecoveryProfiles"), recoveries, ct);
+            // 3. Idempotent insert (UserId-unique collections skip existing users)
+            await SeedPersonalizedRoadmapsAsync(
+                roadmapDb.GetCollection<PersonalizedRoadmap>("PersonalizedRoadmaps"),
+                roadmaps,
+                ct);
+            await SeedRecoveryProfilesAsync(
+                roadmapDb.GetCollection<RecoveryProfile>("RecoveryProfiles"),
+                recoveries,
+                ct);
             await SeedCollectionAsync(roadmapDb.GetCollection<RoadmapSession>("RoadmapSessions"), sessions, ct);
             await SeedCollectionAsync(roadmapDb.GetCollection<WorkoutExecutionLog>("WorkoutExecutionLogs"), execLogs, ct);
             await SeedCollectionAsync(roadmapDb.GetCollection<ExerciseSetLog>("ExerciseSetLogs"), setLogs, ct);
 
             Console.WriteLine($"[RoadmapSeed] Done — Roadmaps: {roadmaps.Count}, Sessions: {sessions.Count}, ExecLogs: {execLogs.Count}, SetLogs: {setLogs.Count}");
+        }
+
+        static async Task SeedPersonalizedRoadmapsAsync(
+            IMongoCollection<PersonalizedRoadmap> collection,
+            IReadOnlyList<PersonalizedRoadmap> seeds,
+            CancellationToken ct)
+        {
+            if (seeds.Count == 0) return;
+
+            var userIds = seeds.Select(r => r.UserId).Distinct().ToList();
+            var existingUserIds = await collection
+                .Find(Builders<PersonalizedRoadmap>.Filter.In(r => r.UserId, userIds))
+                .Project(r => r.UserId)
+                .ToListAsync(ct);
+
+            var existingSet = existingUserIds.ToHashSet();
+            var toInsert = seeds.Where(r => !existingSet.Contains(r.UserId)).ToList();
+            await InsertSeedsAsync(collection, toInsert, ct, "UserId-unique");
+        }
+
+        static async Task SeedRecoveryProfilesAsync(
+            IMongoCollection<RecoveryProfile> collection,
+            IReadOnlyList<RecoveryProfile> seeds,
+            CancellationToken ct)
+        {
+            if (seeds.Count == 0) return;
+
+            var userIds = seeds.Select(r => r.UserId).Distinct().ToList();
+            var existingUserIds = await collection
+                .Find(Builders<RecoveryProfile>.Filter.In(r => r.UserId, userIds))
+                .Project(r => r.UserId)
+                .ToListAsync(ct);
+
+            var existingSet = existingUserIds.ToHashSet();
+            var toInsert = seeds.Where(r => !existingSet.Contains(r.UserId)).ToList();
+            await InsertSeedsAsync(collection, toInsert, ct, "UserId-unique");
+        }
+
+        static async Task InsertSeedsAsync<T>(
+            IMongoCollection<T> collection,
+            IReadOnlyList<T> toInsert,
+            CancellationToken ct,
+            string? logSuffix = null) where T : BaseMongoEntity
+        {
+            if (toInsert.Count == 0) return;
+
+            var now = DateTimeOffset.UtcNow;
+            foreach (var e in toInsert) { e.CreatedAt = now; e.UpdatedAt = now; }
+
+            try
+            {
+                await collection.InsertManyAsync(toInsert, cancellationToken: ct);
+                var suffix = string.IsNullOrEmpty(logSuffix) ? string.Empty : $" ({logSuffix})";
+                Console.WriteLine(
+                    $"[RoadmapSeed] Inserted {toInsert.Count} into {collection.CollectionNamespace.CollectionName}{suffix}.");
+            }
+            catch (MongoBulkWriteException ex) when (IsDuplicateKeyBulkWrite(ex))
+            {
+                Console.WriteLine(
+                    $"[RoadmapSeed] Skipped duplicate keys in {collection.CollectionNamespace.CollectionName}.");
+            }
         }
 
         static async Task SeedCollectionAsync<T>(
@@ -566,13 +633,11 @@ public static class RoadmapSeedData
                 .ToListAsync(ct);
 
             var toInsert = seeds.Where(s => !existingIds.Contains(s.Id)).ToList();
-            if (toInsert.Count == 0) return;
-
-            var now = DateTimeOffset.UtcNow;
-            foreach (var e in toInsert) { e.CreatedAt = now; e.UpdatedAt = now; }
-
-            await collection.InsertManyAsync(toInsert, cancellationToken: ct);
-            Console.WriteLine($"[RoadmapSeed] Inserted {toInsert.Count} into {collection.CollectionNamespace.CollectionName}.");
+            await InsertSeedsAsync(collection, toInsert, ct);
         }
+
+        static bool IsDuplicateKeyBulkWrite(MongoBulkWriteException ex) =>
+            ex.WriteErrors.Count > 0 &&
+            ex.WriteErrors.All(e => e.Category == ServerErrorCategory.DuplicateKey);
     }
 }

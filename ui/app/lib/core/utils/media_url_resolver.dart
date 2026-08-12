@@ -1,6 +1,9 @@
 import 'package:sync_app/core/config/app_config.dart';
 
-/// Rewrites S3 / legacy CDN media URLs to the Gateway media proxy.
+/// Rewrites S3 / legacy media URLs for the Flutter client.
+///
+/// - **Private** objects (signed / private bucket) → Gateway `/api/v1/media/...`
+/// - **Public** bucket (`sync-pub-assets`) without signature → CDN (`AppConfig.mediaCdnBaseUrl`)
 abstract final class MediaUrlResolver {
   static const publicBucket = 'sync-pub-assets';
   static const privateBucket = 'sync-private-assets';
@@ -15,29 +18,63 @@ abstract final class MediaUrlResolver {
     if (trimmed.startsWith('randomavatar:')) return trimmed;
     if (trimmed.startsWith('assets/')) return trimmed;
 
+    // Public CDN — leave alone.
+    final cdnBase = AppConfig.mediaCdnBaseUrl;
+    if (cdnBase.isNotEmpty) {
+      final cdnHost = Uri.tryParse(cdnBase)?.host;
+      final uri = Uri.tryParse(trimmed);
+      if (cdnHost != null &&
+          uri != null &&
+          uri.host.toLowerCase() == cdnHost.toLowerCase()) {
+        final q = trimmed.indexOf('?');
+        return q >= 0 ? trimmed.substring(0, q) : trimmed;
+      }
+      if (uri != null &&
+          (uri.host.toLowerCase() == 'cdn.synctis.in' ||
+              uri.host.toLowerCase().endsWith('.cloudfront.net'))) {
+        final q = trimmed.indexOf('?');
+        return q >= 0 ? trimmed.substring(0, q) : trimmed;
+      }
+    }
+
     final origin = _gatewayOrigin();
     final proxiedPrefix = '$origin/api/v1/media/';
     if (trimmed.startsWith(proxiedPrefix)) {
-      // Drop query if any (e.g. accidental signature on gateway URL).
       final q = trimmed.indexOf('?');
       return q >= 0 ? trimmed.substring(0, q) : trimmed;
     }
 
     // Private-bucket AWS signed URLs → Gateway proxy (CORS + stable Content-Type).
-    // Fall back to the signed URL only when the object path cannot be recovered.
     if (_isAwsPresignedUrl(trimmed)) {
       final objectPath = _extractObjectPath(trimmed);
-      if (objectPath != null) return '$proxiedPrefix$objectPath';
+      if (objectPath != null) {
+        // Public bucket signed → strip to CDN when available.
+        if (cdnBase.isNotEmpty && objectPath.startsWith('$publicBucket/')) {
+          final key = objectPath.substring(publicBucket.length + 1);
+          return '$cdnBase/$key';
+        }
+        return '$proxiedPrefix$objectPath';
+      }
       return trimmed;
     }
 
     final objectPath = _extractObjectPath(trimmed);
     if (objectPath != null) {
+      // Public assets serve via CloudFront (S3 direct is 403 with OAC).
+      if (cdnBase.isNotEmpty && objectPath.startsWith('$publicBucket/')) {
+        final key = objectPath.substring(publicBucket.length + 1);
+        return '$cdnBase/$key';
+      }
       return '$proxiedPrefix$objectPath';
     }
 
     if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-      return '$proxiedPrefix$publicBucket/${trimmed.replaceFirst(RegExp(r'^/+'), '')}';
+      final key = trimmed.replaceFirst(RegExp(r'^/+'), '');
+      // Bare env-prefixed keys (exercise catalog, marketing banners).
+      if (cdnBase.isNotEmpty && (key.startsWith('prod/') || key.startsWith('dev/'))) {
+        return '$cdnBase/$key';
+      }
+      return '$proxiedPrefix$publicBucket/$key';
     }
 
     return trimmed;
@@ -65,7 +102,6 @@ abstract final class MediaUrlResolver {
     final uri = Uri.tryParse(url);
     if (uri != null && uri.host.contains('amazonaws.com')) {
       final host = uri.host;
-      // uri.path excludes query — safe for signed URLs.
       final objectKey = uri.path.replaceFirst(RegExp(r'^/+'), '');
 
       final s3Marker = '.s3';

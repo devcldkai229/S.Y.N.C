@@ -323,7 +323,7 @@ abstract class AppLocalizations {
   /// No description provided for @verifyEmailHint.
   ///
   /// In en, this message translates to:
-  /// **'Paste the token from your email or IAM dev log'**
+  /// **'Enter the 6-digit verification code sent to your email'**
   String get verifyEmailHint;
 
   /// No description provided for @verifyEmailButton.
@@ -1007,13 +1007,13 @@ abstract class AppLocalizations {
   /// No description provided for @authErrorServer.
   ///
   /// In en, this message translates to:
-  /// **'Server error (500). Check backend/IAM database migrations.'**
+  /// **'The server is having trouble. Please try again later.'**
   String get authErrorServer;
 
   /// No description provided for @authErrorEmailNotVerified.
   ///
   /// In en, this message translates to:
-  /// **'Email not verified. Open the link in your email or use Verify email (token from IAM log when Brevo is off).'**
+  /// **'Email not verified. Check your inbox and enter the verification code.'**
   String get authErrorEmailNotVerified;
 
   /// No description provided for @authErrorInvalidCredentials.
@@ -1037,7 +1037,7 @@ abstract class AppLocalizations {
   /// No description provided for @authErrorConnection.
   ///
   /// In en, this message translates to:
-  /// **'Cannot reach API ({url}). Start backend Gateway on :5057.'**
+  /// **'Cannot reach the server. Check your connection and try again.'**
   String authErrorConnection(String url);
 
   /// No description provided for @authErrorGeneric.

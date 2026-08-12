@@ -176,7 +176,7 @@ String mapNotificationError(Object error) {
       return 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.';
     }
     if (error.type == DioExceptionType.connectionError) {
-      return 'Không kết nối được dịch vụ thông báo. Hãy chạy backend (run-all.ps1).';
+      return 'Không kết nối được dịch vụ thông báo. Kiểm tra mạng và thử lại.';
     }
   }
   return mapApiError(error);

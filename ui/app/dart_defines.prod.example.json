@@ -5,6 +5,7 @@
   "NUTRITION_HUB_URL": "https://api.synctis.in/hubs/nutrition",
   "ROADMAP_HUB_URL": "https://api.synctis.in/hubs/roadmap",
   "LEGAL_BASE_URL": "https://synctis.in",
+  "MEDIA_CDN_BASE_URL": "https://cdn.synctis.in",
   "GOOGLE_CLIENT_ID": "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",
   "GOOGLE_SERVER_CLIENT_ID": "366172488368-n76f7r1ab2joffko6cvf2b3564togekv.apps.googleusercontent.com",
   "AWS_MAP_API_KEY": "",

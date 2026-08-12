@@ -59,19 +59,48 @@ public class S3StorageService : IStorageService
     {
         if (string.IsNullOrWhiteSpace(objectKey)) return string.Empty;
 
+        var key = objectKey.TrimStart('/');
+
+        // Prod: prefer non-loopback CDN / public base (Storage__PublicBaseUrl from ECS).
+        // Local defaults leave MediaProxyBaseUrl as localhost — must not win over CDN.
+        if (_options.UseMediaProxy
+            && !string.IsNullOrWhiteSpace(_options.MediaProxyBaseUrl)
+            && !IsLoopbackBaseUrl(_options.MediaProxyBaseUrl))
+        {
+            return $"{_options.MediaProxyBaseUrl.TrimEnd('/')}/{key}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(_options.PublicBaseUrl)
+            && !IsLoopbackBaseUrl(_options.PublicBaseUrl))
+        {
+            return $"{_options.PublicBaseUrl.TrimEnd('/')}/{key}";
+        }
+
         if (_options.UseMediaProxy && !string.IsNullOrWhiteSpace(_options.MediaProxyBaseUrl))
         {
-            var baseUrl = _options.MediaProxyBaseUrl.TrimEnd('/');
-            return $"{baseUrl}/{objectKey.TrimStart('/')}";
+            return $"{_options.MediaProxyBaseUrl.TrimEnd('/')}/{key}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(_options.PublicBaseUrl))
+        {
+            return $"{_options.PublicBaseUrl.TrimEnd('/')}/{key}";
         }
 
         if (_options.PublicRead)
         {
-            return $"https://{_options.Bucket}.s3.{_region}.amazonaws.com/{objectKey.TrimStart('/')}";
+            return $"https://{_options.Bucket}.s3.{_region}.amazonaws.com/{key}";
         }
 
         throw new InvalidOperationException(
             $"Storage bucket '{_options.Bucket}' is not public-read and media proxy is disabled.");
+    }
+
+    private static bool IsLoopbackBaseUrl(string baseUrl)
+    {
+        if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var uri)) return false;
+        return uri.IsLoopback
+               || string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(uri.Host, "host.docker.internal", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<(Stream Stream, string ContentType)?> TryOpenObjectAsync(

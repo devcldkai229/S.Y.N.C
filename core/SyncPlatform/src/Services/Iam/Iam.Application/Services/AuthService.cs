@@ -74,7 +74,7 @@ public class AuthService : IAuthService
         await _userRepository.AddAsync(user, cancellationToken);
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        await _emailSender.SendVerificationEmailAsync(user.Email, verificationToken, cancellationToken);
+        await SendVerificationEmailOrThrowAsync(user.Email, verificationToken, cancellationToken);
 
         return new RegisterResponse
         {
@@ -101,7 +101,7 @@ public class AuthService : IAuthService
                 existing.AvatarUrl = RandomAvatarUrl.ForRegistration(normalizedEmail, existing.FullName);
             existing.UpdatedAt = DateTimeOffset.UtcNow;
             await _userRepository.SaveChangesAsync(cancellationToken);
-            await _emailSender.SendVerificationEmailAsync(existing.Email, verificationToken, cancellationToken);
+            await SendVerificationEmailOrThrowAsync(existing.Email, verificationToken, cancellationToken);
 
             return new RegisterResponse
             {
@@ -129,7 +129,7 @@ public class AuthService : IAuthService
 
         await _userRepository.AddAsync(user, cancellationToken);
         await _userRepository.SaveChangesAsync(cancellationToken);
-        await _emailSender.SendVerificationEmailAsync(user.Email, code, cancellationToken);
+        await SendVerificationEmailOrThrowAsync(user.Email, code, cancellationToken);
 
         return new RegisterResponse
         {
@@ -216,7 +216,7 @@ public class AuthService : IAuthService
         user.UpdatedAt = DateTimeOffset.UtcNow;
         await _userRepository.SaveChangesAsync(cancellationToken);
 
-        await _emailSender.SendVerificationEmailAsync(user.Email, verificationToken, cancellationToken);
+        await SendVerificationEmailOrThrowAsync(user.Email, verificationToken, cancellationToken);
 
         return new RegisterResponse
         {
@@ -539,6 +539,29 @@ public class AuthService : IAuthService
             RefreshToken = refreshToken,
             ExpiresIn = expiresInSeconds
         };
+    }
+
+    private const string VerificationEmailFailedMessage =
+        "Không thể gửi email xác minh lúc này. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.";
+
+    private async Task SendVerificationEmailOrThrowAsync(
+        string email,
+        string verificationToken,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _emailSender.SendVerificationEmailAsync(email, verificationToken, cancellationToken);
+        }
+        catch (BadRequestException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send verification email to {Email}", email);
+            throw new BadRequestException(VerificationEmailFailedMessage);
+        }
     }
 
     private async Task<string> GenerateUniqueVerificationCodeAsync(CancellationToken cancellationToken)

@@ -120,7 +120,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get verifyEmailTitle => 'Xác minh email';
 
   @override
-  String get verifyEmailHint => 'Dán token từ email hoặc log IAM dev';
+  String get verifyEmailHint =>
+      'Nhập mã xác minh 6 số đã gửi tới email của bạn';
 
   @override
   String get verifyEmailButton => 'Xác minh';
@@ -478,12 +479,11 @@ class AppLocalizationsVi extends AppLocalizations {
   String get loadProfileFailed => 'Không tải được hồ sơ.';
 
   @override
-  String get authErrorServer =>
-      'Lỗi server (500). Kiểm tra backend/IAM database đã migrate chưa.';
+  String get authErrorServer => 'Máy chủ đang gặp sự cố. Vui lòng thử lại sau.';
 
   @override
   String get authErrorEmailNotVerified =>
-      'Email chưa được xác minh. Mở link trong email hoặc dùng màn Verify email (token từ log IAM khi Brevo tắt).';
+      'Email chưa được xác minh. Kiểm tra hộp thư và nhập mã xác minh.';
 
   @override
   String get authErrorInvalidCredentials => 'Email hoặc mật khẩu không đúng.';
@@ -498,7 +498,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String authErrorConnection(String url) {
-    return 'Không kết nối được API ($url). Hãy chạy backend Gateway :5057.';
+    return 'Không kết nối được máy chủ. Kiểm tra mạng và thử lại.';
   }
 
   @override

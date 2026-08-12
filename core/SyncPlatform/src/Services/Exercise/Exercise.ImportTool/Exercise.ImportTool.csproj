@@ -20,7 +20,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="appsettings.Import.json.example" Link="appsettings.Import.json">
+    <!-- Prefer real appsettings.Import.json (local/prod); fall back to example template. -->
+    <Content Include="appsettings.Import.json" Condition="Exists('appsettings.Import.json')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="appsettings.Import.json.example" Link="appsettings.Import.json"
+             Condition="!Exists('appsettings.Import.json') AND Exists('appsettings.Import.json.example')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Exercise.API\appsettings.json" Link="appsettings.json" Condition="Exists('..\Exercise.API\appsettings.json')">

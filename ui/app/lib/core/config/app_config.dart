@@ -107,6 +107,16 @@ class AppConfig {
 
   static const bool isProduction = bool.fromEnvironment('dart.vm.product');
 
+  /// Public asset CDN (CloudFront → `sync-pub-assets`). Exercise thumbnails under
+  /// `prod/` / `dev/` resolve here so Play + local both load without S3 403.
+  /// Override: `--dart-define=MEDIA_CDN_BASE_URL=https://cdn.synctis.in`
+  /// Empty string disables CDN rewrites (gateway media proxy only).
+  static String get mediaCdnBaseUrl {
+    const fromEnv = String.fromEnvironment('MEDIA_CDN_BASE_URL', defaultValue: '');
+    if (fromEnv.isNotEmpty) return fromEnv.replaceAll(RegExp(r'/$'), '');
+    return 'https://cdn.synctis.in';
+  }
+
   /// Public legal site (deployed with `ui/web`). Override:
   /// `--dart-define=LEGAL_BASE_URL=https://synctis.in`
   static String get legalBaseUrl {

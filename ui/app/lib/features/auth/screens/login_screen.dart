@@ -88,12 +88,11 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         },
         onError: (Object e) {
-          if (mounted) _showError('Google Sign-In error: $e');
+          if (mounted) _showError(_mapError(e, context.l10n));
         },
       );
     }).catchError((Object e) {
-      // Initialization failure — show error, button will not work.
-      if (mounted) _showError('Google Sign-In không khởi động được: $e');
+      if (mounted) _showError(_mapError(e, context.l10n));
     });
   }
 
@@ -348,15 +347,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   String _mapError(Object error, AppLocalizations l10n) {
     if (error is GoogleSignInException) {
-      final desc = error.description ?? '';
-      if (desc.contains('[16]') || desc.contains('reauth failed')) {
-        return 'Google Sign-In thất bại (lỗi cấu hình OAuth). '
-            'Vào Google Cloud Console → Credentials → Android client, '
-            'thêm SHA-1 debug: ED:16:02:D9:E4:B6:48:68:9F:BD:8A:48:18:1E:AD:A1:C0:ED:0F:01 '
-            'và package com.sync.sync_app. '
-            'Thêm Gmail của bạn vào OAuth consent screen → Test users.';
-      }
-      return 'Google Sign-In (${error.code.name}): ${desc.isEmpty ? 'Unknown error' : desc}';
+      assert(() {
+        debugPrint(
+          'GoogleSignInException: ${error.code.name} ${error.description ?? ''}',
+        );
+        return true;
+      }());
+      return 'Đăng nhập Google tạm thời không khả dụng trong bản này. '
+          'Vui lòng đăng nhập bằng email và mật khẩu.';
     }
     return mapAuthError(error, l10n);
   }

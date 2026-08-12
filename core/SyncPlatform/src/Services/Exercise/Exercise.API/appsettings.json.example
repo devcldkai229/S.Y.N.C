@@ -14,6 +14,7 @@
     "Bucket": "sync-pub-assets",
     "KeyPrefix": "exercises_catalog/",
     "PublicRead": true,
+    "PublicBaseUrl": "",
     "UseMediaProxy": true,
     "MediaProxyBaseUrl": "http://localhost:5057/api/v1/exercise/exercises/media/",
     "MaxFileSizeMb": 50,

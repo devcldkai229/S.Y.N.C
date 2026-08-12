@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/features/subscription/services/subscription_api_service.dart';
 
 /// Google Play Billing helper for Premium subscriptions.
@@ -50,12 +51,23 @@ class GooglePlayBillingService {
 
     final response = await _iap.queryProductDetails({productId});
     if (response.error != null) {
-      throw Exception('Không tải được sản phẩm Play: ${response.error!.message}');
+      assert(() {
+        debugPrint('Play queryProductDetails error: ${response.error!.message}');
+        return true;
+      }());
+      throw Exception(
+        sanitizeUserFacingMessage(
+          'Gói Premium tạm thời chưa khả dụng trên cửa hàng. Vui lòng thử lại sau.',
+        ),
+      );
     }
     if (response.productDetails.isEmpty) {
+      assert(() {
+        debugPrint('Play product not found: $productId');
+        return true;
+      }());
       throw Exception(
-        'Không tìm thấy sản phẩm "$productId" trên Play Console. '
-        'Hãy tạo subscription product và publish lên Internal testing.',
+        'Gói Premium tạm thời chưa khả dụng trên cửa hàng. Vui lòng thử lại sau.',
       );
     }
 
@@ -93,9 +105,8 @@ class GooglePlayBillingService {
       }
 
       if (purchase.status == PurchaseStatus.error) {
-        _failPending(
-          Exception(purchase.error?.message ?? 'Google Play purchase failed.'),
-        );
+        final raw = purchase.error?.message ?? 'Google Play purchase failed.';
+        _failPending(Exception(sanitizeUserFacingMessage(raw)));
         if (purchase.pendingCompletePurchase) {
           await _iap.completePurchase(purchase);
         }
@@ -115,7 +126,7 @@ class GooglePlayBillingService {
         final token = purchase.verificationData.serverVerificationData;
         final productId = purchase.productID;
         if (token.isEmpty) {
-          _failPending(Exception('Thiếu purchaseToken từ Google Play.'));
+          _failPending(Exception('Thanh toán chưa hoàn tất. Vui lòng thử lại.'));
           continue;
         }
 

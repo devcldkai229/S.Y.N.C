@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sync_app/core/utils/exercise_media_url_resolver.dart';
 import 'package:sync_app/core/utils/media_url_resolver.dart';
 
 void main() {
@@ -22,6 +23,15 @@ void main() {
     );
   });
 
+  test('public S3 URL rewrites to CDN not S3', () {
+    const s3 =
+        'https://sync-pub-assets.s3.ap-southeast-1.amazonaws.com/prod/3-4-sit-up/0.webp';
+    expect(
+      MediaUrlResolver.resolve(s3),
+      'https://cdn.synctis.in/prod/3-4-sit-up/0.webp',
+    );
+  });
+
   test('randomavatar and unsplash stay unchanged', () {
     expect(
       MediaUrlResolver.resolve('randomavatar:user@example.com'),
@@ -41,5 +51,32 @@ void main() {
       resolved.endsWith('/api/v1/media/sync-private-assets/stories/vid.mp4'),
       isTrue,
     );
+  });
+
+  test('exercise prod key resolves to CDN', () {
+    expect(
+      ExerciseMediaUrlResolver.resolve('prod/90-90-hamstring/0.webp'),
+      'https://cdn.synctis.in/prod/90-90-hamstring/0.webp',
+    );
+  });
+
+  test('exercise localhost media proxy path rewrites prod key to CDN', () {
+    expect(
+      ExerciseMediaUrlResolver.resolve(
+        'http://localhost:5057/api/v1/exercise/exercises/media/prod/3-4-sit-up/0.webp',
+      ),
+      'https://cdn.synctis.in/prod/3-4-sit-up/0.webp',
+    );
+  });
+
+  test('exercise CDN url stays CDN', () {
+    const cdn = 'https://cdn.synctis.in/prod/ab-crunch-machine/0.webp';
+    expect(ExerciseMediaUrlResolver.resolve(cdn), cdn);
+  });
+
+  test('legacy catalog key uses gateway media proxy', () {
+    final resolved = ExerciseMediaUrlResolver.resolve('exercises_catalog/foo/0.webp')!;
+    expect(resolved.contains('/api/v1/exercise/exercises/media/exercises_catalog/foo/0.webp'), isTrue);
+    expect(resolved.startsWith('http'), isTrue);
   });
 }

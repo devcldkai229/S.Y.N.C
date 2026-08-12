@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:sync_app/core/utils/api_error_mapper.dart';
 import 'package:sync_app/core/utils/app_location_resolver.dart';
 import 'package:sync_app/features/cyn/models/cyn_chat_models.dart';
 import 'package:sync_app/features/cyn/services/cyn_ai_chat_service.dart';
@@ -346,9 +347,10 @@ class CynChatSessionStore extends ChangeNotifier {
           case 'error':
             hadError = true;
             final buffered = buffer.toString();
+            final friendlyError = sanitizeUserFacingMessage(ev.data);
             _patchById(
               cynMessageId,
-              text: buffered.isEmpty ? ev.data : buffered,
+              text: buffered.isEmpty ? friendlyError : buffered,
               isStreaming: false,
               error: buffered.isEmpty,
             );

@@ -121,7 +121,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verifyEmailHint =>
-      'Paste the token from your email or IAM dev log';
+      'Enter the 6-digit verification code sent to your email';
 
   @override
   String get verifyEmailButton => 'Verify';
@@ -482,11 +482,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authErrorServer =>
-      'Server error (500). Check backend/IAM database migrations.';
+      'The server is having trouble. Please try again later.';
 
   @override
   String get authErrorEmailNotVerified =>
-      'Email not verified. Open the link in your email or use Verify email (token from IAM log when Brevo is off).';
+      'Email not verified. Check your inbox and enter the verification code.';
 
   @override
   String get authErrorInvalidCredentials => 'Invalid email or password.';
@@ -500,7 +500,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String authErrorConnection(String url) {
-    return 'Cannot reach API ($url). Start backend Gateway on :5057.';
+    return 'Cannot reach the server. Check your connection and try again.';
   }
 
   @override
